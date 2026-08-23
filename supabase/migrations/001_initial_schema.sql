@@ -9,77 +9,43 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ──────────────────────────────────────────
--- ENUM TYPES
+-- ENUM TYPES (idempotent — safe to re-run)
 -- ──────────────────────────────────────────
 
-CREATE TYPE public.user_role AS ENUM (
-  'owner',
-  'managing_partner',
-  'site_supervisor'
-);
+DO $$ BEGIN CREATE TYPE public.user_role AS ENUM ('owner','managing_partner','site_supervisor');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TYPE public.user_status AS ENUM (
-  'pending',
-  'active',
-  'suspended'
-);
+DO $$ BEGIN CREATE TYPE public.user_status AS ENUM ('pending','active','suspended');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TYPE public.project_status AS ENUM (
-  'active',
-  'completed',
-  'on_hold'
-);
+DO $$ BEGIN CREATE TYPE public.project_status AS ENUM ('active','completed','on_hold');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TYPE public.bill_type AS ENUM (
-  'RA Bill',
-  'Final Bill',
-  'Advance',
-  'Mobilization Bill'
-);
+DO $$ BEGIN CREATE TYPE public.bill_type AS ENUM ('RA Bill','Final Bill','Advance','Mobilization Bill');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TYPE public.payment_mode AS ENUM (
-  'cash',
-  'bank_transfer',
-  'cheque',
-  'upi',
-  'other'
-);
+DO $$ BEGIN CREATE TYPE public.payment_mode AS ENUM ('cash','bank_transfer','cheque','upi','other');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TYPE public.partner_transaction_type AS ENUM (
-  'paid_by_partner',      -- partner put money in (increases balance)
-  'received_by_partner'   -- partner took money out (decreases balance)
-);
+DO $$ BEGIN CREATE TYPE public.partner_transaction_type AS ENUM ('paid_by_partner','received_by_partner');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TYPE public.partner_purpose AS ENUM (
-  'capital_contribution',
-  'profit_draw',
-  'reimbursement',
-  'other'
-);
+DO $$ BEGIN CREATE TYPE public.partner_purpose AS ENUM ('capital_contribution','profit_draw','reimbursement','other');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TYPE public.ledger_entry_type AS ENUM (
-  'income',
-  'expense',
-  'payment_to_vendor',
-  'partner_movement'
-);
+DO $$ BEGIN CREATE TYPE public.ledger_entry_type AS ENUM ('income','expense','payment_to_vendor','partner_movement');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TYPE public.expense_category AS ENUM (
-  'labor',
-  'material',
-  'equipment',
-  'transport',
-  'fuel',
-  'admin',
-  'tendering',
-  'other'
-);
+DO $$ BEGIN CREATE TYPE public.expense_category AS ENUM ('labor','material','equipment','transport','fuel','admin','tendering','other');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+
 
 -- ──────────────────────────────────────────
 -- user_profiles
 -- Extends auth.users — stores status and display name.
 -- ──────────────────────────────────────────
-CREATE TABLE public.user_profiles (
+CREATE TABLE IF NOT EXISTS public.user_profiles (
   id           UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   display_name TEXT,
   status       public.user_status NOT NULL DEFAULT 'pending',
@@ -113,7 +79,7 @@ CREATE TRIGGER on_auth_user_created
 -- roles
 -- One row per user; project_id=NULL means "all projects" (Owner/Partner).
 -- ──────────────────────────────────────────
-CREATE TABLE public.roles (
+CREATE TABLE IF NOT EXISTS public.roles (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   role       public.user_role NOT NULL,
@@ -125,7 +91,7 @@ CREATE TABLE public.roles (
 -- ──────────────────────────────────────────
 -- projects
 -- ──────────────────────────────────────────
-CREATE TABLE public.projects (
+CREATE TABLE IF NOT EXISTS public.projects (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name             TEXT NOT NULL,
   agency_name      TEXT NOT NULL,
@@ -144,7 +110,7 @@ CREATE TABLE public.projects (
 -- project_members
 -- Links site_supervisors to their specific projects.
 -- ──────────────────────────────────────────
-CREATE TABLE public.project_members (
+CREATE TABLE IF NOT EXISTS public.project_members (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -155,7 +121,7 @@ CREATE TABLE public.project_members (
 -- ──────────────────────────────────────────
 -- workers  (Employee / Worker master)
 -- ──────────────────────────────────────────
-CREATE TABLE public.workers (
+CREATE TABLE IF NOT EXISTS public.workers (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name            TEXT NOT NULL,
   trade           TEXT,           -- Mason / Carpenter / Helper / Supervisor
@@ -168,7 +134,7 @@ CREATE TABLE public.workers (
 -- ──────────────────────────────────────────
 -- worker_project_assignments  (Many-to-many)
 -- ──────────────────────────────────────────
-CREATE TABLE public.worker_project_assignments (
+CREATE TABLE IF NOT EXISTS public.worker_project_assignments (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   worker_id  UUID NOT NULL REFERENCES public.workers(id)  ON DELETE CASCADE,
   project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
@@ -179,7 +145,7 @@ CREATE TABLE public.worker_project_assignments (
 -- ──────────────────────────────────────────
 -- vendors
 -- ──────────────────────────────────────────
-CREATE TABLE public.vendors (
+CREATE TABLE IF NOT EXISTS public.vendors (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id     UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   name           TEXT NOT NULL,
@@ -193,7 +159,7 @@ CREATE TABLE public.vendors (
 -- vendor_purchases
 -- INSERT → triggers a ledger entry automatically.
 -- ──────────────────────────────────────────
-CREATE TABLE public.vendor_purchases (
+CREATE TABLE IF NOT EXISTS public.vendor_purchases (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   vendor_id  UUID NOT NULL REFERENCES public.vendors(id)  ON DELETE RESTRICT,
   project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
@@ -212,7 +178,7 @@ CREATE TABLE public.vendor_purchases (
 -- vendor_payments
 -- INSERT → triggers a ledger entry automatically.
 -- ──────────────────────────────────────────
-CREATE TABLE public.vendor_payments (
+CREATE TABLE IF NOT EXISTS public.vendor_payments (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   vendor_id  UUID NOT NULL REFERENCES public.vendors(id)  ON DELETE RESTRICT,
   project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
@@ -229,7 +195,7 @@ CREATE TABLE public.vendor_payments (
 -- attendance
 -- Day-by-day per worker per project.
 -- ──────────────────────────────────────────
-CREATE TABLE public.attendance (
+CREATE TABLE IF NOT EXISTS public.attendance (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   worker_id  UUID NOT NULL REFERENCES public.workers(id)  ON DELETE RESTRICT,
@@ -244,7 +210,7 @@ CREATE TABLE public.attendance (
 -- ──────────────────────────────────────────
 -- bills  (Receivable bills)
 -- ──────────────────────────────────────────
-CREATE TABLE public.bills (
+CREATE TABLE IF NOT EXISTS public.bills (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id   UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   bill_number  TEXT NOT NULL,
@@ -264,7 +230,7 @@ CREATE TABLE public.bills (
 -- receivable_payments
 -- Payments received against bills → ledger entry.
 -- ──────────────────────────────────────────
-CREATE TABLE public.receivable_payments (
+CREATE TABLE IF NOT EXISTS public.receivable_payments (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   bill_id         UUID NOT NULL REFERENCES public.bills(id)    ON DELETE RESTRICT,
   project_id      UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
@@ -280,7 +246,7 @@ CREATE TABLE public.receivable_payments (
 -- ──────────────────────────────────────────
 -- partners
 -- ──────────────────────────────────────────
-CREATE TABLE public.partners (
+CREATE TABLE IF NOT EXISTS public.partners (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name            TEXT NOT NULL,
   opening_balance NUMERIC(15,2) NOT NULL DEFAULT 0,
@@ -294,7 +260,7 @@ CREATE TABLE public.partners (
 -- partner_transactions
 -- project_id is nullable (NULL = firm-level, not tied to one site).
 -- ──────────────────────────────────────────
-CREATE TABLE public.partner_transactions (
+CREATE TABLE IF NOT EXISTS public.partner_transactions (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   partner_id       UUID NOT NULL REFERENCES public.partners(id) ON DELETE RESTRICT,
   project_id       UUID REFERENCES public.projects(id) ON DELETE CASCADE,  -- nullable
@@ -312,7 +278,7 @@ CREATE TABLE public.partner_transactions (
 -- ──────────────────────────────────────────
 -- expenses  (Misc)
 -- ──────────────────────────────────────────
-CREATE TABLE public.expenses (
+CREATE TABLE IF NOT EXISTS public.expenses (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id  UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   category    public.expense_category NOT NULL DEFAULT 'other',
@@ -330,7 +296,7 @@ CREATE TABLE public.expenses (
 -- ledger  (Central source of truth)
 -- Written to exclusively via triggers from financial tables.
 -- ──────────────────────────────────────────
-CREATE TABLE public.ledger (
+CREATE TABLE IF NOT EXISTS public.ledger (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id  UUID REFERENCES public.projects(id) ON DELETE SET NULL,
   entry_type  public.ledger_entry_type NOT NULL,
@@ -348,7 +314,7 @@ CREATE TABLE public.ledger (
 -- ledger_periods
 -- Month-close tracking. Once closed_at IS NOT NULL, non-Owner writes blocked.
 -- ──────────────────────────────────────────
-CREATE TABLE public.ledger_periods (
+CREATE TABLE IF NOT EXISTS public.ledger_periods (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id   UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   period_year  INT NOT NULL,
