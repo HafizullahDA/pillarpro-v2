@@ -45,6 +45,23 @@ export function VendorActions({ projects }: { projects: Project[] }) {
   const saveVendor = async () => {
     if (!vForm.project_id || !vForm.name.trim()) { setError('Project and vendor name are required.'); return }
     setSaving(true); setError('')
+
+    // Duplicate check under the same project
+    const { data: existing } = await supabase
+      .from('vendors')
+      .select('name')
+      .eq('project_id', vForm.project_id)
+
+    const isDuplicate = (existing ?? []).some(
+      v => v.name.trim().toLowerCase() === vForm.name.trim().toLowerCase()
+    )
+
+    if (isDuplicate) {
+      setSaving(false)
+      setError(`A vendor named "${vForm.name.trim()}" already exists for this project.`)
+      return
+    }
+
     const { error: err } = await supabase.from('vendors').insert({
       project_id: vForm.project_id,
       name: vForm.name.trim(),
