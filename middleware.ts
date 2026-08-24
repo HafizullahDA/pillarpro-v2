@@ -55,13 +55,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Authenticated: check profile status ─────────────────
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('status')
-    .eq('id', user.id)
-    .single()
+  // Using RPC (SECURITY DEFINER) to bypass RLS and always read the real status.
+  const { data: userStatus } = await supabase.rpc('get_user_status')
 
-  const isPending = !profile || profile.status === 'pending'
+  const isPending = !userStatus || userStatus === 'pending'
+
 
   if (isPending) {
     // Pending users may only be on /pending

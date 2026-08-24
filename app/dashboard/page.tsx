@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import EditNameWidget from './EditNameWidget'
+
 
 /**
  * Dashboard — Phase 2 placeholder.
@@ -14,13 +16,11 @@ export default async function DashboardPage() {
 
   if (!user) redirect('/sign-in')
 
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('status, display_name')
-    .eq('id', user.id)
-    .single()
+  // Use SECURITY DEFINER RPC to bypass RLS for status check
+  const { data: userStatus } = await supabase.rpc('get_user_status')
+  if (!userStatus || userStatus !== 'active') redirect('/pending')
 
-  if (!profile || profile.status !== 'active') redirect('/pending')
+  const displayName = (user.user_metadata?.display_name as string | undefined) ?? user.email ?? ''
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -33,9 +33,10 @@ export default async function DashboardPage() {
 
       <div className="px-4 py-8 max-w-lg mx-auto text-center">
         <h1 className="text-2xl font-bold text-gray-900">
-          Welcome, {profile.display_name ?? user.email}!
+          Welcome, {displayName}!
         </h1>
-        <p className="mt-2 text-gray-500">
+        <EditNameWidget currentName={displayName} />
+        <p className="mt-4 text-gray-500">
           Dashboard — Phase 2 coming next.
         </p>
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 text-left">
