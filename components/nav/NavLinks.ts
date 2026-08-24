@@ -1,0 +1,12 @@
+// Nav items shared between Sidebar, IconRail, BottomNav
+export const NAV_ITEMS = [
+  { href: '/dashboard',   label: 'Dashboard',   icon: 'dashboard' },
+  { href: '/projects',    label: 'Projects',    icon: 'projects'  },
+  { href: '/vendors',     label: 'Vendors',     icon: 'vendors'   },
+  { href: '/attendance',  label: 'Attendance',  icon: 'attendance'},
+  { href: '/receivables', label: 'Receivables', icon: 'receivables'},
+  { href: '/partners',    label: 'Partners',    icon: 'partners'  },
+  { href: '/expenses',    label: 'Expenses',    icon: 'expenses'  },
+] as const
+
+export type NavItem = typeof NAV_ITEMS[number]
