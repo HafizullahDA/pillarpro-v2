@@ -23,12 +23,18 @@ export default async function AdminUsersPage() {
   }, { onConflict: 'id' })
 
   // Fetch all user profiles with auth details & roles
-  const { data: rawProfiles } = await supabase
+  const { data: rawProfiles, error: profilesError } = await supabase
     .from('user_profiles')
     .select('id, display_name, status, created_at')
     .order('created_at', { ascending: false })
 
-  const { data: rawRoles } = await supabase.from('roles').select('*')
+  if (profilesError) console.error('PROFILES FETCH ERROR:', profilesError)
+  console.log('PROFILES FETCHED COUNT:', rawProfiles?.length)
+
+  const { data: rawRoles, error: rolesError } = await supabase.from('roles').select('*')
+  if (rolesError) console.error('ROLES FETCH ERROR:', rolesError)
+  console.log('ROLES FETCHED COUNT:', rawRoles?.length)
+
   const { data: projects } = await supabase.from('projects').select('id, name')
 
   // Ensure current logged in user is always in profiles array
