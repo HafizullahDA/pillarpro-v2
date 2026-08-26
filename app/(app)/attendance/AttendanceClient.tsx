@@ -73,6 +73,20 @@ export function AttendanceClient({ projects }: { projects: Project[] }) {
       .map(w => ({ project_id: projectId, worker_id: w.id, date: dateStr, status: attendance[w.id] }))
 
     if (rows.length) {
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        try {
+          const { saveToOfflineQueue } = await import('@/lib/offline/db')
+          await saveToOfflineQueue('attendance', rows)
+          setSaving(false)
+          alert('Offline: Attendance saved locally. Will auto-sync when network returns.')
+          return
+        } catch {
+          setSaving(false)
+          alert('Failed to save offline attendance locally.')
+          return
+        }
+      }
+
       await supabase.from('attendance')
         .upsert(rows, { onConflict: 'project_id,worker_id,date' })
     }

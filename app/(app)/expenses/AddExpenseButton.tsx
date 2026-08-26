@@ -77,7 +77,8 @@ export function AddExpenseButton({ projects }: { projects: Project[] }) {
   const save = async () => {
     if (!form.project_id || !form.amount || !form.date) { setError('Project, amount and date are required.'); return }
     setSaving(true); setError('')
-    const { error: err } = await supabase.from('expenses').insert({
+
+    const payload = {
       project_id: form.project_id,
       category: form.category,
       amount: parseFloat(form.amount),
@@ -85,7 +86,25 @@ export function AddExpenseButton({ projects }: { projects: Project[] }) {
       description: form.description.trim() || null,
       mode: form.payment_mode.toLowerCase().replace('/', '_').replace(' ', '_') as 'cash' | 'bank_transfer' | 'cheque' | 'upi' | 'other',
       reference: form.reference.trim() || null,
-    })
+    }
+
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      try {
+        const { saveToOfflineQueue } = await import('@/lib/offline/db')
+        await saveToOfflineQueue('expense', payload)
+        setSaving(false)
+        setOpen(false)
+        setForm({ project_id: '', category: 'other', amount: '', date: '', description: '', payment_mode: 'Cash', reference: '' })
+        alert('Offline: Expense saved locally. Will auto-sync when network returns.')
+        return
+      } catch (err: any) {
+        setSaving(false)
+        setError('Failed to save offline entry locally.')
+        return
+      }
+    }
+
+    const { error: err } = await supabase.from('expenses').insert(payload)
     setSaving(false)
     if (err) { setError(err.message); return }
     setOpen(false)
