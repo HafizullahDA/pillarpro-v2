@@ -7,7 +7,8 @@ export const NAV_ITEMS = [
   { href: '/receivables', label: 'Receivables', icon: 'receivables'},
   { href: '/partners',    label: 'Partners',    icon: 'partners'  },
   { href: '/expenses',    label: 'Expenses',    icon: 'expenses'  },
-  { href: '/admin/users', label: 'Users',       icon: 'admin'     },
+  { href: '/admin/users',   label: 'Users',       icon: 'admin'     },
+  { href: '/admin/periods', label: 'Month Close', icon: 'admin'     },
 ] as const
 
 export type NavItem = typeof NAV_ITEMS[number]

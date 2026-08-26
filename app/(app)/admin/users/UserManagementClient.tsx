@@ -25,27 +25,33 @@ type Project = {
   name: string
 }
 
+type ProjectMember = {
+  project_id: string
+  user_id: string
+}
+
 export function UserManagementClient({
   profiles,
   roles,
   projects,
+  projectMembers = [],
 }: {
   profiles: Profile[]
   roles: Role[]
   projects: Project[]
+  projectMembers?: ProjectMember[]
 }) {
   const router = useRouter()
   const supabase = createClient()
   const [updatingId, setUpdatingId] = useState<string | null>(null)
 
   const rolesMap = new Map(roles.map(r => [r.user_id, r]))
+  const membersMap = new Map(projectMembers.map(m => [m.user_id, m.project_id]))
 
   const handleApprove = async (userId: string, newRole: 'owner' | 'managing_partner' | 'site_supervisor') => {
     setUpdatingId(userId)
-    // 1. Update user_profiles status to active
     await supabase.from('user_profiles').update({ status: 'active' }).eq('id', userId)
 
-    // 2. Upsert role
     await supabase.from('roles').upsert({
       user_id: userId,
       role: newRole,
@@ -64,6 +70,20 @@ export function UserManagementClient({
     router.refresh()
   }
 
+  const handleAssignProject = async (userId: string, projectId: string) => {
+    setUpdatingId(userId)
+    if (!projectId) {
+      await supabase.from('project_members').delete().eq('user_id', userId)
+    } else {
+      await supabase.from('project_members').upsert({
+        user_id: userId,
+        project_id: projectId,
+      }, { onConflict: 'project_id,user_id' })
+    }
+    setUpdatingId(null)
+    router.refresh()
+  }
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       <div className="overflow-x-auto">
@@ -73,7 +93,8 @@ export function UserManagementClient({
               <th className="text-left px-4 py-3 font-semibold">User</th>
               <th className="text-left px-4 py-3 font-semibold">Joined Date</th>
               <th className="text-left px-4 py-3 font-semibold">Status</th>
-              <th className="text-left px-4 py-3 font-semibold">Assigned Role</th>
+              <th className="text-left px-4 py-3 font-semibold">Role</th>
+              <th className="text-left px-4 py-3 font-semibold">Assigned Site</th>
               <th className="text-right px-4 py-3 font-semibold">Actions</th>
             </tr>
           </thead>
@@ -81,6 +102,7 @@ export function UserManagementClient({
             {profiles.map(p => {
               const roleObj = rolesMap.get(p.id)
               const currentRole = roleObj?.role ?? 'None'
+              const assignedProjectId = membersMap.get(p.id) ?? ''
               const isLoading = updatingId === p.id
 
               return (
@@ -98,6 +120,23 @@ export function UserManagementClient({
                   </td>
                   <td className="px-4 py-3 text-slate-700 capitalize font-medium">
                     {currentRole.replace('_', ' ')}
+                  </td>
+                  <td className="px-4 py-3">
+                    {currentRole === 'site_supervisor' ? (
+                      <select
+                        value={assignedProjectId}
+                        onChange={e => handleAssignProject(p.id, e.target.value)}
+                        className="text-xs rounded-lg border border-slate-300 px-2 py-1 bg-white text-slate-800"
+                        disabled={isLoading}
+                      >
+                        <option value="">All / Unassigned</option>
+                        {projects.map(proj => (
+                          <option key={proj.id} value={proj.id}>{proj.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-xs text-slate-400">All Sites</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     {p.status === 'pending' ? (
