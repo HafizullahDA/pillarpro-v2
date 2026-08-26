@@ -99,7 +99,17 @@ export function UserManagementClient({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {profiles.map(p => {
+            {profiles.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-12 px-4 text-slate-500">
+                  <p className="font-semibold text-slate-700">No account requests at the moment</p>
+                  <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    When new supervisors or partners sign up at <code className="bg-slate-100 px-1 py-0.5 rounded text-blue-600 font-mono">/sign-up</code>, their requests will appear here for one-click approval.
+                  </p>
+                </td>
+              </tr>
+            ) : (
+              profiles.map(p => {
               const roleObj = rolesMap.get(p.id)
               const currentRole = roleObj?.role ?? 'None'
               const assignedProjectId = membersMap.get(p.id) ?? ''
@@ -170,7 +180,7 @@ export function UserManagementClient({
                   </td>
                 </tr>
               )
-            })}
+            }))}
           </tbody>
         </table>
       </div>

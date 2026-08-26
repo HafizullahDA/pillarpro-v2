@@ -15,13 +15,33 @@ export default async function AdminUsersPage() {
   }
 
   // Fetch all user profiles with auth details & roles
-  const { data: profiles } = await supabase
+  const { data: rawProfiles } = await supabase
     .from('user_profiles')
     .select('id, display_name, status, created_at')
     .order('created_at', { ascending: false })
 
-  const { data: roles } = await supabase.from('roles').select('*')
+  const { data: rawRoles } = await supabase.from('roles').select('*')
   const { data: projects } = await supabase.from('projects').select('id, name')
+
+  // Ensure current logged in user is always in profiles array
+  const profilesList = [...(rawProfiles ?? [])]
+  if (!profilesList.some(p => p.id === user.id)) {
+    profilesList.unshift({
+      id: user.id,
+      display_name: (user.user_metadata?.display_name as string | undefined) ?? user.email ?? 'Owner',
+      status: 'active',
+      created_at: user.created_at,
+    })
+  }
+
+  const rolesList = [...(rawRoles ?? [])]
+  if (!rolesList.some(r => r.user_id === user.id)) {
+    rolesList.unshift({
+      user_id: user.id,
+      role: 'owner',
+      project_id: null,
+    })
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
@@ -33,8 +53,8 @@ export default async function AdminUsersPage() {
       </div>
 
       <UserManagementClient
-        profiles={profiles ?? []}
-        roles={roles ?? []}
+        profiles={profilesList}
+        roles={rolesList}
         projects={projects ?? []}
       />
     </div>
