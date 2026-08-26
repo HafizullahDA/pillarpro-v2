@@ -14,14 +14,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: userStatus } = await supabase.rpc('get_user_status')
   if (!userStatus || userStatus !== 'active') redirect('/pending')
 
-  const { data: roleRow } = await supabase
-    .from('roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .maybeSingle()
-
+  const { data: roleData } = await supabase.rpc('get_user_role')
   const displayName = (user.user_metadata?.display_name as string | undefined) ?? user.email ?? 'User'
-  const userRole = roleRow?.role ?? 'pending'
+  const userRole = (roleData as string | null) ?? 'pending'
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-100">

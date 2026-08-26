@@ -7,14 +7,10 @@ export default async function AdminUsersPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
 
-  // Check if owner
-  const { data: roleRow } = await supabase
-    .from('roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  // Check if owner using SECURITY DEFINER RPC
+  const { data: userRole } = await supabase.rpc('get_user_role')
 
-  if (roleRow?.role !== 'owner') {
+  if (userRole !== 'owner') {
     redirect('/dashboard')
   }
 
