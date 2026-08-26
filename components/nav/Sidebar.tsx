@@ -8,7 +8,15 @@ import { Icons } from './NavIcons'
 import { UserProfileModal } from './UserProfileModal'
 import { cn } from '@/lib/utils'
 
-export function Sidebar({ userName, userRole }: { userName: string; userRole: string }) {
+export function Sidebar({
+  userName,
+  userRole,
+  userEmail,
+}: {
+  userName: string
+  userRole: string
+  userEmail?: string | null
+}) {
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
 
@@ -72,6 +80,7 @@ export function Sidebar({ userName, userRole }: { userName: string; userRole: st
         onClose={() => setProfileOpen(false)}
         userName={userName}
         userRole={userRole}
+        userEmail={userEmail}
       />
     </>
   )

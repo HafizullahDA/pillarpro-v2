@@ -22,8 +22,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex flex-col min-h-screen bg-slate-100">
       <OfflineStatusBanner />
       <div className="flex-1 flex min-w-0">
-        <Sidebar userName={displayName} userRole={userRole} />
-        <IconRail userName={displayName} />
+        <Sidebar userName={displayName} userRole={userRole} userEmail={user.email} />
+        <IconRail userName={displayName} userRole={userRole} userEmail={user.email} />
         <div className="flex-1 flex flex-col min-w-0">
           <main className="flex-1 pb-20 md:pb-0">
             {children}

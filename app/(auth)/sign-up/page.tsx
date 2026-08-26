@@ -73,6 +73,7 @@ export default function SignUpPage() {
     if (authData?.user) {
       await supabase.from('user_profiles').upsert({
         id: authData.user.id,
+        email: email.trim().toLowerCase(),
         display_name: displayName.trim() || email.split('@')[0],
         status: 'pending',
       }, { onConflict: 'id' })

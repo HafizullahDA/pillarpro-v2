@@ -9,6 +9,7 @@ import { formatDate } from '@/lib/format'
 
 type Profile = {
   id: string
+  email?: string | null
   display_name: string | null
   status: string
   created_at: string
@@ -118,8 +119,8 @@ export function UserManagementClient({
               return (
                 <tr key={p.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-slate-900">{p.display_name ?? 'User'}</p>
-                    <p className="text-xs text-slate-400 font-mono">{p.id.slice(0, 8)}...</p>
+                    <p className="font-semibold text-slate-900">{p.display_name ?? 'User'}</p>
+                    <p className="text-xs text-slate-500">{p.email || `${p.id.slice(0, 8)}...`}</p>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{formatDate(p.created_at)}</td>
                   <td className="px-4 py-3">

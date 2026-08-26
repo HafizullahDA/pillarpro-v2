@@ -8,7 +8,15 @@ import { Icons } from './NavIcons'
 import { UserProfileModal } from './UserProfileModal'
 import { cn } from '@/lib/utils'
 
-export function IconRail({ userName, userRole = 'Owner' }: { userName: string; userRole?: string }) {
+export function IconRail({
+  userName,
+  userRole = 'Owner',
+  userEmail,
+}: {
+  userName: string
+  userRole?: string
+  userEmail?: string | null
+}) {
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
 
@@ -56,6 +64,7 @@ export function IconRail({ userName, userRole = 'Owner' }: { userName: string; u
         onClose={() => setProfileOpen(false)}
         userName={userName}
         userRole={userRole}
+        userEmail={userEmail}
       />
     </>
   )

@@ -15,39 +15,31 @@ export default async function AdminUsersPage() {
     redirect('/dashboard')
   }
 
-  // Ensure current logged-in user is explicitly recorded in roles as owner & active profile
-  await supabase.from('roles').upsert({ user_id: user.id, role: 'owner' }, { onConflict: 'user_id' })
-  await supabase.from('user_profiles').upsert({
-    id: user.id,
-    display_name: (user.user_metadata?.display_name as string | undefined) ?? user.email ?? 'Owner',
-    status: 'active',
-  }, { onConflict: 'id' })
-
   // Fetch all user profiles with auth details & roles
   const { data: rawProfiles, error: profilesError } = await supabase
     .from('user_profiles')
-    .select('id, display_name, status, created_at')
+    .select('id, email, display_name, status, created_at')
     .order('created_at', { ascending: false })
 
   if (profilesError) {
     console.error('PROFILES FETCH ERROR:', JSON.stringify(profilesError))
   }
-  console.log('PROFILES FETCHED COUNT:', rawProfiles?.length ?? 'null')
 
   const { data: rawRoles, error: rolesError } = await supabase.from('roles').select('*')
 
   if (rolesError) {
     console.error('ROLES FETCH ERROR:', JSON.stringify(rolesError))
   }
-  console.log('ROLES FETCHED COUNT:', rawRoles?.length ?? 'null')
 
   const { data: projects } = await supabase.from('projects').select('id, name')
+  const { data: projectMembers } = await supabase.from('project_members').select('project_id, user_id')
 
-  // Ensure current logged in user is always in profiles array
+  // Ensure current logged in user is in profiles array if table is empty
   const profilesList = [...(rawProfiles ?? [])]
   if (!profilesList.some(p => p.id === user.id)) {
     profilesList.unshift({
       id: user.id,
+      email: user.email ?? null,
       display_name: (user.user_metadata?.display_name as string | undefined) ?? user.email ?? 'Owner',
       status: 'active',
       created_at: user.created_at,
@@ -76,6 +68,7 @@ export default async function AdminUsersPage() {
         profiles={profilesList}
         roles={rolesList}
         projects={projects ?? []}
+        projectMembers={projectMembers ?? []}
       />
     </div>
   )

@@ -13,11 +13,13 @@ export function UserProfileModal({
   onClose,
   userName,
   userRole,
+  userEmail,
 }: {
   open: boolean
   onClose: () => void
   userName: string
   userRole: string
+  userEmail?: string | null
 }) {
   const router = useRouter()
   const supabase = createClient()
@@ -68,6 +70,7 @@ export function UserProfileModal({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-slate-900 truncate">{name}</p>
+            {userEmail && <p className="text-xs text-slate-500 truncate mb-1">{userEmail}</p>}
             <Badge label={userRole.replace('_', ' ')} variant="info" className="capitalize mt-0.5" />
           </div>
         </div>
