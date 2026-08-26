@@ -56,7 +56,7 @@ export default function SignUpPage() {
 
     setLoading(true)
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -68,6 +68,14 @@ export default function SignUpPage() {
       setError(authError.message)
       setLoading(false)
       return
+    }
+
+    if (authData?.user) {
+      await supabase.from('user_profiles').upsert({
+        id: authData.user.id,
+        display_name: displayName.trim() || email.split('@')[0],
+        status: 'pending',
+      }, { onConflict: 'id' })
     }
 
     router.push('/pending')

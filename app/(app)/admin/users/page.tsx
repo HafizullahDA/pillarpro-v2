@@ -14,6 +14,14 @@ export default async function AdminUsersPage() {
     redirect('/dashboard')
   }
 
+  // Ensure current logged-in user is explicitly recorded in roles as owner & active profile
+  await supabase.from('roles').upsert({ user_id: user.id, role: 'owner' }, { onConflict: 'user_id' })
+  await supabase.from('user_profiles').upsert({
+    id: user.id,
+    display_name: (user.user_metadata?.display_name as string | undefined) ?? user.email ?? 'Owner',
+    status: 'active',
+  }, { onConflict: 'id' })
+
   // Fetch all user profiles with auth details & roles
   const { data: rawProfiles } = await supabase
     .from('user_profiles')
