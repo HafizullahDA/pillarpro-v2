@@ -18,6 +18,7 @@ const MORE_ITEMS = [
   { href: '/vendors',     label: 'Vendors',     icon: 'vendors'     },
   { href: '/receivables', label: 'Receivables', icon: 'receivables' },
   { href: '/partners',    label: 'Partners',    icon: 'partners'    },
+  { href: '/admin/users', label: 'Users',       icon: 'admin'       },
 ]
 
 export function BottomNav() {
