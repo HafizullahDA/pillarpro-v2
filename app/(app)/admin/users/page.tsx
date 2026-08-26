@@ -9,6 +9,7 @@ export default async function AdminUsersPage() {
 
   // Check if owner using SECURITY DEFINER RPC
   const { data: userRole } = await supabase.rpc('get_user_role')
+  console.log('CURRENT USER ROLE:', userRole)
 
   if (userRole !== 'owner') {
     redirect('/dashboard')
@@ -28,12 +29,17 @@ export default async function AdminUsersPage() {
     .select('id, display_name, status, created_at')
     .order('created_at', { ascending: false })
 
-  if (profilesError) console.error('PROFILES FETCH ERROR:', profilesError)
-  console.log('PROFILES FETCHED COUNT:', rawProfiles?.length)
+  if (profilesError) {
+    console.error('PROFILES FETCH ERROR:', JSON.stringify(profilesError))
+  }
+  console.log('PROFILES FETCHED COUNT:', rawProfiles?.length ?? 'null')
 
   const { data: rawRoles, error: rolesError } = await supabase.from('roles').select('*')
-  if (rolesError) console.error('ROLES FETCH ERROR:', rolesError)
-  console.log('ROLES FETCHED COUNT:', rawRoles?.length)
+
+  if (rolesError) {
+    console.error('ROLES FETCH ERROR:', JSON.stringify(rolesError))
+  }
+  console.log('ROLES FETCHED COUNT:', rawRoles?.length ?? 'null')
 
   const { data: projects } = await supabase.from('projects').select('id, name')
 
