@@ -133,7 +133,7 @@ export function AddExpenseButton({ projects }: { projects: Project[] }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          Scan Receipt (AI)
+          Scan Receipt
         </Button>
 
         <Button size="sm" onClick={() => { setOpen(true); setError('') }}>
@@ -151,7 +151,7 @@ export function AddExpenseButton({ projects }: { projects: Project[] }) {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              <p className="text-xs text-blue-700 font-medium">Scanning receipt image with Gemini Vision AI...</p>
+              <p className="text-xs text-blue-700 font-medium">Scanning receipt...</p>
             </div>
           )}
 
