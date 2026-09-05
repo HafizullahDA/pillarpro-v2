@@ -18,6 +18,12 @@ export type RABillOption = {
   retention_amount?: number
   net_payable_amount?: number
   amount_received: number
+  tds_deducted?: number
+  gst_tds_deducted?: number
+  labour_cess_deducted?: number
+  other_deductions?: number
+  total_deductions?: number
+  net_bank_received?: number
   outstanding_balance: number
   projects?: { name: string } | null
 }
@@ -42,6 +48,7 @@ export function RABillActions({
   raBills = [],
   defaultProjectId,
   preselectedBillId,
+  onPaymentSuccess,
 }: RABillActionsProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -67,7 +74,11 @@ export function RABillActions({
   // 2. Record Payment Form
   const [payForm, setPayForm] = useState({
     bill_id: preselectedBillId || '',
-    amount_received: '',
+    gross_amount: '',
+    tds_amount: '',
+    gst_tds_amount: '',
+    labour_cess_amount: '',
+    other_deductions: '',
     date_received: new Date().toISOString().split('T')[0],
     reference: '',
     remarks: '',
@@ -120,13 +131,25 @@ export function RABillActions({
     setSelectedFile(null)
 
     if (type === 'record_payment') {
-      if (billId) {
-        setPayForm(f => ({ ...f, bill_id: billId }))
-      } else if (preselectedBillId) {
-        setPayForm(f => ({ ...f, bill_id: preselectedBillId }))
-      } else if (raBills.length === 1) {
-        setPayForm(f => ({ ...f, bill_id: raBills[0].id }))
+      const bId = billId || preselectedBillId || (raBills.length === 1 ? raBills[0].id : '')
+      const bObj = raBills.find(b => b.id === bId)
+      let initialGross = ''
+      if (bObj) {
+        const netPayable = Number(bObj.net_payable_amount) || (Number(bObj.work_certified_amount) - (Number(bObj.retention_amount) || 0))
+        const remaining = Math.max(0, netPayable - (Number(bObj.amount_received) || 0))
+        initialGross = remaining > 0 ? String(remaining) : ''
       }
+      setPayForm({
+        bill_id: bId,
+        gross_amount: initialGross,
+        tds_amount: '',
+        gst_tds_amount: '',
+        labour_cess_amount: '',
+        other_deductions: '',
+        date_received: new Date().toISOString().split('T')[0],
+        reference: '',
+        remarks: '',
+      })
     }
   }
 
@@ -197,48 +220,55 @@ export function RABillActions({
     }
   }
 
-  // 2. RECORD RA BILL PAYMENT
+  // 2. RECORD RA BILL PAYMENT WITH STATUTORY DEDUCTIONS
   const handleSavePayment = async () => {
     if (!payForm.bill_id) { setError('Please select an RA Bill.'); return }
-    const paymentAmt = parseFloat(payForm.amount_received)
-    if (isNaN(paymentAmt) || paymentAmt <= 0) {
-      setError('Please enter a valid payment amount greater than 0.'); return
+    const grossAmt = parseFloat(payForm.gross_amount)
+    if (isNaN(grossAmt) || grossAmt <= 0) {
+      setError('Please enter a valid gross amount released greater than 0.'); return
     }
     if (!payForm.date_received) { setError('Date received is required.'); return }
+
+    const tdsAmt = parseFloat(payForm.tds_amount) || 0
+    const gstTdsAmt = parseFloat(payForm.gst_tds_amount) || 0
+    const labourCessAmt = parseFloat(payForm.labour_cess_amount) || 0
+    const otherAmt = parseFloat(payForm.other_deductions) || 0
+    const totalDeds = tdsAmt + gstTdsAmt + labourCessAmt + otherAmt
+
+    if (totalDeds > grossAmt) {
+      setError('Total deductions cannot exceed the gross amount released.'); return
+    }
 
     setSaving(true)
     setError('')
 
     try {
-      // Fetch current bill to increment amount_received
-      const { data: currentBill, error: fetchErr } = await supabase
-        .from('ra_bills')
-        .select('amount_received, work_certified_amount')
-        .eq('id', payForm.bill_id)
-        .single()
-
-      if (fetchErr || !currentBill) {
+      const selectedBill = raBills.find(b => b.id === payForm.bill_id)
+      if (!selectedBill) {
         setError('Could not locate the selected RA bill.')
         setSaving(false)
         return
       }
 
-      const newTotalReceived = (Number(currentBill.amount_received) || 0) + paymentAmt
-
-      // Update ra_bills: trigger trg_sync_ra_bill_status automatically syncs status & outstanding_balance
-      const { error: updateErr } = await supabase
-        .from('ra_bills')
-        .update({
-          amount_received: newTotalReceived,
-          date_received: payForm.date_received,
-          remarks: payForm.remarks.trim()
-            ? `Payment: ${payForm.remarks.trim()}`
-            : undefined,
+      // Insert into ra_bill_payments ledger table
+      // Trigger trg_sync_ra_bill_from_payments automatically rolls up gross, deductions, and net bank cash into ra_bills
+      const { error: insertErr } = await supabase
+        .from('ra_bill_payments')
+        .insert({
+          bill_id: payForm.bill_id,
+          project_id: selectedBill.project_id,
+          payment_date: payForm.date_received,
+          gross_amount: grossAmt,
+          tds_amount: tdsAmt,
+          gst_tds_amount: gstTdsAmt,
+          labour_cess_amount: labourCessAmt,
+          other_deductions: otherAmt,
+          voucher_reference: payForm.reference.trim() || null,
+          remarks: payForm.remarks.trim() || null,
         })
-        .eq('id', payForm.bill_id)
 
-      if (updateErr) {
-        setError(updateErr.message)
+      if (insertErr) {
+        setError(insertErr.message)
         setSaving(false)
         return
       }
@@ -247,11 +277,16 @@ export function RABillActions({
       setWhich(null)
       setPayForm({
         bill_id: '',
-        amount_received: '',
+        gross_amount: '',
+        tds_amount: '',
+        gst_tds_amount: '',
+        labour_cess_amount: '',
+        other_deductions: '',
         date_received: new Date().toISOString().split('T')[0],
         reference: '',
         remarks: '',
       })
+      if (onPaymentSuccess) onPaymentSuccess()
       router.refresh()
     } catch (err: any) {
       setSaving(false)
@@ -494,7 +529,25 @@ export function RABillActions({
           <FieldWrapper label="Select RA Bill" required>
             <Select
               value={payForm.bill_id}
-              onChange={e => setPayForm(f => ({ ...f, bill_id: e.target.value }))}
+              onChange={e => {
+                const selectedId = e.target.value
+                const targetBill = raBills.find(b => b.id === selectedId)
+                let initialGross = ''
+                if (targetBill) {
+                  const netPayable = Number(targetBill.net_payable_amount) || (Number(targetBill.work_certified_amount) - (Number(targetBill.retention_amount) || 0))
+                  const remaining = Math.max(0, netPayable - (Number(targetBill.amount_received) || 0))
+                  initialGross = remaining > 0 ? String(remaining) : ''
+                }
+                setPayForm(f => ({
+                  ...f,
+                  bill_id: selectedId,
+                  gross_amount: initialGross,
+                  tds_amount: '',
+                  gst_tds_amount: '',
+                  labour_cess_amount: '',
+                  other_deductions: '',
+                }))
+              }}
             >
               <option value="">Select an RA Bill...</option>
               {raBills.map(b => {
@@ -528,8 +581,8 @@ export function RABillActions({
                   <span>Net Passed for Payment:</span>
                   <span className="font-bold text-slate-900">{formatINR(netPayable)}</span>
                 </div>
-                <div className="flex justify-between text-emerald-700">
-                  <span>Amount Received:</span>
+                <div className="flex justify-between text-teal-700">
+                  <span>Gross Released to Date:</span>
                   <span className="font-semibold">{formatINR(activeBill.amount_received)}</span>
                 </div>
                 <div className="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-1">
@@ -540,35 +593,127 @@ export function RABillActions({
             )
           })()}
 
-          <div className="grid grid-cols-2 gap-3">
-            <FieldWrapper label="Amount Received (₹)" required>
-              <CurrencyInput
-                placeholder="0"
-                value={payForm.amount_received}
-                onChange={e => setPayForm(f => ({ ...f, amount_received: e.target.value }))}
-              />
-            </FieldWrapper>
+          {/* GROSS AMOUNT RELEASED */}
+          <FieldWrapper
+            label="Gross Amount Released by Treasury (₹)"
+            required
+            hint="Reduces Outstanding balance against the government"
+          >
+            <CurrencyInput
+              placeholder="0"
+              value={payForm.gross_amount}
+              onChange={e => setPayForm(f => ({ ...f, gross_amount: e.target.value }))}
+            />
+          </FieldWrapper>
 
-            <FieldWrapper label="Date Received" required>
+          {/* STATUTORY DEDUCTIONS BREAKDOWN */}
+          <div className="rounded-xl bg-blue-50/50 border border-blue-200/80 p-3.5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-bold text-blue-950 uppercase tracking-wide">
+                  Statutory Deductions (Withheld at Source)
+                </h4>
+                <p className="text-[11px] text-blue-700">TDS, GST-TDS & Cess withheld before bank deposit</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const g = parseFloat(payForm.gross_amount) || 0
+                  if (g > 0) {
+                    setPayForm(f => ({
+                      ...f,
+                      tds_amount: String(Math.round(g * 0.02)),
+                      gst_tds_amount: String(Math.round(g * 0.02)),
+                      labour_cess_amount: String(Math.round(g * 0.01)),
+                      other_deductions: '0',
+                    }))
+                  }
+                }}
+                className="text-[11px] font-semibold text-blue-700 bg-white border border-blue-300 hover:bg-blue-100/60 px-2.5 py-1 rounded-md shadow-2xs transition-colors"
+              >
+                Apply Standard (5%)
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <FieldWrapper label="TDS (IT u/s 194C) (₹)" hint="Typically 2% or 1%">
+                <CurrencyInput
+                  placeholder="0"
+                  value={payForm.tds_amount}
+                  onChange={e => setPayForm(f => ({ ...f, tds_amount: e.target.value }))}
+                />
+              </FieldWrapper>
+
+              <FieldWrapper label="GST-TDS (Sec 51) (₹)" hint="2% (1% CGST + 1% SGST)">
+                <CurrencyInput
+                  placeholder="0"
+                  value={payForm.gst_tds_amount}
+                  onChange={e => setPayForm(f => ({ ...f, gst_tds_amount: e.target.value }))}
+                />
+              </FieldWrapper>
+
+              <FieldWrapper label="Labour Cess (1%) (₹)" hint="BOCW Welfare Cess">
+                <CurrencyInput
+                  placeholder="0"
+                  value={payForm.labour_cess_amount}
+                  onChange={e => setPayForm(f => ({ ...f, labour_cess_amount: e.target.value }))}
+                />
+              </FieldWrapper>
+
+              <FieldWrapper label="Other Deductions (₹)" hint="Royalty, water, electricity">
+                <CurrencyInput
+                  placeholder="0"
+                  value={payForm.other_deductions}
+                  onChange={e => setPayForm(f => ({ ...f, other_deductions: e.target.value }))}
+                />
+              </FieldWrapper>
+            </div>
+
+            {/* LIVE NET BANK SUMMARY */}
+            {(() => {
+              const grossNum = parseFloat(payForm.gross_amount) || 0
+              const tds = parseFloat(payForm.tds_amount) || 0
+              const gst = parseFloat(payForm.gst_tds_amount) || 0
+              const cess = parseFloat(payForm.labour_cess_amount) || 0
+              const oth = parseFloat(payForm.other_deductions) || 0
+              const totalDeds = tds + gst + cess + oth
+              const netBank = Math.max(0, grossNum - totalDeds)
+
+              return (
+                <div className="pt-2.5 border-t border-blue-200/80 flex items-center justify-between text-xs">
+                  <div className="text-slate-600">
+                    Total Deductions: <span className="font-semibold text-rose-700">-{formatINR(totalDeds)}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-600 mr-1.5">Net Bank Credit:</span>
+                    <span className="text-base font-black text-emerald-700 tabular-nums">{formatINR(netBank)}</span>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FieldWrapper label="Date Received / Cleared" required>
               <Input
                 type="date"
                 value={payForm.date_received}
                 onChange={e => setPayForm(f => ({ ...f, date_received: e.target.value }))}
               />
             </FieldWrapper>
-          </div>
 
-          <FieldWrapper label="Treasury Voucher / UTR / Cheque Ref">
-            <Input
-              placeholder="e.g. Treasury Voucher #8910 / SBI NEFT"
-              value={payForm.reference}
-              onChange={e => setPayForm(f => ({ ...f, reference: e.target.value }))}
-            />
-          </FieldWrapper>
+            <FieldWrapper label="Treasury Voucher / UTR / Cheque Ref">
+              <Input
+                placeholder="e.g. Voucher #8910 / SBI NEFT"
+                value={payForm.reference}
+                onChange={e => setPayForm(f => ({ ...f, reference: e.target.value }))}
+              />
+            </FieldWrapper>
+          </div>
 
           <FieldWrapper label="Notes">
             <Textarea
-              placeholder="Statutory deductions (TDS, GST TDS, Cess) or remarks..."
+              placeholder="Voucher details, deductions explanation or remarks..."
               value={payForm.remarks}
               onChange={e => setPayForm(f => ({ ...f, remarks: e.target.value }))}
             />

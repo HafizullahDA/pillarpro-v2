@@ -23,6 +23,12 @@ export type RABillRow = {
   retention_amount: number
   net_payable_amount: number
   amount_received: number
+  tds_deducted?: number
+  gst_tds_deducted?: number
+  labour_cess_deducted?: number
+  other_deductions?: number
+  total_deductions?: number
+  net_bank_received?: number
   date_received: string | null
   outstanding_balance: number
   status: 'submitted' | 'partially_paid' | 'fully_paid'
@@ -67,7 +73,7 @@ export function RABillsClient({
   // Filters
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
-  const [search, setSearch] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [showGuaranteesSection, setShowGuaranteesSection] = useState(false)
 
   // Payment Drawer Shortcut State
@@ -83,17 +89,17 @@ export function RABillsClient({
       if (selectedStatus !== 'all' && b.status !== selectedStatus) return false
 
       // Search query filter
-      if (search.trim()) {
-        const q = search.toLowerCase()
-        const billNoMatch = b.bill_number.toLowerCase().includes(q)
-        const projMatch = (b.projects?.name || '').toLowerCase().includes(q)
-        const remarksMatch = (b.remarks || '').toLowerCase().includes(q)
-        return billNoMatch || projMatch || remarksMatch
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const matchNum = b.bill_number.toLowerCase().includes(q)
+        const matchProj = b.projects?.name?.toLowerCase().includes(q)
+        const matchRemarks = b.remarks?.toLowerCase().includes(q)
+        if (!matchNum && !matchProj && !matchRemarks) return false
       }
 
       return true
     })
-  }, [initialBills, selectedProjectId, selectedStatus, search])
+  }, [initialBills, selectedProjectId, selectedStatus, searchQuery])
 
   // 2. FILTER SECURITY DEPOSITS (By Project)
   const filteredDeposits = useMemo(() => {
@@ -118,7 +124,14 @@ export function RABillsClient({
     const totalCertified = kpiScopeBills.reduce((s, b) => s + (Number(b.work_certified_amount) || 0), 0)
     const totalRetention = kpiScopeBills.reduce((s, b) => s + (Number(b.retention_amount) || 0), 0)
     const totalNetPayable = kpiScopeBills.reduce((s, b) => s + (Number(b.net_payable_amount) || 0), 0)
-    const totalReceived = kpiScopeBills.reduce((s, b) => s + (Number(b.amount_received) || 0), 0)
+    const totalGrossReceived = kpiScopeBills.reduce((s, b) => s + (Number(b.amount_received) || 0), 0)
+    const totalNetBankCash = kpiScopeBills.reduce((s, b) => {
+      const netBank = b.net_bank_received != null && !isNaN(Number(b.net_bank_received))
+        ? Number(b.net_bank_received)
+        : Number(b.amount_received) || 0
+      return s + netBank
+    }, 0)
+    const totalTaxDeductions = kpiScopeBills.reduce((s, b) => s + (Number(b.total_deductions) || 0), 0)
     const totalOutstanding = kpiScopeBills.reduce((s, b) => {
       const netPassed = Number(b.net_payable_amount) != null && !isNaN(Number(b.net_payable_amount))
         ? Number(b.net_payable_amount)
@@ -135,7 +148,9 @@ export function RABillsClient({
       totalCertified,
       totalRetention,
       totalNetPayable,
-      totalReceived,
+      totalGrossReceived,
+      totalNetBankCash,
+      totalTaxDeductions,
       totalOutstanding,
       activeDepositsAmount,
     }
@@ -170,6 +185,12 @@ export function RABillsClient({
         retention_amount: Number(b.retention_amount) || 0,
         net_payable_amount: netPassed,
         amount_received: Number(b.amount_received) || 0,
+        tds_deducted: Number(b.tds_deducted) || 0,
+        gst_tds_deducted: Number(b.gst_tds_deducted) || 0,
+        labour_cess_deducted: Number(b.labour_cess_deducted) || 0,
+        other_deductions: Number(b.other_deductions) || 0,
+        total_deductions: Number(b.total_deductions) || 0,
+        net_bank_received: Number(b.net_bank_received) || Number(b.amount_received) || 0,
         outstanding_balance: out,
         projects: b.projects ? { name: b.projects.name } : null,
       }
@@ -302,8 +323,8 @@ export function RABillsClient({
           </svg>
           <input
             type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search bill #, project, remarks..."
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
@@ -323,8 +344,8 @@ export function RABillsClient({
           <span>{kpiScopeBills.length} Total Bills</span>
         </div>
 
-        {/* Top Tier: Primary Focus Cards (Outstanding & Retention) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Top Tier: Primary Focus Cards (Outstanding, Net Bank Cash, & Retention) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* 1. OUTSTANDING RA BALANCE (Hero Focus #1) */}
           <div className="bg-gradient-to-br from-white to-rose-50/40 rounded-2xl border-2 border-rose-300/80 p-5 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full -mr-6 -mt-6 pointer-events-none" />
@@ -337,7 +358,7 @@ export function RABillsClient({
                 Primary Receivable
               </span>
             </div>
-            <p className="text-3xl sm:text-4xl font-black text-slate-900 tabular-nums tracking-tight">
+            <p className="text-3xl font-black text-slate-900 tabular-nums tracking-tight">
               {formatINR(metrics.totalOutstanding)}
             </p>
             <p className="text-xs text-rose-600/90 font-medium mt-1.5">
@@ -345,7 +366,27 @@ export function RABillsClient({
             </p>
           </div>
 
-          {/* 2. RETENTION MONEY WITHHELD (Hero Focus #2) */}
+          {/* 2. NET BANK CASH RECEIVED (Hero Focus #2 - Real Liquidity) */}
+          <div className="bg-gradient-to-br from-white to-emerald-50/40 rounded-2xl border-2 border-emerald-300/80 p-5 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-6 -mt-6 pointer-events-none" />
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Net Bank Cash in Hand
+              </span>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                Real Liquidity
+              </span>
+            </div>
+            <p className="text-3xl font-black text-slate-900 tabular-nums tracking-tight">
+              {formatINR(metrics.totalNetBankCash)}
+            </p>
+            <p className="text-xs text-emerald-700/90 font-medium mt-1.5">
+              Actual liquid funds credited to bank account after all statutory deductions
+            </p>
+          </div>
+
+          {/* 3. RETENTION MONEY WITHHELD (Hero Focus #3) */}
           <div className="bg-gradient-to-br from-white to-amber-50/40 rounded-2xl border-2 border-amber-300/80 p-5 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -mr-6 -mt-6 pointer-events-none" />
             <div className="flex items-center justify-between mb-2">
@@ -357,7 +398,7 @@ export function RABillsClient({
                 Locked Govt Deposit
               </span>
             </div>
-            <p className="text-3xl sm:text-4xl font-black text-slate-900 tabular-nums tracking-tight">
+            <p className="text-3xl font-black text-slate-900 tabular-nums tracking-tight">
               {formatINR(metrics.totalRetention)}
             </p>
             <p className="text-xs text-amber-700/90 font-medium mt-1.5">
@@ -367,17 +408,23 @@ export function RABillsClient({
         </div>
 
         {/* Bottom Tier: Secondary Context Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-blue-500 p-4">
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Work Certified</p>
             <p className="text-xl font-bold text-slate-900 tabular-nums mt-0.5">{formatINR(metrics.totalCertified)}</p>
             <p className="text-[11px] text-slate-400 mt-1">Approved gross work value</p>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-emerald-500 p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Payments Received</p>
-            <p className="text-xl font-bold text-emerald-700 tabular-nums mt-0.5">{formatINR(metrics.totalReceived)}</p>
-            <p className="text-[11px] text-slate-400 mt-1">Disbursed by treasury to date</p>
+          <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-teal-500 p-4">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Gross Treasury Released</p>
+            <p className="text-xl font-bold text-teal-700 tabular-nums mt-0.5">{formatINR(metrics.totalGrossReceived)}</p>
+            <p className="text-[11px] text-slate-400 mt-1">Gross disbursed by treasury</p>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-purple-500 p-4">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Tax & Cess Deductions</p>
+            <p className="text-xl font-bold text-purple-700 tabular-nums mt-0.5">{formatINR(metrics.totalTaxDeductions)}</p>
+            <p className="text-[11px] text-slate-400 mt-1">TDS, GST-TDS & Cess with tax portal</p>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-indigo-500 p-4">
@@ -504,7 +551,7 @@ export function RABillsClient({
                   <th className="px-4 py-3 text-right">Work Certified</th>
                   <th className="px-4 py-3 text-right hidden sm:table-cell">Retention ({'%'})</th>
                   <th className="px-4 py-3 text-right hidden lg:table-cell">Net Passed</th>
-                  <th className="px-4 py-3 text-right">Received</th>
+                  <th className="px-4 py-3 text-right">Gross Released</th>
                   <th className="px-4 py-3 text-right">Outstanding</th>
                   <th className="px-4 py-3 text-center">Status</th>
                   <th className="px-4 py-3 text-right">Action</th>
@@ -580,13 +627,19 @@ export function RABillsClient({
                         {formatINR(netPassed)}
                       </td>
 
-                      {/* Received */}
-                      <td className="px-4 py-3.5 text-right tabular-nums font-medium text-emerald-700 whitespace-nowrap">
-                        {formatINR(received)}
-                        {b.date_received && (
-                          <div className="text-[10px] text-slate-400 font-normal">
-                            on {formatDate(b.date_received)}
+                      {/* Gross Released & Net Bank */}
+                      <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
+                        <div className="font-semibold text-teal-700">{formatINR(received)}</div>
+                        {Number(b.total_deductions) > 0 ? (
+                          <div className="text-[11px] text-emerald-700 font-medium">
+                            Bank: {formatINR(Number(b.net_bank_received) || (received - Number(b.total_deductions)))}
                           </div>
+                        ) : (
+                          b.date_received && (
+                            <div className="text-[10px] text-slate-400 font-normal">
+                              on {formatDate(b.date_received)}
+                            </div>
+                          )
                         )}
                       </td>
 
