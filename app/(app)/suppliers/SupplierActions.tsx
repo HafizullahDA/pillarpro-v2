@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { FieldWrapper, Input, Select, CurrencyInput, Textarea } from '@/components/ui/FormField'
+import { findBestSupplierMatch } from '@/lib/fuzzyMatch'
 
 type Project = { id: string; name: string }
 type SupplierOption = { id: string; name: string }
@@ -35,9 +36,11 @@ export function SupplierActions({
 }: SupplierActionsProps) {
   const router = useRouter()
   const supabase = createClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [which, setWhich] = useState<'supplier' | 'procurement' | 'payment' | null>(null)
   const [saving, setSaving] = useState(false)
+  const [scanning, setScanning] = useState(false)
   const [error, setError] = useState('')
 
   // Form states
@@ -86,6 +89,60 @@ export function SupplierActions({
     } else if (suppliers.length === 1) {
       setProcForm(f => ({ ...f, supplier_id: suppliers[0].id }))
       setPayForm(f => ({ ...f, supplier_id: suppliers[0].id }))
+    }
+  }
+
+  const handleReceiptScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setScanning(true)
+    setError('')
+
+    try {
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const base64Str = reader.result as string
+
+        const res = await fetch('/api/scan-receipt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64Str }),
+        })
+
+        const json = await res.json()
+        setScanning(false)
+
+        if (!res.ok || json.error) {
+          setError(json.error || 'Failed to scan receipt image.')
+          return
+        }
+
+        const d = json.data
+        if (d) {
+          setProcForm(f => ({
+            ...f,
+            amount: d.amount ? String(d.amount) : f.amount,
+            date: d.date || f.date,
+            description: d.description || d.vendor_name || f.description,
+            reference: d.gst_number || f.reference,
+          }))
+
+          // If no supplier pre-selected, fuzzy match against supplier options
+          if (!defaultSupplierId && d.vendor_name) {
+            const { bestMatch } = findBestSupplierMatch(d.vendor_name, suppliers, 0.55)
+            if (bestMatch) {
+              setProcForm(f => ({ ...f, supplier_id: bestMatch.id }))
+            }
+          }
+        }
+      }
+      reader.readAsDataURL(file)
+    } catch (err: any) {
+      setScanning(false)
+      setError(err.message || 'Error processing image.')
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -223,6 +280,15 @@ export function SupplierActions({
 
   return (
     <>
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        capture="environment"
+        onChange={handleReceiptScan}
+        className="hidden"
+      />
+
       {!hideDirectoryButtons && (
         <div className="flex items-center gap-2">
           {showAddSupplier && (
@@ -322,6 +388,29 @@ export function SupplierActions({
       >
         <div className="space-y-4">
           {error && <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>}
+
+          {/* Auto-fill from Receipt / Bill */}
+          <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl p-3">
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-xs font-semibold text-blue-900">
+                {scanning ? 'Scanning receipt with Gemini OCR...' : 'Auto-fill from Receipt / Invoice'}
+              </span>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="text-xs py-1 px-2.5 h-auto bg-white border-blue-200 text-blue-700 hover:bg-blue-50"
+              loading={scanning}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Scan Receipt
+            </Button>
+          </div>
 
           <FieldWrapper label="Supplier" required>
             {defaultSupplierId ? (

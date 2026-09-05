@@ -17,18 +17,21 @@ const CATEGORY_VARIANTS: Record<string, 'default'|'success'|'warning'|'danger'|'
 
 export default async function ExpensesPage() {
   const supabase = createClient()
-  const { data: projects } = await supabase.from('projects').select('id, name').order('name')
-  const { data: expenses } = await supabase
-    .from('expenses')
-    .select('*, projects(name)')
-    .order('date', { ascending: false })
-    .limit(100)
+  const [{ data: projects }, { data: suppliers }, { data: expenses }] = await Promise.all([
+    supabase.from('projects').select('id, name').order('name'),
+    supabase.from('suppliers').select('id, name').order('name'),
+    supabase
+      .from('expenses')
+      .select('*, projects(name)')
+      .order('date', { ascending: false })
+      .limit(100),
+  ])
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-bold text-slate-900">Expenses</h1>
-        <AddExpenseButton projects={projects ?? []} />
+        <AddExpenseButton projects={projects ?? []} suppliers={suppliers ?? []} />
       </div>
 
       {!expenses?.length ? (
