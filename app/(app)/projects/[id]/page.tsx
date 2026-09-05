@@ -1,34 +1,29 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { Badge } from '@/components/ui/Badge'
 import { formatINR, formatDate } from '@/lib/format'
+import { ProjectDetailHeader } from './ProjectDetailHeader'
 
-const statusVariant = {
-  active: 'success', completed: 'neutral', on_hold: 'warning', cancelled: 'danger',
-} as const
+export const dynamic = 'force-dynamic'
 
 export default async function ProjectDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
-  const { data: project } = await supabase
-    .from('projects')
-    .select('*')
-    .eq('id', params.id)
-    .single()
+  const [{ data: userRole }, { data: project }] = await Promise.all([
+    supabase.rpc('get_user_role'),
+    supabase
+      .from('projects')
+      .select('*')
+      .eq('id', params.id)
+      .single(),
+  ])
 
   if (!project) notFound()
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">{project.name}</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{project.agency_name ?? '—'}</p>
-        </div>
-        <Badge
-          label={project.status?.replace('_', ' ') ?? 'active'}
-          variant={statusVariant[project.status as keyof typeof statusVariant] ?? 'default'}
-        />
-      </div>
+      <ProjectDetailHeader
+        project={project}
+        isOwner={userRole === 'owner'}
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <div className="bg-white rounded-xl border border-slate-200 p-4">

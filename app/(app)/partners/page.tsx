@@ -5,7 +5,7 @@ import { PartnersActions } from './PartnersActions'
 
 export default async function PartnersPage() {
   const supabase = createClient()
-  const { data: projects } = await supabase.from('projects').select('id, name').order('name')
+  const { data: projects } = await supabase.from('projects').select('id, name').eq('archived', false).order('name')
 
   const { data: partners } = await supabase
     .from('partners')

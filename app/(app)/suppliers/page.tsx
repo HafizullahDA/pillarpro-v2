@@ -14,6 +14,7 @@ export default async function SuppliersPage() {
     supabase
       .from('projects')
       .select('id, name')
+      .eq('archived', false)
       .order('name'),
   ])
 

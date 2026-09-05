@@ -15,6 +15,7 @@ export default async function RABillsPage() {
     supabase
       .from('projects')
       .select('id, name, agency_name')
+      .eq('archived', false)
       .order('name'),
     supabase
       .from('ra_bills')

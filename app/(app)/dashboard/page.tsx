@@ -16,8 +16,12 @@ export default async function DashboardPage() {
 
   const userRole = roleRow?.role ?? 'site_supervisor'
 
-  // Fetch projects
-  const { data: projects } = await supabase.from('projects').select('id, name, agency_name').order('name')
+  // Fetch active projects
+  const { data: projects } = await supabase
+    .from('projects')
+    .select('id, name, agency_name')
+    .eq('archived', false)
+    .order('name')
 
   // Fetch bills with payments
   const { data: bills } = await supabase

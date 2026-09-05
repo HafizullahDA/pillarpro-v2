@@ -14,6 +14,7 @@ export default async function ReceivablesPage() {
   const { data: projects } = await supabase
     .from('projects')
     .select('id, name, agency_name, advertised_cost, awarded_amount')
+    .eq('archived', false)
     .order('name')
 
   const { data: bills } = await supabase

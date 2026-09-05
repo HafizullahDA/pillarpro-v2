@@ -18,7 +18,7 @@ const CATEGORY_VARIANTS: Record<string, 'default'|'success'|'warning'|'danger'|'
 export default async function ExpensesPage() {
   const supabase = createClient()
   const [{ data: projects }, { data: suppliers }, { data: expenses }] = await Promise.all([
-    supabase.from('projects').select('id, name').order('name'),
+    supabase.from('projects').select('id, name').eq('archived', false).order('name'),
     supabase.from('suppliers').select('id, name').order('name'),
     supabase
       .from('expenses')

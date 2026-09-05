@@ -6,7 +6,7 @@ import { VendorActions } from './VendorActions'
 export default async function VendorsPage() {
   const supabase = createClient()
 
-  const { data: projects } = await supabase.from('projects').select('id, name').order('name')
+  const { data: projects } = await supabase.from('projects').select('id, name').eq('archived', false).order('name')
 
   // Vendors with computed due = sum(purchases) - sum(payments)
   const { data: vendors } = await supabase
