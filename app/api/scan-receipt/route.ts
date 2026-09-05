@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+    const apiKey =
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY
+
     if (!apiKey) {
       return NextResponse.json(
         { error: 'GOOGLE_GENERATIVE_AI_API_KEY is not configured in .env.local' },
@@ -26,8 +30,7 @@ export async function POST(req: NextRequest) {
     if (imageBase64.startsWith('data:image/png')) mimeType = 'image/png'
     if (imageBase64.startsWith('data:image/webp')) mimeType = 'image/webp'
 
-    const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    const ai = new GoogleGenAI({ apiKey })
 
     const prompt = `Analyze this receipt image and extract structured expense details.
 Return raw JSON ONLY matching this exact structure:
@@ -50,8 +53,15 @@ Return valid JSON only. Do not format with markdown codeblocks or backticks.`
       },
     }
 
-    const result = await model.generateContent([prompt, imagePart])
-    const responseText = result.response.text().trim()
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.5-flash-lite',
+      contents: [prompt, imagePart],
+      config: {
+        responseMimeType: 'application/json',
+      },
+    })
+
+    const responseText = response.text?.trim() ?? ''
 
     // Clean JSON response (strip markdown wrappers if model added them)
     const cleanJsonStr = responseText
