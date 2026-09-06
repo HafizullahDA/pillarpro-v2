@@ -56,6 +56,9 @@ export function SupplierActions({
     supplier_id: defaultSupplierId || '',
     project_id: '',
     description: '',
+    quantity: '',
+    rate: '',
+    unit: 'nos',
     amount: '',
     date: new Date().toISOString().split('T')[0],
     reference: '',
@@ -79,6 +82,17 @@ export function SupplierActions({
       setPayForm(f => ({ ...f, supplier_id: defaultSupplierId }))
     }
   }, [defaultSupplierId])
+
+  // Support quick action from URL (e.g. /suppliers?quick=procurement or ?quick=1)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('quick') === 'procurement' || params.get('quick') === 'purchase' || params.get('quick') === '1') {
+        openModal('procurement')
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const openModal = (type: 'supplier' | 'procurement' | 'payment') => {
     setWhich(type)
@@ -198,12 +212,19 @@ export function SupplierActions({
     setSaving(true)
     setError('')
 
+    const quantityVal = procForm.quantity ? parseFloat(procForm.quantity) : null
+    const rateVal = procForm.rate ? parseFloat(procForm.rate) : null
+    const unitVal = procForm.unit?.trim() || 'nos'
+
     const { error: err } = await supabase.from('supplier_transactions').insert({
       supplier_id: procForm.supplier_id,
       project_id: procForm.project_id || null, // NULL = General / Central
       transaction_type: 'procurement',
       description: procForm.description.trim(),
       amount: amountVal,
+      quantity: quantityVal,
+      rate: rateVal,
+      unit: unitVal,
       date: procForm.date,
       reference: procForm.reference.trim() || null,
       notes: procForm.notes.trim() || null,
@@ -220,6 +241,9 @@ export function SupplierActions({
       supplier_id: defaultSupplierId || '',
       project_id: '',
       description: '',
+      quantity: '',
+      rate: '',
+      unit: 'nos',
       amount: '',
       date: new Date().toISOString().split('T')[0],
       reference: '',
@@ -454,6 +478,64 @@ export function SupplierActions({
               onChange={e => setProcForm(f => ({ ...f, description: e.target.value }))}
             />
           </FieldWrapper>
+
+          {/* Optional Material Quantity, Unit & Rate */}
+          <div className="grid grid-cols-3 gap-2">
+            <FieldWrapper label="Quantity" hint="Optional">
+              <Input
+                type="number"
+                step="any"
+                placeholder="0"
+                value={procForm.quantity}
+                onChange={e => {
+                  const qty = e.target.value
+                  setProcForm(f => {
+                    const next = { ...f, quantity: qty }
+                    if (qty && f.rate) {
+                      const total = parseFloat(qty) * parseFloat(f.rate)
+                      if (!isNaN(total) && total > 0) next.amount = String(total)
+                    }
+                    return next
+                  })
+                }}
+              />
+            </FieldWrapper>
+
+            <FieldWrapper label="Unit">
+              <Select
+                value={procForm.unit}
+                onChange={e => setProcForm(f => ({ ...f, unit: e.target.value }))}
+              >
+                <option value="nos">nos (pcs)</option>
+                <option value="bags">bags</option>
+                <option value="kg">kg</option>
+                <option value="tonnes">tonnes</option>
+                <option value="cum">cum (m³)</option>
+                <option value="sqm">sqm (m²)</option>
+                <option value="rmt">rmt (m)</option>
+                <option value="litre">litre</option>
+                <option value="trips">trips</option>
+              </Select>
+            </FieldWrapper>
+
+            <FieldWrapper label="Rate (₹)" hint="Per unit">
+              <CurrencyInput
+                placeholder="0"
+                value={procForm.rate}
+                onChange={e => {
+                  const rateVal = e.target.value
+                  setProcForm(f => {
+                    const next = { ...f, rate: rateVal }
+                    if (rateVal && f.quantity) {
+                      const total = parseFloat(f.quantity) * parseFloat(rateVal)
+                      if (!isNaN(total) && total > 0) next.amount = String(total)
+                    }
+                    return next
+                  })
+                }}
+              />
+            </FieldWrapper>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <FieldWrapper label="Amount (₹)" required>

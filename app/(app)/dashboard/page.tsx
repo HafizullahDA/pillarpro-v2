@@ -49,23 +49,33 @@ export default async function DashboardPage() {
       }
     })
 
-  // Fetch vendors with purchases and payments (filtered to active projects or unassigned)
-  const { data: vendors } = await supabase
-    .from('vendors')
-    .select('id, project_id, name, vendor_purchases(amount), vendor_payments(amount)')
+  // Fetch suppliers with transactions (filtered to active projects or unassigned/central)
+  const { data: suppliers } = await supabase
+    .from('suppliers')
+    .select('id, name, supplier_transactions(project_id, transaction_type, amount)')
 
-  const vendorsFormatted = (vendors ?? [])
-    .filter(v => !v.project_id || activeProjectIds.has(v.project_id))
-    .map(v => {
-      const purchased = (v.vendor_purchases ?? []).reduce((sum: number, p: { amount: number }) => sum + (p.amount ?? 0), 0)
-      const paid = (v.vendor_payments ?? []).reduce((sum: number, p: { amount: number }) => sum + (p.amount ?? 0), 0)
-      return {
-        id: v.id,
-        project_id: v.project_id,
-        name: v.name,
-        due: purchased - paid,
+  // Group supplier balances by project (and central)
+  const suppliersFormatted: { id: string; project_id: string | null; name: string; due: number }[] = []
+  for (const s of suppliers ?? []) {
+    const byProject: Record<string, { procured: number; paid: number }> = {}
+    for (const t of s.supplier_transactions ?? []) {
+      const pid = t.project_id ?? 'central'
+      if (!byProject[pid]) byProject[pid] = { procured: 0, paid: 0 }
+      if (t.transaction_type === 'procurement') byProject[pid].procured += (t.amount ?? 0)
+      else if (t.transaction_type === 'payment') byProject[pid].paid += (t.amount ?? 0)
+    }
+    for (const [pid, sums] of Object.entries(byProject)) {
+      const actualPid = pid === 'central' ? null : pid
+      if (!actualPid || activeProjectIds.has(actualPid)) {
+        suppliersFormatted.push({
+          id: `${s.id}-${pid}`,
+          project_id: actualPid,
+          name: s.name,
+          due: sums.procured - sums.paid,
+        })
       }
-    })
+    }
+  }
 
   // Fetch central ledger entries (filter out project-specific entries for archived projects)
   const { data: ledger } = await supabase
@@ -81,7 +91,7 @@ export default async function DashboardPage() {
     <DashboardClient
       projects={activeProjects}
       bills={billsFormatted}
-      vendors={vendorsFormatted}
+      suppliers={suppliersFormatted}
       ledger={ledgerFiltered}
       userRole={userRole}
     />

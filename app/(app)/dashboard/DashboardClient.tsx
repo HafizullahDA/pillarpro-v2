@@ -7,13 +7,13 @@ import { formatINR, formatDate } from '@/lib/format'
 
 type Project = { id: string; name: string; agency_name: string | null }
 type Bill = { id: string; project_id: string; bill_date: string; net_amount: number; received: number; outstanding: number }
-type Vendor = { id: string; project_id: string; name: string; due: number }
+type SupplierDue = { id: string; project_id: string | null; name: string; due: number }
 type LedgerEntry = { id: string; project_id: string | null; entry_type: string; category: string | null; amount: number; date: string }
 
 type DashboardClientProps = {
   projects: Project[]
   bills: Bill[]
-  vendors: Vendor[]
+  suppliers: SupplierDue[]
   ledger: LedgerEntry[]
   userRole: string
 }
@@ -21,7 +21,7 @@ type DashboardClientProps = {
 export function DashboardClient({
   projects,
   bills,
-  vendors,
+  suppliers,
   ledger,
   userRole,
 }: DashboardClientProps) {
@@ -60,16 +60,16 @@ export function DashboardClient({
     .filter(i => i.entry_type === 'income')
     .reduce((sum, i) => sum + i.amount, 0)
 
-  // Filter bills & vendor dues by selected project
+  // Filter bills & supplier dues by selected project
   const filteredBills = bills.filter(b => selectedProject === 'all' || b.project_id === selectedProject)
-  const filteredVendors = vendors.filter(v => selectedProject === 'all' || v.project_id === selectedProject)
+  const filteredSuppliers = suppliers.filter(v => selectedProject === 'all' || v.project_id === selectedProject)
 
   const totalOutstanding = filteredBills.reduce((sum, b) => sum + b.outstanding, 0)
-  const totalVendorDues = filteredVendors.reduce((sum, v) => sum + (v.due > 0 ? v.due : 0), 0)
+  const totalSupplierDues = filteredSuppliers.reduce((sum, v) => sum + (v.due > 0 ? v.due : 0), 0)
 
   // Net Position Block
   const netCashMovement = totalReceived - totalExpense
-  const netLiquidityPosition = totalOutstanding - totalVendorDues
+  const netLiquidityPosition = totalOutstanding - totalSupplierDues
 
   // Aging bands for outstanding receivables
   const nowMs = now.getTime()
@@ -91,10 +91,10 @@ export function DashboardClient({
   // Projects at a glance status strip
   const projectGlance = projects.map(p => {
     const pBills = bills.filter(b => b.project_id === p.id)
-    const pVendors = vendors.filter(v => v.project_id === p.id)
+    const pSuppliers = suppliers.filter(v => v.project_id === p.id)
 
     const pOutstanding = pBills.reduce((sum, b) => sum + b.outstanding, 0)
-    const pDues = pVendors.reduce((sum, v) => sum + (v.due > 0 ? v.due : 0), 0)
+    const pDues = pSuppliers.reduce((sum, v) => sum + (v.due > 0 ? v.due : 0), 0)
 
     let status: 'healthy' | 'warning' | 'critical' = 'healthy'
     if (pDues > pOutstanding && pDues > 50000) status = 'warning'
@@ -183,7 +183,7 @@ export function DashboardClient({
         <SummaryTile label="Total Expense"  value={formatINR(totalExpense)}  accent="red"     />
         <SummaryTile label="Total Received" value={formatINR(totalReceived)} accent="emerald" />
         <SummaryTile label="Outstanding"    value={formatINR(totalOutstanding)} accent="amber"   />
-        <SummaryTile label="Vendor Dues"    value={formatINR(totalVendorDues)}  accent="blue"    />
+        <SummaryTile label="Supplier Dues"  value={formatINR(totalSupplierDues)} accent="blue"   />
       </div>
 
       {/* Net Position Block */}
@@ -201,7 +201,7 @@ export function DashboardClient({
         <div className={`p-4 rounded-xl border flex flex-col justify-between ${netLiquidityPosition >= 0 ? 'bg-sky-50/60 border-sky-200' : 'bg-amber-50/60 border-amber-200'}`}>
           <div>
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Net Liquidity Position</span>
-            <p className="text-xs text-slate-400 mt-0.5">Outstanding Receivables minus Vendor Dues</p>
+            <p className="text-xs text-slate-400 mt-0.5">Outstanding Receivables minus Supplier Dues</p>
           </div>
           <p className={`text-2xl font-bold tabular-nums mt-3 ${netLiquidityPosition >= 0 ? 'text-sky-800' : 'text-amber-800'}`}>
             {netLiquidityPosition >= 0 ? '+' : ''}{formatINR(netLiquidityPosition)}
@@ -306,7 +306,7 @@ export function DashboardClient({
                   <span className="font-semibold text-slate-700 tabular-nums">{formatINR(p.pOutstanding)}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px]">Vendor Dues</span>
+                  <span className="text-slate-400 block text-[10px]">Supplier Dues</span>
                   <span className="font-semibold text-red-600 tabular-nums">{formatINR(p.pDues)}</span>
                 </div>
               </div>

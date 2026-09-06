@@ -31,6 +31,9 @@ export default async function SupplierDetailPage({ params }: Props) {
         transaction_type,
         description,
         amount,
+        quantity,
+        rate,
+        unit,
         date,
         mode,
         reference,
@@ -230,6 +233,11 @@ export default async function SupplierDetailPage({ params }: Props) {
                       {/* Description & Notes */}
                       <td className="px-4 py-3.5">
                         <div className="font-medium text-slate-900">{tx.description}</div>
+                        {((tx as any).quantity != null && (tx as any).rate != null) && (
+                          <div className="text-xs font-mono text-slate-500 mt-0.5">
+                            {Number((tx as any).quantity).toLocaleString()} {(tx as any).unit || 'nos'} @ {formatINR(Number((tx as any).rate))}/{(tx as any).unit || 'nos'}
+                          </div>
+                        )}
                         {tx.notes && <div className="text-xs text-slate-400 mt-0.5">{tx.notes}</div>}
                         {receiptUrl && (
                           <a

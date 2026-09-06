@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 const QUICK_ACTIONS = [
   { href: '/attendance?quick=1', label: 'Attendance', color: 'bg-emerald-500' },
   { href: '/expenses?quick=1',   label: 'Expense',    color: 'bg-amber-500'   },
-  { href: '/vendors?quick=purchase', label: 'Purchase', color: 'bg-sky-500'  },
+  { href: '/suppliers?quick=procurement', label: 'Purchase', color: 'bg-sky-500' },
 ]
 
 export function FAB() {
