@@ -42,6 +42,7 @@ export type RABillRow = {
   document_url: string | null
   remarks: string | null
   projects?: { name: string; agency_name?: string | null } | null
+  bill_deductions?: { id?: string; deduction_label: string; deduction_amount: number }[]
 }
 
 export type SecurityDepositRow = {
@@ -696,9 +697,16 @@ export function RABillsClient({
                       <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
                         <div className="font-semibold text-teal-700">{formatINR(received)}</div>
                         {Number(b.total_deductions) > 0 ? (
-                          <div className="text-[11px] text-emerald-700 font-medium">
-                            Bank: {formatINR(Number(b.net_bank_received) || (received - Number(b.total_deductions)))}
-                          </div>
+                          <>
+                            <div className="text-[11px] text-emerald-700 font-medium">
+                              Bank: {formatINR(Number(b.net_bank_received) || (received - Number(b.total_deductions)))}
+                            </div>
+                            {b.bill_deductions && b.bill_deductions.length > 0 && (
+                              <div className="text-[10px] text-purple-600 font-medium">
+                                {b.bill_deductions.length} dept deduction{b.bill_deductions.length > 1 ? 's' : ''}
+                              </div>
+                            )}
+                          </>
                         ) : (
                           b.date_received && (
                             <div className="text-[10px] text-slate-400 font-normal">

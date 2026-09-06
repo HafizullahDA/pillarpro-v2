@@ -12,6 +12,7 @@ export default async function RABillsPage() {
     { data: projects },
     { data: bills },
     { data: deposits },
+    { data: deductions },
   ] = await Promise.all([
     supabase
       .from('projects')
@@ -69,14 +70,35 @@ export default async function RABillsPage() {
         projects (name)
       `)
       .order('expiry_date', { ascending: true }),
+    supabase
+      .from('bill_deductions')
+      .select('id, bill_id, payment_id, deduction_label, deduction_amount')
+      .order('created_at', { ascending: true }),
   ])
+
+  const deductionsByBill = new Map<string, { id: string; deduction_label: string; deduction_amount: number }[]>()
+  if (deductions) {
+    for (const d of deductions as any[]) {
+      if (!deductionsByBill.has(d.bill_id)) {
+        deductionsByBill.set(d.bill_id, [])
+      }
+      deductionsByBill.get(d.bill_id)!.push({
+        id: d.id,
+        deduction_label: d.deduction_label,
+        deduction_amount: Number(d.deduction_amount) || 0,
+      })
+    }
+  }
 
   const activeProjects = (projects as ProjectOption[]) ?? []
   const activeProjectIds = new Set(activeProjects.map(p => p.id))
 
-  const activeBills = ((bills as unknown as RABillRow[]) ?? []).filter(
-    b => b.project_id && activeProjectIds.has(b.project_id)
-  )
+  const activeBills = ((bills as unknown as RABillRow[]) ?? [])
+    .filter(b => b.project_id && activeProjectIds.has(b.project_id))
+    .map(b => ({
+      ...b,
+      bill_deductions: deductionsByBill.get(b.id) || [],
+    }))
   const activeDeposits = ((deposits as unknown as SecurityDepositRow[]) ?? []).filter(
     d => d.project_id && activeProjectIds.has(d.project_id)
   )

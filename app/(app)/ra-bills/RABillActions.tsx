@@ -41,6 +41,22 @@ const DEPOSIT_TYPES = [
   { value: 'additional_performance_security', label: 'Additional Performance Security (APS)' },
 ]
 
+export interface AdditionalDeductionLine {
+  id: string
+  label: string
+  amount: string
+}
+
+const SUGGESTED_DEDUCTION_LABELS = [
+  'Royalty',
+  'GST on Royalty',
+  'TCS on Royalty',
+  'DMFT (Mineral Fund)',
+  'Withheld against Time Extension',
+  'Water / Electricity Charges',
+  'Testing & Quality Charges',
+]
+
 interface RABillActionsProps {
   projects: ProjectOption[]
   raBills?: RABillOption[]
@@ -91,6 +107,26 @@ export function RABillActions({
     reference: '',
     remarks: '',
   })
+
+  // 2b. Itemized Additional / Departmental Deductions
+  const [additionalDeductions, setAdditionalDeductions] = useState<AdditionalDeductionLine[]>([])
+
+  const handleAddDeduction = (label: string = '') => {
+    setAdditionalDeductions(prev => [
+      ...prev,
+      { id: 'ded_' + Math.random().toString(36).substring(2, 9), label, amount: '' }
+    ])
+  }
+
+  const handleUpdateDeduction = (id: string, field: 'label' | 'amount', val: string) => {
+    setAdditionalDeductions(prev =>
+      prev.map(item => (item.id === id ? { ...item, [field]: val } : item))
+    )
+  }
+
+  const handleRemoveDeduction = (id: string) => {
+    setAdditionalDeductions(prev => prev.filter(item => item.id !== id))
+  }
 
   // 3. Add Security Deposit / BG Form
   const [depositForm, setDepositForm] = useState({
@@ -148,6 +184,7 @@ export function RABillActions({
         const remaining = Math.max(0, netPayable - (Number(bObj.amount_received) || 0))
         initialGross = remaining > 0 ? String(remaining) : ''
       }
+      setAdditionalDeductions([])
       setPayForm({
         bill_id: bId,
         gross_amount: initialGross,
@@ -276,7 +313,13 @@ export function RABillActions({
     const tdsAmt = parseFloat(payForm.tds_amount) || 0
     const gstTdsAmt = parseFloat(payForm.gst_tds_amount) || 0
     const labourCessAmt = parseFloat(payForm.labour_cess_amount) || 0
-    const otherAmt = parseFloat(payForm.other_deductions) || 0
+    
+    // Sum of all additional itemized deductions
+    const additionalDedsTotal = additionalDeductions.reduce(
+      (sum, item) => sum + (parseFloat(item.amount) || 0),
+      0
+    )
+    const otherAmt = additionalDedsTotal
     const totalDeds = tdsAmt + gstTdsAmt + labourCessAmt + otherAmt
 
     if (totalDeds > grossAmt) {
@@ -294,9 +337,9 @@ export function RABillActions({
         return
       }
 
-      // Insert into ra_bill_payments ledger table
+      // 1. Insert into ra_bill_payments ledger table
       // Trigger trg_sync_ra_bill_from_payments automatically rolls up gross, deductions, and net bank cash into ra_bills
-      const { error: insertErr } = await supabase
+      const { data: paymentRecord, error: insertErr } = await supabase
         .from('ra_bill_payments')
         .insert({
           bill_id: payForm.bill_id,
@@ -310,6 +353,8 @@ export function RABillActions({
           voucher_reference: payForm.reference.trim() || null,
           remarks: payForm.remarks.trim() || null,
         })
+        .select('id')
+        .single()
 
       if (insertErr) {
         setError(insertErr.message)
@@ -317,8 +362,29 @@ export function RABillActions({
         return
       }
 
+      // 2. Insert itemized line items into public.bill_deductions
+      const validItems = additionalDeductions
+        .filter(d => (parseFloat(d.amount) || 0) > 0 && d.label.trim())
+        .map(d => ({
+          bill_id: payForm.bill_id,
+          payment_id: paymentRecord?.id || null,
+          deduction_label: d.label.trim(),
+          deduction_amount: parseFloat(d.amount),
+        }))
+
+      if (validItems.length > 0) {
+        const { error: dedErr } = await supabase
+          .from('bill_deductions')
+          .insert(validItems)
+
+        if (dedErr) {
+          console.warn('Could not insert itemized deductions (table may be pending migration):', dedErr.message)
+        }
+      }
+
       setSaving(false)
       setWhich(null)
+      setAdditionalDeductions([])
       setPayForm({
         bill_id: '',
         gross_amount: '',
@@ -796,6 +862,7 @@ export function RABillActions({
                       labour_cess_amount: String(Math.round(g * 0.01)),
                       other_deductions: '0',
                     }))
+                    setAdditionalDeductions([])
                   }
                 }}
                 className="text-[11px] font-semibold text-blue-700 bg-white border border-blue-300 hover:bg-blue-100/60 px-2.5 py-1 rounded-md shadow-2xs transition-colors"
@@ -804,7 +871,7 @@ export function RABillActions({
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <FieldWrapper label="TDS (IT u/s 194C) (₹)" hint="Typically 2% or 1%">
                 <CurrencyInput
                   placeholder="0"
@@ -828,14 +895,103 @@ export function RABillActions({
                   onChange={e => setPayForm(f => ({ ...f, labour_cess_amount: e.target.value }))}
                 />
               </FieldWrapper>
+            </div>
 
-              <FieldWrapper label="Other Deductions (₹)" hint="Royalty, water, electricity">
-                <CurrencyInput
-                  placeholder="0"
-                  value={payForm.other_deductions}
-                  onChange={e => setPayForm(f => ({ ...f, other_deductions: e.target.value }))}
-                />
-              </FieldWrapper>
+            {/* ── ADDITIONAL / DEPARTMENTAL DEDUCTIONS SECTION ── */}
+            <div className="pt-3 border-t border-blue-200/80 space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                <div>
+                  <h5 className="text-xs font-bold text-slate-900">
+                    Additional Departmental Deductions (Itemized)
+                  </h5>
+                  <p className="text-[11px] text-slate-500">
+                    Royalty, GST on Royalty, DMFT, withholds & penalties
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleAddDeduction()}
+                  className="h-7 text-xs px-2.5 self-start sm:self-auto"
+                >
+                  <svg className="w-3.5 h-3.5 mr-1 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Deduction
+                </Button>
+              </div>
+
+              {/* Quick Add Suggestion Chips */}
+              <div className="flex flex-wrap gap-1.5 items-center">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-1">
+                  Quick Add:
+                </span>
+                {SUGGESTED_DEDUCTION_LABELS.map(chip => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => handleAddDeduction(chip)}
+                    className="text-[11px] font-medium bg-white hover:bg-blue-100/70 border border-slate-200 hover:border-blue-300 text-slate-700 hover:text-blue-800 px-2 py-0.5 rounded-full transition-colors"
+                  >
+                    + {chip}
+                  </button>
+                ))}
+              </div>
+
+              {/* Deduction Line Items */}
+              {additionalDeductions.length > 0 ? (
+                <div className="space-y-2 pt-1">
+                  {additionalDeductions.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200 shadow-2xs"
+                    >
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Deduction label (e.g. Royalty, Penalty)"
+                          value={item.label}
+                          onChange={e => handleUpdateDeduction(item.id, 'label', e.target.value)}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="w-36">
+                        <CurrencyInput
+                          placeholder="Amount"
+                          value={item.amount}
+                          onChange={e => handleUpdateDeduction(item.id, 'amount', e.target.value)}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDeduction(item.id)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors shrink-0"
+                        title="Remove deduction"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center text-xs px-1 text-slate-500 font-medium">
+                    <span>Subtotal Additional Deductions:</span>
+                    <span className="font-semibold text-rose-700">
+                      {formatINR(
+                        additionalDeductions.reduce(
+                          (sum, item) => sum + (parseFloat(item.amount) || 0),
+                          0
+                        )
+                      )}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-[11px] text-slate-400 italic bg-white/70 rounded-lg p-2 text-center border border-dashed border-slate-200">
+                  No additional departmental deductions. Click a quick-add chip or &apos;+ Add Deduction&apos; to itemize.
+                </div>
+              )}
             </div>
 
             {/* LIVE NET BANK SUMMARY */}
@@ -844,18 +1000,24 @@ export function RABillActions({
               const tds = parseFloat(payForm.tds_amount) || 0
               const gst = parseFloat(payForm.gst_tds_amount) || 0
               const cess = parseFloat(payForm.labour_cess_amount) || 0
-              const oth = parseFloat(payForm.other_deductions) || 0
-              const totalDeds = tds + gst + cess + oth
+              const additionalDeds = additionalDeductions.reduce(
+                (sum, item) => sum + (parseFloat(item.amount) || 0),
+                0
+              )
+              const totalDeds = tds + gst + cess + additionalDeds
               const netBank = Math.max(0, grossNum - totalDeds)
 
               return (
                 <div className="pt-2.5 border-t border-blue-200/80 flex items-center justify-between text-xs">
                   <div className="text-slate-600">
-                    Total Deductions: <span className="font-semibold text-rose-700">-{formatINR(totalDeds)}</span>
+                    Total Deductions:{' '}
+                    <span className="font-semibold text-rose-700">-{formatINR(totalDeds)}</span>
                   </div>
                   <div className="text-right">
                     <span className="text-slate-600 mr-1.5">Net Bank Credit:</span>
-                    <span className="text-base font-black text-emerald-700 tabular-nums">{formatINR(netBank)}</span>
+                    <span className="text-base font-black text-emerald-700 tabular-nums">
+                      {formatINR(netBank)}
+                    </span>
                   </div>
                 </div>
               )
