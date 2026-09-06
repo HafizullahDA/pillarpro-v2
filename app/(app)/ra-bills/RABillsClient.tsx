@@ -31,6 +31,13 @@ export type RABillRow = {
   net_bank_received?: number
   date_received: string | null
   outstanding_balance: number
+  billing_mode?: 'standalone' | 'cumulative'
+  previous_bill_id?: string | null
+  cumulative_certified_amount?: number | null
+  previous_certified_amount?: number
+  previous_received_amount?: number
+  net_payable_this_bill?: number
+  this_bill_work_certified?: number
   status: 'submitted' | 'partially_paid' | 'fully_paid'
   document_url: string | null
   remarks: string | null
@@ -121,9 +128,30 @@ export function RABillsClient({
   }, [initialDeposits, selectedProjectId])
 
   const metrics = useMemo(() => {
-    const totalCertified = kpiScopeBills.reduce((s, b) => s + (Number(b.work_certified_amount) || 0), 0)
-    const totalRetention = kpiScopeBills.reduce((s, b) => s + (Number(b.retention_amount) || 0), 0)
-    const totalNetPayable = kpiScopeBills.reduce((s, b) => s + (Number(b.net_payable_amount) || 0), 0)
+    const totalCertified = kpiScopeBills.reduce((s, b) => {
+      const isCum = b.billing_mode === 'cumulative'
+      const cert = isCum && b.this_bill_work_certified != null
+        ? Number(b.this_bill_work_certified)
+        : (Number(b.work_certified_amount) || 0)
+      return s + cert
+    }, 0)
+
+    const totalRetention = kpiScopeBills.reduce((s, b) => {
+      const isCum = b.billing_mode === 'cumulative'
+      if (isCum && b.this_bill_work_certified != null) {
+        const retPct = Number(b.retention_percentage) || 5
+        return s + (Math.round((Number(b.this_bill_work_certified) * retPct) / 100 * 100) / 100)
+      }
+      return s + (Number(b.retention_amount) || 0)
+    }, 0)
+
+    const totalNetPayable = kpiScopeBills.reduce((s, b) => {
+      const net = b.net_payable_this_bill != null
+        ? Number(b.net_payable_this_bill)
+        : (Number(b.net_payable_amount) || 0)
+      return s + net
+    }, 0)
+
     const totalGrossReceived = kpiScopeBills.reduce((s, b) => s + (Number(b.amount_received) || 0), 0)
     const totalNetBankCash = kpiScopeBills.reduce((s, b) => {
       const netBank = b.net_bank_received != null && !isNaN(Number(b.net_bank_received))
@@ -133,9 +161,11 @@ export function RABillsClient({
     }, 0)
     const totalTaxDeductions = kpiScopeBills.reduce((s, b) => s + (Number(b.total_deductions) || 0), 0)
     const totalOutstanding = kpiScopeBills.reduce((s, b) => {
-      const netPassed = Number(b.net_payable_amount) != null && !isNaN(Number(b.net_payable_amount))
-        ? Number(b.net_payable_amount)
-        : (Number(b.work_certified_amount) - (Number(b.retention_amount) || 0))
+      const netPassed = b.net_payable_this_bill != null
+        ? Number(b.net_payable_this_bill)
+        : (Number(b.net_payable_amount) != null && !isNaN(Number(b.net_payable_amount))
+          ? Number(b.net_payable_amount)
+          : (Number(b.work_certified_amount) - (Number(b.retention_amount) || 0)))
       const out = Math.max(0, netPassed - (Number(b.amount_received) || 0))
       return s + out
     }, 0)
@@ -172,14 +202,23 @@ export function RABillsClient({
 
   const billOptions: RABillOption[] = useMemo(() => {
     return initialBills.map(b => {
-      const netPassed = Number(b.net_payable_amount) != null && !isNaN(Number(b.net_payable_amount))
-        ? Number(b.net_payable_amount)
-        : (Number(b.work_certified_amount) - (Number(b.retention_amount) || 0))
+      const netPassed = b.net_payable_this_bill != null
+        ? Number(b.net_payable_this_bill)
+        : (Number(b.net_payable_amount) != null && !isNaN(Number(b.net_payable_amount))
+          ? Number(b.net_payable_amount)
+          : (Number(b.work_certified_amount) - (Number(b.retention_amount) || 0)))
       const out = Math.max(0, netPassed - (Number(b.amount_received) || 0))
       return {
         id: b.id,
         bill_number: b.bill_number,
         project_id: b.project_id,
+        billing_mode: b.billing_mode,
+        previous_bill_id: b.previous_bill_id,
+        cumulative_certified_amount: b.cumulative_certified_amount != null ? Number(b.cumulative_certified_amount) : null,
+        previous_certified_amount: Number(b.previous_certified_amount) || 0,
+        previous_received_amount: Number(b.previous_received_amount) || 0,
+        net_payable_this_bill: b.net_payable_this_bill != null ? Number(b.net_payable_this_bill) : undefined,
+        this_bill_work_certified: b.this_bill_work_certified != null ? Number(b.this_bill_work_certified) : undefined,
         work_certified_amount: Number(b.work_certified_amount) || 0,
         retention_percentage: Number(b.retention_percentage) || 0,
         retention_amount: Number(b.retention_amount) || 0,
@@ -559,9 +598,12 @@ export function RABillsClient({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredBills.map(b => {
-                  const netPassed = Number(b.net_payable_amount) != null && !isNaN(Number(b.net_payable_amount))
-                    ? Number(b.net_payable_amount)
-                    : (Number(b.work_certified_amount) - (Number(b.retention_amount) || 0))
+                  const isCum = b.billing_mode === 'cumulative'
+                  const netPassed = b.net_payable_this_bill != null
+                    ? Number(b.net_payable_this_bill)
+                    : (Number(b.net_payable_amount) != null && !isNaN(Number(b.net_payable_amount))
+                      ? Number(b.net_payable_amount)
+                      : (Number(b.work_certified_amount) - (Number(b.retention_amount) || 0)))
                   const received = Number(b.amount_received) || 0
                   const outstanding = Math.max(0, netPassed - received)
 
@@ -579,8 +621,13 @@ export function RABillsClient({
                     <tr key={b.id} className="hover:bg-slate-50/75 transition-colors">
                       {/* Bill Number */}
                       <td className="px-4 py-3.5">
-                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <div className="font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
                           {b.bill_number}
+                          {isCum && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                              Cumulative
+                            </span>
+                          )}
                           {b.document_url && (
                             <a
                               href={b.document_url}
@@ -612,19 +659,37 @@ export function RABillsClient({
                       </td>
 
                       {/* Certified Amount */}
-                      <td className="px-4 py-3.5 text-right tabular-nums font-semibold text-slate-900 whitespace-nowrap">
-                        {formatINR(b.work_certified_amount)}
+                      <td className="px-4 py-3.5 text-right tabular-nums whitespace-nowrap">
+                        <div className="font-semibold text-slate-900">
+                          {isCum && b.this_bill_work_certified != null
+                            ? formatINR(Number(b.this_bill_work_certified))
+                            : formatINR(b.work_certified_amount)}
+                        </div>
+                        {isCum && (
+                          <div className="text-[10px] text-slate-400 font-medium">
+                            To date: {formatINR(Number(b.cumulative_certified_amount) || Number(b.work_certified_amount))}
+                          </div>
+                        )}
                       </td>
 
                       {/* Retention */}
                       <td className="px-4 py-3.5 text-right hidden sm:table-cell tabular-nums whitespace-nowrap">
-                        <div className="text-amber-800 font-medium">{formatINR(b.retention_amount)}</div>
+                        <div className="text-amber-800 font-medium">
+                          {isCum && b.this_bill_work_certified != null
+                            ? formatINR(Math.round((Number(b.this_bill_work_certified) * (Number(b.retention_percentage) || 5)) / 100 * 100) / 100)
+                            : formatINR(b.retention_amount)}
+                        </div>
                         <div className="text-[11px] text-slate-400 font-mono">({b.retention_percentage}%)</div>
                       </td>
 
                       {/* Net Payable */}
-                      <td className="px-4 py-3.5 text-right hidden lg:table-cell tabular-nums text-slate-700 whitespace-nowrap">
-                        {formatINR(netPassed)}
+                      <td className="px-4 py-3.5 text-right hidden lg:table-cell tabular-nums whitespace-nowrap">
+                        <div className="font-medium text-slate-900">{formatINR(netPassed)}</div>
+                        {isCum && (
+                          <div className="text-[10px] text-slate-400 font-medium">
+                            This Bill
+                          </div>
+                        )}
                       </td>
 
                       {/* Gross Released & Net Bank */}

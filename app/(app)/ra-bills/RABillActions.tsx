@@ -24,7 +24,13 @@ export type RABillOption = {
   other_deductions?: number
   total_deductions?: number
   net_bank_received?: number
-  outstanding_balance: number
+  billing_mode?: 'standalone' | 'cumulative'
+  previous_bill_id?: string | null
+  cumulative_certified_amount?: number | null
+  previous_certified_amount?: number
+  previous_received_amount?: number
+  net_payable_this_bill?: number
+  this_bill_work_certified?: number
   projects?: { name: string } | null
 }
 
@@ -66,6 +72,8 @@ export function RABillActions({
     project_id: defaultProjectId || '',
     bill_number: '',
     submission_date: new Date().toISOString().split('T')[0],
+    billing_mode: 'standalone' as 'standalone' | 'cumulative',
+    previous_bill_id: '',
     work_certified_amount: '',
     retention_percentage: '5.00', // Default 5%, fully editable
     remarks: '',
@@ -111,7 +119,6 @@ export function RABillActions({
 
       if (uploadError) {
         console.warn('Storage upload error (bucket might need public creation):', uploadError.message)
-        // Fallback: if bucket doesn't exist yet, we don't block the bill record
         return null
       }
 
@@ -135,7 +142,9 @@ export function RABillActions({
       const bObj = raBills.find(b => b.id === bId)
       let initialGross = ''
       if (bObj) {
-        const netPayable = Number(bObj.net_payable_amount) || (Number(bObj.work_certified_amount) - (Number(bObj.retention_amount) || 0))
+        const netPayable = bObj.net_payable_this_bill != null
+          ? Number(bObj.net_payable_this_bill)
+          : (Number(bObj.net_payable_amount) || (Number(bObj.work_certified_amount) - (Number(bObj.retention_amount) || 0)))
         const remaining = Math.max(0, netPayable - (Number(bObj.amount_received) || 0))
         initialGross = remaining > 0 ? String(remaining) : ''
       }
@@ -153,18 +162,45 @@ export function RABillActions({
     }
   }
 
-  // Live calculation helpers for RA Bill submission
+  // Live calculation helpers for RA Bill submission (Cumulative & Standalone)
+  const isCumulative = billForm.billing_mode === 'cumulative'
+  const prevBill = raBills.find(b => b.id === billForm.previous_bill_id)
+  const prevCertified = prevBill
+    ? (Number(prevBill.cumulative_certified_amount) || Number(prevBill.work_certified_amount) || 0)
+    : 0
+  const prevReceived = prevBill ? (Number(prevBill.amount_received) || 0) : 0
+
   const certifiedNum = parseFloat(billForm.work_certified_amount) || 0
   const retentionPctNum = parseFloat(billForm.retention_percentage) || 0
-  const liveRetentionAmount = Math.round((certifiedNum * retentionPctNum) / 100 * 100) / 100
-  const liveNetPayable = Math.max(0, certifiedNum - liveRetentionAmount)
+
+  // Standalone calculation
+  const standaloneRetentionAmount = Math.round((certifiedNum * retentionPctNum) / 100 * 100) / 100
+  const standaloneNetPayable = Math.max(0, certifiedNum - standaloneRetentionAmount)
+
+  // Cumulative calculation
+  const thisBillIncrementalCertified = Math.max(0, certifiedNum - prevCertified)
+  const cumulativeRetentionAmount = Math.round((certifiedNum * retentionPctNum) / 100 * 100) / 100
+  const cumulativeNetPassed = Math.max(0, certifiedNum - cumulativeRetentionAmount)
+  const cumulativeNetPayableThisBill = Math.max(0, cumulativeNetPassed - prevReceived)
+
+  // Unified live active values
+  const liveRetentionAmount = isCumulative ? cumulativeRetentionAmount : standaloneRetentionAmount
+  const liveNetPayable = isCumulative ? cumulativeNetPayableThisBill : standaloneNetPayable
+  const thisBillCertified = isCumulative ? thisBillIncrementalCertified : certifiedNum
 
   // 1. SAVE RA BILL
   const handleSaveRABill = async () => {
     if (!billForm.project_id) { setError('Please select a project.'); return }
     if (!billForm.bill_number.trim()) { setError('Bill number (e.g. RA Bill 01) is required.'); return }
     if (!billForm.work_certified_amount || certifiedNum <= 0) {
-      setError('Please enter a valid work certified amount greater than 0.'); return
+      setError(isCumulative
+        ? 'Please enter a valid cumulative work certified amount greater than 0.'
+        : 'Please enter a valid work certified amount greater than 0.');
+      return
+    }
+    if (isCumulative && prevCertified > 0 && certifiedNum < prevCertified) {
+      setError(`Cumulative certified amount (₹${certifiedNum.toLocaleString()}) cannot be less than previous bill's certified amount (₹${prevCertified.toLocaleString()}).`);
+      return
     }
     if (isNaN(retentionPctNum) || retentionPctNum < 0 || retentionPctNum > 100) {
       setError('Retention percentage must be between 0 and 100.'); return
@@ -183,9 +219,15 @@ export function RABillActions({
         project_id: billForm.project_id,
         bill_number: billForm.bill_number.trim(),
         submission_date: billForm.submission_date || new Date().toISOString().split('T')[0],
+        billing_mode: billForm.billing_mode,
+        previous_bill_id: isCumulative && billForm.previous_bill_id ? billForm.previous_bill_id : null,
+        cumulative_certified_amount: isCumulative ? certifiedNum : null,
+        previous_certified_amount: isCumulative ? prevCertified : 0,
+        previous_received_amount: isCumulative ? prevReceived : 0,
+        this_bill_work_certified: isCumulative ? thisBillCertified : certifiedNum,
+        net_payable_this_bill: liveNetPayable,
         work_certified_amount: certifiedNum,
         retention_percentage: retentionPctNum,
-        // retention_amount & net_payable_amount are GENERATED ALWAYS AS ... STORED
         amount_received: 0,
         status: 'submitted',
         document_url: documentUrl,
@@ -208,6 +250,8 @@ export function RABillActions({
         project_id: defaultProjectId || '',
         bill_number: '',
         submission_date: new Date().toISOString().split('T')[0],
+        billing_mode: 'standalone',
+        previous_bill_id: '',
         work_certified_amount: '',
         retention_percentage: '5.00',
         remarks: '',
@@ -410,7 +454,15 @@ export function RABillActions({
           <FieldWrapper label="Project (Government Site)" required>
             <Select
               value={billForm.project_id}
-              onChange={e => setBillForm(f => ({ ...f, project_id: e.target.value }))}
+              onChange={e => {
+                const pId = e.target.value
+                const pBills = raBills.filter(b => b.project_id === pId)
+                setBillForm(f => ({
+                  ...f,
+                  project_id: pId,
+                  previous_bill_id: f.billing_mode === 'cumulative' && pBills.length > 0 ? pBills[0].id : '',
+                }))
+              }}
             >
               <option value="">Select Project</option>
               {projects.map(p => (
@@ -420,6 +472,69 @@ export function RABillActions({
               ))}
             </Select>
           </FieldWrapper>
+
+          {/* Billing Mode Segmented Toggle */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Billing Mode</label>
+            <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl gap-1">
+              <button
+                type="button"
+                onClick={() => setBillForm(f => ({ ...f, billing_mode: 'standalone' }))}
+                className={`py-2 text-xs font-semibold rounded-lg transition-all ${
+                  billForm.billing_mode === 'standalone'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Standalone (Per Bill)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const pBills = raBills.filter(b => b.project_id === billForm.project_id)
+                  setBillForm(f => ({
+                    ...f,
+                    billing_mode: 'cumulative',
+                    previous_bill_id: f.previous_bill_id || (pBills.length > 0 ? pBills[0].id : ''),
+                  }))
+                }}
+                className={`py-2 text-xs font-semibold rounded-lg transition-all ${
+                  billForm.billing_mode === 'cumulative'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                Cumulative (To Date)
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {isCumulative
+                ? 'Current bill reflects total work done from contract start to date (MB up-to-date total).'
+                : 'Current bill reflects only net-new work certified during this specific billing cycle.'}
+            </p>
+          </div>
+
+          {/* Previous Bill Selector for Cumulative Mode */}
+          {isCumulative && (
+            <FieldWrapper
+              label="Previous Cumulative Bill in Sequence"
+              hint="Prior bill to deduct previous certified/received amounts"
+            >
+              <Select
+                value={billForm.previous_bill_id}
+                onChange={e => setBillForm(f => ({ ...f, previous_bill_id: e.target.value }))}
+              >
+                <option value="">— No Previous Bill (First Cumulative Bill) —</option>
+                {raBills
+                  .filter(b => b.project_id === billForm.project_id)
+                  .map(b => (
+                    <option key={b.id} value={b.id}>
+                      {b.bill_number} (Certified: {formatINR(Number(b.cumulative_certified_amount) || Number(b.work_certified_amount))} | Received: {formatINR(Number(b.amount_received))})
+                    </option>
+                  ))}
+              </Select>
+            </FieldWrapper>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <FieldWrapper label="RA Bill Number" required hint="e.g. RA Bill 01">
@@ -440,7 +555,11 @@ export function RABillActions({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <FieldWrapper label="Work Certified Amount (₹)" required hint="Approved by dept">
+            <FieldWrapper
+              label={isCumulative ? "Cumulative Certified to Date (₹)" : "Work Certified Amount (₹)"}
+              required
+              hint={isCumulative ? "Total contract-to-date work from MB" : "Approved by dept"}
+            >
               <CurrencyInput
                 placeholder="0"
                 value={billForm.work_certified_amount}
@@ -466,7 +585,7 @@ export function RABillActions({
           </div>
 
           {/* Live Calculation Preview Card */}
-          {certifiedNum > 0 && (
+          {certifiedNum > 0 && !isCumulative && (
             <div className="rounded-xl bg-amber-50/70 border border-amber-200 p-3.5 space-y-1.5 text-xs">
               <div className="flex justify-between text-amber-900">
                 <span>Retention Money Withheld ({retentionPctNum}%):</span>
@@ -475,6 +594,56 @@ export function RABillActions({
               <div className="flex justify-between text-slate-700 font-medium pt-1 border-t border-amber-200/60">
                 <span>Net Passed for Payment Now:</span>
                 <strong className="font-bold text-slate-900 tabular-nums">{formatINR(liveNetPayable)}</strong>
+              </div>
+            </div>
+          )}
+
+          {certifiedNum > 0 && isCumulative && (
+            <div className="rounded-xl bg-blue-50/70 border border-blue-200 p-3.5 space-y-2 text-xs">
+              <div className="font-bold text-blue-900 border-b border-blue-200/60 pb-1.5 flex justify-between items-center">
+                <span>Cumulative Billing Breakdown</span>
+                <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-semibold">
+                  Contract-to-Date
+                </span>
+              </div>
+
+              <div className="space-y-1 text-slate-600">
+                <div className="flex justify-between">
+                  <span>Total Certified to Date:</span>
+                  <strong className="font-bold text-slate-900 tabular-nums">{formatINR(certifiedNum)}</strong>
+                </div>
+                {prevCertified > 0 && (
+                  <div className="flex justify-between text-slate-500">
+                    <span>Less Previous Certified ({prevBill?.bill_number || 'Prior'}):</span>
+                    <span className="tabular-nums font-mono">- {formatINR(prevCertified)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-blue-800 font-semibold pt-1 border-t border-blue-100">
+                  <span>🔨 Net-New Work This Period:</span>
+                  <span className="tabular-nums">{formatINR(thisBillIncrementalCertified)}</span>
+                </div>
+              </div>
+
+              <div className="space-y-1 text-slate-600 pt-1.5 border-t border-blue-200/60">
+                <div className="flex justify-between text-amber-900">
+                  <span>Cumulative Retention ({retentionPctNum}% of {formatINR(certifiedNum)}):</span>
+                  <span className="tabular-nums font-mono">{formatINR(cumulativeRetentionAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Cumulative Net Passed:</span>
+                  <span className="tabular-nums">{formatINR(cumulativeNetPassed)}</span>
+                </div>
+                {prevReceived > 0 && (
+                  <div className="flex justify-between text-emerald-700">
+                    <span>Less Prior Payments Received:</span>
+                    <span className="tabular-nums font-mono">- {formatINR(prevReceived)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center text-slate-900 pt-2 border-t border-blue-200 font-bold text-sm bg-white/70 -mx-3.5 -mb-3.5 p-3 rounded-b-xl">
+                <span className="text-blue-900">💰 Net Payable This Bill:</span>
+                <span className="text-emerald-700 text-base tabular-nums">{formatINR(liveNetPayable)}</span>
               </div>
             </div>
           )}

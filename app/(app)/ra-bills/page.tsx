@@ -39,6 +39,13 @@ export default async function RABillsPage() {
         date_received,
         outstanding_balance,
         status,
+        billing_mode,
+        previous_bill_id,
+        cumulative_certified_amount,
+        previous_certified_amount,
+        previous_received_amount,
+        net_payable_this_bill,
+        this_bill_work_certified,
         document_url,
         remarks,
         projects (name, agency_name)
