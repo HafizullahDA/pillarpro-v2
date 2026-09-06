@@ -92,6 +92,107 @@ Connect the GitHub repo to Vercel once, so every merge to main auto-deploys. Use
 Working with your brother's changes later:
 
 Once the app is live and your brother is also making entries (not code changes — he's a user, not a developer, based on what you've described), this is separate from the GitHub workflow above. But if you ever want him or a hired developer to also push code changes, the same branch-per-change, review-before-merge pattern applies — never let anyone push straight to main.
-Attendance and Expense entry (including receipt photo capture) must queue locally and sync automatically on reconnect. Given field conditions, this is not optional — treat it as core, not a stretch goal.
-Offline handling
-Attendance and Expense entry (including receipt photo capture) must queue locally and sync automatically on reconnect. Given field conditions, this is not optional — treat it as core, not a stretch goal.
+Offline handling:
+Attendance and Expense entry (including receipt photo capture) must queue locally and sync automatically on reconnect. Given field conditions, this is treated as core architecture.
+
+---
+
+# SECTION B — As-Built System Specification & Architecture Enhancements
+
+This section records the live, production-grade architecture of PillarPro v2 as built, noting design evolutions, schema enhancements, and government tendering features implemented beyond the initial Section A blueprint.
+
+---
+
+## 1. Major Architectural Evolutions from Section A
+
+### A. Vendor & Supplier Consolidation (Migration 013)
+- **Problem**: Section A specified a `Vendors` module for purchases, while later iterations introduced `Suppliers`. Maintaining two separate accounts created duplicate entries, divided balances, and confusion.
+- **Solution**: 
+  - Retired the `Vendors` sidebar menu item and consolidated all vendor data into **Supplier Accounts** (`public.suppliers` and `public.supplier_transactions`).
+  - Added material-level attributes (`quantity`, `rate`, and `unit` e.g. bags, tonnes, cum, kg, nos) to `public.supplier_transactions`.
+  - Added automated triggers (`trg_ledger_supplier_transaction` and `trg_ledger_delete_supplier_transaction`) syncing supplier transactions directly to the master `public.ledger`.
+  - Redirected mobile Floating Action Button (FAB) shortcuts to `/suppliers`.
+  - Preserved historical `vendors`, `vendor_purchases`, and `vendor_payments` tables as immutable backups.
+
+### B. Owner-Restricted Deletion Controls (Migrations 012 & 015)
+- **Expenses Deletion (Migration 012)**: 
+  - Restricts `DELETE` on `public.expenses` strictly to the `owner` role via Postgres RLS.
+  - Automated trigger `trg_ledger_delete_expense` reverses associated polymorphic ledger entries upon deletion.
+- **Supplier Deletion (Migration 015)**:
+  - Split RLS policies so that `DELETE` on `public.suppliers` is strictly restricted to `get_user_role() = 'owner'`.
+  - Cascades foreign key constraints on `supplier_transactions` so deleting a supplier purges associated transactions and triggers central ledger cleanups.
+  - Provides a `SECURITY DEFINER` RPC `delete_supplier(UUID)` with strict role verification.
+
+### C. Government RA Bill Engine Evolution (Migrations 008, 009, 010, 014, 016)
+Section A described a basic "Receivables" table. The live system incorporates a full **Running Account (RA) Bills & Guarantee Management Engine** (`/ra-bills`):
+1. **Dual Billing Modes (Migration 014)**:
+   - **Standalone Mode**: Independent certified bills.
+   - **Cumulative Mode (CPWD Form 26 / Standard MB Format)**: Tracks contract-to-date work certified from the Measurement Book. Automatically detects and references previous bills for that project, calculating incremental net-new work and Net Payable This Bill:
+     $$\text{Net Payable This Bill} = (\text{Cumulative Net Certified To Date}) - (\text{Previous Cumulative Received To Date})$$
+2. **Statutory Deductions & Treasury Payments Ledger (Migration 010)**:
+   - Tranche-level ledger (`public.ra_bill_payments`) recording releases against bills.
+   - Standard statutory withholding fields: TDS (IT u/s 194C), GST-TDS (Sec 51), and BOCW Labour Welfare Cess (1%).
+   - Stored generated columns for `total_deductions` and `net_bank_amount`.
+   - Real-time roll-up trigger `trg_sync_ra_bill_from_payments` updating `public.ra_bills`.
+3. **Flexible Additional Deductions Engine (Migration 016)**:
+   - Accommodates differing departmental withholding practices (NHPC, PMGSY, CPWD, Railways, PWD).
+   - Introduces `public.bill_deductions` with `deduction_label` and `deduction_amount`.
+   - Record Payment drawer features quick-add suggestion chips:
+     `+ Royalty`, `+ GST on Royalty`, `+ TCS on Royalty`, `+ DMFT (Mineral Fund)`, `+ Withheld against Time Extension`, `+ Water / Electricity Charges`, `+ Testing & Quality Charges`.
+   - Sums additional deductions into the Net Bank Cash calculation without affecting Gross Released or Outstanding balances.
+4. **Security Deposits & Bank Guarantees (Migration 008)**:
+   - Tracks Performance Bank Guarantees (PBG), Security Deposits (SD), Earnest Money Deposits (EMD), and Fixed Deposit Receipts (FDR).
+   - Monitors issue dates, claim expiry dates, issuing banks, document attachments, and active alert statuses.
+
+### D. AI Receipt Scanner Integration
+- Endpoint `/api/scan-receipt` implemented using **Google Gemini Flash** multimodal model (`@google/genai`).
+- Extracts vendor name, GSTIN, invoice date, total amount, and itemized line items from field photos.
+- Directly links captured images to Supabase Storage and pre-fills expense entry drawers.
+
+### E. Accounting Period Locking & Month Close (Migration 003, 007)
+- Dedicated `/admin/periods` interface allowing Owners to close accounting months project-wise.
+- Database trigger `guard_period_supplier_tx()` blocks non-Owner writes or deletions on closed periods.
+
+### F. User Management & Onboarding (`/admin/users`)
+- New users self-registering via Supabase Auth enter a `pending` status.
+- Owners review pending registrations, activate accounts, designate roles (`owner`, `managing_partner`, `site_supervisor`), and assign project scopes via `project_members`.
+
+---
+
+## 2. Complete Database Migration Registry
+
+| Migration | File Name | Key Schema Additions |
+| :--- | :--- | :--- |
+| **001** | `001_initial_schema.sql` | Core schema: `projects`, `project_members`, `workers`, `attendance`, `expenses`, `vendors`, `vendor_purchases`, `vendor_payments`, `client_bills`, `client_payments`, `partners`, `partner_transactions`, `ledger`. |
+| **002** | `002_rls_policies.sql` | Database-level Row Level Security policies across all primary tables. |
+| **003** | `003_phase2_additions.sql` | `accounting_periods` table, period-closure check functions, and soft-delete helpers. |
+| **004** | `004_fix_user_profiles_roles_rls.sql` | `user_profiles`, role synchronization triggers, and `get_user_role()` RPC. |
+| **005** | `005_grant_authenticated_table_permissions.sql` | Explicit SQL grants on tables and sequences for the Supabase `authenticated` role. |
+| **006** | `006_add_email_to_user_profiles.sql` | Added `email` column to `user_profiles` to support Admin user directory. |
+| **007** | `007_supplier_account_schema.sql` | `suppliers`, `supplier_transactions`, dynamic `supplier_summary` view, and period guard triggers. |
+| **008** | `008_ra_bill_tracker_schema.sql` | `ra_bills`, `security_deposits`, retention percentage, and measurement sheet storage attachments. |
+| **009** | `009_fix_ra_bill_outstanding_formula.sql` | Stored generated columns for `net_payable_amount` and `outstanding_balance` on `ra_bills`. |
+| **010** | `010_statutory_deductions_and_payments_ledger.sql` | `ra_bill_payments` ledger table, statutory deductions roll-up trigger, and `net_bank_received` tracking. |
+| **011** | `011_project_archive_soft_delete.sql` | Added `archived` boolean flag, archive RPC functions, and filtered directory queries. |
+| **012** | `012_owner_expense_delete_and_ledger_sync.sql` | Restricted expense deletion to Owner in RLS; added `trg_ledger_delete_expense` cleanup trigger. |
+| **013** | `013_migrate_vendors_to_suppliers.sql` | Migrated Vendors into Suppliers; added quantity/rate/unit; added automated ledger sync triggers. |
+| **014** | `014_ra_bill_cumulative_mode.sql` | CPWD Form 26 Cumulative Billing Mode, previous bill detection, and incremental certified amounts. |
+| **015** | `015_owner_supplier_delete.sql` | Owner-restricted supplier deletion with cascading FK constraint on transactions and `delete_supplier` RPC. |
+| **016** | `016_bill_deductions.sql` | Flexible `bill_deductions` line-items table (Royalty, GST on Royalty, TCS, DMFT, withholds). |
+
+---
+
+## 3. Roadmap: Upcoming Senior Government Contractor Modules
+
+1. **Hindrance Register & Automated EOT Claim Engine (Clause 5 / Form 14)**:
+   - Comprehensive log of client-caused project hindrances (site handover delay, drawing delay, utility shifting, monsoon/weather, delayed running payments).
+   - Delay categorization (overlapping vs. concurrent) to protect against Liquidated Damages (LD) and milestone penalties.
+   - Auto-generation of formal CPWD Extension of Time (EOT) claim packages.
+2. **Retention Money & Defect Liability Period (DLP) Pipeline**:
+   - Tracking 5% cash retention deductions across projects.
+   - Project completion handover and DLP milestone countdowns (12, 24, or 36 months).
+   - Automated notifications for Bank Guarantee / FDR maturity and release applications.
+3. **BOQ Deviations & Extra Items Register (Clause 12 Variation Sanctions)**:
+   - Tracking deviations beyond standard permissible limits (+/- 25% or 30%).
+   - Approval tracking for non-BOQ extra items, substituted items, and revised rate analyses prior to billing.
+
