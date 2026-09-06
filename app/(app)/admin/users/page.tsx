@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { UserManagementClient } from './UserManagementClient'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function AdminUsersPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -31,7 +34,11 @@ export default async function AdminUsersPage() {
     console.error('ROLES FETCH ERROR:', JSON.stringify(rolesError))
   }
 
-  const { data: projects } = await supabase.from('projects').select('id, name')
+  const { data: projects } = await supabase
+    .from('projects')
+    .select('id, name')
+    .eq('archived', false)
+    .order('name')
   const { data: projectMembers } = await supabase.from('project_members').select('project_id, user_id')
 
   // Ensure current logged in user is in profiles array if table is empty

@@ -3,12 +3,18 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { formatINR } from '@/lib/format'
 import { VendorActions } from './VendorActions'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function VendorsPage() {
   const supabase = createClient()
 
   const { data: projects } = await supabase.from('projects').select('id, name').eq('archived', false).order('name')
 
-  // Vendors with computed due = sum(purchases) - sum(payments)
+  const activeProjects = projects ?? []
+  const activeProjectIds = new Set(activeProjects.map(p => p.id))
+
+  // Vendors with computed due = sum(purchases) - sum(payments) (filtered to active projects or unassigned)
   const { data: vendors } = await supabase
     .from('vendors')
     .select(`
@@ -19,11 +25,13 @@ export default async function VendorsPage() {
     `)
     .order('name')
 
-  const vendorsWithDue = (vendors ?? []).map(v => {
-    const totalPurchased = (v.vendor_purchases ?? []).reduce((s: number, p: {amount: number}) => s + (p.amount ?? 0), 0)
-    const totalPaid = (v.vendor_payments ?? []).reduce((s: number, p: {amount: number}) => s + (p.amount ?? 0), 0)
-    return { ...v, due: totalPurchased - totalPaid }
-  })
+  const vendorsWithDue = (vendors ?? [])
+    .filter(v => !v.project_id || activeProjectIds.has(v.project_id))
+    .map(v => {
+      const totalPurchased = (v.vendor_purchases ?? []).reduce((s: number, p: {amount: number}) => s + (p.amount ?? 0), 0)
+      const totalPaid = (v.vendor_payments ?? []).reduce((s: number, p: {amount: number}) => s + (p.amount ?? 0), 0)
+      return { ...v, due: totalPurchased - totalPaid }
+    })
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">

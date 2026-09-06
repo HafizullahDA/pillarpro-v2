@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { PeriodsClient } from './PeriodsClient'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function AdminPeriodsPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -14,7 +17,11 @@ export default async function AdminPeriodsPage() {
     redirect('/dashboard')
   }
 
-  const { data: projects } = await supabase.from('projects').select('id, name').order('name')
+  const { data: projects } = await supabase
+    .from('projects')
+    .select('id, name')
+    .eq('archived', false)
+    .order('name')
   const { data: periods } = await supabase.from('ledger_periods').select('*')
 
   return (

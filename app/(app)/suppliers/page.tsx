@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { SuppliersClient, SupplierSummaryRow } from './SuppliersClient'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function SuppliersPage() {
   const supabase = createClient()

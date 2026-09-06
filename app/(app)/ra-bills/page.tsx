@@ -3,6 +3,7 @@ import { RABillsClient, RABillRow, SecurityDepositRow } from './RABillsClient'
 import { ProjectOption } from './RABillActions'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function RABillsPage() {
   const supabase = createClient()
@@ -63,11 +64,21 @@ export default async function RABillsPage() {
       .order('expiry_date', { ascending: true }),
   ])
 
+  const activeProjects = (projects as ProjectOption[]) ?? []
+  const activeProjectIds = new Set(activeProjects.map(p => p.id))
+
+  const activeBills = ((bills as unknown as RABillRow[]) ?? []).filter(
+    b => b.project_id && activeProjectIds.has(b.project_id)
+  )
+  const activeDeposits = ((deposits as unknown as SecurityDepositRow[]) ?? []).filter(
+    d => d.project_id && activeProjectIds.has(d.project_id)
+  )
+
   return (
     <RABillsClient
-      initialBills={(bills as unknown as RABillRow[]) ?? []}
-      initialDeposits={(deposits as unknown as SecurityDepositRow[]) ?? []}
-      projects={(projects as ProjectOption[]) ?? []}
+      initialBills={activeBills}
+      initialDeposits={activeDeposits}
+      projects={activeProjects}
     />
   )
 }

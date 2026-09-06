@@ -3,6 +3,9 @@ import { formatINR, formatDate } from '@/lib/format'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PartnersActions } from './PartnersActions'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function PartnersPage() {
   const supabase = createClient()
   const { data: projects } = await supabase.from('projects').select('id, name').eq('archived', false).order('name')

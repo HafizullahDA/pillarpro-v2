@@ -7,6 +7,7 @@ import { formatINR, formatDate } from '@/lib/format'
 import { SupplierActions } from '../SupplierActions'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 interface Props {
   params: { id: string }
@@ -45,6 +46,7 @@ export default async function SupplierDetailPage({ params }: Props) {
     supabase
       .from('projects')
       .select('id, name')
+      .eq('archived', false)
       .order('name'),
   ])
 

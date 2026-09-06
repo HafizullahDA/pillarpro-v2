@@ -4,6 +4,7 @@ import { formatINR, formatDate } from '@/lib/format'
 import { ProjectDetailHeader } from './ProjectDetailHeader'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function ProjectDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient()

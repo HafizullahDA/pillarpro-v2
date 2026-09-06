@@ -15,6 +15,9 @@ const CATEGORY_VARIANTS: Record<string, 'default'|'success'|'warning'|'danger'|'
   other:      'neutral',
 }
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function ExpensesPage() {
   const supabase = createClient()
   const [{ data: projects }, { data: suppliers }, { data: expenses }] = await Promise.all([
@@ -27,14 +30,21 @@ export default async function ExpensesPage() {
       .limit(100),
   ])
 
+  const activeProjects = projects ?? []
+  const activeProjectIds = new Set(activeProjects.map(p => p.id))
+
+  const activeExpenses = (expenses ?? []).filter(
+    e => !e.project_id || activeProjectIds.has(e.project_id)
+  )
+
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-bold text-slate-900">Expenses</h1>
-        <AddExpenseButton projects={projects ?? []} suppliers={suppliers ?? []} />
+        <AddExpenseButton projects={activeProjects} suppliers={suppliers ?? []} />
       </div>
 
-      {!expenses?.length ? (
+      {!activeExpenses.length ? (
         <EmptyState title="No expenses yet" description="Add fuel, equipment, tendering, and other site expenses here." />
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -51,7 +61,7 @@ export default async function ExpensesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {expenses.map(e => (
+                {activeExpenses.map(e => (
                   <tr key={e.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3">
                       <p className="font-medium text-slate-900">{e.description ?? '—'}</p>

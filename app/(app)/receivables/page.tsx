@@ -9,6 +9,9 @@ const BILL_TYPE_VARIANTS = {
   'Advance': 'warning', 'Mobilization Bill': 'info',
 } as const
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function ReceivablesPage() {
   const supabase = createClient()
   const { data: projects } = await supabase
@@ -17,6 +20,9 @@ export default async function ReceivablesPage() {
     .eq('archived', false)
     .order('name')
 
+  const activeProjects = projects ?? []
+  const activeProjectIds = new Set(activeProjects.map(p => p.id))
+
   const { data: bills } = await supabase
     .from('bills')
     .select('*, projects(name), receivable_payments(amount_received)')
@@ -24,7 +30,9 @@ export default async function ReceivablesPage() {
 
   const now = new Date().getTime()
 
-  const billsWithStatus = (bills ?? []).map(b => {
+  const billsWithStatus = (bills ?? [])
+    .filter(b => b.project_id && activeProjectIds.has(b.project_id))
+    .map(b => {
     const received = (b.receivable_payments ?? []).reduce((s: number, p: {amount_received: number}) => s + (p.amount_received ?? 0), 0)
     const net = (b.gross_amount ?? 0) - (b.deductions ?? 0)
     const outstanding = net - received

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ProjectsClient, ProjectRow } from './ProjectsClient'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function ProjectsPage() {
   const supabase = createClient()
