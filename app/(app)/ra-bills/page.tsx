@@ -9,11 +9,13 @@ export default async function RABillsPage() {
   const supabase = createClient()
 
   const [
+    { data: userRole },
     { data: projects },
     { data: bills },
     { data: deposits },
     { data: deductions },
   ] = await Promise.all([
+    supabase.rpc('get_user_role'),
     supabase
       .from('projects')
       .select('id, name, agency_name')
@@ -108,6 +110,7 @@ export default async function RABillsPage() {
       initialBills={activeBills}
       initialDeposits={activeDeposits}
       projects={activeProjects}
+      userRole={userRole}
     />
   )
 }

@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { formatINR, formatDate } from '@/lib/format'
 import { RABillActions, ProjectOption, RABillOption } from './RABillActions'
+import { canCreateRaBill } from '@/lib/permissions'
 
 // ════════════════════════════════════════════════════════════════════════
 // CONFIGURABLE THRESHOLD FOR EXPIRING BANK GUARANTEES (IN DAYS)
@@ -65,6 +66,7 @@ interface RABillsClientProps {
   initialBills: RABillRow[]
   initialDeposits: SecurityDepositRow[]
   projects: ProjectOption[]
+  userRole?: string
 }
 
 const STATUS_BADGE_CONFIG = {
@@ -77,7 +79,9 @@ export function RABillsClient({
   initialBills,
   initialDeposits,
   projects,
+  userRole,
 }: RABillsClientProps) {
+  const canCreate = canCreateRaBill(userRole)
   // Filters
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
@@ -255,12 +259,14 @@ export function RABillsClient({
           </p>
         </div>
 
-        <RABillActions
-          projects={projects}
-          raBills={billOptions}
-          defaultProjectId={selectedProjectId !== 'all' ? selectedProjectId : undefined}
-          preselectedBillId={payBillId}
-        />
+        {canCreate && (
+          <RABillActions
+            projects={projects}
+            raBills={billOptions}
+            defaultProjectId={selectedProjectId !== 'all' ? selectedProjectId : undefined}
+            preselectedBillId={payBillId}
+          />
+        )}
       </div>
 
       {/* ── ⚠️ EXPIRING BANK GUARANTEES ALERT BANNER ── */}
@@ -730,7 +736,7 @@ export function RABillsClient({
 
                       {/* Action */}
                       <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                        {derivedStatus !== 'fully_paid' ? (
+                        {canCreate && derivedStatus !== 'fully_paid' ? (
                           <Button
                             size="sm"
                             variant="secondary"
@@ -739,8 +745,10 @@ export function RABillsClient({
                           >
                             + Pay
                           </Button>
-                        ) : (
+                        ) : derivedStatus === 'fully_paid' ? (
                           <span className="text-xs text-slate-400 font-medium">Settled</span>
+                        ) : (
+                          <span className="text-xs text-slate-400 font-medium">—</span>
                         )}
                       </td>
                     </tr>

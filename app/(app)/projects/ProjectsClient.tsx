@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { formatINR, formatDate } from '@/lib/format'
 import { AddProjectButton } from './AddProjectButton'
 import { ArchiveProjectModal } from './ArchiveProjectModal'
+import { canArchiveProject, canCreateProject } from '@/lib/permissions'
 
 export interface ProjectRow {
   id: string
@@ -42,7 +43,8 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
   const [modalProject, setModalProject] = useState<ProjectRow | null>(null)
   const [modalMode, setModalMode] = useState<'archive' | 'unarchive'>('archive')
 
-  const isOwner = userRole === 'owner'
+  const canArchive = canArchiveProject(userRole)
+  const canCreate = canCreateProject(userRole)
 
   const activeProjects = useMemo(() => projects.filter(p => !p.archived), [projects])
   const archivedProjects = useMemo(() => projects.filter(p => !!p.archived), [projects])
@@ -78,7 +80,7 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
             Manage contract sites, work orders, and client agency records
           </p>
         </div>
-        <AddProjectButton />
+        {canCreate && <AddProjectButton />}
       </div>
 
       {/* Filter Tabs & Search Bar */}
@@ -149,7 +151,7 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
                   <th className="text-right px-4 py-3 hidden lg:table-cell">Awarded Amount</th>
                   <th className="text-left px-4 py-3 hidden md:table-cell">Start Date</th>
                   <th className="text-center px-4 py-3">Status</th>
-                  {isOwner && <th className="text-right px-4 py-3">Action</th>}
+                  {canArchive && <th className="text-right px-4 py-3">Action</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -199,7 +201,7 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
                     </td>
 
                     {/* Action (Owner Only) */}
-                    {isOwner && (
+                    {canArchive && (
                       <td className="px-4 py-3.5 text-right whitespace-nowrap">
                         {!p.archived ? (
                           <Button

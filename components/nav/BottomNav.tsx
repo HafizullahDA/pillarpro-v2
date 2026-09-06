@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { NAV_ITEMS } from './NavLinks'
+import { NAV_ITEMS, isNavVisible } from './NavLinks'
 import { Icons } from './NavIcons'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -17,15 +17,18 @@ const PRIMARY_TABS = [
 
 // All other NAV_ITEMS appear in the "More" drawer on mobile
 const PRIMARY_HREFS = new Set(PRIMARY_TABS.map(t => t.href))
-const MORE_ITEMS = NAV_ITEMS.filter(item => !PRIMARY_HREFS.has(item.href))
 
-export function BottomNav() {
+export function BottomNav({ userRole }: { userRole?: string }) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
   const [moreOpen, setMoreOpen] = useState(false)
 
-  const isMoreActive = MORE_ITEMS.some(item => pathname.startsWith(item.href))
+  const moreItems = NAV_ITEMS
+    .filter(item => !PRIMARY_HREFS.has(item.href))
+    .filter(item => isNavVisible(item.href, userRole))
+
+  const isMoreActive = moreItems.some(item => pathname.startsWith(item.href))
 
   const signOut = async () => {
     await supabase.auth.signOut()
@@ -62,7 +65,7 @@ export function BottomNav() {
 
             {/* Grid of Navigation Items */}
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 overflow-y-auto mb-4 p-0.5">
-              {MORE_ITEMS.map(item => {
+              {moreItems.map(item => {
                 const active = pathname.startsWith(item.href)
                 return (
                   <Link

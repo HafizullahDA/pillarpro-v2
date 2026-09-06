@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { formatINR, formatDate } from '@/lib/format'
+import { canArchiveProject } from '@/lib/permissions'
 import { ProjectDetailHeader } from './ProjectDetailHeader'
 
 export const dynamic = 'force-dynamic'
@@ -23,7 +24,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
       <ProjectDetailHeader
         project={project}
-        isOwner={userRole === 'owner'}
+        canArchive={canArchiveProject(userRole)}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">

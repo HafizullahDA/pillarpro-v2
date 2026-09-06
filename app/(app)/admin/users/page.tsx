@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { canManageUsers } from '@/lib/permissions'
 import { UserManagementClient } from './UserManagementClient'
 
 export const dynamic = 'force-dynamic'
@@ -10,11 +11,9 @@ export default async function AdminUsersPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
 
-  // Check if owner using SECURITY DEFINER RPC
   const { data: userRole } = await supabase.rpc('get_user_role')
-  console.log('CURRENT USER ROLE:', userRole)
 
-  if (userRole !== 'owner') {
+  if (!canManageUsers(userRole)) {
     redirect('/dashboard')
   }
 
@@ -76,6 +75,7 @@ export default async function AdminUsersPage() {
         roles={rolesList}
         projects={projects ?? []}
         projectMembers={projectMembers ?? []}
+        currentUserId={user.id}
       />
     </div>
   )

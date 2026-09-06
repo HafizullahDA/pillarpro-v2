@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { NAV_ITEMS } from './NavLinks'
+import { NAV_ITEMS, isNavVisible } from './NavLinks'
 import { Icons } from './NavIcons'
 import { UserProfileModal } from './UserProfileModal'
 import { cn } from '@/lib/utils'
@@ -20,6 +20,8 @@ export function IconRail({
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
 
+  const visibleNavItems = NAV_ITEMS.filter(item => isNavVisible(item.href, userRole))
+
   return (
     <>
       <aside className="hidden md:flex lg:hidden flex-col w-16 min-h-screen bg-slate-900 shrink-0 items-center py-4 gap-1">
@@ -29,7 +31,7 @@ export function IconRail({
             <span className="text-white font-bold text-sm">P</span>
           </div>
         </div>
-        {NAV_ITEMS.map(item => {
+        {visibleNavItems.map(item => {
           const active = pathname.startsWith(item.href)
           return (
             <Link

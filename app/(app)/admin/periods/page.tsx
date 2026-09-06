@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { canManagePeriods } from '@/lib/permissions'
 import { PeriodsClient } from './PeriodsClient'
 
 export const dynamic = 'force-dynamic'
@@ -10,10 +11,9 @@ export default async function AdminPeriodsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
 
-  // Check if owner using SECURITY DEFINER RPC
   const { data: userRole } = await supabase.rpc('get_user_role')
 
-  if (userRole !== 'owner') {
+  if (!canManagePeriods(userRole)) {
     redirect('/dashboard')
   }
 

@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { formatINR, formatDate } from '@/lib/format'
 import { AddExpenseButton } from './AddExpenseButton'
 import { DeleteExpenseModal, ExpenseToDelete } from './DeleteExpenseModal'
+import { canDeleteExpense, canCreateExpense } from '@/lib/permissions'
 
 const CATEGORY_VARIANTS: Record<string, 'default' | 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
   labor:      'info',
@@ -49,7 +50,8 @@ export function ExpensesClient({
   const [expenseToDelete, setExpenseToDelete] = useState<ExpenseToDelete | null>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
 
-  const isOwner = userRole === 'owner'
+  const canDelete = canDeleteExpense(userRole)
+  const canCreate = canCreateExpense(userRole)
 
   const handleOpenDelete = (expense: ExpenseRow) => {
     setExpenseToDelete({
@@ -77,7 +79,7 @@ export function ExpensesClient({
           <h1 className="text-xl font-bold text-slate-900">Expenses</h1>
           <p className="text-xs text-slate-500 mt-0.5">Track and manage site expenses and receipts</p>
         </div>
-        <AddExpenseButton projects={projects} suppliers={suppliers} />
+        {canCreate && <AddExpenseButton projects={projects} suppliers={suppliers} />}
       </div>
 
       {!expenses.length ? (
@@ -97,7 +99,7 @@ export function ExpensesClient({
                   <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Mode</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Amount</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Date</th>
-                  {isOwner && (
+                  {canDelete && (
                     <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
                   )}
                 </tr>
@@ -126,7 +128,7 @@ export function ExpensesClient({
                     <td className="px-4 py-3 text-slate-500 hidden md:table-cell">
                       {formatDate(e.date)}
                     </td>
-                    {isOwner && (
+                    {canDelete && (
                       <td className="px-4 py-3 text-right">
                         <button
                           type="button"

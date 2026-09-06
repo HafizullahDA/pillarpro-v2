@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { NAV_ITEMS } from './NavLinks'
+import { NAV_ITEMS, isNavVisible } from './NavLinks'
 import { Icons } from './NavIcons'
 import { UserProfileModal } from './UserProfileModal'
 import { cn } from '@/lib/utils'
@@ -20,6 +20,8 @@ export function Sidebar({
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
 
+  const visibleNavItems = NAV_ITEMS.filter(item => isNavVisible(item.href, userRole))
+
   return (
     <>
       <aside className="hidden lg:flex flex-col w-60 min-h-screen bg-slate-900 text-white shrink-0">
@@ -34,7 +36,7 @@ export function Sidebar({
         </div>
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">
-          {NAV_ITEMS.map(item => {
+          {visibleNavItems.map(item => {
             const active = pathname.startsWith(item.href)
             return (
               <Link

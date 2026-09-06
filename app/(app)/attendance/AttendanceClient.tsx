@@ -8,6 +8,7 @@ import { FieldWrapper, Input, Select } from '@/components/ui/FormField'
 import { SummaryTile } from '@/components/ui/SummaryTile'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { formatINR } from '@/lib/format'
+import { canCreateAttendance } from '@/lib/permissions'
 
 type Project = { id: string; name: string }
 type Worker = { id: string; name: string; trade: string | null; daily_wage_rate: number | null }
@@ -16,8 +17,9 @@ type AttendanceRecord = { worker_id: string; status: string }
 const TRADES = ['Mason', 'Helper', 'Carpenter', 'Plumber', 'Electrician', 'Welder', 'Painter', 'Driver', 'Operator', 'Supervisor', 'Other']
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-export function AttendanceClient({ projects }: { projects: Project[] }) {
+export function AttendanceClient({ projects, userRole }: { projects: Project[]; userRole?: string }) {
   const supabase = createClient()
+  const canMark = canCreateAttendance(userRole)
 
   const today = new Date()
   const [projectId, setProjectId] = useState(projects[0]?.id ?? '')
@@ -154,9 +156,11 @@ export function AttendanceClient({ projects }: { projects: Project[] }) {
         >
           {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
         </select>
-        <Button variant="secondary" size="sm" onClick={() => setWorkerOpen(true)}>
-          Manage Workers
-        </Button>
+        {canMark && (
+          <Button variant="secondary" size="sm" onClick={() => setWorkerOpen(true)}>
+            Manage Workers
+          </Button>
+        )}
       </div>
 
       {/* Summary tiles */}
@@ -190,14 +194,14 @@ export function AttendanceClient({ projects }: { projects: Project[] }) {
         <EmptyState
           title="No workers added yet"
           description="Add workers first using the 'Manage Workers' button."
-          action={<Button size="sm" onClick={() => setWorkerOpen(true)}>Add Worker</Button>}
+          action={canMark ? <Button size="sm" onClick={() => setWorkerOpen(true)}>Add Worker</Button> : undefined}
         />
       ) : (
         <>
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-4">
             <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                {String(day).padStart(2,'0')} {MONTH_NAMES[month-1]} {year} — Tap to mark
+                {String(day).padStart(2,'0')} {MONTH_NAMES[month-1]} {year} {canMark ? '— Tap to mark' : '— Daily Record'}
               </p>
             </div>
             {workers.map(w => {
@@ -212,8 +216,11 @@ export function AttendanceClient({ projects }: { projects: Project[] }) {
                     {(['present','half_day','absent'] as const).map(status => (
                       <button
                         key={status}
-                        onClick={() => setStatus(w.id, status)}
+                        disabled={!canMark}
+                        onClick={() => canMark && setStatus(w.id, status)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                          !canMark ? 'cursor-default opacity-80 ' : ''
+                        }${
                           s === status
                             ? status === 'present'  ? 'bg-emerald-500 text-white border-emerald-500'
                             : status === 'half_day' ? 'bg-amber-400 text-white border-amber-400'
@@ -229,9 +236,11 @@ export function AttendanceClient({ projects }: { projects: Project[] }) {
               )
             })}
           </div>
-          <Button loading={saving} onClick={saveAttendance} className="w-full">
-            Save Attendance
-          </Button>
+          {canMark && (
+            <Button loading={saving} onClick={saveAttendance} className="w-full">
+              Save Attendance
+            </Button>
+          )}
         </>
       )}
 

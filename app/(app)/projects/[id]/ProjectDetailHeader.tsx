@@ -20,10 +20,11 @@ interface ProjectDetailHeaderProps {
     archived?: boolean
     archived_at?: string | null
   }
-  isOwner: boolean
+  isOwner?: boolean
+  canArchive?: boolean
 }
 
-export function ProjectDetailHeader({ project, isOwner }: ProjectDetailHeaderProps) {
+export function ProjectDetailHeader({ project, isOwner, canArchive = isOwner ?? false }: ProjectDetailHeaderProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'archive' | 'unarchive'>('archive')
 
@@ -61,7 +62,7 @@ export function ProjectDetailHeader({ project, isOwner }: ProjectDetailHeaderPro
               </p>
             </div>
           </div>
-          {isOwner && (
+          {canArchive && (
             <Button
               size="sm"
               variant="secondary"
@@ -93,7 +94,7 @@ export function ProjectDetailHeader({ project, isOwner }: ProjectDetailHeaderPro
         </div>
 
         {/* Header Action for Owner */}
-        {isOwner && (
+        {canArchive && (
           <div className="flex items-center gap-2 shrink-0">
             {!project.archived ? (
               <Button

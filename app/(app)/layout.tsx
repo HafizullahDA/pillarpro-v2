@@ -29,8 +29,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {children}
           </main>
         </div>
-        <BottomNav />
-        <FAB />
+        <BottomNav userRole={userRole} />
+        <FAB userRole={userRole} />
       </div>
     </div>
   )

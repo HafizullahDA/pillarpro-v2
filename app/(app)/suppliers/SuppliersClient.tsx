@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { formatINR } from '@/lib/format'
 import { SupplierActions } from './SupplierActions'
 import { DeleteSupplierModal } from './DeleteSupplierModal'
+import { canDeleteSupplier, canCreateSupplier } from '@/lib/permissions'
 
 export type SupplierSummaryRow = {
   id: string
@@ -37,7 +38,8 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
   const [supplierToDelete, setSupplierToDelete] = useState<SupplierSummaryRow | null>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
 
-  const isOwner = userRole === 'owner'
+  const canDelete = canDeleteSupplier(userRole)
+  const canCreate = canCreateSupplier(userRole)
 
   useEffect(() => {
     setSuppliers(initialSuppliers)
@@ -95,7 +97,7 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
             Manage material suppliers, track site procurements, and record payments
           </p>
         </div>
-        <SupplierActions projects={projects} suppliers={supplierOptions} />
+        {canCreate && <SupplierActions projects={projects} suppliers={supplierOptions} />}
       </div>
 
       {/* KPI Tiles */}
@@ -230,7 +232,7 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </Link>
-                          {isOwner && (
+                          {canDelete && (
                             <button
                               type="button"
                               onClick={() => handleOpenDelete(s)}

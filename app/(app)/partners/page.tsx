@@ -1,6 +1,8 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { formatINR, formatDate } from '@/lib/format'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { canViewPartners } from '@/lib/permissions'
 import { PartnersActions } from './PartnersActions'
 
 export const dynamic = 'force-dynamic'
@@ -8,6 +10,11 @@ export const revalidate = 0
 
 export default async function PartnersPage() {
   const supabase = createClient()
+  const { data: userRole } = await supabase.rpc('get_user_role')
+  if (!canViewPartners(userRole)) {
+    redirect('/dashboard')
+  }
+
   const { data: projects } = await supabase.from('projects').select('id, name').eq('archived', false).order('name')
 
   const { data: partners } = await supabase

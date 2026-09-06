@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { formatINR, formatDate } from '@/lib/format'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { can } from '@/lib/permissions'
 import { ReceivablesActions } from './ReceivablesActions'
 
 const BILL_TYPE_VARIANTS = {
@@ -14,11 +15,14 @@ export const revalidate = 0
 
 export default async function ReceivablesPage() {
   const supabase = createClient()
-  const { data: projects } = await supabase
-    .from('projects')
-    .select('id, name, agency_name, advertised_cost, awarded_amount')
-    .eq('archived', false)
-    .order('name')
+  const [{ data: userRole }, { data: projects }] = await Promise.all([
+    supabase.rpc('get_user_role'),
+    supabase
+      .from('projects')
+      .select('id, name, agency_name, advertised_cost, awarded_amount')
+      .eq('archived', false)
+      .order('name'),
+  ])
 
   const activeProjects = projects ?? []
   const activeProjectIds = new Set(activeProjects.map(p => p.id))
@@ -64,10 +68,12 @@ export default async function ReceivablesPage() {
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-900">Receivables</h1>
-        <ReceivablesActions
-          projects={projects ?? []}
-          bills={billsWithStatus.map(b => ({ id: b.id, label: `${b.bill_number} — ${(b.projects as {name:string}|null)?.name ?? ''}` }))}
-        />
+        {can(userRole, 'receivables', 'create') && (
+          <ReceivablesActions
+            projects={projects ?? []}
+            bills={billsWithStatus.map(b => ({ id: b.id, label: `${b.bill_number} — ${(b.projects as {name:string}|null)?.name ?? ''}` }))}
+          />
+        )}
       </div>
 
       {/* Per-Project Summary Table */}

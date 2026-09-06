@@ -3,21 +3,25 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { canCreateAttendance, canCreateExpense, canCreateSupplier } from '@/lib/permissions'
 
-const QUICK_ACTIONS = [
-  { href: '/attendance?quick=1', label: 'Attendance', color: 'bg-emerald-500' },
-  { href: '/expenses?quick=1',   label: 'Expense',    color: 'bg-amber-500'   },
-  { href: '/suppliers?quick=procurement', label: 'Purchase', color: 'bg-sky-500' },
+const ALL_QUICK_ACTIONS = [
+  { href: '/attendance?quick=1', label: 'Attendance', color: 'bg-emerald-500', check: canCreateAttendance },
+  { href: '/expenses?quick=1',   label: 'Expense',    color: 'bg-amber-500',   check: canCreateExpense },
+  { href: '/suppliers?quick=procurement', label: 'Purchase', color: 'bg-sky-500', check: canCreateSupplier },
 ]
 
-export function FAB() {
+export function FAB({ userRole }: { userRole?: string }) {
   const [open, setOpen] = useState(false)
+
+  const quickActions = ALL_QUICK_ACTIONS.filter(a => a.check(userRole))
+  if (quickActions.length === 0) return null
 
   return (
     <div className="fixed bottom-20 right-4 md:bottom-6 z-40 flex flex-col items-end gap-2">
       {open && (
         <div className="flex flex-col items-end gap-2 mb-2">
-          {QUICK_ACTIONS.map(a => (
+          {quickActions.map(a => (
             <Link
               key={a.href}
               href={a.href}
