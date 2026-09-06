@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { SummaryTile } from '@/components/ui/SummaryTile'
 import { Badge } from '@/components/ui/Badge'
 import { formatINR, formatDate } from '@/lib/format'
@@ -289,28 +290,45 @@ export function DashboardClient({
         <h3 className="text-sm font-bold text-slate-900 mb-3">Projects at a Glance</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {projectGlance.map(p => (
-            <div key={p.id} className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/50 flex flex-col justify-between gap-2">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 truncate">{p.name}</p>
-                  <p className="text-xs text-slate-500">{p.agency_name ?? 'Government Site'}</p>
+            <Link
+              key={p.id}
+              href={`/projects/${p.id}`}
+              className="min-w-0 p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-blue-300 hover:shadow-xs transition-all flex flex-col justify-between gap-3 group"
+            >
+              <div className="flex items-start justify-between gap-2.5 min-w-0">
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="text-sm font-semibold text-slate-900 line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors"
+                    title={p.name}
+                  >
+                    {p.name}
+                  </p>
+                  <p
+                    className="text-xs text-slate-500 truncate mt-0.5"
+                    title={p.agency_name ?? 'Government Site'}
+                  >
+                    {p.agency_name ?? 'Government Site'}
+                  </p>
                 </div>
-                <Badge
-                  label={p.status === 'healthy' ? 'Healthy' : p.status === 'warning' ? 'Warning' : 'Critical'}
-                  variant={p.status === 'healthy' ? 'success' : p.status === 'warning' ? 'warning' : 'danger'}
-                />
+                <div className="shrink-0 pt-0.5">
+                  <Badge
+                    label={p.status === 'healthy' ? 'Healthy' : p.status === 'warning' ? 'Warning' : 'Critical'}
+                    variant={p.status === 'healthy' ? 'success' : p.status === 'warning' ? 'warning' : 'danger'}
+                  />
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-2 mt-1">
+
+              <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-2 mt-auto">
                 <div>
-                  <span className="text-slate-400 block text-[10px]">Outstanding</span>
+                  <span className="text-slate-400 block text-[10px] font-medium">Outstanding</span>
                   <span className="font-semibold text-slate-700 tabular-nums">{formatINR(p.pOutstanding)}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px]">Supplier Dues</span>
+                  <span className="text-slate-400 block text-[10px] font-medium">Supplier Dues</span>
                   <span className="font-semibold text-red-600 tabular-nums">{formatINR(p.pDues)}</span>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
