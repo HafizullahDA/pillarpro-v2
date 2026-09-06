@@ -65,13 +65,32 @@ export function UserProfileModal({
         {success && <div className="rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700">{success}</div>}
 
         <div className="flex items-center gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-          <div className="h-12 w-12 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-base shrink-0">
+          <div className="h-12 w-12 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-base shrink-0 shadow-xs">
             {name.slice(0, 2).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-slate-900 truncate">{name}</p>
             {userEmail && <p className="text-xs text-slate-500 truncate mb-1">{userEmail}</p>}
             <Badge label={userRole.replace('_', ' ')} variant="info" className="capitalize mt-0.5" />
+          </div>
+        </div>
+
+        {/* Organization & Account Info */}
+        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-2.5">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Organization Details</p>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-500 font-medium">Firm / Enterprise</span>
+            <span className="font-semibold text-slate-800">PillarPro Construction</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-500 font-medium">Assigned Role</span>
+            <Badge label={userRole.replace('_', ' ')} variant="info" className="capitalize" />
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-500 font-medium">Account Status</span>
+            <span className="inline-flex items-center gap-1 font-semibold text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Active
+            </span>
           </div>
         </div>
 

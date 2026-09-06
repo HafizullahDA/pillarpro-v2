@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/nav/Sidebar'
 import { IconRail } from '@/components/nav/IconRail'
 import { BottomNav } from '@/components/nav/BottomNav'
+import { MobileHeader } from '@/components/nav/MobileHeader'
 import { FAB } from '@/components/nav/FAB'
 import { OfflineStatusBanner } from '@/components/ui/OfflineStatusBanner'
 
@@ -21,6 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex flex-col min-h-screen bg-slate-100">
       <OfflineStatusBanner />
+      <MobileHeader userName={displayName} userRole={userRole} userEmail={user.email} />
       <div className="flex-1 flex min-w-0">
         <Sidebar userName={displayName} userRole={userRole} userEmail={user.email} />
         <IconRail userName={displayName} userRole={userRole} userEmail={user.email} />
@@ -29,7 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {children}
           </main>
         </div>
-        <BottomNav userRole={userRole} />
+        <BottomNav userName={displayName} userRole={userRole} userEmail={user.email} />
         <FAB userRole={userRole} />
       </div>
     </div>
