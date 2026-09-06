@@ -7,7 +7,8 @@ export const revalidate = 0
 export default async function SuppliersPage() {
   const supabase = createClient()
 
-  const [{ data: suppliers }, { data: projects }] = await Promise.all([
+  const [{ data: userRole }, { data: suppliers }, { data: projects }] = await Promise.all([
+    supabase.rpc('get_user_role'),
     supabase
       .from('supplier_summary')
       .select('*')
@@ -23,6 +24,7 @@ export default async function SuppliersPage() {
     <SuppliersClient
       initialSuppliers={(suppliers as SupplierSummaryRow[]) ?? []}
       projects={projects ?? []}
+      userRole={(userRole as string) ?? ''}
     />
   )
 }

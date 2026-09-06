@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { SummaryTile } from '@/components/ui/SummaryTile'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { formatINR } from '@/lib/format'
 import { SupplierActions } from './SupplierActions'
+import { DeleteSupplierModal } from './DeleteSupplierModal'
 
 export type SupplierSummaryRow = {
   id: string
@@ -25,14 +27,37 @@ type Project = { id: string; name: string }
 interface SuppliersClientProps {
   initialSuppliers: SupplierSummaryRow[]
   projects: Project[]
+  userRole?: string
 }
 
-export function SuppliersClient({ initialSuppliers, projects }: SuppliersClientProps) {
+export function SuppliersClient({ initialSuppliers, projects, userRole }: SuppliersClientProps) {
+  const router = useRouter()
+  const [suppliers, setSuppliers] = useState<SupplierSummaryRow[]>(initialSuppliers)
   const [search, setSearch] = useState('')
+  const [supplierToDelete, setSupplierToDelete] = useState<SupplierSummaryRow | null>(null)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+
+  const isOwner = userRole === 'owner'
+
+  useEffect(() => {
+    setSuppliers(initialSuppliers)
+  }, [initialSuppliers])
+
+  const handleOpenDelete = (s: SupplierSummaryRow) => {
+    setSupplierToDelete(s)
+    setDeleteModalOpen(true)
+  }
+
+  const handleDeleteSuccess = () => {
+    if (supplierToDelete) {
+      setSuppliers(prev => prev.filter(s => s.id !== supplierToDelete.id))
+    }
+    router.refresh()
+  }
 
   // Compute overall KPI metrics
   const totals = useMemo(() => {
-    return initialSuppliers.reduce(
+    return suppliers.reduce(
       (acc, s) => {
         acc.procured += Number(s.total_procured) || 0
         acc.paid += Number(s.total_paid) || 0
@@ -41,24 +66,24 @@ export function SuppliersClient({ initialSuppliers, projects }: SuppliersClientP
       },
       { procured: 0, paid: 0, balance: 0 }
     )
-  }, [initialSuppliers])
+  }, [suppliers])
 
   // Filtered suppliers based on search query
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return initialSuppliers
-    return initialSuppliers.filter(s => {
+    if (!q) return suppliers
+    return suppliers.filter(s => {
       const nameMatch = s.name.toLowerCase().includes(q)
       const phoneMatch = s.contact_number?.toLowerCase().includes(q) ?? false
       const gstMatch = s.gst_number?.toLowerCase().includes(q) ?? false
       const addrMatch = s.address?.toLowerCase().includes(q) ?? false
       return nameMatch || phoneMatch || gstMatch || addrMatch
     })
-  }, [initialSuppliers, search])
+  }, [suppliers, search])
 
   const supplierOptions = useMemo(() => {
-    return initialSuppliers.map(s => ({ id: s.id, name: s.name }))
-  }, [initialSuppliers])
+    return suppliers.map(s => ({ id: s.id, name: s.name }))
+  }, [suppliers])
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
@@ -96,7 +121,7 @@ export function SuppliersClient({ initialSuppliers, projects }: SuppliersClientP
       </div>
 
       {/* Search & List */}
-      {!initialSuppliers.length ? (
+      {!suppliers.length ? (
         <EmptyState
           title="No suppliers yet"
           description="Add your material suppliers to track procurement bills and payments against sites or central stock."
@@ -125,7 +150,7 @@ export function SuppliersClient({ initialSuppliers, projects }: SuppliersClientP
             </div>
             <div className="text-xs text-slate-500">
               Showing <span className="font-medium text-slate-700">{filtered.length}</span> of{' '}
-              {initialSuppliers.length} suppliers
+              {suppliers.length} suppliers
             </div>
           </div>
 
@@ -195,15 +220,30 @@ export function SuppliersClient({ initialSuppliers, projects }: SuppliersClientP
                       </td>
 
                       <td className="px-4 py-3.5 text-right">
-                        <Link
-                          href={`/suppliers/${s.id}`}
-                          className="inline-flex items-center text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
-                        >
-                          Statement
-                          <svg className="h-3.5 w-3.5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </Link>
+                        <div className="flex items-center justify-end gap-2.5">
+                          <Link
+                            href={`/suppliers/${s.id}`}
+                            className="inline-flex items-center text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                          >
+                            Statement
+                            <svg className="h-3.5 w-3.5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </Link>
+                          {isOwner && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenDelete(s)}
+                              className="inline-flex items-center justify-center p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                              title="Delete supplier (Owner only)"
+                              aria-label={`Delete supplier ${s.name}`}
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -213,6 +253,14 @@ export function SuppliersClient({ initialSuppliers, projects }: SuppliersClientP
           </div>
         </div>
       )}
+
+      {/* Delete Supplier Confirmation Modal (Owner Only) */}
+      <DeleteSupplierModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        supplier={supplierToDelete}
+        onSuccess={handleDeleteSuccess}
+      />
     </div>
   )
 }
