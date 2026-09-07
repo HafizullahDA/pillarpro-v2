@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
@@ -9,6 +9,7 @@ import { RABillActions, ProjectOption, RABillOption } from './RABillActions'
 import { canCreateRaBill } from '@/lib/permissions'
 import { PrintPreviewModal } from '@/components/pdf/PrintPreviewModal'
 import { RABillCertificatePDF } from '@/components/pdf/RABillCertificatePDF'
+import { getClientOrganization, OrganizationProfile, DEFAULT_ORGANIZATION } from '@/lib/organization'
 
 // ════════════════════════════════════════════════════════════════════════
 // CONFIGURABLE THRESHOLD FOR EXPIRING BANK GUARANTEES (IN DAYS)
@@ -94,6 +95,11 @@ export function RABillsClient({
   const [payBillId, setPayBillId] = useState<string | undefined>(undefined)
   // Printable Certificate State
   const [certBill, setCertBill] = useState<RABillRow | null>(null)
+  const [org, setOrg] = useState<OrganizationProfile>(DEFAULT_ORGANIZATION)
+
+  useEffect(() => {
+    getClientOrganization().then(setOrg)
+  }, [])
 
   // 1. FILTER BILLS (By Project, Status, Search)
   const filteredBills = useMemo(() => {
@@ -782,7 +788,7 @@ export function RABillsClient({
           title={`Billing Certificate — ${certBill.bill_number}`}
           subtitle={certBill.projects?.name || 'Running Account Bill Certificate'}
         >
-          <RABillCertificatePDF bill={certBill} />
+          <RABillCertificatePDF bill={certBill} organization={org} />
         </PrintPreviewModal>
       )}
     </div>

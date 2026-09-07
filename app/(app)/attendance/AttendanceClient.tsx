@@ -11,6 +11,7 @@ import { formatINR } from '@/lib/format'
 import { canCreateAttendance } from '@/lib/permissions'
 import { PrintPreviewModal } from '@/components/pdf/PrintPreviewModal'
 import { AttendanceMusterRollPDF } from '@/components/pdf/AttendanceMusterRollPDF'
+import { getClientOrganization, OrganizationProfile, DEFAULT_ORGANIZATION } from '@/lib/organization'
 
 type Project = { id: string; name: string }
 type Worker = { id: string; name: string; trade: string | null; daily_wage_rate: number | null }
@@ -36,6 +37,11 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
   const [saving, setSaving]                   = useState(false)
   const [saveStatus, setSaveStatus]           = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
   const [pdfOpen, setPdfOpen]                 = useState(false)
+  const [org, setOrg]                         = useState<OrganizationProfile>(DEFAULT_ORGANIZATION)
+
+  useEffect(() => {
+    getClientOrganization().then(setOrg)
+  }, [])
 
   // Worker drawer
   const [workerOpen, setWorkerOpen] = useState(false)
@@ -392,6 +398,7 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
           monthName={MONTH_NAMES[month - 1]}
           workers={workers}
           monthAttendance={monthAttendance}
+          organization={org}
         />
       </PrintPreviewModal>
     </div>

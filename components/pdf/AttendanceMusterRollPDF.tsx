@@ -1,6 +1,7 @@
 'use client'
 
 import { formatINR } from '@/lib/format'
+import { OrganizationProfile } from '@/lib/organization'
 
 type Worker = {
   id: string
@@ -22,6 +23,7 @@ interface AttendanceMusterRollPDFProps {
   monthName: string
   workers: Worker[]
   monthAttendance: MonthAttendanceRow[]
+  organization?: OrganizationProfile
 }
 
 export function AttendanceMusterRollPDF({
@@ -30,6 +32,7 @@ export function AttendanceMusterRollPDF({
   year,
   workers,
   monthAttendance,
+  organization,
 }: AttendanceMusterRollPDFProps) {
   const generatedAt = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
@@ -66,9 +69,22 @@ export function AttendanceMusterRollPDF({
       {/* Document Header */}
       <div className="border-b-2 border-slate-900 pb-4 mb-5">
         <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-black tracking-tight uppercase">PillarPro Construction Management</h1>
-            <h2 className="text-sm font-bold text-slate-700 tracking-wide uppercase mt-0.5">
+          <div className="max-w-2xl">
+            <h1 className="text-xl font-black tracking-tight uppercase text-slate-900">
+              {organization?.name || 'Civil Engineering & Construction'}
+            </h1>
+            <div className="flex items-center gap-x-2 gap-y-0.5 flex-wrap text-xs text-slate-600 mt-1">
+              {organization?.registration_no && (
+                <span className="font-semibold text-slate-800">{organization.registration_no}</span>
+              )}
+              {organization?.gstin && (
+                <span>· GSTIN: <strong className="font-mono text-slate-800">{organization.gstin}</strong></span>
+              )}
+              {organization?.address && (
+                <span>· {organization.address}</span>
+              )}
+            </div>
+            <h2 className="text-xs font-bold text-slate-500 tracking-wider uppercase mt-2">
               Labor Attendance Muster Roll & Wage Sheet
             </h2>
           </div>
@@ -180,8 +196,9 @@ export function AttendanceMusterRollPDF({
       </div>
 
       {/* Document Footer Notice */}
-      <div className="mt-8 text-center text-[10px] text-slate-400 border-t border-slate-100 pt-2">
-        PillarPro Construction System · This document serves as official labor attendance and wage record.
+      <div className="mt-8 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-100 pt-2">
+        <span>Official wage & attendance record of {organization?.name || 'Contractor'}</span>
+        <span>Powered by PillarPro Construction System</span>
       </div>
     </div>
   )

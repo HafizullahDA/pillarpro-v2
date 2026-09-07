@@ -1,6 +1,7 @@
 'use client'
 
 import { formatINR, formatDate } from '@/lib/format'
+import { OrganizationProfile } from '@/lib/organization'
 
 type Supplier = {
   id: string
@@ -35,12 +36,14 @@ interface SupplierStatementPDFProps {
     totalPaid: number
     balanceOwed: number
   }
+  organization?: OrganizationProfile
 }
 
 export function SupplierStatementPDF({
   supplier,
   transactions,
   totals,
+  organization,
 }: SupplierStatementPDFProps) {
   const generatedAt = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
@@ -53,22 +56,35 @@ export function SupplierStatementPDF({
       {/* Header */}
       <div className="border-b-2 border-slate-900 pb-4 mb-5">
         <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-black tracking-tight uppercase">PillarPro Construction Management</h1>
-            <h2 className="text-sm font-bold text-slate-700 tracking-wide uppercase mt-0.5">
+          <div className="max-w-2xl">
+            <h1 className="text-xl font-black tracking-tight uppercase text-slate-900">
+              {organization?.name || 'Civil Engineering & Construction'}
+            </h1>
+            <div className="flex items-center gap-x-2 gap-y-0.5 flex-wrap text-xs text-slate-600 mt-1">
+              {organization?.registration_no && (
+                <span className="font-semibold text-slate-800">{organization.registration_no}</span>
+              )}
+              {organization?.gstin && (
+                <span>· GSTIN: <strong className="font-mono text-slate-800">{organization.gstin}</strong></span>
+              )}
+              {organization?.address && (
+                <span>· {organization.address}</span>
+              )}
+            </div>
+            <h2 className="text-xs font-bold text-slate-500 tracking-wider uppercase mt-2">
               Supplier Statement of Account
             </h2>
           </div>
           <div className="text-right text-xs text-slate-500">
             <p><strong>Statement Date:</strong> {generatedAt}</p>
-            <p className="font-mono text-[11px] text-slate-400">ID: {supplier.id.slice(0, 8)}</p>
+            <p className="font-mono text-[11px] text-slate-400">Account Ref: {supplier.id.slice(0, 8)}</p>
           </div>
         </div>
 
         {/* Vendor Profile & Metadata */}
         <div className="mt-4 pt-3 border-t border-slate-200 grid grid-cols-2 gap-4 text-xs">
           <div>
-            <p className="text-[11px] uppercase font-bold text-slate-500 tracking-wider">Account Information</p>
+            <p className="text-[11px] uppercase font-bold text-slate-500 tracking-wider">Vendor / Supplier Details</p>
             <p className="text-base font-bold text-slate-900 mt-0.5">{supplier.name}</p>
             {supplier.gst_number && (
               <p className="font-mono text-slate-700 mt-0.5"><strong>GSTIN:</strong> {supplier.gst_number}</p>
@@ -88,7 +104,7 @@ export function SupplierStatementPDF({
               </p>
             )}
             <p className="text-slate-500">
-              Account Opened: {formatDate(supplier.created_at)}
+              Account Registered: {formatDate(supplier.created_at)}
             </p>
           </div>
         </div>
@@ -212,14 +228,15 @@ export function SupplierStatementPDF({
         </div>
         <div>
           <div className="h-12 border-b border-slate-400 mb-2" />
-          <p className="font-bold text-slate-800">For PillarPro / Contractor</p>
+          <p className="font-bold text-slate-800">For {organization?.name || 'Contractor'}</p>
           <p className="text-[11px] text-slate-500">Authorized Account Signatory</p>
         </div>
       </div>
 
       {/* Document Footer Notice */}
-      <div className="mt-8 text-center text-[10px] text-slate-400 border-t border-slate-100 pt-2">
-        This is a computer-generated statement of account. Reconciled and certified under PillarPro Construction System.
+      <div className="mt-8 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-100 pt-2">
+        <span>Statement of account issued by {organization?.name || 'Contractor'}</span>
+        <span>Powered by PillarPro Construction System</span>
       </div>
     </div>
   )

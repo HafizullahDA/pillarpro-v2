@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import { PrintPreviewModal } from '@/components/pdf/PrintPreviewModal'
 import { SupplierStatementPDF } from '@/components/pdf/SupplierStatementPDF'
+import { getClientOrganization, OrganizationProfile, DEFAULT_ORGANIZATION } from '@/lib/organization'
 
 interface SupplierStatementButtonProps {
   supplier: {
@@ -29,6 +30,11 @@ export function SupplierStatementButton({
   totals,
 }: SupplierStatementButtonProps) {
   const [open, setOpen] = useState(false)
+  const [org, setOrg] = useState<OrganizationProfile>(DEFAULT_ORGANIZATION)
+
+  useEffect(() => {
+    getClientOrganization().then(setOrg)
+  }, [])
 
   return (
     <>
@@ -59,6 +65,7 @@ export function SupplierStatementButton({
           supplier={supplier}
           transactions={transactions}
           totals={totals}
+          organization={org}
         />
       </PrintPreviewModal>
     </>
