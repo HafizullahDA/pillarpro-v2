@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
@@ -12,10 +12,11 @@ import { canCreateAttendance } from '@/lib/permissions'
 
 type Project = { id: string; name: string }
 type Worker = { id: string; name: string; trade: string | null; daily_wage_rate: number | null }
-type AttendanceRecord = { worker_id: string; status: string }
+type MonthAttendanceRow = { worker_id: string; date: string; status: string }
 
 const TRADES = ['Mason', 'Helper', 'Carpenter', 'Plumber', 'Electrician', 'Welder', 'Painter', 'Driver', 'Operator', 'Supervisor', 'Other']
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
 export function AttendanceClient({ projects, userRole }: { projects: Project[]; userRole?: string }) {
   const supabase = createClient()
@@ -27,9 +28,11 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
   const [month, setMonth] = useState(today.getMonth() + 1)
   const [day, setDay]     = useState(today.getDate())
 
-  const [workers, setWorkers]       = useState<Worker[]>([])
-  const [attendance, setAttendance] = useState<Record<string, string>>({})
-  const [saving, setSaving]         = useState(false)
+  const [workers, setWorkers]                 = useState<Worker[]>([])
+  const [attendance, setAttendance]           = useState<Record<string, string>>({})
+  const [monthAttendance, setMonthAttendance] = useState<MonthAttendanceRow[]>([])
+  const [saving, setSaving]                   = useState(false)
+  const [saveStatus, setSaveStatus]           = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
 
   // Worker drawer
   const [workerOpen, setWorkerOpen] = useState(false)
@@ -37,62 +40,111 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
   const [wSaving, setWSaving]       = useState(false)
   const [wError, setWError]         = useState('')
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (projectId) loadWorkers() }, [projectId])
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (projectId) loadAttendance() }, [projectId, year, month, day])
+  // Adjust day if month has fewer days
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const safeDay = Math.min(day, daysInMonth)
+  const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`
 
-
-  const loadWorkers = async () => {
+  const loadWorkers = useCallback(async () => {
     const { data } = await supabase
       .from('workers')
       .select('id, name, trade, daily_wage_rate')
       .order('name')
     setWorkers(data ?? [])
-  }
+  }, [supabase])
 
-  const loadAttendance = async () => {
-    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+  const loadMonthAttendance = useCallback(async () => {
+    if (!projectId) return
+    const startDate = `${year}-${String(month).padStart(2,'0')}-01`
+    const endDate   = `${year}-${String(month).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`
+
     const { data } = await supabase
       .from('attendance')
-      .select('worker_id, status')
+      .select('worker_id, date, status')
       .eq('project_id', projectId)
-      .eq('date', dateStr)
+      .gte('date', startDate)
+      .lte('date', endDate)
+
+    setMonthAttendance(data ?? [])
+  }, [projectId, year, month, daysInMonth, supabase])
+
+  // Load workers and monthly attendance records
+  useEffect(() => {
+    if (projectId) {
+      loadWorkers()
+      loadMonthAttendance()
+    }
+  }, [projectId, loadWorkers, loadMonthAttendance])
+
+  // Map active day's attendance whenever day, dateStr, or monthAttendance changes
+  useEffect(() => {
     const map: Record<string, string> = {}
-    for (const r of (data ?? [])) map[r.worker_id] = r.status
+    for (const r of monthAttendance) {
+      if (r.date === dateStr) {
+        map[r.worker_id] = r.status
+      }
+    }
     setAttendance(map)
-  }
+  }, [dateStr, monthAttendance])
 
   const setStatus = (workerId: string, status: string) => {
     setAttendance(a => ({ ...a, [workerId]: a[workerId] === status ? '' : status }))
+    // Clear any previous save notifications on modification
+    if (saveStatus) setSaveStatus(null)
   }
 
   const saveAttendance = async () => {
     setSaving(true)
-    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+    setSaveStatus(null)
+
     const rows = workers
       .filter(w => attendance[w.id])
-      .map(w => ({ project_id: projectId, worker_id: w.id, date: dateStr, status: attendance[w.id] }))
+      .map(w => ({
+        project_id: projectId,
+        worker_id: w.id,
+        date: dateStr,
+        status: attendance[w.id],
+        present: attendance[w.id] !== 'absent',
+      }))
 
-    if (rows.length) {
-      if (typeof window !== 'undefined' && !navigator.onLine) {
-        try {
-          const { saveToOfflineQueue } = await import('@/lib/offline/db')
-          await saveToOfflineQueue('attendance', rows)
-          setSaving(false)
-          alert('Offline: Attendance saved locally. Will auto-sync when network returns.')
-          return
-        } catch {
-          setSaving(false)
-          alert('Failed to save offline attendance locally.')
-          return
-        }
-      }
-
-      await supabase.from('attendance')
-        .upsert(rows, { onConflict: 'project_id,worker_id,date' })
+    if (!rows.length) {
+      setSaving(false)
+      setSaveStatus({ type: 'info', message: 'No attendance marked to save for this date.' })
+      return
     }
+
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      try {
+        const { saveToOfflineQueue } = await import('@/lib/offline/db')
+        await saveToOfflineQueue('attendance', rows)
+        setSaving(false)
+        setSaveStatus({ type: 'success', message: 'Offline: Attendance saved locally. Will auto-sync when network returns.' })
+        return
+      } catch {
+        setSaving(false)
+        setSaveStatus({ type: 'error', message: 'Failed to save offline attendance locally.' })
+        return
+      }
+    }
+
+    const { error } = await supabase
+      .from('attendance')
+      .upsert(rows, { onConflict: 'project_id,worker_id,date' })
+
     setSaving(false)
+
+    if (error) {
+      setSaveStatus({ type: 'error', message: `Failed to save attendance: ${error.message}` })
+      return
+    }
+
+    setSaveStatus({
+      type: 'success',
+      message: `Attendance for ${String(safeDay).padStart(2,'0')} ${MONTH_NAMES[month-1]} ${year} saved successfully!`
+    })
+
+    // Refresh month attendance data to reflect updated work day counts
+    loadMonthAttendance()
   }
 
   const saveWorker = async () => {
@@ -110,7 +162,7 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
     loadWorkers()
   }
 
-  // Summary calculations
+  // Summary calculations for the active day
   const onSite    = workers.filter(w => attendance[w.id] === 'present').length
   const halfDay   = workers.filter(w => attendance[w.id] === 'half_day').length
   const unmarked  = workers.filter(w => !attendance[w.id]).length
@@ -122,14 +174,11 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
   }, 0)
 
   // Day strip
-  const daysInMonth = new Date(year, month, 0).getDate()
   const dayList = Array.from({ length: daysInMonth }, (_, i) => {
     const d = i + 1
     const dow = new Date(year, month - 1, d).getDay()
     return { d, dow }
   })
-
-  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
   return (
     <div>
@@ -176,10 +225,13 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
         {dayList.map(({ d, dow }) => (
           <button
             key={d}
-            onClick={() => setDay(d)}
+            onClick={() => {
+              setDay(d)
+              if (saveStatus) setSaveStatus(null)
+            }}
             className={`flex-none flex flex-col items-center px-2.5 py-2 rounded-xl text-xs font-medium transition-colors ${
-              d === day
-                ? 'bg-blue-600 text-white'
+              d === safeDay
+                ? 'bg-blue-600 text-white shadow-sm'
                 : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
             }`}
           >
@@ -188,6 +240,30 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
           </button>
         ))}
       </div>
+
+      {/* Save Status Notification */}
+      {saveStatus && (
+        <div
+          className={`p-3 rounded-xl text-sm mb-4 flex items-center justify-between transition-all ${
+            saveStatus.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : saveStatus.type === 'error'
+              ? 'bg-red-50 text-red-800 border border-red-200'
+              : 'bg-blue-50 text-blue-800 border border-blue-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span>{saveStatus.type === 'success' ? '✓' : saveStatus.type === 'error' ? '✕' : 'ℹ'}</span>
+            <span className="font-medium">{saveStatus.message}</span>
+          </div>
+          <button
+            onClick={() => setSaveStatus(null)}
+            className="text-xs font-semibold px-2 py-0.5 rounded opacity-70 hover:opacity-100"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Worker list */}
       {!workers.length ? (
@@ -198,34 +274,56 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
         />
       ) : (
         <>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-4">
-            <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-4 shadow-sm">
+            <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                {String(day).padStart(2,'0')} {MONTH_NAMES[month-1]} {year} {canMark ? '— Tap to mark' : '— Daily Record'}
+                {String(safeDay).padStart(2,'0')} {MONTH_NAMES[month-1]} {year} {canMark ? '— Tap to mark' : '— Daily Record'}
               </p>
+              <span className="text-[11px] text-slate-400">
+                Current month: {MONTH_NAMES[month-1]} {year}
+              </span>
             </div>
             {workers.map(w => {
               const s = attendance[w.id] ?? ''
+
+              // Calculate total work days in this month for this worker:
+              // Saved days in month (excluding current date) + active selection for current date
+              const otherDaysWorked = monthAttendance
+                .filter(r => r.worker_id === w.id && r.date !== dateStr)
+                .reduce((sum, r) => {
+                  if (r.status === 'present')  return sum + 1
+                  if (r.status === 'half_day') return sum + 0.5
+                  return sum
+                }, 0)
+
+              const activeDayWorked = s === 'present' ? 1 : s === 'half_day' ? 0.5 : 0
+              const totalDaysWorked = otherDaysWorked + activeDayWorked
+
               return (
-                <div key={w.id} className="flex items-center px-4 py-3 border-b border-slate-100 last:border-0">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900">{w.name}</p>
-                    <p className="text-xs text-slate-500">{w.trade ?? 'Worker'} · {formatINR(w.daily_wage_rate)}/day</p>
+                <div key={w.id} className="flex items-center justify-between px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
+                  <div className="flex-1 min-w-0 pr-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-slate-900">{w.name}</p>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                        {totalDaysWorked} {totalDaysWorked === 1 ? 'day' : 'days'} worked
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">{w.trade ?? 'Worker'} · {formatINR(w.daily_wage_rate)}/day</p>
                   </div>
-                  <div className="flex gap-2 ml-3">
+                  <div className="flex gap-1.5 flex-none">
                     {(['present','half_day','absent'] as const).map(status => (
                       <button
                         key={status}
                         disabled={!canMark}
                         onClick={() => canMark && setStatus(w.id, status)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                        className={`w-9 h-8 rounded-lg text-xs font-semibold border transition-all ${
                           !canMark ? 'cursor-default opacity-80 ' : ''
                         }${
                           s === status
-                            ? status === 'present'  ? 'bg-emerald-500 text-white border-emerald-500'
-                            : status === 'half_day' ? 'bg-amber-400 text-white border-amber-400'
-                            :                         'bg-red-400 text-white border-red-400'
-                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                            ? status === 'present'  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                            : status === 'half_day' ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                            :                         'bg-red-500 text-white border-red-500 shadow-sm'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
                         }`}
                       >
                         {status === 'present' ? 'P' : status === 'half_day' ? 'H' : 'A'}
@@ -237,7 +335,7 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
             })}
           </div>
           {canMark && (
-            <Button loading={saving} onClick={saveAttendance} className="w-full">
+            <Button loading={saving} onClick={saveAttendance} className="w-full shadow-sm py-2.5">
               Save Attendance
             </Button>
           )}
