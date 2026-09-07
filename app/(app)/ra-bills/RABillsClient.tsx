@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button'
 import { formatINR, formatDate } from '@/lib/format'
 import { RABillActions, ProjectOption, RABillOption } from './RABillActions'
 import { canCreateRaBill } from '@/lib/permissions'
+import { PrintPreviewModal } from '@/components/pdf/PrintPreviewModal'
+import { RABillCertificatePDF } from '@/components/pdf/RABillCertificatePDF'
 
 // ════════════════════════════════════════════════════════════════════════
 // CONFIGURABLE THRESHOLD FOR EXPIRING BANK GUARANTEES (IN DAYS)
@@ -90,6 +92,8 @@ export function RABillsClient({
 
   // Payment Drawer Shortcut State
   const [payBillId, setPayBillId] = useState<string | undefined>(undefined)
+  // Printable Certificate State
+  const [certBill, setCertBill] = useState<RABillRow | null>(null)
 
   // 1. FILTER BILLS (By Project, Status, Search)
   const filteredBills = useMemo(() => {
@@ -736,20 +740,30 @@ export function RABillsClient({
 
                       {/* Action */}
                       <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                        {canCreate && derivedStatus !== 'fully_paid' ? (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="text-xs py-1 px-2.5 h-auto text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                            onClick={() => setPayBillId(b.id)}
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setCertBill(b)}
+                            title="View / Print Billing Certificate (PDF)"
+                            className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors font-semibold"
                           >
-                            + Pay
-                          </Button>
-                        ) : derivedStatus === 'fully_paid' ? (
-                          <span className="text-xs text-slate-400 font-medium">Settled</span>
-                        ) : (
-                          <span className="text-xs text-slate-400 font-medium">—</span>
-                        )}
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            PDF
+                          </button>
+                          {canCreate && derivedStatus !== 'fully_paid' ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="text-xs py-1 px-2.5 h-auto text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                              onClick={() => setPayBillId(b.id)}
+                            >
+                              + Pay
+                            </Button>
+                          ) : derivedStatus === 'fully_paid' ? (
+                            <span className="text-xs text-slate-400 font-medium px-1">Settled</span>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -759,6 +773,18 @@ export function RABillsClient({
           </div>
         )}
       </div>
+
+      {/* Printable RA Bill Certificate Modal */}
+      {certBill && (
+        <PrintPreviewModal
+          open={!!certBill}
+          onClose={() => setCertBill(null)}
+          title={`Billing Certificate — ${certBill.bill_number}`}
+          subtitle={certBill.projects?.name || 'Running Account Bill Certificate'}
+        >
+          <RABillCertificatePDF bill={certBill} />
+        </PrintPreviewModal>
+      )}
     </div>
   )
 }

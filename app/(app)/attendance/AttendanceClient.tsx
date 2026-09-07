@@ -9,6 +9,8 @@ import { SummaryTile } from '@/components/ui/SummaryTile'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { formatINR } from '@/lib/format'
 import { canCreateAttendance } from '@/lib/permissions'
+import { PrintPreviewModal } from '@/components/pdf/PrintPreviewModal'
+import { AttendanceMusterRollPDF } from '@/components/pdf/AttendanceMusterRollPDF'
 
 type Project = { id: string; name: string }
 type Worker = { id: string; name: string; trade: string | null; daily_wage_rate: number | null }
@@ -33,6 +35,7 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
   const [monthAttendance, setMonthAttendance] = useState<MonthAttendanceRow[]>([])
   const [saving, setSaving]                   = useState(false)
   const [saveStatus, setSaveStatus]           = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
+  const [pdfOpen, setPdfOpen]                 = useState(false)
 
   // Worker drawer
   const [workerOpen, setWorkerOpen] = useState(false)
@@ -210,6 +213,17 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
             Manage Workers
           </Button>
         )}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setPdfOpen(true)}
+          className="inline-flex items-center gap-1.5"
+        >
+          <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          Muster Roll (PDF)
+        </Button>
       </div>
 
       {/* Summary tiles */}
@@ -363,6 +377,23 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
           </FieldWrapper>
         </div>
       </Drawer>
+
+      {/* Printable Labor Muster Roll & Wage Sheet Modal */}
+      <PrintPreviewModal
+        open={pdfOpen}
+        onClose={() => setPdfOpen(false)}
+        title={`Labor Muster Roll — ${MONTH_NAMES[month - 1]} ${year}`}
+        subtitle={projects.find(p => p.id === projectId)?.name || 'Project Attendance'}
+      >
+        <AttendanceMusterRollPDF
+          projectName={projects.find(p => p.id === projectId)?.name || 'Project Site'}
+          month={month}
+          year={year}
+          monthName={MONTH_NAMES[month - 1]}
+          workers={workers}
+          monthAttendance={monthAttendance}
+        />
+      </PrintPreviewModal>
     </div>
   )
 }

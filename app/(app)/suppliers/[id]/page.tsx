@@ -5,6 +5,7 @@ import { SummaryTile } from '@/components/ui/SummaryTile'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { formatINR, formatDate } from '@/lib/format'
 import { SupplierActions } from '../SupplierActions'
+import { SupplierStatementButton } from './SupplierStatementButton'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -129,12 +130,19 @@ export default async function SupplierDetailPage({ params }: Props) {
             </div>
           </div>
 
-          <SupplierActions
-            projects={projects ?? []}
-            suppliers={[{ id: supplier.id, name: supplier.name }]}
-            defaultSupplierId={supplier.id}
-            showAddSupplier={false}
-          />
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <SupplierStatementButton
+              supplier={supplier}
+              transactions={txWithBalance}
+              totals={{ totalProcured, totalPaid, balanceOwed }}
+            />
+            <SupplierActions
+              projects={projects ?? []}
+              suppliers={[{ id: supplier.id, name: supplier.name }]}
+              defaultSupplierId={supplier.id}
+              showAddSupplier={false}
+            />
+          </div>
         </div>
       </div>
 
