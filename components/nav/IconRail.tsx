@@ -7,6 +7,7 @@ import { NAV_ITEMS, isNavVisible } from './NavLinks'
 import { Icons } from './NavIcons'
 import { UserProfileModal } from './UserProfileModal'
 import { cn } from '@/lib/utils'
+import { Logo } from '@/components/ui/Logo'
 
 export function IconRail({
   userName,
@@ -27,9 +28,7 @@ export function IconRail({
       <aside className="hidden md:flex lg:hidden flex-col w-16 min-h-screen bg-slate-900 shrink-0 items-center py-4 gap-1">
         {/* Logo */}
         <div className="mb-3">
-          <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">P</span>
-          </div>
+          <Logo showWordmark={false} href="/dashboard" size="sm" />
         </div>
         {visibleNavItems.map(item => {
           const active = pathname.startsWith(item.href)

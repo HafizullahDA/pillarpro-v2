@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Logo } from '@/components/ui/Logo'
 
 // Reusable eye icon button
 function EyeToggle({ show, onToggle }: { show: boolean; onToggle: () => void }) {
@@ -85,13 +86,9 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">P</span>
-          </div>
-          <span className="text-2xl font-bold text-gray-900">PillarPro</span>
+        <div className="flex justify-center mb-6">
+          <Logo size="lg" subtitle="Construction ERP" />
         </div>
-        <p className="text-center text-sm text-gray-500 mb-8">Construction ERP</p>
         <h2 className="text-xl font-semibold text-gray-900 text-center">Request account access</h2>
         <p className="mt-1 text-center text-sm text-gray-500">
           Your account will be activated by the Owner.

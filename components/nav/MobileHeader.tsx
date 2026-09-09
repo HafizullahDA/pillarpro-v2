@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { UserProfileModal } from './UserProfileModal'
+import { Logo } from '@/components/ui/Logo'
 
 export function MobileHeader({
   userName,
@@ -17,16 +18,11 @@ export function MobileHeader({
   return (
     <>
       <header className="md:hidden flex items-center justify-between px-4 py-2.5 bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-xs">
-        <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-xs">P</span>
-          </div>
-          <div>
-            <span className="text-base font-bold tracking-tight">PillarPro</span>
-            <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 capitalize border border-slate-700">
-              {userRole.replace('_', ' ')}
-            </span>
-          </div>
+        <div className="flex items-center gap-2">
+          <Logo theme="dark" href="/dashboard" size="sm" />
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 capitalize border border-slate-700">
+            {userRole.replace('_', ' ')}
+          </span>
         </div>
 
         {/* Tappable Mobile User Avatar */}

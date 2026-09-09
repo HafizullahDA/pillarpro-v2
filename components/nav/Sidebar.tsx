@@ -7,6 +7,7 @@ import { NAV_ITEMS, isNavVisible } from './NavLinks'
 import { Icons } from './NavIcons'
 import { UserProfileModal } from './UserProfileModal'
 import { cn } from '@/lib/utils'
+import { Logo } from '@/components/ui/Logo'
 
 export function Sidebar({
   userName,
@@ -27,12 +28,7 @@ export function Sidebar({
       <aside className="hidden lg:flex flex-col w-60 min-h-screen bg-slate-900 text-white shrink-0">
         {/* Logo */}
         <div className="px-5 py-5 border-b border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-sm">P</span>
-            </div>
-            <span className="text-lg font-bold tracking-tight">PillarPro</span>
-          </div>
+          <Logo theme="dark" href="/dashboard" size="md" />
         </div>
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">

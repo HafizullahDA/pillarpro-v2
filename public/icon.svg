@@ -1,12 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="128" fill="#2563EB"/>
-  <!-- Construction Pillar & Arch Geometry -->
-  <path d="M120 140H392V176H120V140Z" fill="white"/>
-  <path d="M152 176H208V360H152V176Z" fill="white" fill-opacity="0.9"/>
-  <path d="M228 176H284V360H228V176Z" fill="white" fill-opacity="0.9"/>
-  <path d="M304 176H360V360H304V176Z" fill="white" fill-opacity="0.9"/>
-  <path d="M96 360H416V396H96V360Z" fill="white"/>
-  <!-- Accent Foundation Line -->
-  <rect x="140" y="410" width="232" height="16" rx="8" fill="#93C5FD"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Rounded Foundation Tile -->
+  <rect width="64" height="64" rx="16" fill="#0F172A"/>
 
+  <!-- Left Structural Pillar Column (Vertical Stem) -->
+  <rect x="12" y="10" width="11" height="42" rx="3" fill="#2563EB"/>
+  <!-- Fluting Accent Highlight -->
+  <rect x="15.5" y="14" width="2.5" height="34" rx="1.25" fill="#93C5FD" fill-opacity="0.5"/>
+  <!-- Foundation Footing Anchor -->
+  <rect x="10" y="49" width="15" height="3.5" rx="1.75" fill="#38BDF8"/>
+
+  <!-- Right Cantilever Precast Loop ("P" Shape) -->
+  <path d="M27 10H42C51.3888 10 59 17.6112 59 27C59 36.3888 51.3888 44 42 44H27V10Z" fill="#3B82F6"/>
+
+  <!-- Inner Loop Cutout Counter -->
+  <path d="M27 20H40C43.866 20 47 23.134 47 27C47 30.866 43.866 34 40 34H27V20Z" fill="#0F172A"/>
+
+  <!-- Modular Precast Connector Notch -->
+  <rect x="23" y="15" width="4" height="3" rx="1" fill="#60A5FA"/>
+  <rect x="23" y="36" width="4" height="3" rx="1" fill="#60A5FA"/>
+</svg>
