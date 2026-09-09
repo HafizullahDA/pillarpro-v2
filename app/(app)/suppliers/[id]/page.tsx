@@ -196,8 +196,85 @@ export default async function SupplierDetailPage({ params }: Props) {
             description="Use '+ Procurement' to log material deliveries or '+ Payment' to record settlements."
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <>
+            {/* Mobile View: Stacked Cards */}
+            <div className="block md:hidden divide-y divide-slate-100">
+              {displayTransactions.map(tx => {
+                const isProc = tx.transaction_type === 'procurement'
+                const projObj = (Array.isArray(tx.projects) ? tx.projects[0] : tx.projects) as { name?: string } | null
+                const projName = projObj?.name ?? null
+                const expenseObj = (Array.isArray(tx.expenses) ? tx.expenses[0] : tx.expenses) as { receipt_url?: string } | null
+                const receiptUrl = expenseObj?.receipt_url
+
+                return (
+                  <div key={tx.id} className="p-4 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-slate-500 tabular-nums">
+                        {formatDate(tx.date)}
+                      </span>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
+                          isProc
+                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        }`}
+                      >
+                        {isProc ? 'Procurement' : 'Payment'}
+                      </span>
+                    </div>
+
+                    <div className="font-semibold text-slate-900 text-sm">{tx.description}</div>
+
+                    {((tx as any).quantity != null && (tx as any).rate != null) && (
+                      <div className="text-xs font-mono text-slate-500">
+                        {Number((tx as any).quantity).toLocaleString()} {(tx as any).unit || 'nos'} @ {formatINR(Number((tx as any).rate))}/{(tx as any).unit || 'nos'}
+                      </div>
+                    )}
+
+                    {projName && (
+                      <div className="text-xs text-slate-600">
+                        Site: <span className="font-medium text-slate-800">{projName}</span>
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-slate-500 mr-1">Amount:</span>
+                        <span className={`font-bold ${isProc ? 'text-slate-900' : 'text-emerald-700'}`}>
+                          {isProc ? '+' : '-'}{formatINR(tx.amount)}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-slate-500 mr-1">Balance:</span>
+                        <span className={`font-bold ${tx.runningBalance > 0 ? 'text-red-600' : 'text-slate-700'}`}>
+                          {formatINR(tx.runningBalance)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {receiptUrl && (
+                      <div className="pt-1 text-xs">
+                        <a
+                          href={receiptUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-blue-600 font-medium hover:underline"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                          </svg>
+                          Receipt
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Desktop View: Full Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
                   <th className="px-4 py-3">Date</th>
@@ -303,7 +380,8 @@ export default async function SupplierDetailPage({ params }: Props) {
                 })}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </div>
     </div>

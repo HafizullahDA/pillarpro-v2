@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
@@ -63,6 +63,7 @@ interface RABillActionsProps {
   defaultProjectId?: string
   preselectedBillId?: string
   onPaymentSuccess?: () => void
+  onClosePayment?: () => void
 }
 
 export function RABillActions({
@@ -71,6 +72,7 @@ export function RABillActions({
   defaultProjectId,
   preselectedBillId,
   onPaymentSuccess,
+  onClosePayment,
 }: RABillActionsProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -168,7 +170,7 @@ export function RABillActions({
     }
   }
 
-  const openDrawer = (type: 'submit_ra' | 'record_payment' | 'add_deposit', billId?: string) => {
+  const openDrawer = useCallback((type: 'submit_ra' | 'record_payment' | 'add_deposit', billId?: string) => {
     setWhich(type)
     setError('')
     setSelectedFile(null)
@@ -197,6 +199,18 @@ export function RABillActions({
         remarks: '',
       })
     }
+  }, [preselectedBillId, raBills])
+
+  // Automatically open record payment drawer when a bill is clicked from table
+  useEffect(() => {
+    if (preselectedBillId) {
+      openDrawer('record_payment', preselectedBillId)
+    }
+  }, [preselectedBillId, openDrawer])
+
+  const closeDrawer = () => {
+    setWhich(null)
+    onClosePayment?.()
   }
 
   // Live calculation helpers for RA Bill submission (Cumulative & Standalone)
@@ -227,6 +241,7 @@ export function RABillActions({
 
   // 1. SAVE RA BILL
   const handleSaveRABill = async () => {
+    if (saving || uploading) return
     if (!billForm.project_id) { setError('Please select a project.'); return }
     if (!billForm.bill_number.trim()) { setError('Bill number (e.g. RA Bill 01) is required.'); return }
     if (!billForm.work_certified_amount || certifiedNum <= 0) {
@@ -282,7 +297,7 @@ export function RABillActions({
       }
 
       setSaving(false)
-      setWhich(null)
+      closeDrawer()
       setBillForm({
         project_id: defaultProjectId || '',
         bill_number: '',
@@ -303,6 +318,7 @@ export function RABillActions({
 
   // 2. RECORD RA BILL PAYMENT WITH STATUTORY DEDUCTIONS
   const handleSavePayment = async () => {
+    if (saving) return
     if (!payForm.bill_id) { setError('Please select an RA Bill.'); return }
     const grossAmt = parseFloat(payForm.gross_amount)
     if (isNaN(grossAmt) || grossAmt <= 0) {
@@ -383,7 +399,7 @@ export function RABillActions({
       }
 
       setSaving(false)
-      setWhich(null)
+      closeDrawer()
       setAdditionalDeductions([])
       setPayForm({
         bill_id: '',
@@ -406,6 +422,7 @@ export function RABillActions({
 
   // 3. SAVE SECURITY DEPOSIT / BANK GUARANTEE
   const handleSaveDeposit = async () => {
+    if (saving || uploading) return
     if (!depositForm.project_id) { setError('Please select a project.'); return }
     if (!depositForm.reference_number.trim()) {
       setError('Reference number (BG Number / FDR Number) is required.'); return
@@ -448,7 +465,7 @@ export function RABillActions({
       }
 
       setSaving(false)
-      setWhich(null)
+      closeDrawer()
       setDepositForm({
         project_id: defaultProjectId || '',
         deposit_type: 'performance_bank_guarantee',
@@ -501,11 +518,11 @@ export function RABillActions({
           ══════════════════════════════════════════ */}
       <Drawer
         open={which === 'submit_ra'}
-        onClose={() => setWhich(null)}
+        onClose={closeDrawer}
         title="Submit Government RA Bill"
         footer={
           <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => setWhich(null)}>
+            <Button variant="secondary" className="flex-1" onClick={closeDrawer}>
               Cancel
             </Button>
             <Button className="flex-1" loading={saving || uploading} onClick={handleSaveRABill}>
@@ -745,11 +762,11 @@ export function RABillActions({
           ══════════════════════════════════════════ */}
       <Drawer
         open={which === 'record_payment'}
-        onClose={() => setWhich(null)}
+        onClose={closeDrawer}
         title="Record RA Bill Payment"
         footer={
           <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => setWhich(null)}>
+            <Button variant="secondary" className="flex-1" onClick={closeDrawer}>
               Cancel
             </Button>
             <Button className="flex-1" loading={saving} onClick={handleSavePayment}>
@@ -1057,11 +1074,11 @@ export function RABillActions({
           ══════════════════════════════════════════ */}
       <Drawer
         open={which === 'add_deposit'}
-        onClose={() => setWhich(null)}
+        onClose={closeDrawer}
         title="Add Security Deposit / Bank Guarantee"
         footer={
           <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => setWhich(null)}>
+            <Button variant="secondary" className="flex-1" onClick={closeDrawer}>
               Cancel
             </Button>
             <Button className="flex-1" loading={saving || uploading} onClick={handleSaveDeposit}>

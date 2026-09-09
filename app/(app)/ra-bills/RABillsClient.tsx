@@ -275,6 +275,7 @@ export function RABillsClient({
             raBills={billOptions}
             defaultProjectId={selectedProjectId !== 'all' ? selectedProjectId : undefined}
             preselectedBillId={payBillId}
+            onClosePayment={() => setPayBillId(undefined)}
           />
         )}
       </div>
@@ -597,8 +598,117 @@ export function RABillsClient({
             description="Submit your first government Running Account bill to track work certified, retention money, and pending treasury payments."
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <>
+            {/* Mobile View: Stacked Cards */}
+            <div className="block md:hidden divide-y divide-slate-100">
+              {filteredBills.map(b => {
+                const isCum = b.billing_mode === 'cumulative'
+                const netPassed = b.net_payable_this_bill != null
+                  ? Number(b.net_payable_this_bill)
+                  : (Number(b.net_payable_amount) != null && !isNaN(Number(b.net_payable_amount))
+                    ? Number(b.net_payable_amount)
+                    : (Number(b.work_certified_amount) - (Number(b.retention_amount) || 0)))
+                const received = Number(b.amount_received) || 0
+                const outstanding = Math.max(0, netPassed - received)
+
+                const isFullyPaid = received >= netPassed && netPassed > 0
+                const isPartiallyPaid = !isFullyPaid && received > 0
+                const derivedStatus = isFullyPaid ? 'fully_paid' : (isPartiallyPaid ? 'partially_paid' : (b.status || 'submitted'))
+
+                const statusConfig = STATUS_BADGE_CONFIG[derivedStatus] || {
+                  label: derivedStatus,
+                  variant: 'neutral' as const,
+                }
+
+                return (
+                  <div key={b.id} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-slate-900 text-sm">{b.bill_number}</span>
+                          {isCum && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                              Cumulative
+                            </span>
+                          )}
+                          {b.document_url && (
+                            <a
+                              href={b.document_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="View Measurement Sheet"
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                              </svg>
+                            </a>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">{b.projects?.name || '—'}</p>
+                      </div>
+                      <Badge label={statusConfig.label} variant={statusConfig.variant} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Work Certified</span>
+                        <span className="font-semibold text-slate-800 tabular-nums">
+                          {formatINR(Number(b.work_certified_amount))}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Gross Released</span>
+                        <span className="font-semibold text-emerald-700 tabular-nums">
+                          {formatINR(received)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Date</span>
+                        <span className="text-slate-600 tabular-nums">
+                          {formatDate(b.submission_date)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Outstanding</span>
+                        <span className={`font-bold tabular-nums ${outstanding > 0 ? 'text-rose-600' : 'text-slate-500'}`}>
+                          {formatINR(outstanding)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        onClick={() => setCertBill(b)}
+                        className="inline-flex items-center gap-1 text-xs py-1 px-2.5 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 font-semibold"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        Certificate PDF
+                      </button>
+
+                      {canCreate && derivedStatus !== 'fully_paid' ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="text-xs py-1 px-3 h-auto text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                          onClick={() => setPayBillId(b.id)}
+                        >
+                          + Record Pay
+                        </Button>
+                      ) : derivedStatus === 'fully_paid' ? (
+                        <span className="text-xs text-slate-400 font-medium">Settled</span>
+                      ) : null}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Desktop View: Full Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
                   <th className="px-4 py-3">Bill Number</th>
@@ -776,7 +886,8 @@ export function RABillsClient({
                 })}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </div>
 

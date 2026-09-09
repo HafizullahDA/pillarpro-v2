@@ -31,6 +31,7 @@ export function ArchiveProjectModal({
   const isArchive = mode === 'archive'
 
   const handleConfirm = async () => {
+    if (loading) return
     setLoading(true)
     setError('')
 

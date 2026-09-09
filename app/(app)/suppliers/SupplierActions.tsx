@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { FieldWrapper, Input, Select, CurrencyInput, Textarea } from '@/components/ui/FormField'
 import { findBestSupplierMatch } from '@/lib/fuzzyMatch'
+import { captureFormError } from '@/lib/monitoring'
 
 type Project = { id: string; name: string }
 type SupplierOption = { id: string; name: string }
@@ -154,7 +155,8 @@ export function SupplierActions({
       reader.readAsDataURL(file)
     } catch (err: any) {
       setScanning(false)
-      setError(err.message || 'Error processing image.')
+      const userMsg = await captureFormError('ScanReceiptSupplier', err)
+      setError(userMsg)
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
@@ -162,6 +164,7 @@ export function SupplierActions({
 
   // 1. Add Supplier
   const saveSupplier = async () => {
+    if (saving) return
     if (!sForm.name.trim()) {
       setError('Supplier name is required.')
       return
@@ -180,7 +183,8 @@ export function SupplierActions({
 
     setSaving(false)
     if (err) {
-      setError(err.message)
+      const userMsg = await captureFormError('AddSupplier', err, { name: sForm.name })
+      setError(userMsg)
       return
     }
 
@@ -191,6 +195,7 @@ export function SupplierActions({
 
   // 2. Record Procurement
   const saveProcurement = async () => {
+    if (saving) return
     if (!procForm.supplier_id) {
       setError('Please select a supplier.')
       return
@@ -232,7 +237,11 @@ export function SupplierActions({
 
     setSaving(false)
     if (err) {
-      setError(err.message)
+      const userMsg = await captureFormError('RecordProcurement', err, {
+        supplier_id: procForm.supplier_id,
+        amount: procForm.amount,
+      })
+      setError(userMsg)
       return
     }
 
@@ -254,6 +263,7 @@ export function SupplierActions({
 
   // 3. Record Payment
   const savePayment = async () => {
+    if (saving) return
     if (!payForm.supplier_id) {
       setError('Please select a supplier.')
       return
@@ -285,7 +295,11 @@ export function SupplierActions({
 
     setSaving(false)
     if (err) {
-      setError(err.message)
+      const userMsg = await captureFormError('RecordSupplierPayment', err, {
+        supplier_id: payForm.supplier_id,
+        amount: payForm.amount,
+      })
+      setError(userMsg)
       return
     }
 

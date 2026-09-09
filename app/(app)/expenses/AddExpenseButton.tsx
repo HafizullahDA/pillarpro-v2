@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { FieldWrapper, Input, Select, CurrencyInput, Textarea } from '@/components/ui/FormField'
 import { findBestSupplierMatch } from '@/lib/fuzzyMatch'
+import { captureFormError } from '@/lib/monitoring'
 
 type Project = { id: string; name: string }
 type SupplierItem = { id: string; name: string }
@@ -158,7 +159,10 @@ export function AddExpenseButton({
       reader.readAsDataURL(file)
     } catch (err: any) {
       setScanning(false)
-      setError(err.message || 'Error processing image.')
+      const userMsg = await captureFormError('ScanReceiptGemini', err, {
+        fileName: file.name,
+      })
+      setError(userMsg)
     } finally {
       // Reset file input so re-scanning the same file works
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -166,6 +170,7 @@ export function AddExpenseButton({
   }
 
   const save = async () => {
+    if (saving) return
     if (!form.project_id || !form.amount || !form.date) {
       setError('Project, amount, and date are required.')
       return
@@ -291,7 +296,12 @@ export function AddExpenseButton({
       router.refresh()
     } catch (err: any) {
       setSaving(false)
-      setError(err.message || 'An unexpected error occurred.')
+      const userMsg = await captureFormError('AddExpenseForm', err, {
+        project_id: form.project_id,
+        amount: form.amount,
+        category: form.category,
+      })
+      setError(userMsg)
     }
   }
 

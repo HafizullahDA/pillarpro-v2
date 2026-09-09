@@ -6,6 +6,7 @@ import { BottomNav } from '@/components/nav/BottomNav'
 import { MobileHeader } from '@/components/nav/MobileHeader'
 import { FAB } from '@/components/nav/FAB'
 import { OfflineStatusBanner } from '@/components/ui/OfflineStatusBanner'
+import { IdleTimeoutProvider } from '@/components/auth/IdleTimeoutProvider'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -20,20 +21,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const userRole = (roleData as string | null) ?? 'pending'
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-100">
-      <OfflineStatusBanner />
-      <MobileHeader userName={displayName} userRole={userRole} userEmail={user.email} />
-      <div className="flex-1 flex min-w-0">
-        <Sidebar userName={displayName} userRole={userRole} userEmail={user.email} />
-        <IconRail userName={displayName} userRole={userRole} userEmail={user.email} />
-        <div className="flex-1 flex flex-col min-w-0">
-          <main className="flex-1 pb-20 md:pb-0">
-            {children}
-          </main>
+    <IdleTimeoutProvider>
+      <div className="flex flex-col min-h-screen bg-slate-100">
+        <OfflineStatusBanner />
+        <MobileHeader userName={displayName} userRole={userRole} userEmail={user.email} />
+        <div className="flex-1 flex min-w-0">
+          <Sidebar userName={displayName} userRole={userRole} userEmail={user.email} />
+          <IconRail userName={displayName} userRole={userRole} userEmail={user.email} />
+          <div className="flex-1 flex flex-col min-w-0">
+            <main className="flex-1 pb-20 md:pb-0">
+              {children}
+            </main>
+          </div>
+          <BottomNav userName={displayName} userRole={userRole} userEmail={user.email} />
+          <FAB userRole={userRole} />
         </div>
-        <BottomNav userName={displayName} userRole={userRole} userEmail={user.email} />
-        <FAB userRole={userRole} />
       </div>
-    </div>
+    </IdleTimeoutProvider>
   )
 }
