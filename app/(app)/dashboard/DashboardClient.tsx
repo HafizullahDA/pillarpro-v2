@@ -7,9 +7,32 @@ import { Badge } from '@/components/ui/Badge'
 import { formatINR, formatDate } from '@/lib/format'
 
 type Project = { id: string; name: string; agency_name: string | null }
-type Bill = { id: string; project_id: string; bill_date: string; net_amount: number; received: number; outstanding: number }
-type SupplierDue = { id: string; project_id: string | null; name: string; due: number }
-type LedgerEntry = { id: string; project_id: string | null; entry_type: string; category: string | null; amount: number; net_bank_amount?: number; date: string }
+type Bill = {
+  id: string
+  project_id: string
+  bill_date: string
+  net_amount: number
+  received: number
+  net_bank_received?: number
+  outstanding: number
+}
+type SupplierDue = {
+  id: string
+  supplier_id?: string
+  project_id: string | null
+  name: string
+  due: number
+}
+type LedgerEntry = {
+  id: string
+  project_id: string | null
+  entry_type: string
+  category: string | null
+  amount: number
+  net_bank_amount?: number
+  date: string
+  source_table?: string
+}
 
 type DashboardClientProps = {
   projects: Project[]
@@ -27,11 +50,27 @@ export function DashboardClient({
   userRole,
 }: DashboardClientProps) {
   const [selectedProject, setSelectedProject] = useState<string>('all')
-  const [dateRange, setDateRange] = useState<'month' | 'quarter' | 'all'>('month')
+  const [dateRange, setDateRange] = useState<'month' | 'quarter' | 'all'>('all')
 
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth()
+
+  // Filter bills & supplier dues by selected project
+  const filteredBills = bills.filter(b => selectedProject === 'all' || b.project_id === selectedProject)
+
+  // Filter suppliers by project
+  // When 'all', use the entity-level balances (project_id === null) so multi-project advances net correctly (matching /suppliers)
+  const filteredSuppliers = suppliers.filter(v =>
+    selectedProject === 'all' ? v.project_id === null : v.project_id === selectedProject
+  )
+
+  const totalOutstanding = filteredBills.reduce((sum, b) => sum + b.outstanding, 0)
+  const totalSupplierDues = filteredSuppliers.reduce((sum, v) => sum + (v.due > 0 ? v.due : 0), 0)
+
+  // Bills-based cumulative receipts (canonical logic matching /ra-bills)
+  const allTimeGrossReceived = filteredBills.reduce((sum, b) => sum + b.received, 0)
+  const allTimeNetBankReceived = filteredBills.reduce((sum, b) => sum + (b.net_bank_received ?? b.received), 0)
 
   // Filter ledger entries by selected project & date range
   const filteredLedger = ledger.filter(item => {
@@ -52,28 +91,29 @@ export function DashboardClient({
     return true
   })
 
-  // Calculations derived from central ledger projections
-  const totalExpense = filteredLedger
-    .filter(i => i.entry_type === 'expense' || i.entry_type === 'payment_to_vendor')
-    .reduce((sum, i) => sum + i.amount, 0)
-
-  const totalReceived = filteredLedger
+  // Date-filtered income from ledger
+  const periodGrossReceived = filteredLedger
     .filter(i => i.entry_type === 'income')
     .reduce((sum, i) => sum + i.amount, 0)
 
-  const totalNetBankReceived = filteredLedger
+  const periodNetBankReceived = filteredLedger
     .filter(i => i.entry_type === 'income')
     .reduce((sum, i) => sum + (i.net_bank_amount ?? i.amount), 0)
 
-  // Filter bills & supplier dues by selected project
-  const filteredBills = bills.filter(b => selectedProject === 'all' || b.project_id === selectedProject)
-  const filteredSuppliers = suppliers.filter(v => selectedProject === 'all' || v.project_id === selectedProject)
+  // Display received values:
+  // When dateRange is 'all', use the canonical bills aggregation (matching /ra-bills)
+  // When dateRange is 'month' or 'quarter', use the filtered ledger income
+  const displayGrossReceived = dateRange === 'all' ? allTimeGrossReceived : periodGrossReceived
+  const displayNetReceived = dateRange === 'all' ? allTimeNetBankReceived : periodNetBankReceived
 
-  const totalOutstanding = filteredBills.reduce((sum, b) => sum + b.outstanding, 0)
-  const totalSupplierDues = filteredSuppliers.reduce((sum, v) => sum + (v.due > 0 ? v.due : 0), 0)
+  // Direct site & operational expenses
+  // Exclude supplier procurement invoices from cash expenses so unpaid credit isn't treated as cash spent (unpaid vendor bills are tracked under Supplier Dues)
+  const totalExpense = filteredLedger
+    .filter(i => i.entry_type === 'expense' && (!i.source_table || i.source_table === 'expenses'))
+    .reduce((sum, i) => sum + i.amount, 0)
 
   // Net Position Block
-  const netCashMovement = totalReceived - totalExpense
+  const netCashMovement = displayNetReceived - totalExpense
   const netLiquidityPosition = totalOutstanding - totalSupplierDues
 
   // Aging bands for outstanding receivables
@@ -185,11 +225,19 @@ export function DashboardClient({
 
       {/* 4 Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <SummaryTile label="Total Expense"  value={formatINR(totalExpense)}  accent="red"     />
+        <SummaryTile
+          label="Total Expense"
+          value={formatINR(totalExpense)}
+          sub={dateRange === 'all' ? 'Site operational expenses' : `${dateRange === 'month' ? 'This month' : 'This quarter'}`}
+          accent="red"
+        />
         <SummaryTile
           label="Total Received"
-          value={formatINR(totalReceived)}
-          sub={totalNetBankReceived !== totalReceived && totalNetBankReceived > 0 ? `Net in bank: ${formatINR(totalNetBankReceived)}` : undefined}
+          value={formatINR(displayNetReceived)}
+          sub={dateRange === 'all'
+            ? `Gross Released: ${formatINR(displayGrossReceived)}`
+            : `Gross: ${formatINR(displayGrossReceived)} (All time: ${formatINR(allTimeNetBankReceived)})`
+          }
           accent="emerald"
         />
         <SummaryTile label="Outstanding"    value={formatINR(totalOutstanding)} accent="amber"   />

@@ -39,7 +39,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase
       .from('ra_bills')
-      .select('id, project_id, bill_number, submission_date, net_payable_amount, amount_received, outstanding_balance, status'),
+      .select('id, project_id, bill_number, submission_date, net_payable_amount, work_certified_amount, retention_amount, amount_received, net_bank_received, status, billing_mode, this_bill_work_certified, net_payable_this_bill'),
     supabase
       .from('ra_bill_payments')
       .select('id, bill_id, project_id, payment_date, gross_amount, net_bank_amount, voucher_reference, remarks'),
@@ -51,24 +51,36 @@ export default async function DashboardPage() {
       .select('id, name, supplier_transactions(project_id, transaction_type, amount)'),
     supabase
       .from('ledger')
-      .select('id, project_id, entry_type, category, amount, date')
+      .select('id, project_id, entry_type, category, amount, date, source_table')
       .order('date', { ascending: false })
   ])
 
   // Format bills: prioritize official ra_bills, supplement with any legacy bills
-  const billsFormatted: { id: string; project_id: string; bill_date: string; net_amount: number; received: number; outstanding: number }[] = []
+  const billsFormatted: { id: string; project_id: string; bill_date: string; net_amount: number; received: number; net_bank_received?: number; outstanding: number }[] = []
   const trackedBillIds = new Set<string>()
 
   for (const b of raBills ?? []) {
     if (b.project_id && activeProjectIds.has(b.project_id)) {
       trackedBillIds.add(b.id)
+      const netPassed = b.net_payable_this_bill != null
+        ? Number(b.net_payable_this_bill)
+        : (Number(b.net_payable_amount) != null && !isNaN(Number(b.net_payable_amount))
+          ? Number(b.net_payable_amount)
+          : (Number(b.work_certified_amount) - (Number(b.retention_amount) || 0)))
+      const received = Number(b.amount_received) || 0
+      const netBankReceived = b.net_bank_received != null && !isNaN(Number(b.net_bank_received))
+        ? Number(b.net_bank_received)
+        : received
+      const outstanding = Math.max(0, netPassed - received)
+
       billsFormatted.push({
         id: b.id,
         project_id: b.project_id,
         bill_date: b.submission_date,
-        net_amount: Number(b.net_payable_amount) || 0,
-        received: Number(b.amount_received) || 0,
-        outstanding: Number(b.outstanding_balance) || 0,
+        net_amount: netPassed,
+        received,
+        net_bank_received: netBankReceived,
+        outstanding,
       })
     }
   }
@@ -83,29 +95,51 @@ export default async function DashboardPage() {
         bill_date: b.bill_date,
         net_amount: net,
         received,
-        outstanding: net - received,
+        net_bank_received: received,
+        outstanding: Math.max(0, net - received),
       })
     }
   }
 
-  // Group supplier balances by project (and central)
-  const suppliersFormatted: { id: string; project_id: string | null; name: string; due: number }[] = []
+  // Group supplier balances: both entity-level (for all projects) and project-specific
+  const suppliersFormatted: { id: string; supplier_id: string; project_id: string | null; name: string; due: number }[] = []
   for (const s of suppliers ?? []) {
+    let totalProcured = 0
+    let totalPaid = 0
     const byProject: Record<string, { procured: number; paid: number }> = {}
+
     for (const t of s.supplier_transactions ?? []) {
       const pid = t.project_id ?? 'central'
       if (!byProject[pid]) byProject[pid] = { procured: 0, paid: 0 }
-      if (t.transaction_type === 'procurement') byProject[pid].procured += (t.amount ?? 0)
-      else if (t.transaction_type === 'payment') byProject[pid].paid += (t.amount ?? 0)
+      const amt = Number(t.amount) || 0
+      if (t.transaction_type === 'procurement') {
+        byProject[pid].procured += amt
+        totalProcured += amt
+      } else if (t.transaction_type === 'payment') {
+        byProject[pid].paid += amt
+        totalPaid += amt
+      }
     }
+
+    // Entity-level total (matches /suppliers list: net vendor balance)
+    suppliersFormatted.push({
+      id: `${s.id}-all`,
+      supplier_id: s.id,
+      project_id: null,
+      name: s.name,
+      due: Math.max(0, totalProcured - totalPaid),
+    })
+
+    // Project-specific breakdowns
     for (const [pid, sums] of Object.entries(byProject)) {
       const actualPid = pid === 'central' ? null : pid
-      if (!actualPid || activeProjectIds.has(actualPid)) {
+      if (actualPid && activeProjectIds.has(actualPid)) {
         suppliersFormatted.push({
           id: `${s.id}-${pid}`,
+          supplier_id: s.id,
           project_id: actualPid,
           name: s.name,
-          due: sums.procured - sums.paid,
+          due: Math.max(0, sums.procured - sums.paid),
         })
       }
     }
