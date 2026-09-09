@@ -9,9 +9,11 @@ export const metadata: Metadata = {
   description: 'Construction ERP — civil works, RA billing, manpower muster rolls, and supplier accounts',
   manifest: '/manifest.json',
   icons: {
-    icon: '/icon.svg',
-    shortcut: '/icon.svg',
-    apple: '/icon.svg',
+    icon: [
+      { url: '/icon.svg?v=2', type: 'image/svg+xml' },
+    ],
+    shortcut: '/icon.svg?v=2',
+    apple: '/icon.svg?v=2',
   },
 }
 
