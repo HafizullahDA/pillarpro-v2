@@ -75,6 +75,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'imageBase64 field is required' }, { status: 400 })
     }
 
+    // Guard against oversized images (Vercel serverless request body is 4.5MB max)
+    if (imageBase64.length > 6 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'Receipt image is too large (> 4.5 MB). Please take a smaller photo or compress it.' },
+        { status: 413 }
+      )
+    }
+
     // Strip header prefix if present (e.g., data:image/png;base64,)
     const base64Data = imageBase64.includes(',')
       ? imageBase64.split(',')[1]

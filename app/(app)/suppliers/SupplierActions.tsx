@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
+import { useToast } from '@/components/ui/Toast'
 import { FieldWrapper, Input, Select, CurrencyInput, Textarea } from '@/components/ui/FormField'
 import { findBestSupplierMatch } from '@/lib/fuzzyMatch'
 import { captureFormError } from '@/lib/monitoring'
+import { compressImage } from '@/lib/imageCompress'
 
 type Project = { id: string; name: string }
 type SupplierOption = { id: string; name: string }
@@ -37,6 +39,7 @@ export function SupplierActions({
 }: SupplierActionsProps) {
   const router = useRouter()
   const supabase = createClient()
+  const toast = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [which, setWhich] = useState<'supplier' | 'procurement' | 'payment' | null>(null)
@@ -115,44 +118,40 @@ export function SupplierActions({
     setError('')
 
     try {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        const base64Str = reader.result as string
+      const base64Str = await compressImage(file)
 
-        const res = await fetch('/api/scan-receipt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64Str }),
-        })
+      const res = await fetch('/api/scan-receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64Str }),
+      })
 
-        const json = await res.json()
-        setScanning(false)
+      const json = await res.json()
+      setScanning(false)
 
-        if (!res.ok || json.error) {
-          setError(json.error || 'Failed to scan receipt image.')
-          return
-        }
+      if (!res.ok || json.error) {
+        setError(json.error || 'Failed to scan receipt image.')
+        return
+      }
 
-        const d = json.data
-        if (d) {
-          setProcForm(f => ({
-            ...f,
-            amount: d.amount ? String(d.amount) : f.amount,
-            date: d.date || f.date,
-            description: d.description || d.vendor_name || f.description,
-            reference: d.gst_number || f.reference,
-          }))
+      const d = json.data
+      if (d) {
+        setProcForm(f => ({
+          ...f,
+          amount: d.amount ? String(d.amount) : f.amount,
+          date: d.date || f.date,
+          description: d.description || d.vendor_name || f.description,
+          reference: d.gst_number || f.reference,
+        }))
 
-          // If no supplier pre-selected, fuzzy match against supplier options
-          if (!defaultSupplierId && d.vendor_name) {
-            const { bestMatch } = findBestSupplierMatch(d.vendor_name, suppliers, 0.55)
-            if (bestMatch) {
-              setProcForm(f => ({ ...f, supplier_id: bestMatch.id }))
-            }
+        // If no supplier pre-selected, fuzzy match against supplier options
+        if (!defaultSupplierId && d.vendor_name) {
+          const { bestMatch } = findBestSupplierMatch(d.vendor_name, suppliers, 0.55)
+          if (bestMatch) {
+            setProcForm(f => ({ ...f, supplier_id: bestMatch.id }))
           }
         }
       }
-      reader.readAsDataURL(file)
     } catch (err: any) {
       setScanning(false)
       const userMsg = await captureFormError('ScanReceiptSupplier', err)
@@ -188,8 +187,10 @@ export function SupplierActions({
       return
     }
 
+    const savedName = sForm.name.trim()
     setWhich(null)
     setSForm({ name: '', contact_number: '', gst_number: '', address: '', notes: '' })
+    toast.success(`Supplier "${savedName}" added successfully`)
     router.refresh()
   }
 
@@ -258,6 +259,7 @@ export function SupplierActions({
       reference: '',
       notes: '',
     })
+    toast.success(`Procurement of ₹${amountVal.toLocaleString('en-IN')} recorded`)
     router.refresh()
   }
 
@@ -313,6 +315,7 @@ export function SupplierActions({
       reference: '',
       notes: '',
     })
+    toast.success(`Payment of ₹${amountVal.toLocaleString('en-IN')} recorded`)
     router.refresh()
   }
 

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="128" fill="#2563EB"/>
+  <!-- Construction Pillar & Arch Geometry -->
+  <path d="M120 140H392V176H120V140Z" fill="white"/>
+  <path d="M152 176H208V360H152V176Z" fill="white" fill-opacity="0.9"/>
+  <path d="M228 176H284V360H228V176Z" fill="white" fill-opacity="0.9"/>
+  <path d="M304 176H360V360H304V176Z" fill="white" fill-opacity="0.9"/>
+  <path d="M96 360H416V396H96V360Z" fill="white"/>
+  <!-- Accent Foundation Line -->
+  <rect x="140" y="410" width="232" height="16" rx="8" fill="#93C5FD"/>
+</svg>

@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { FormErrorPayload } from '@/lib/monitoring'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
+
+const LOG_RATE_LIMIT = { limit: 20, windowMs: 60 * 1000 }
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request)
+    const rateCheck = checkRateLimit(`log-error:${ip}`, LOG_RATE_LIMIT)
+    if (!rateCheck.success) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded for error reporting' },
+        { status: 429 }
+      )
+    }
+
     const payload: FormErrorPayload = await request.json()
 
     console.error('🔥 [Production Form Error Received]:', {

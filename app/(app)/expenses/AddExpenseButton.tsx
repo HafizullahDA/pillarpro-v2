@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
+import { useToast } from '@/components/ui/Toast'
 import { FieldWrapper, Input, Select, CurrencyInput, Textarea } from '@/components/ui/FormField'
 import { findBestSupplierMatch } from '@/lib/fuzzyMatch'
 import { captureFormError } from '@/lib/monitoring'
+import { compressImage } from '@/lib/imageCompress'
 
 type Project = { id: string; name: string }
 type SupplierItem = { id: string; name: string }
@@ -56,6 +58,7 @@ export function AddExpenseButton({
 }) {
   const router = useRouter()
   const supabase = createClient()
+  const toast = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [open, setOpen] = useState(false)
@@ -102,61 +105,57 @@ export function AddExpenseButton({
     await refreshSuppliers()
 
     try {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        const base64Str = reader.result as string
+      const base64Str = await compressImage(file)
 
-        const res = await fetch('/api/scan-receipt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64Str }),
-        })
+      const res = await fetch('/api/scan-receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64Str }),
+      })
 
-        const json = await res.json()
-        setScanning(false)
+      const json = await res.json()
+      setScanning(false)
 
-        if (!res.ok || json.error) {
-          setError(json.error || 'Failed to scan receipt image.')
-          return
+      if (!res.ok || json.error) {
+        setError(json.error || 'Failed to scan receipt image.')
+        return
+      }
+
+      const d = json.data
+      if (d) {
+        if (d.amount) set('amount', String(d.amount))
+        if (d.date) set('date', d.date)
+        if (d.category && CATEGORIES.includes(d.category)) {
+          set('category', d.category)
+        } else {
+          set('category', 'material')
+        }
+        if (d.description || d.vendor_name) {
+          set('description', [d.vendor_name, d.description].filter(Boolean).join(' — '))
         }
 
-        const d = json.data
-        if (d) {
-          if (d.amount) set('amount', String(d.amount))
-          if (d.date) set('date', d.date)
-          if (d.category && CATEGORIES.includes(d.category)) {
-            set('category', d.category)
+        // Fuzzy match against existing suppliers
+        const ocrVendor = (d.vendor_name || '').trim()
+        if (ocrVendor) {
+          const { bestMatch, score } = findBestSupplierMatch(ocrVendor, supplierList, 0.55)
+
+          if (bestMatch && score >= 0.55) {
+            setSupplierLink({
+              type: 'matched',
+              ocrVendor,
+              matchedSupplier: bestMatch,
+              score: Math.round(score * 100),
+            })
           } else {
-            set('category', 'material')
-          }
-          if (d.description || d.vendor_name) {
-            set('description', [d.vendor_name, d.description].filter(Boolean).join(' — '))
-          }
-
-          // Fuzzy match against existing suppliers
-          const ocrVendor = (d.vendor_name || '').trim()
-          if (ocrVendor) {
-            const { bestMatch, score } = findBestSupplierMatch(ocrVendor, supplierList, 0.55)
-
-            if (bestMatch && score >= 0.55) {
-              setSupplierLink({
-                type: 'matched',
-                ocrVendor,
-                matchedSupplier: bestMatch,
-                score: Math.round(score * 100),
-              })
-            } else {
-              setSupplierLink({
-                type: 'no_match',
-                ocrVendor,
-                newSupplierName: ocrVendor,
-                newSupplierGst: d.gst_number || '',
-              })
-            }
+            setSupplierLink({
+              type: 'no_match',
+              ocrVendor,
+              newSupplierName: ocrVendor,
+              newSupplierGst: d.gst_number || '',
+            })
           }
         }
       }
-      reader.readAsDataURL(file)
     } catch (err: any) {
       setScanning(false)
       const userMsg = await captureFormError('ScanReceiptGemini', err, {
@@ -293,6 +292,7 @@ export function AddExpenseButton({
       setSaving(false)
       setOpen(false)
       resetForm()
+      toast.success(`Expense of ₹${amountNum.toLocaleString('en-IN')} recorded`)
       router.refresh()
     } catch (err: any) {
       setSaving(false)

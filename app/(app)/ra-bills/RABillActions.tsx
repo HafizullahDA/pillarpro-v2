@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
+import { useToast } from '@/components/ui/Toast'
 import { FieldWrapper, Input, Select, CurrencyInput, Textarea } from '@/components/ui/FormField'
 import { formatINR } from '@/lib/format'
 
@@ -76,6 +77,7 @@ export function RABillActions({
 }: RABillActionsProps) {
   const router = useRouter()
   const supabase = createClient()
+  const toast = useToast()
 
   const [which, setWhich] = useState<'submit_ra' | 'record_payment' | 'add_deposit' | null>(null)
   const [saving, setSaving] = useState(false)
@@ -296,6 +298,7 @@ export function RABillActions({
         return
       }
 
+      const savedBillNumber = billForm.bill_number.trim()
       setSaving(false)
       closeDrawer()
       setBillForm({
@@ -309,6 +312,7 @@ export function RABillActions({
         remarks: '',
       })
       setSelectedFile(null)
+      toast.success(`RA Bill "${savedBillNumber}" submitted successfully`)
       router.refresh()
     } catch (err: any) {
       setSaving(false)
@@ -413,6 +417,7 @@ export function RABillActions({
         remarks: '',
       })
       if (onPaymentSuccess) onPaymentSuccess()
+      toast.success(`Payment of ₹${grossAmt.toLocaleString('en-IN')} recorded`)
       router.refresh()
     } catch (err: any) {
       setSaving(false)
@@ -464,6 +469,7 @@ export function RABillActions({
         return
       }
 
+      const savedRef = depositForm.reference_number.trim()
       setSaving(false)
       closeDrawer()
       setDepositForm({
@@ -478,6 +484,7 @@ export function RABillActions({
         notes: '',
       })
       setSelectedFile(null)
+      toast.success(`Guarantee "${savedRef}" saved successfully`)
       router.refresh()
     } catch (err: any) {
       setSaving(false)
