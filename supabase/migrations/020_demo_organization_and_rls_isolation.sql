@@ -805,7 +805,7 @@ BEGIN
     0.00,
     150000.00,
     2850000.00,
-    '2026-08-28',
+    CURRENT_DATE - INTERVAL '4 days',
     'partially_paid',
     'Plinth beam, foundation raft, and column casting certified. 1st installment released.',
     'standalone',
@@ -819,6 +819,7 @@ BEGIN
     labour_cess_deducted = EXCLUDED.labour_cess_deducted,
     total_deductions = EXCLUDED.total_deductions,
     net_bank_received = EXCLUDED.net_bank_received,
+    date_received = EXCLUDED.date_received,
     status = EXCLUDED.status;
 
   -- Payments against RA Bills (Tranche-level ledger with statutory deductions)
@@ -852,7 +853,7 @@ BEGIN
     'd9222222-2222-4222-a222-222222222222'::uuid,
     v_b2_id,
     v_p2_id,
-    '2026-08-28',
+    CURRENT_DATE - INTERVAL '4 days',
     3000000.00,
     60000.00,
     60000.00,
@@ -903,7 +904,7 @@ BEGIN
     id, bill_id, project_id, amount_received, date, mode, reference, created_by
   ) VALUES
   ('d7111111-1111-4111-a111-111111111111'::uuid, v_b1_id, v_p1_id, 3325000.00, '2026-07-02', 'bank_transfer', 'TREASURY/SGR/77102', v_demo_user_id),
-  ('d7222222-2222-4222-a222-222222222222'::uuid, v_b2_id, v_p2_id, 3000000.00, '2026-08-28', 'bank_transfer', 'TREASURY/SGR/88491', v_demo_user_id)
+  ('d7222222-2222-4222-a222-222222222222'::uuid, v_b2_id, v_p2_id, 3000000.00, CURRENT_DATE - INTERVAL '4 days', 'bank_transfer', 'TREASURY/SGR/88491', v_demo_user_id)
   ON CONFLICT (id) DO UPDATE SET
     amount_received = EXCLUDED.amount_received,
     date = EXCLUDED.date;

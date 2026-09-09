@@ -9,7 +9,7 @@ import { formatINR, formatDate } from '@/lib/format'
 type Project = { id: string; name: string; agency_name: string | null }
 type Bill = { id: string; project_id: string; bill_date: string; net_amount: number; received: number; outstanding: number }
 type SupplierDue = { id: string; project_id: string | null; name: string; due: number }
-type LedgerEntry = { id: string; project_id: string | null; entry_type: string; category: string | null; amount: number; date: string }
+type LedgerEntry = { id: string; project_id: string | null; entry_type: string; category: string | null; amount: number; net_bank_amount?: number; date: string }
 
 type DashboardClientProps = {
   projects: Project[]
@@ -60,6 +60,10 @@ export function DashboardClient({
   const totalReceived = filteredLedger
     .filter(i => i.entry_type === 'income')
     .reduce((sum, i) => sum + i.amount, 0)
+
+  const totalNetBankReceived = filteredLedger
+    .filter(i => i.entry_type === 'income')
+    .reduce((sum, i) => sum + (i.net_bank_amount ?? i.amount), 0)
 
   // Filter bills & supplier dues by selected project
   const filteredBills = bills.filter(b => selectedProject === 'all' || b.project_id === selectedProject)
@@ -182,7 +186,12 @@ export function DashboardClient({
       {/* 4 Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <SummaryTile label="Total Expense"  value={formatINR(totalExpense)}  accent="red"     />
-        <SummaryTile label="Total Received" value={formatINR(totalReceived)} accent="emerald" />
+        <SummaryTile
+          label="Total Received"
+          value={formatINR(totalReceived)}
+          sub={totalNetBankReceived !== totalReceived && totalNetBankReceived > 0 ? `Net in bank: ${formatINR(totalNetBankReceived)}` : undefined}
+          accent="emerald"
+        />
         <SummaryTile label="Outstanding"    value={formatINR(totalOutstanding)} accent="amber"   />
         <SummaryTile label="Supplier Dues"  value={formatINR(totalSupplierDues)} accent="blue"   />
       </div>
