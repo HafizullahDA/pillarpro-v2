@@ -1,8 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenAI } from '@google/genai'
+import { createClient } from '@/lib/supabase/server'
+import { canCreateExpense } from '@/lib/permissions'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
+
+// Rate limit configuration: 10 receipt scans per user every 2 minutes
+const RATE_LIMIT_CONFIG = {
+  limit: 10,
+  windowMs: 2 * 60 * 1000,
+}
 
 export async function POST(req: NextRequest) {
   try {
+    // 1. Authenticate user via Supabase session
+    const supabase = createClient()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Authentication required. Please sign in to scan receipts.' },
+        { status: 401 }
+      )
+    }
+
+    // 2. Authorize user role (must have permission to create expenses)
+    const { data: userRole } = await supabase.rpc('get_user_role')
+    if (!canCreateExpense(userRole as string | null)) {
+      return NextResponse.json(
+        { error: 'Forbidden. Your role does not have permission to scan receipts or add expenses.' },
+        { status: 403 }
+      )
+    }
+
+    // 3. Enforce sliding-window rate limit (keyed by user ID)
+    const clientIp = getClientIp(req)
+    const rateLimitKey = `scan-receipt:${user.id || clientIp}`
+    const rateLimit = checkRateLimit(rateLimitKey, RATE_LIMIT_CONFIG)
+
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        {
+          error: `Rate limit reached. You can scan up to ${RATE_LIMIT_CONFIG.limit} receipts every 2 minutes. Please wait ${rateLimit.resetSeconds}s before scanning another receipt.`,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimit.resetSeconds),
+            'X-RateLimit-Limit': String(rateLimit.limit),
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      )
+    }
+
+    // 4. Validate Google Gemini API key
     const apiKey =
       process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
       process.env.GEMINI_API_KEY ||
@@ -15,6 +69,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // 5. Parse request body
     const { imageBase64 } = await req.json()
     if (!imageBase64) {
       return NextResponse.json({ error: 'imageBase64 field is required' }, { status: 400 })
@@ -72,7 +127,15 @@ Return valid JSON only. Do not format with markdown codeblocks or backticks.`
 
     const extracted = JSON.parse(cleanJsonStr)
 
-    return NextResponse.json({ success: true, data: extracted })
+    return NextResponse.json(
+      { success: true, data: extracted },
+      {
+        headers: {
+          'X-RateLimit-Limit': String(rateLimit.limit),
+          'X-RateLimit-Remaining': String(rateLimit.remaining),
+        },
+      }
+    )
   } catch (err: any) {
     console.error('Receipt Scan Error:', err)
     return NextResponse.json(
