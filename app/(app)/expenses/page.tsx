@@ -10,14 +10,16 @@ export default async function ExpensesPage() {
     { data: userRole },
     { data: projects },
     { data: suppliers },
+    { data: partners },
     { data: expenses },
   ] = await Promise.all([
     supabase.rpc('get_user_role'),
     supabase.from('projects').select('id, name').eq('archived', false).order('name'),
     supabase.from('suppliers').select('id, name').order('name'),
+    supabase.from('partners').select('id, name').order('name'),
     supabase
       .from('expenses')
-      .select('*, projects(name)')
+      .select('*, projects(name), partners(name)')
       .order('date', { ascending: false })
       .limit(100),
   ])
@@ -34,6 +36,7 @@ export default async function ExpensesPage() {
       initialExpenses={(activeExpenses as unknown as ExpenseRow[]) ?? []}
       projects={activeProjects}
       suppliers={suppliers ?? []}
+      partners={partners ?? []}
       userRole={(userRole as string) ?? ''}
     />
   )

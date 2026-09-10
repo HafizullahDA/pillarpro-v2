@@ -13,6 +13,7 @@ import { compressImage } from '@/lib/imageCompress'
 
 type Project = { id: string; name: string }
 type SupplierItem = { id: string; name: string }
+type PartnerItem = { id: string; name: string }
 
 const CATEGORIES = ['labor', 'material', 'equipment', 'transport', 'fuel', 'admin', 'tendering', 'other']
 const MODES = ['Cash', 'NEFT/RTGS', 'Cheque', 'UPI', 'Other']
@@ -52,9 +53,11 @@ type SupplierLinkState =
 export function AddExpenseButton({
   projects,
   suppliers = [],
+  partners = [],
 }: {
   projects: Project[]
   suppliers?: SupplierItem[]
+  partners?: PartnerItem[]
 }) {
   const router = useRouter()
   const supabase = createClient()
@@ -66,6 +69,7 @@ export function AddExpenseButton({
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState('')
   const [supplierList, setSupplierList] = useState<SupplierItem[]>(suppliers)
+  const [partnerList, setPartnerList] = useState<PartnerItem[]>(partners)
 
   const [form, setForm] = useState({
     project_id: '',
@@ -75,18 +79,27 @@ export function AddExpenseButton({
     description: '',
     payment_mode: 'Cash',
     reference: '',
+    paid_by_partner_id: '',
   })
 
   const [supplierLink, setSupplierLink] = useState<SupplierLinkState>({ type: 'idle' })
 
-  // Refresh suppliers list when drawer opens or prop updates
+  // Refresh suppliers and partners list when drawer opens or prop updates
   useEffect(() => {
     setSupplierList(suppliers)
   }, [suppliers])
 
+  useEffect(() => {
+    setPartnerList(partners)
+  }, [partners])
+
   const refreshSuppliers = async () => {
-    const { data } = await supabase.from('suppliers').select('id, name').order('name')
-    if (data) setSupplierList(data)
+    const [{ data: sData }, { data: pData }] = await Promise.all([
+      supabase.from('suppliers').select('id, name').order('name'),
+      supabase.from('partners').select('id, name').order('name'),
+    ])
+    if (sData) setSupplierList(sData)
+    if (pData) setPartnerList(pData)
   }
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
@@ -197,6 +210,7 @@ export function AddExpenseButton({
       description: form.description.trim() || null,
       mode: modeNormalized,
       reference: form.reference.trim() || null,
+      paid_by_partner_id: form.paid_by_partner_id || null,
     }
 
     // Offline queue fallback
@@ -289,6 +303,26 @@ export function AddExpenseButton({
         }
       }
 
+      // 4. Create partner_transactions record if paid out-of-pocket by partner
+      if (form.paid_by_partner_id) {
+        const { error: pTxErr } = await supabase.from('partner_transactions').insert({
+          partner_id: form.paid_by_partner_id,
+          project_id: payload.project_id || null,
+          transaction_type: 'paid_by_partner',
+          purpose: 'reimbursement',
+          amount: payload.amount,
+          date: payload.date,
+          mode: payload.mode,
+          reference: payload.reference,
+          notes: `Out-of-pocket: ${payload.description || form.category}`,
+          expense_id: expData?.id || null,
+        })
+
+        if (pTxErr) {
+          console.error('Failed to link partner transaction:', pTxErr)
+        }
+      }
+
       setSaving(false)
       setOpen(false)
       resetForm()
@@ -314,6 +348,7 @@ export function AddExpenseButton({
       description: '',
       payment_mode: 'Cash',
       reference: '',
+      paid_by_partner_id: '',
     })
     setSupplierLink({ type: 'idle' })
   }
@@ -707,6 +742,17 @@ export function AddExpenseButton({
               value={form.description}
               onChange={e => set('description', e.target.value)}
             />
+          </FieldWrapper>
+
+          <FieldWrapper label="Paid By" hint="Select partner if paid out-of-pocket from personal UPI/Cash">
+            <Select value={form.paid_by_partner_id} onChange={e => set('paid_by_partner_id', e.target.value)}>
+              <option value="">Company Bank / Site Cash (Default)</option>
+              {partnerList.map(p => (
+                <option key={p.id} value={p.id}>
+                  Partner: {p.name}
+                </option>
+              ))}
+            </Select>
           </FieldWrapper>
 
           <div className="grid grid-cols-2 gap-3">

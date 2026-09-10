@@ -1,9 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { formatINR, formatDate } from '@/lib/format'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { canViewPartners } from '@/lib/permissions'
-import { PartnersActions } from './PartnersActions'
+import { PartnersClient, PartnerWithFinancials, PartnerTransactionItem, ProjectSummary } from './PartnersClient'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -15,95 +13,138 @@ export default async function PartnersPage() {
     redirect('/dashboard')
   }
 
-  const { data: projects } = await supabase.from('projects').select('id, name').eq('archived', false).order('name')
+  // Fetch projects, partners, transactions, and project equity shares
+  const [
+    { data: projects },
+    { data: partners },
+    { data: rawShares },
+    { data: transactions }
+  ] = await Promise.all([
+    supabase
+      .from('projects')
+      .select('id, name, awarded_amount')
+      .eq('archived', false)
+      .order('name'),
+    supabase
+      .from('partners')
+      .select(`
+        id,
+        name,
+        opening_balance,
+        notes,
+        partner_transactions (
+          id,
+          project_id,
+          transaction_type,
+          purpose,
+          amount,
+          date,
+          mode,
+          reference,
+          notes
+        )
+      `)
+      .order('name'),
+    supabase
+      .from('project_partners')
+      .select('id, project_id, partner_id, share_percentage, projects(name)')
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('partner_transactions')
+      .select('*, partners(name), projects(name)')
+      .order('date', { ascending: false })
+      .limit(50)
+  ])
 
-  const { data: partners } = await supabase
-    .from('partners')
-    .select('id, name, opening_balance, partner_transactions(transaction_type, amount, date)')
-    .order('name')
+  const activeProjects: ProjectSummary[] = (projects ?? []).map(p => ({
+    id: p.id,
+    name: p.name,
+    awarded_amount: Number(p.awarded_amount) || 0,
+  }))
 
+  const projectMap = new Map(activeProjects.map(p => [p.id, p.name]))
 
-  const partnersWithBalance = (partners ?? []).map(p => {
-    let balance = p.opening_balance ?? 0
+  // Calculate detailed financials per partner
+  const partnersFormatted: PartnerWithFinancials[] = (partners ?? []).map(p => {
+    let totalCapitalInfused = 0
+    let totalOutOfPocket = 0
+    let totalDraws = 0
+
     for (const tx of (p.partner_transactions ?? [])) {
-      if (tx.transaction_type === 'paid_by_partner') balance += tx.amount ?? 0
-      else balance -= tx.amount ?? 0
+      const amt = Number(tx.amount) || 0
+      if (tx.transaction_type === 'paid_by_partner') {
+        if (tx.purpose === 'capital_contribution') {
+          totalCapitalInfused += amt
+        } else {
+          totalOutOfPocket += amt
+        }
+      } else if (tx.transaction_type === 'received_by_partner') {
+        totalDraws += amt
+      }
     }
-    const lastTx = (p.partner_transactions ?? []).sort((a: {date:string}, b: {date:string}) => b.date > a.date ? 1 : -1)[0]
-    return { ...p, balance, lastDate: lastTx?.date ?? null }
+
+    const totalInjected = totalCapitalInfused + totalOutOfPocket
+    const balance = (Number(p.opening_balance) || 0) + totalInjected - totalDraws
+
+    // Sort to find latest date
+    const sortedTx = [...(p.partner_transactions ?? [])].sort(
+      (a: { date: string }, b: { date: string }) => (b.date > a.date ? 1 : -1)
+    )
+    const lastDate = sortedTx[0]?.date ?? null
+
+    // Project shares for this partner
+    const partnerShares = (rawShares ?? [])
+      .filter(s => s.partner_id === p.id)
+      .map(s => ({
+        project_id: s.project_id,
+        projectName: ((s.projects as any)?.name) || projectMap.get(s.project_id) || 'Project',
+        share_percentage: Number(s.share_percentage) || 50,
+      }))
+
+    return {
+      id: p.id,
+      name: p.name,
+      opening_balance: Number(p.opening_balance) || 0,
+      notes: p.notes,
+      totalCapitalInfused,
+      totalOutOfPocket,
+      totalInjected,
+      totalDraws,
+      balance,
+      lastDate,
+      projectShares: partnerShares,
+    }
   })
 
-  const { data: recentTx } = await supabase
-    .from('partner_transactions')
-    .select('*, partners(name), projects(name)')
-    .order('date', { ascending: false })
-    .limit(20)
+  // Format recent transactions
+  const transactionsFormatted: PartnerTransactionItem[] = (transactions ?? []).map(t => ({
+    id: t.id,
+    partner_id: t.partner_id,
+    partnerName: ((t.partners as any)?.name) || 'Partner',
+    project_id: t.project_id,
+    projectName: ((t.projects as any)?.name) || null,
+    transaction_type: t.transaction_type,
+    purpose: t.purpose || 'other',
+    amount: Number(t.amount) || 0,
+    date: t.date,
+    mode: t.mode || 'cash',
+    reference: t.reference || null,
+    notes: t.notes || null,
+  }))
+
+  const rawSharesClean = (rawShares ?? []).map(s => ({
+    id: s.id,
+    project_id: s.project_id,
+    partner_id: s.partner_id,
+    share_percentage: Number(s.share_percentage) || 50,
+  }))
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="text-xl font-bold text-slate-900">Partners</h1>
-        <PartnersActions projects={projects ?? []} partners={partnersWithBalance.map(p => ({ id: p.id, name: p.name }))} />
-      </div>
-
-      {!partnersWithBalance.length ? (
-        <EmptyState title="No partners yet" description="Add partners to track capital contributions and withdrawals." />
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
-            {partnersWithBalance.map(p => (
-              <div key={p.id} className="bg-white rounded-xl border border-slate-200 p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-slate-900">{p.name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Last: {formatDate(p.lastDate)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-lg font-bold tabular-nums ${p.balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {formatINR(Math.abs(p.balance))}
-                    </p>
-                    <p className="text-xs text-slate-400">{p.balance >= 0 ? 'paid in more' : 'received more'}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Recent transactions */}
-          <h2 className="text-base font-semibold text-slate-800 mb-3">Recent Transactions</h2>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Partner</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Purpose</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden lg:table-cell">Project</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Amount</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {(recentTx ?? []).map(tx => (
-                    <tr key={tx.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-slate-900">{(tx.partners as {name:string}|null)?.name ?? '—'}</p>
-                        <p className="text-xs text-slate-400">{tx.transaction_type === 'paid_by_partner' ? 'Paid by partner' : 'Received by partner'}</p>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 capitalize hidden md:table-cell">{tx.purpose?.replace('_', ' ') ?? '—'}</td>
-                      <td className="px-4 py-3 text-slate-500 hidden lg:table-cell">{(tx.projects as {name:string}|null)?.name ?? 'Firm-level'}</td>
-                      <td className={`px-4 py-3 text-right tabular-nums font-semibold ${tx.transaction_type === 'paid_by_partner' ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {formatINR(tx.amount)}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 hidden md:table-cell">{formatDate(tx.date)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+    <PartnersClient
+      partners={partnersFormatted}
+      transactions={transactionsFormatted}
+      projects={activeProjects}
+      rawShares={rawSharesClean}
+    />
   )
 }

@@ -29,13 +29,16 @@ export interface ExpenseRow {
   date: string
   payment_mode?: string
   receipt_url?: string | null
+  paid_by_partner_id?: string | null
   projects?: { name: string } | null
+  partners?: { name: string } | null
 }
 
 interface ExpensesClientProps {
   initialExpenses: ExpenseRow[]
   projects: { id: string; name: string }[]
   suppliers: { id: string; name: string }[]
+  partners?: { id: string; name: string }[]
   userRole: string
 }
 
@@ -43,6 +46,7 @@ export function ExpensesClient({
   initialExpenses,
   projects,
   suppliers,
+  partners = [],
   userRole,
 }: ExpensesClientProps) {
   const router = useRouter()
@@ -79,7 +83,7 @@ export function ExpensesClient({
           <h1 className="text-xl font-bold text-slate-900">Expenses</h1>
           <p className="text-xs text-slate-500 mt-0.5">Track and manage site expenses and receipts</p>
         </div>
-        {canCreate && <AddExpenseButton projects={projects} suppliers={suppliers} />}
+        {canCreate && <AddExpenseButton projects={projects} suppliers={suppliers} partners={partners} />}
       </div>
 
       {!expenses.length ? (
@@ -108,7 +112,14 @@ export function ExpensesClient({
                 {expenses.map(e => (
                   <tr key={e.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-slate-900">{e.description ?? '—'}</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="font-medium text-slate-900">{e.description ?? '—'}</p>
+                        {e.partners?.name && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            Paid by {e.partners.name}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-slate-600 hidden md:table-cell">
                       {(e.projects as { name: string } | null)?.name ?? '—'}
