@@ -12,6 +12,7 @@ import { canCreateAttendance } from '@/lib/permissions'
 import { PrintPreviewModal } from '@/components/pdf/PrintPreviewModal'
 import { AttendanceMusterRollPDF } from '@/components/pdf/AttendanceMusterRollPDF'
 import { getClientOrganization, OrganizationProfile, DEFAULT_ORGANIZATION } from '@/lib/organization'
+import { WageLedgerClient } from './WageLedgerClient'
 
 type Project = { id: string; name: string }
 type Worker = { id: string; name: string; trade: string | null; daily_wage_rate: number | null }
@@ -26,6 +27,7 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
   const canMark = canCreateAttendance(userRole)
 
   const today = new Date()
+  const [activeTab, setActiveTab] = useState<'attendance' | 'wages'>('attendance')
   const [projectId, setProjectId] = useState(projects[0]?.id ?? '')
   const [year, setYear]   = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
@@ -191,15 +193,57 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
 
   return (
     <div>
-      {/* Controls */}
-      <div className="flex flex-wrap gap-3 mb-5">
-        <select
-          className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          value={projectId}
-          onChange={e => setProjectId(e.target.value)}
+      {/* Module Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 mb-6 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('attendance')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+            activeTab === 'attendance'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
         >
-          {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          Daily Muster Roll
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('wages')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+            activeTab === 'wages'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          Wage Ledger & Settlements
+        </button>
+      </div>
+
+      {activeTab === 'wages' ? (
+        <WageLedgerClient
+          projects={projects}
+          selectedProjectId={projectId}
+          onSelectProject={setProjectId}
+          userRole={userRole}
+        />
+      ) : (
+        <>
+          {/* Controls */}
+          <div className="flex flex-wrap gap-3 mb-5">
+            <select
+              className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              value={projectId}
+              onChange={e => setProjectId(e.target.value)}
+            >
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
         <select
           className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           value={month}
@@ -401,6 +445,8 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
           organization={org}
         />
       </PrintPreviewModal>
+        </>
+      )}
     </div>
   )
 }

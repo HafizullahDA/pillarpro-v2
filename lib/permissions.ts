@@ -180,4 +180,8 @@ export const canCreatePartner  = (role: string | null | undefined) => can(role, 
 
 export const canManageUsers    = (role: string | null | undefined) => can(role, 'users', 'manage')
 export const canManagePeriods  = (role: string | null | undefined) => can(role, 'periods', 'manage')
+export const canManageWages    = (role: string | null | undefined) => {
+  const r = normalizeRole(role)
+  return r === 'owner' || r === 'partner' || r === 'accountant'
+}
 
