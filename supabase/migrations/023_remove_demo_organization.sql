@@ -1,11 +1,10 @@
 -- ============================================================
 -- PillarPro v2 — Migration 023: Completely Remove Demo Organization & Demo User
 -- 
--- 1. Reassigns partners (Hafizullah Lone & Habibullah Lone) to the real organization
--- 2. Deletes all demo data (projects, RA bills, payments, deductions, suppliers,
---    transactions, workers, attendance, wage payments, expenses, etc.)
--- 3. Deletes the demo user (demo@pillarpro.app) from auth and profiles
--- 4. Deletes the demo organization (d0000000-0000-4000-a000-000000000001)
+-- 1. Reassigns real firm partners (Hafizullah Lone & Habibullah Lone) to the real organization
+-- 2. Identifies all demo project, worker, supplier IDs
+-- 3. Deletes in strict foreign key order so no constraint is violated
+-- 4. Deletes the demo organization and demo user completely from auth and profiles
 -- ============================================================
 
 DO $$
@@ -13,6 +12,9 @@ DECLARE
   v_demo_org_id CONSTANT UUID := 'd0000000-0000-4000-a000-000000000001'::uuid;
   v_demo_user_id UUID;
   v_real_org_id UUID;
+  v_demo_project_ids UUID[];
+  v_demo_worker_ids UUID[];
+  v_demo_supplier_ids UUID[];
 BEGIN
   -- 1. Find the real organization (Al Habib / Hafizullah Lone Constructions)
   SELECT id INTO v_real_org_id 
@@ -36,109 +38,148 @@ BEGIN
       AND name IN ('Hafizullah Lone', 'Habibullah Lone');
   END IF;
 
-  -- 4. Delete demo wage payments
+  -- 4. Gather all demo project IDs
+  SELECT COALESCE(array_agg(id), '{}') INTO v_demo_project_ids
+  FROM public.projects
+  WHERE organization_id = v_demo_org_id 
+     OR id IN (
+       'd1111111-1111-4111-a111-111111111111'::uuid, 
+       'd2222222-2222-4222-a222-222222222222'::uuid
+     );
+
+  -- 5. Gather all demo worker IDs
+  SELECT COALESCE(array_agg(id), '{}') INTO v_demo_worker_ids
+  FROM public.workers
+  WHERE organization_id = v_demo_org_id
+     OR id IN (
+       'df111111-1111-4111-a111-111111111111'::uuid,
+       'df222222-2222-4222-a222-222222222222'::uuid,
+       'df333333-3333-4333-a333-333333333333'::uuid,
+       'df444444-4444-4444-a444-444444444444'::uuid,
+       'd3111111-1111-4111-a111-111111111111'::uuid,
+       'd3222222-2222-4222-a222-222222222222'::uuid,
+       'd3333333-3333-4333-a333-333333333333'::uuid,
+       'd3444444-4444-4444-a444-444444444444'::uuid,
+       'd3555555-5555-4555-a555-555555555555'::uuid
+     );
+
+  -- 6. Gather all demo supplier IDs
+  SELECT COALESCE(array_agg(id), '{}') INTO v_demo_supplier_ids
+  FROM public.suppliers
+  WHERE organization_id = v_demo_org_id
+     OR id IN (
+       'dcc11111-1111-4111-a111-111111111111'::uuid,
+       'dcc22222-2222-4222-a222-222222222222'::uuid,
+       'dcc33333-3333-4333-a333-333333333333'::uuid
+     );
+
+  -- ──────────────────────────────────────────
+  -- 7. DELETE CHILD RECORDS IN REVERSE FK ORDER
+  -- ──────────────────────────────────────────
+
+  -- A. Wage payments (references workers & projects)
   DELETE FROM public.wage_payments 
   WHERE organization_id = v_demo_org_id 
-     OR project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
+     OR project_id = ANY(v_demo_project_ids)
+     OR worker_id = ANY(v_demo_worker_ids);
 
-  -- 5. Delete demo attendance
+  -- B. Attendance (references workers & projects)
+  -- Deleting explicitly by worker IDs and project IDs to satisfy attendance_worker_id_fkey
   DELETE FROM public.attendance 
-  WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id)
-     OR worker_id IN (SELECT id FROM public.workers WHERE organization_id = v_demo_org_id);
+  WHERE project_id = ANY(v_demo_project_ids)
+     OR worker_id = ANY(v_demo_worker_ids);
 
-  -- 6. Delete demo worker project assignments
+  -- C. Worker Project Assignments (references workers & projects)
   DELETE FROM public.worker_project_assignments 
-  WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id)
-     OR worker_id IN (SELECT id FROM public.workers WHERE organization_id = v_demo_org_id);
+  WHERE project_id = ANY(v_demo_project_ids)
+     OR worker_id = ANY(v_demo_worker_ids);
 
-  -- 7. Delete demo workers
+  -- D. Workers (now safe to delete)
   DELETE FROM public.workers 
-  WHERE organization_id = v_demo_org_id;
+  WHERE organization_id = v_demo_org_id
+     OR id = ANY(v_demo_worker_ids);
 
-  -- 8. Delete demo partner project shares
-  DELETE FROM public.project_partners 
-  WHERE organization_id = v_demo_org_id 
-     OR project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
-
-  -- 9. Delete demo partner transactions
+  -- E. Partner Transactions & Project Partners
   DELETE FROM public.partner_transactions 
   WHERE organization_id = v_demo_org_id 
-     OR project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
+     OR project_id = ANY(v_demo_project_ids);
 
-  -- 10. Delete any remaining partners still attached to the demo organization
+  DELETE FROM public.project_partners 
+  WHERE organization_id = v_demo_org_id 
+     OR project_id = ANY(v_demo_project_ids);
+
+  -- Delete remaining demo partners (real partners were already reassigned above)
   DELETE FROM public.partners 
   WHERE organization_id = v_demo_org_id;
 
-  -- 11. Delete demo expenses
-  DELETE FROM public.expenses 
-  WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
-
-  -- 12. Delete demo supplier transactions
+  -- F. Supplier Transactions & Suppliers
   DELETE FROM public.supplier_transactions 
   WHERE organization_id = v_demo_org_id 
-     OR project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id)
-     OR supplier_id IN (SELECT id FROM public.suppliers WHERE organization_id = v_demo_org_id);
+     OR project_id = ANY(v_demo_project_ids)
+     OR supplier_id = ANY(v_demo_supplier_ids);
 
-  -- 13. Delete demo suppliers
   DELETE FROM public.suppliers 
-  WHERE organization_id = v_demo_org_id;
+  WHERE organization_id = v_demo_org_id
+     OR id = ANY(v_demo_supplier_ids);
 
-  -- 14. Delete demo security deposits
+  -- G. Security Deposits
   DELETE FROM public.security_deposits 
   WHERE organization_id = v_demo_org_id 
-     OR project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
+     OR project_id = ANY(v_demo_project_ids);
 
-  -- 15. Delete demo RA bill payments and deductions
+  -- H. RA Bill Payments, Deductions, and Bills
   DELETE FROM public.ra_bill_payments 
   WHERE bill_id IN (
-    SELECT id FROM public.ra_bills 
-    WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id)
+    SELECT id FROM public.ra_bills WHERE project_id = ANY(v_demo_project_ids)
   );
 
   DELETE FROM public.bill_deductions 
   WHERE bill_id IN (
-    SELECT id FROM public.ra_bills 
-    WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id)
+    SELECT id FROM public.ra_bills WHERE project_id = ANY(v_demo_project_ids)
   );
 
-  -- 16. Delete demo RA bills
   DELETE FROM public.ra_bills 
-  WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
+  WHERE project_id = ANY(v_demo_project_ids);
 
-  -- 17. Delete demo receivable payments and bills
+  -- I. Receivable Payments & Bills
   DELETE FROM public.receivable_payments 
-  WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
+  WHERE project_id = ANY(v_demo_project_ids);
 
   DELETE FROM public.bills 
-  WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
+  WHERE project_id = ANY(v_demo_project_ids);
 
-  -- 18. Delete demo vendor payments, purchases, and vendors
+  -- J. Expenses
+  DELETE FROM public.expenses 
+  WHERE project_id = ANY(v_demo_project_ids);
+
+  -- K. Vendors, Purchases, and Vendor Payments
   DELETE FROM public.vendor_payments 
-  WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
+  WHERE project_id = ANY(v_demo_project_ids);
 
   DELETE FROM public.vendor_purchases 
-  WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
+  WHERE project_id = ANY(v_demo_project_ids);
 
   DELETE FROM public.vendors 
-  WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
+  WHERE project_id = ANY(v_demo_project_ids);
 
-  -- 19. Delete demo ledger entries
+  -- L. General Ledger entries
   DELETE FROM public.ledger 
-  WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
+  WHERE project_id = ANY(v_demo_project_ids);
 
-  -- 20. Delete demo project members
+  -- M. Project Members
   DELETE FROM public.project_members 
-  WHERE project_id IN (SELECT id FROM public.projects WHERE organization_id = v_demo_org_id);
+  WHERE project_id = ANY(v_demo_project_ids);
 
-  -- 21. Delete demo projects
+  -- N. Projects
   DELETE FROM public.projects 
-  WHERE organization_id = v_demo_org_id;
+  WHERE id = ANY(v_demo_project_ids) 
+     OR organization_id = v_demo_org_id;
 
-  -- 22. Delete demo organization
+  -- O. Demo Organization
   DELETE FROM public.organizations 
   WHERE id = v_demo_org_id OR name = 'PillarPro Demo';
 
-  -- 23. Delete demo user records
+  -- P. Demo User (from roles, user_profiles, auth.identities, auth.users)
   IF v_demo_user_id IS NOT NULL THEN
     DELETE FROM public.roles WHERE user_id = v_demo_user_id;
     DELETE FROM public.user_profiles WHERE id = v_demo_user_id;
