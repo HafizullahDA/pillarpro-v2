@@ -243,7 +243,7 @@ BEGIN
     date, mode, reference, notes, created_by
   ) VALUES
   (
-    'dp111111-1111-4111-a111-111111111111'::uuid,
+    'df111111-1111-4111-a111-111111111111'::uuid,
     v_demo_org_id,
     'd4111111-1111-4111-a111-111111111111'::uuid,
     NULL,
@@ -257,7 +257,7 @@ BEGIN
     v_demo_user_id
   ),
   (
-    'dp111111-1111-4111-a111-111111111112'::uuid,
+    'df111111-1111-4111-a111-111111111112'::uuid,
     v_demo_org_id,
     'd4222222-2222-4222-a222-222222222222'::uuid,
     NULL,
@@ -271,7 +271,7 @@ BEGIN
     v_demo_user_id
   ),
   (
-    'dp111111-1111-4111-a111-111111111113'::uuid,
+    'df111111-1111-4111-a111-111111111113'::uuid,
     v_demo_org_id,
     'd4111111-1111-4111-a111-111111111111'::uuid,
     v_p1_id,
@@ -285,7 +285,7 @@ BEGIN
     v_demo_user_id
   ),
   (
-    'dp111111-1111-4111-a111-111111111114'::uuid,
+    'df111111-1111-4111-a111-111111111114'::uuid,
     v_demo_org_id,
     'd4111111-1111-4111-a111-111111111111'::uuid,
     v_p1_id,
@@ -299,7 +299,7 @@ BEGIN
     v_demo_user_id
   ),
   (
-    'dp111111-1111-4111-a111-111111111115'::uuid,
+    'df111111-1111-4111-a111-111111111115'::uuid,
     v_demo_org_id,
     'd4222222-2222-4222-a222-222222222222'::uuid,
     v_p1_id,
@@ -326,6 +326,6 @@ BEGIN
   -- Link partner transaction to demo expense
   UPDATE public.partner_transactions
   SET expense_id = v_exp1_id
-  WHERE id = 'dp111111-1111-4111-a111-111111111113'::uuid;
+  WHERE id = 'df111111-1111-4111-a111-111111111113'::uuid;
 
 END $$;
