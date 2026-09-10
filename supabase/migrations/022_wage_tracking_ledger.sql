@@ -106,26 +106,29 @@ BEGIN
   -- 3. SEED REALISTIC DEMO WORKERS & WAGE PAYMENTS
   -- ──────────────────────────────────────────
 
-  -- Seed Mudasir Lone (from worked example) for demo organization
+  -- Ensure all demo workers exist
   INSERT INTO public.workers (
     id, organization_id, name, trade, daily_wage_rate, phone
-  ) VALUES (
-    v_w5_id,
-    v_demo_org_id,
-    'Mudasir Lone',
-    'Head Mason',
-    700.00,
-    '+91 94190 11005'
-  )
+  ) VALUES 
+  (v_w1_id, v_demo_org_id, 'Ghulam Mohammad', 'Master Mason', 900.00, '+91 94190 11001'),
+  (v_w2_id, v_demo_org_id, 'Tariq Ahmad Reshi', 'Carpenter / Shuttering', 850.00, '+91 94190 11002'),
+  (v_w3_id, v_demo_org_id, 'Bilal Ahmad Dar', 'Bar Bender / Steel Fixer', 800.00, '+91 94190 11003'),
+  (v_w4_id, v_demo_org_id, 'Showkat Ali', 'General Helper', 550.00, '+91 94190 11004'),
+  (v_w5_id, v_demo_org_id, 'Mudasir Lone', 'Head Mason', 700.00, '+91 94190 11005')
   ON CONFLICT (id) DO UPDATE SET
     organization_id = EXCLUDED.organization_id,
     name = EXCLUDED.name,
     trade = EXCLUDED.trade,
     daily_wage_rate = EXCLUDED.daily_wage_rate;
 
-  -- Assign Mudasir to Project 1
+  -- Assign workers to demo Project 1
   INSERT INTO public.worker_project_assignments (worker_id, project_id)
-  VALUES (v_w5_id, v_p1_id)
+  VALUES 
+    (v_w1_id, v_p1_id),
+    (v_w2_id, v_p1_id),
+    (v_w3_id, v_p1_id),
+    (v_w4_id, v_p1_id),
+    (v_w5_id, v_p1_id)
   ON CONFLICT DO NOTHING;
 
   -- Compute current week's Monday and Sunday for seed dates
