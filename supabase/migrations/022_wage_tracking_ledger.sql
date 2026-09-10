@@ -152,7 +152,7 @@ BEGIN
     payment_mode, status, reference, notes, paid_by
   ) VALUES
   (
-    'dw111111-1111-4111-a111-111111111111'::uuid,
+    'da111111-1111-4111-a111-111111111111'::uuid,
     v_demo_org_id,
     v_p1_id,
     v_w1_id,
@@ -170,7 +170,7 @@ BEGIN
     v_demo_user_id
   ),
   (
-    'dw111111-1111-4111-a111-111111111112'::uuid,
+    'da111111-1111-4111-a111-111111111112'::uuid,
     v_demo_org_id,
     v_p1_id,
     v_w5_id,
