@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -32,8 +32,10 @@ export default function SignUpPage() {
   const router = useRouter()
   const supabase = createClient()
 
+  const [mode, setMode]                   = useState<'new_firm' | 'join_firm'>('new_firm')
   const [displayName, setDisplayName]     = useState('')
   const [firmName, setFirmName]           = useState('')
+  const [joinCode, setJoinCode]           = useState('')
   const [email, setEmail]                 = useState('')
   const [password, setPassword]           = useState('')
   const [confirm, setConfirm]             = useState('')
@@ -44,15 +46,33 @@ export default function SignUpPage() {
   const [loading, setLoading]             = useState(false)
   const [successNotice, setSuccessNotice] = useState('')
 
+  // Check URL parameters for join code
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('join')
+      if (code) {
+        setJoinCode(code.toUpperCase().trim())
+        setMode('join_firm')
+      }
+    }
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setSuccessNotice('')
 
-    if (!firmName.trim()) {
+    if (mode === 'new_firm' && !firmName.trim()) {
       setError('Please enter your Contracting Firm / Company name.')
       return
     }
+
+    if (mode === 'join_firm' && !joinCode.trim()) {
+      setError('Please enter your Firm’s Invite Code.')
+      return
+    }
+
     if (password !== confirm) {
       setError('Passwords do not match.')
       return
@@ -72,7 +92,7 @@ export default function SignUpPage() {
         options: {
           data: {
             display_name: displayName.trim() || email.split('@')[0],
-            firm_name: firmName.trim(),
+            firm_name: mode === 'new_firm' ? firmName.trim() : undefined,
           },
         },
       })
@@ -90,7 +110,6 @@ export default function SignUpPage() {
           password,
         })
         if (signInError) {
-          // If email verification is enforced on the Supabase project
           setSuccessNotice(
             'Account created! A confirmation email has been sent. Please check your inbox, click the link, and then sign in.'
           )
@@ -99,35 +118,50 @@ export default function SignUpPage() {
         }
       }
 
-      // 2. Call onboard_contractor RPC to create organization & seed starter data
-      const { data: rpcData, error: rpcError } = await supabase.rpc('onboard_contractor', {
-        p_firm_name: firmName.trim(),
-        p_display_name: displayName.trim() || email.split('@')[0],
-        p_seed_starter: seedStarter,
-      })
+      // 2. Provision or Link to Organization
+      if (mode === 'new_firm') {
+        const { error: rpcError } = await supabase.rpc('onboard_contractor', {
+          p_firm_name: firmName.trim(),
+          p_display_name: displayName.trim() || email.split('@')[0],
+          p_seed_starter: seedStarter,
+        })
 
-      if (rpcError) {
-        console.warn('RPC onboarding notice:', rpcError.message)
-        // Fallback: Direct organization & profile upsert in case migration hasn't been executed
-        const { data: orgData } = await supabase
-          .from('organizations')
-          .insert({
-            name: firmName.trim(),
-            legal_name: firmName.trim(),
-            registration_no: 'Class-A Govt Contractor, PWD / PMGSY',
-            email: email.trim().toLowerCase(),
-          })
-          .select('id')
-          .single()
+        if (rpcError) {
+          console.warn('RPC onboarding notice:', rpcError.message)
+          // Direct fallback
+          const { data: orgData } = await supabase
+            .from('organizations')
+            .insert({
+              name: firmName.trim(),
+              legal_name: firmName.trim(),
+              registration_no: 'Class-A Govt Contractor, PWD / PMGSY',
+              email: email.trim().toLowerCase(),
+            })
+            .select('id')
+            .single()
 
-        if (authData.user) {
-          await supabase.from('user_profiles').upsert({
-            id: authData.user.id,
-            email: email.trim().toLowerCase(),
-            display_name: displayName.trim() || email.split('@')[0],
-            organization_id: orgData?.id ?? null,
-            status: 'active',
-          }, { onConflict: 'id' })
+          if (authData.user) {
+            await supabase.from('user_profiles').upsert({
+              id: authData.user.id,
+              email: email.trim().toLowerCase(),
+              display_name: displayName.trim() || email.split('@')[0],
+              organization_id: orgData?.id ?? null,
+              status: 'active',
+            }, { onConflict: 'id' })
+          }
+        }
+      } else {
+        // Joining existing organization
+        const { data: joinData, error: joinError } = await supabase.rpc('join_organization', {
+          p_join_code: joinCode.trim().toUpperCase(),
+          p_display_name: displayName.trim() || email.split('@')[0],
+          p_role: 'site_supervisor',
+        })
+
+        if (joinError) {
+          setError(joinError.message || 'Invalid invite code. Please check with your firm owner.')
+          setLoading(false)
+          return
         }
       }
 
@@ -152,7 +186,6 @@ export default function SignUpPage() {
                 <Logo theme="dark" size="md" subtitle="Civil Contractor OS" />
               </div>
 
-              {/* Tagline & 2-3 Line Value Proposition */}
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-4">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
                 Built for Civil & Highway Infrastructure
@@ -199,7 +232,6 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            {/* Trust Footer */}
             <div className="mt-8 pt-6 border-t border-slate-800/80">
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-1.5">
@@ -217,10 +249,41 @@ export default function SignUpPage() {
           {/* Right Self-Serve Onboarding Form Column */}
           <div className="lg:col-span-7 bg-white p-8 lg:p-10 flex flex-col justify-center">
             <div className="max-w-md w-full mx-auto">
+              
+              {/* Toggle Mode: Register New Firm vs Join Existing */}
+              <div className="flex rounded-xl bg-slate-100 p-1 mb-6 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setMode('new_firm')}
+                  className={`flex-1 py-2 rounded-lg transition-all text-center ${
+                    mode === 'new_firm'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Register New Firm
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('join_firm')}
+                  className={`flex-1 py-2 rounded-lg transition-all text-center ${
+                    mode === 'join_firm'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Join Existing Firm
+                </button>
+              </div>
+
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Create your contractor workspace</h2>
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  {mode === 'new_firm' ? 'Create your contractor workspace' : 'Join your firm’s workspace'}
+                </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Set up your firm in 30 seconds. Start managing RA bills and site finances.
+                  {mode === 'new_firm'
+                    ? 'Set up your firm in 30 seconds. Start managing RA bills and site finances.'
+                    : 'Enter your firm’s invite code provided by your contractor owner.'}
                 </p>
               </div>
 
@@ -243,20 +306,37 @@ export default function SignUpPage() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="firmName" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                    Contracting Firm / Company Name <span className="text-blue-600">*</span>
-                  </label>
-                  <input
-                    id="firmName"
-                    type="text"
-                    required
-                    value={firmName}
-                    onChange={e => setFirmName(e.target.value)}
-                    className="block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 text-sm font-medium transition-colors"
-                    placeholder="e.g. Apex Infratech Pvt. Ltd. or Bhat Constructions"
-                  />
-                </div>
+                {mode === 'new_firm' ? (
+                  <div>
+                    <label htmlFor="firmName" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                      Contracting Firm / Company Name <span className="text-blue-600">*</span>
+                    </label>
+                    <input
+                      id="firmName"
+                      type="text"
+                      required
+                      value={firmName}
+                      onChange={e => setFirmName(e.target.value)}
+                      className="block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 text-sm font-medium transition-colors"
+                      placeholder="e.g. Apex Infratech Pvt. Ltd. or Bhat Constructions"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label htmlFor="joinCode" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                      Firm Invite Code <span className="text-blue-600">*</span>
+                    </label>
+                    <input
+                      id="joinCode"
+                      type="text"
+                      required
+                      value={joinCode}
+                      onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                      className="block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 text-sm font-mono tracking-wider transition-colors uppercase"
+                      placeholder="e.g. APEX26"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label htmlFor="displayName" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
@@ -330,25 +410,26 @@ export default function SignUpPage() {
                   </div>
                 </div>
 
-                {/* Interactive Starter Project Checkbox */}
-                <div className="pt-2">
-                  <label className="relative flex items-start gap-3 p-3 rounded-xl border border-blue-100 bg-blue-50/60 hover:bg-blue-50 transition-colors cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={seedStarter}
-                      onChange={e => setSeedStarter(e.target.checked)}
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div className="text-xs">
-                      <span className="font-semibold text-slate-900 block">
-                        Include sample Highway Project & RA bill template (Recommended)
-                      </span>
-                      <span className="text-slate-600 block mt-0.5">
-                        Populates your workspace with a realistic PWD project, sample RA bill, supplier ledger & muster roll so your dashboard is instantly interactive.
-                      </span>
-                    </div>
-                  </label>
-                </div>
+                {mode === 'new_firm' && (
+                  <div className="pt-2">
+                    <label className="relative flex items-start gap-3 p-3 rounded-xl border border-blue-100 bg-blue-50/60 hover:bg-blue-50 transition-colors cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={seedStarter}
+                        onChange={e => setSeedStarter(e.target.checked)}
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="text-xs">
+                        <span className="font-semibold text-slate-900 block">
+                          Include sample Highway Project & RA bill template (Recommended)
+                        </span>
+                        <span className="text-slate-600 block mt-0.5">
+                          Populates your workspace with a realistic PWD project, sample RA bill, supplier ledger & muster roll so your dashboard is instantly interactive.
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+                )}
 
                 <button
                   type="submit"
@@ -361,11 +442,11 @@ export default function SignUpPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                       </svg>
-                      Setting up your workspace…
+                      {mode === 'new_firm' ? 'Setting up workspace…' : 'Joining firm workspace…'}
                     </>
                   ) : (
                     <>
-                      Launch Contractor Workspace
+                      {mode === 'new_firm' ? 'Launch Contractor Workspace' : 'Join Firm Workspace'}
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>
