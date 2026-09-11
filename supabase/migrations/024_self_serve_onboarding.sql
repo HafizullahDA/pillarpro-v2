@@ -424,3 +424,4 @@ $$;
 
 -- Grant authenticated users execute permission on onboarding RPC
 GRANT EXECUTE ON FUNCTION public.onboard_contractor(TEXT, TEXT, BOOLEAN) TO authenticated;
+
