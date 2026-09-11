@@ -40,6 +40,7 @@ type DashboardClientProps = {
   suppliers: SupplierDue[]
   ledger: LedgerEntry[]
   userRole: string
+  orgName?: string | null
 }
 
 export function DashboardClient({
@@ -48,9 +49,11 @@ export function DashboardClient({
   suppliers,
   ledger,
   userRole,
+  orgName,
 }: DashboardClientProps) {
   const [selectedProject, setSelectedProject] = useState<string>('all')
   const [dateRange, setDateRange] = useState<'month' | 'quarter' | 'all'>('all')
+  const [showGuide, setShowGuide] = useState<boolean>(true)
 
   const now = new Date()
   const currentYear = now.getFullYear()
@@ -179,6 +182,120 @@ export function DashboardClient({
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
+      {/* Onboarding / Quick-Start Contractor Guide */}
+      {showGuide && (
+        <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50/90 via-white to-indigo-50/50 p-5 shadow-xs transition-all">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                🏢
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">
+                  Welcome to {orgName ? `${orgName}’s` : 'your'} Contractor Workspace
+                </h2>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  The Financial & Operations Operating System for Civil & Highway Infrastructure Contractors
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowGuide(false)}
+              className="text-xs text-slate-400 hover:text-slate-600 font-medium px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors shrink-0"
+              title="Hide guide"
+            >
+              Dismiss ✕
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-3.5 border-t border-blue-100">
+            <Link
+              href="/projects"
+              className="group p-3 rounded-xl bg-white border border-slate-200/90 hover:border-blue-300 hover:shadow-xs transition-all flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-base">🏗️</span>
+                  <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Step 1</span>
+                </div>
+                <h3 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-blue-600 transition-colors">
+                  Civil Projects
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                  Setup PWD / PMGSY / CPWD tenders, contract values & milestones.
+                </p>
+              </div>
+              <span className="text-[11px] font-semibold text-blue-600 mt-2.5 block group-hover:underline">
+                Manage Projects →
+              </span>
+            </Link>
+
+            <Link
+              href="/ra-bills"
+              className="group p-3 rounded-xl bg-white border border-slate-200/90 hover:border-blue-300 hover:shadow-xs transition-all flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-base">📄</span>
+                  <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Step 2</span>
+                </div>
+                <h3 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-blue-600 transition-colors">
+                  RA Bills & Deductions
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                  Reconcile certified work vs retention, TDS, GST TDS & net bank credits.
+                </p>
+              </div>
+              <span className="text-[11px] font-semibold text-blue-600 mt-2.5 block group-hover:underline">
+                Record RA Bill →
+              </span>
+            </Link>
+
+            <Link
+              href="/expenses"
+              className="group p-3 rounded-xl bg-white border border-slate-200/90 hover:border-blue-300 hover:shadow-xs transition-all flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-base">📸</span>
+                  <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Step 3</span>
+                </div>
+                <h3 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-blue-600 transition-colors">
+                  Site Expenses & Wages
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                  Capture fuel receipts with AI OCR and log daily-wage muster rolls.
+                </p>
+              </div>
+              <span className="text-[11px] font-semibold text-blue-600 mt-2.5 block group-hover:underline">
+                Log Site Cash →
+              </span>
+            </Link>
+
+            <Link
+              href="/security-deposits"
+              className="group p-3 rounded-xl bg-white border border-slate-200/90 hover:border-blue-300 hover:shadow-xs transition-all flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-base">🛡️</span>
+                  <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Step 4</span>
+                </div>
+                <h3 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-blue-600 transition-colors">
+                  Bank Guarantees
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                  Monitor 30-day BG expiry warnings to prevent bank encashment.
+                </p>
+              </div>
+              <span className="text-[11px] font-semibold text-blue-600 mt-2.5 block group-hover:underline">
+                Track Guarantees →
+              </span>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Top Header & Filters */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -344,50 +461,77 @@ export function DashboardClient({
 
       {/* Projects at a Glance Strip */}
       <div className="bg-white rounded-xl border border-slate-200 p-5">
-        <h3 className="text-sm font-bold text-slate-900 mb-3">Projects at a Glance</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {projectGlance.map(p => (
-            <Link
-              key={p.id}
-              href={`/projects/${p.id}`}
-              className="min-w-0 p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-blue-300 hover:shadow-xs transition-all flex flex-col justify-between gap-3 group"
-            >
-              <div className="flex items-start justify-between gap-2.5 min-w-0">
-                <div className="min-w-0 flex-1">
-                  <p
-                    className="text-sm font-semibold text-slate-900 line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors"
-                    title={p.name}
-                  >
-                    {p.name}
-                  </p>
-                  <p
-                    className="text-xs text-slate-500 truncate mt-0.5"
-                    title={p.agency_name ?? 'Government Site'}
-                  >
-                    {p.agency_name ?? 'Government Site'}
-                  </p>
-                </div>
-                <div className="shrink-0 pt-0.5">
-                  <Badge
-                    label={p.status === 'healthy' ? 'Healthy' : p.status === 'warning' ? 'Warning' : 'Critical'}
-                    variant={p.status === 'healthy' ? 'success' : p.status === 'warning' ? 'warning' : 'danger'}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-2 mt-auto">
-                <div>
-                  <span className="text-slate-400 block text-[10px] font-medium">Outstanding</span>
-                  <span className="font-semibold text-slate-700 tabular-nums">{formatINR(p.pOutstanding)}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px] font-medium">Supplier Dues</span>
-                  <span className="font-semibold text-red-600 tabular-nums">{formatINR(p.pDues)}</span>
-                </div>
-              </div>
-            </Link>
-          ))}
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-slate-900">Projects at a Glance</h3>
+          <Link
+            href="/projects"
+            className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            + Add Project
+          </Link>
         </div>
+
+        {projectGlance.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center bg-slate-50/50">
+            <div className="mx-auto h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-lg mb-2">
+              🏗️
+            </div>
+            <h4 className="text-sm font-semibold text-slate-800">No civil projects found</h4>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4 leading-relaxed">
+              Add your first infrastructure contract to start tracking RA bills, statutory deductions, supplier khatas, and muster rolls.
+            </p>
+            <Link
+              href="/projects"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-xs"
+            >
+              + Create First Project
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {projectGlance.map(p => (
+              <Link
+                key={p.id}
+                href={`/projects/${p.id}`}
+                className="min-w-0 p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-blue-300 hover:shadow-xs transition-all flex flex-col justify-between gap-3 group"
+              >
+                <div className="flex items-start justify-between gap-2.5 min-w-0">
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="text-sm font-semibold text-slate-900 line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors"
+                      title={p.name}
+                    >
+                      {p.name}
+                    </p>
+                    <p
+                      className="text-xs text-slate-500 truncate mt-0.5"
+                      title={p.agency_name ?? 'Government Site'}
+                    >
+                      {p.agency_name ?? 'Government Site'}
+                    </p>
+                  </div>
+                  <div className="shrink-0 pt-0.5">
+                    <Badge
+                      label={p.status === 'healthy' ? 'Healthy' : p.status === 'warning' ? 'Warning' : 'Critical'}
+                      variant={p.status === 'healthy' ? 'success' : p.status === 'warning' ? 'warning' : 'danger'}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-2 mt-auto">
+                  <div>
+                    <span className="text-slate-400 block text-[10px] font-medium">Outstanding</span>
+                    <span className="font-semibold text-slate-700 tabular-nums">{formatINR(p.pOutstanding)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] font-medium">Supplier Dues</span>
+                    <span className="font-semibold text-red-600 tabular-nums">{formatINR(p.pDues)}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

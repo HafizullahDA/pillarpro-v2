@@ -184,6 +184,10 @@ export default async function DashboardPage() {
     ...raPaymentEntries,
   ]
 
+  // Organization profile
+  const { data: orgProfile } = await supabase.rpc('get_organization_profile')
+  const orgName = (orgProfile as any)?.name ?? null
+
   return (
     <DashboardClient
       projects={activeProjects}
@@ -191,6 +195,7 @@ export default async function DashboardPage() {
       suppliers={suppliersFormatted}
       ledger={unifiedLedger}
       userRole={userRole}
+      orgName={orgName}
     />
   )
 }
