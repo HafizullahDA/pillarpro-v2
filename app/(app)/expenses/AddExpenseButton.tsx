@@ -484,46 +484,10 @@ export function AddExpenseButton({
         }
       >
         <div className="space-y-4">
-          {/* Quick Scan Strip */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-blue-50/80 border border-blue-200/80 rounded-xl p-3 gap-2">
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span className="text-xs font-semibold text-blue-900">
-                {scanning ? 'Scanning...' : 'Auto-fill from Receipt / Slip'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                className="text-xs py-1 px-2.5 h-auto bg-white border-blue-200 text-blue-700 hover:bg-blue-50 flex items-center gap-1.5"
-                loading={scanning}
-                onClick={() => cameraInputRef.current?.click()}
-              >
-                <span>📷</span>
-                <span>Camera</span>
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                className="text-xs py-1 px-2.5 h-auto bg-white border-blue-200 text-blue-700 hover:bg-blue-50 flex items-center gap-1.5"
-                loading={scanning}
-                onClick={() => galleryInputRef.current?.click()}
-              >
-                <span>🖼️</span>
-                <span>Gallery</span>
-              </Button>
-            </div>
-          </div>
-
-          {scanning && (
+          {/* Quick Scan Strip / Scanning State */}
+          {scanning ? (
             <div className="rounded-xl bg-blue-50 border border-blue-200 p-3.5 flex items-center gap-3">
-              <svg className="h-5 w-5 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+              <svg className="h-5 w-5 text-blue-600 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
@@ -531,6 +495,53 @@ export function AddExpenseButton({
                 <p className="text-xs text-blue-900 font-semibold">Scanning...</p>
                 <p className="text-xs text-blue-700">Extracting vendor, amount, items, and matching supplier account</p>
               </div>
+            </div>
+          ) : supplierLink.type === 'idle' ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-blue-50/80 border border-blue-200/80 rounded-xl p-3 gap-2">
+              <div className="flex items-center gap-2">
+                <svg className="h-4 w-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="text-xs font-semibold text-blue-900">
+                  Auto-fill from Receipt / Slip
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="text-xs py-1 px-2.5 h-auto bg-white border-blue-200 text-blue-700 hover:bg-blue-50 flex items-center gap-1.5"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <span>📷</span>
+                  <span>Camera</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="text-xs py-1 px-2.5 h-auto bg-white border-blue-200 text-blue-700 hover:bg-blue-50 flex items-center gap-1.5"
+                  onClick={() => galleryInputRef.current?.click()}
+                >
+                  <span>🖼️</span>
+                  <span>Gallery</span>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between text-xs text-slate-500 pb-1">
+              <span className="text-emerald-700 font-medium flex items-center gap-1">
+                ✓ Receipt details extracted
+              </span>
+              <button
+                type="button"
+                onClick={() => setSupplierLink({ type: 'idle' })}
+                className="text-blue-600 hover:text-blue-800 text-xs font-medium underline"
+              >
+                Scan another receipt
+              </button>
             </div>
           )}
 
