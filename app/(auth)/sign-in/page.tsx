@@ -11,15 +11,15 @@ function EyeToggle({ show, onToggle }: { show: boolean; onToggle: () => void }) 
     <button
       type="button"
       onClick={onToggle}
-      className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+      className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
       aria-label={show ? 'Hide password' : 'Show password'}
     >
       {show ? (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
         </svg>
       ) : (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
@@ -54,7 +54,6 @@ export default function SignInPage() {
       return
     }
 
-    // Let middleware route user to dashboard or appropriate workspace
     router.refresh()
     router.push('/dashboard')
   }
@@ -65,28 +64,26 @@ export default function SignInPage() {
         <div className="bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
           
           {/* Left Brand Showcase & Value Proposition Column */}
-          <div className="lg:col-span-5 bg-gradient-to-br from-slate-900 via-blue-950/40 to-slate-900 p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800">
+          <div className="lg:col-span-5 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800/90">
             <div>
-              <div className="flex items-center gap-2 mb-8">
+              <div className="flex items-center gap-3 mb-8">
                 <Logo theme="dark" size="md" subtitle="Civil Contractor OS" />
               </div>
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-5">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
                 Civil & Infrastructure Enterprise Suite
               </div>
 
-              <h1 className="text-2xl lg:text-3xl font-bold text-white tracking-tight leading-snug">
+              <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-snug">
                 Contractor Financials, Treasury RA Bills & Site Controls
               </h1>
 
-              {/* The 2-3 Lines What PillarPro Does */}
-              <div className="mt-6 space-y-4 text-slate-300 text-sm leading-relaxed">
+              {/* 3 Value Proposition Bullets */}
+              <div className="mt-7 space-y-4 text-xs lg:text-sm text-slate-300 leading-relaxed">
                 <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5 text-blue-400">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5 text-blue-400 font-bold text-xs">
+                    ✓
                   </div>
                   <p>
                     <strong className="text-white font-semibold">Treasury RA Bill Reconciliation:</strong> Reconcile gross certified bills vs statutory deductions (retention, TDS, GST TDS, labor cess) and net bank credits.
@@ -94,10 +91,8 @@ export default function SignInPage() {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5 text-blue-400">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5 text-blue-400 font-bold text-xs">
+                    ✓
                   </div>
                   <p>
                     <strong className="text-white font-semibold">Site-to-Office Control:</strong> Real-time daily-wage labor muster rolls, AI receipt scanning for petty site expenses, and supplier khata ledgers.
@@ -105,10 +100,8 @@ export default function SignInPage() {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5 text-blue-400">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5 text-blue-400 font-bold text-xs">
+                    ✓
                   </div>
                   <p>
                     <strong className="text-white font-semibold">Capital & BG Protection:</strong> Automated 30-day Bank Guarantee expiry warnings and partner drawing parity accounts.
@@ -122,29 +115,29 @@ export default function SignInPage() {
             </div>
           </div>
 
-          {/* Right Login Form Column */}
-          <div className="lg:col-span-7 bg-white p-8 lg:p-10 flex flex-col justify-center">
+          {/* Right Login Form Column (Refined #F8FAFC Surface) */}
+          <div className="lg:col-span-7 bg-[#F8FAFC] p-8 lg:p-10 flex flex-col justify-center text-slate-900">
             <div className="max-w-md w-full mx-auto">
-              <div className="mb-8">
+              <div className="mb-6">
                 <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Sign in to your firm</h2>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
                   Enter your credentials to access your contractor dashboard.
                 </p>
               </div>
 
               {error && (
-                <div className="mb-5 rounded-lg bg-red-50 border border-red-200 p-3.5 text-sm text-red-700 flex items-start gap-2.5">
-                  <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="mb-4 rounded-lg bg-red-50 border border-red-200/90 p-3 text-xs text-red-700 flex items-start gap-2.5 shadow-2xs">
+                  <svg className="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span>{error}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3.5">
                 <div>
-                  <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                    Email Address
+                  <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1">
+                    Email Address <span className="text-blue-600">*</span>
                   </label>
                   <input
                     id="email"
@@ -153,14 +146,14 @@ export default function SignInPage() {
                     required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 text-sm transition-colors"
+                    className="block w-full rounded-lg border border-slate-300/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/15"
                     placeholder="you@contractorfirm.com"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                    Password
+                  <label htmlFor="password" className="block text-xs font-semibold text-slate-700 mb-1">
+                    Password <span className="text-blue-600">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -170,7 +163,7 @@ export default function SignInPage() {
                       required
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      className="block w-full rounded-lg border border-slate-300 px-3.5 py-2.5 pr-10 text-slate-900 placeholder-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 text-sm transition-colors"
+                      className="block w-full rounded-lg border border-slate-300/80 bg-white px-3.5 py-2.5 pr-9 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/15"
                       placeholder="••••••••"
                     />
                     <EyeToggle show={showPassword} onToggle={() => setShowPassword(v => !v)} />
@@ -180,7 +173,7 @@ export default function SignInPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-600/20 transition-all"
+                  className="w-full mt-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-sm shadow-blue-600/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
@@ -193,7 +186,7 @@ export default function SignInPage() {
                   ) : (
                     <>
                       Sign in to Dashboard
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>
                     </>
@@ -201,10 +194,10 @@ export default function SignInPage() {
                 </button>
               </form>
 
-              <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-                <p className="text-sm text-slate-600">
+              <div className="mt-6 pt-5 border-t border-slate-200/80 text-center">
+                <p className="text-xs text-slate-500">
                   New contractor?{' '}
-                  <Link href="/sign-up" className="font-semibold text-blue-600 hover:text-blue-700">
+                  <Link href="/sign-up" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
                     Create your firm workspace →
                   </Link>
                 </p>
