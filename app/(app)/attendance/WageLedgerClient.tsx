@@ -8,6 +8,7 @@ import { FieldWrapper, Input, Select, CurrencyInput, Textarea } from '@/componen
 import { formatINR, formatDate } from '@/lib/format'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { canManageWages } from '@/lib/permissions'
+import { getTodayIST } from '@/lib/date'
 
 type Project = { id: string; name: string }
 type Worker = { id: string; name: string; trade: string | null; daily_wage_rate: number | null }
@@ -92,7 +93,7 @@ export function WageLedgerClient({
   const [selectedWorkerSummary, setSelectedWorkerSummary] = useState<WorkerWageSummary | null>(null)
   const [payForm, setPayForm] = useState({
     amount: '',
-    payment_date: new Date().toISOString().split('T')[0],
+    payment_date: getTodayIST(),
     payment_mode: 'Cash',
     reference: '',
     notes: '',
@@ -263,7 +264,7 @@ export function WageLedgerClient({
     setSelectedWorkerSummary(summary)
     setPayForm({
       amount: summary.balanceDue > 0 ? summary.balanceDue.toString() : '0',
-      payment_date: new Date().toISOString().split('T')[0],
+      payment_date: getTodayIST(),
       payment_mode: 'Cash',
       reference: '',
       notes: '',

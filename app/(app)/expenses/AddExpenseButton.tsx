@@ -10,6 +10,7 @@ import { FieldWrapper, Input, Select, CurrencyInput, Textarea } from '@/componen
 import { findBestSupplierMatch } from '@/lib/fuzzyMatch'
 import { captureFormError } from '@/lib/monitoring'
 import { compressImage } from '@/lib/imageCompress'
+import { getTodayIST } from '@/lib/date'
 
 type Project = { id: string; name: string }
 type SupplierItem = { id: string; name: string }
@@ -75,7 +76,7 @@ export function AddExpenseButton({
     project_id: '',
     category: 'material',
     amount: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayIST(),
     description: '',
     payment_mode: 'Cash',
     reference: '',
@@ -344,7 +345,7 @@ export function AddExpenseButton({
       project_id: '',
       category: 'material',
       amount: '',
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayIST(),
       description: '',
       payment_mode: 'Cash',
       reference: '',

@@ -8,6 +8,7 @@ import { Drawer } from '@/components/ui/Drawer'
 import { useToast } from '@/components/ui/Toast'
 import { FieldWrapper, Input, Select, CurrencyInput, Textarea } from '@/components/ui/FormField'
 import { formatINR } from '@/lib/format'
+import { getTodayIST } from '@/lib/date'
 
 export type ProjectOption = { id: string; name: string; agency_name?: string | null }
 export type RABillOption = {
@@ -91,7 +92,7 @@ export function RABillActions({
   const [billForm, setBillForm] = useState({
     project_id: defaultProjectId || '',
     bill_number: '',
-    submission_date: new Date().toISOString().split('T')[0],
+    submission_date: getTodayIST(),
     billing_mode: 'standalone' as 'standalone' | 'cumulative',
     previous_bill_id: '',
     work_certified_amount: '',
@@ -107,7 +108,7 @@ export function RABillActions({
     gst_tds_amount: '',
     labour_cess_amount: '',
     other_deductions: '',
-    date_received: new Date().toISOString().split('T')[0],
+    date_received: getTodayIST(),
     reference: '',
     remarks: '',
   })
@@ -139,7 +140,7 @@ export function RABillActions({
     reference_number: '',
     issuing_bank: '',
     amount: '',
-    issue_date: new Date().toISOString().split('T')[0],
+    issue_date: getTodayIST(),
     expiry_date: '',
     claim_expiry_date: '',
     notes: '',
@@ -196,7 +197,7 @@ export function RABillActions({
         gst_tds_amount: '',
         labour_cess_amount: '',
         other_deductions: '',
-        date_received: new Date().toISOString().split('T')[0],
+        date_received: getTodayIST(),
         reference: '',
         remarks: '',
       })
@@ -272,7 +273,7 @@ export function RABillActions({
       const { error: err } = await supabase.from('ra_bills').insert({
         project_id: billForm.project_id,
         bill_number: billForm.bill_number.trim(),
-        submission_date: billForm.submission_date || new Date().toISOString().split('T')[0],
+        submission_date: billForm.submission_date || getTodayIST(),
         billing_mode: billForm.billing_mode,
         previous_bill_id: isCumulative && billForm.previous_bill_id ? billForm.previous_bill_id : null,
         cumulative_certified_amount: isCumulative ? certifiedNum : null,
@@ -304,7 +305,7 @@ export function RABillActions({
       setBillForm({
         project_id: defaultProjectId || '',
         bill_number: '',
-        submission_date: new Date().toISOString().split('T')[0],
+        submission_date: getTodayIST(),
         billing_mode: 'standalone',
         previous_bill_id: '',
         work_certified_amount: '',
@@ -412,7 +413,7 @@ export function RABillActions({
         gst_tds_amount: '',
         labour_cess_amount: '',
         other_deductions: '',
-        date_received: new Date().toISOString().split('T')[0],
+        date_received: getTodayIST(),
         reference: '',
         remarks: '',
       })
@@ -478,7 +479,7 @@ export function RABillActions({
         reference_number: '',
         issuing_bank: '',
         amount: '',
-        issue_date: new Date().toISOString().split('T')[0],
+        issue_date: getTodayIST(),
         expiry_date: '',
         claim_expiry_date: '',
         notes: '',

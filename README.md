@@ -115,8 +115,37 @@ All database schema evolutions are version-controlled in [`supabase/migrations/`
 | `014_ra_bill_cumulative_mode.sql` | CPWD Form 26 Cumulative Billing Mode with previous bill reference and incremental calculations. |
 | `015_owner_supplier_delete.sql` | Owner-restricted supplier deletion with cascading foreign key constraints and RPC guard. |
 | `016_bill_deductions.sql` | Flexible itemized deductions table for Royalty, GST on Royalty, TCS, and departmental penalties. |
+| `017_expand_user_roles.sql` | Expanded user roles to support modern contractor hierarchy. |
+| `018_attendance_and_workers_rls.sql` | RLS security policies for worker masters and daily muster attendance rolls. |
+| `019_organizations_schema.sql` | Multi-tenant organizational workspaces (`organizations` table and tenancy scoping). |
+| `020_demo_organization_and_rls_isolation.sql` | Tenant-scoped RLS policies isolating firm data. |
+| `021_partner_capital_and_project_shares.sql` | Partner equity accounts, project profit sharing, and capital infusions. |
+| `022_wage_tracking_ledger.sql` | Worker wage register, payment tracking, and wage disbursement records. |
+| `023_remove_demo_organization.sql` | Cleaned up hardcoded demo organizations. |
+| `024_self_serve_onboarding.sql` | Automated contractor self-serve firm creation RPC (`onboard_contractor`). |
+| `025_team_management_and_org_scoping.sql` | Firm invite codes (e.g. `APEX26`), team member invitations, and organization-scoped staff access. |
 
 ---
+
+## 🩺 System Health & Monitoring
+
+PillarPro exposes a dedicated, unauthenticated health check endpoint for synthetic uptime monitors (e.g. BetterUptime, UptimeRobot, Datadog):
+
+- **Endpoint:** `GET /api/health`
+- **Behavior:** Executes a live probe against Supabase to verify database connectivity and returns round-trip latency.
+- **Response Format:**
+  ```json
+  {
+    "status": "healthy",
+    "database": "connected",
+    "latencyMs": 42,
+    "timestamp": "2026-09-14T08:55:00.000Z",
+    "timestampIST": "14/09/2026, 02:25:00 pm (IST)",
+    "version": "2.0.0",
+    "environment": "production"
+  }
+  ```
+- **Status Codes:** Returns `200 OK` when healthy, or `503 Service Unavailable` if database connectivity drops.
 
 ## 🚀 Getting Started
 

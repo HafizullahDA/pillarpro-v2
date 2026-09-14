@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { FieldWrapper, Input, Select, CurrencyInput, Textarea } from '@/components/ui/FormField'
 import { ProjectSharesModal } from './ProjectSharesModal'
+import { getTodayIST } from '@/lib/date'
 
 type Project = { id: string; name: string }
 type Partner = { id: string; name: string }
@@ -45,7 +46,7 @@ export function PartnersActions({
     partner_id: defaultPartnerId || (partners[0]?.id ?? ''),
     project_id: '',
     amount: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayIST(),
     mode: 'Bank Transfer (NEFT/RTGS)',
     reference: '',
     notes: '',
@@ -56,7 +57,7 @@ export function PartnersActions({
     setTForm(f => ({
       ...f,
       partner_id: pId || defaultPartnerId || (partners[0]?.id ?? ''),
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayIST(),
     }))
     setError('')
     setWhich('tx')
@@ -131,7 +132,7 @@ export function PartnersActions({
       partner_id: defaultPartnerId || (partners[0]?.id ?? ''),
       project_id: '',
       amount: '',
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayIST(),
       mode: 'Bank Transfer (NEFT/RTGS)',
       reference: '',
       notes: '',

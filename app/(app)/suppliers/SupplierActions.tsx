@@ -10,6 +10,7 @@ import { FieldWrapper, Input, Select, CurrencyInput, Textarea } from '@/componen
 import { findBestSupplierMatch } from '@/lib/fuzzyMatch'
 import { captureFormError } from '@/lib/monitoring'
 import { compressImage } from '@/lib/imageCompress'
+import { getTodayIST } from '@/lib/date'
 
 type Project = { id: string; name: string }
 type SupplierOption = { id: string; name: string }
@@ -64,7 +65,7 @@ export function SupplierActions({
     rate: '',
     unit: 'nos',
     amount: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayIST(),
     reference: '',
     notes: '',
   })
@@ -74,7 +75,7 @@ export function SupplierActions({
     project_id: '',
     amount: '',
     mode: 'bank_transfer',
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayIST(),
     reference: '',
     notes: '',
   })
@@ -255,7 +256,7 @@ export function SupplierActions({
       rate: '',
       unit: 'nos',
       amount: '',
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayIST(),
       reference: '',
       notes: '',
     })
@@ -311,7 +312,7 @@ export function SupplierActions({
       project_id: '',
       amount: '',
       mode: 'bank_transfer',
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayIST(),
       reference: '',
       notes: '',
     })
