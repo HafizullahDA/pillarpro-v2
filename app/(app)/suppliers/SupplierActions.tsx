@@ -12,6 +12,7 @@ import { captureFormError } from '@/lib/monitoring'
 import { compressImage } from '@/lib/imageCompress'
 import { getTodayIST } from '@/lib/date'
 import { safeMul, roundToTwo } from '@/lib/calculations/financial'
+import { SupplierScanConfirmModal } from '@/components/suppliers/SupplierScanConfirmModal'
 
 type Project = { id: string; name: string }
 type SupplierOption = { id: string; name: string }
@@ -49,6 +50,11 @@ export function SupplierActions({
   const [saving, setSaving] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState('')
+
+  // Interactive OCR Confirmation modal state
+  const [scanModalOpen, setScanModalOpen] = useState(false)
+  const [scannedBillData, setScannedBillData] = useState<any>(null)
+  const [scanPreviewUrl, setScanPreviewUrl] = useState<string | null>(null)
 
   // Form states
   const [sForm, setSForm] = useState({
@@ -122,8 +128,9 @@ export function SupplierActions({
 
     try {
       const base64Str = await compressImage(file)
+      setScanPreviewUrl(base64Str)
 
-      const res = await fetch('/api/scan-receipt', {
+      const res = await fetch('/api/scan-supplier-bill', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageBase64: base64Str }),
@@ -133,28 +140,13 @@ export function SupplierActions({
       setScanning(false)
 
       if (!res.ok || json.error) {
-        setError(json.error || 'Failed to scan receipt image.')
+        setError(json.error || 'Failed to scan supplier invoice.')
         return
       }
 
-      const d = json.data
-      if (d) {
-        setProcForm(f => ({
-          ...f,
-          amount: d.amount ? String(d.amount) : f.amount,
-          date: d.date || f.date,
-          description: d.description || d.vendor_name || f.description,
-          reference: d.gst_number || f.reference,
-        }))
-
-        // If no supplier pre-selected, fuzzy match against supplier options
-        if (!defaultSupplierId && d.vendor_name) {
-          const { bestMatch } = findBestSupplierMatch(d.vendor_name, suppliers, 0.55)
-          if (bestMatch) {
-            setProcForm(f => ({ ...f, supplier_id: bestMatch.id }))
-          }
-        }
-      }
+      setScannedBillData(json.data)
+      setScanModalOpen(true)
+      setWhich(null)
     } catch (err: any) {
       setScanning(false)
       const userMsg = await captureFormError('ScanReceiptSupplier', err)
@@ -345,7 +337,7 @@ export function SupplierActions({
       />
 
       {!hideDirectoryButtons && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {showAddSupplier && (
             <Button size="sm" onClick={() => openModal('supplier')}>
               <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -354,6 +346,34 @@ export function SupplierActions({
               Add Supplier
             </Button>
           )}
+
+          {/* Direct Scan Invoice / Challan Button */}
+          <div className="inline-flex items-center rounded-xl bg-blue-50 border border-blue-200 p-0.5">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              loading={scanning}
+              onClick={() => cameraInputRef.current?.click()}
+              className="bg-transparent border-0 text-blue-700 hover:bg-white text-xs h-8 px-2.5 shadow-none flex items-center gap-1.5"
+              title="Scan supplier invoice or challan with camera"
+            >
+              <span>📷</span>
+              <span>Scan Bill</span>
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              loading={scanning}
+              onClick={() => galleryInputRef.current?.click()}
+              className="bg-transparent border-0 text-blue-700 hover:bg-white text-xs h-8 px-2 shadow-none"
+              title="Upload invoice or slip from gallery"
+            >
+              <span>🖼️</span>
+            </Button>
+          </div>
+
           <Button size="sm" variant="secondary" onClick={() => openModal('procurement')}>
             + Procurement
           </Button>
@@ -737,6 +757,24 @@ export function SupplierActions({
           </FieldWrapper>
         </div>
       </Drawer>
+
+      {/* Interactive OCR Confirmation Modal for Supplier Invoices */}
+      <SupplierScanConfirmModal
+        open={scanModalOpen}
+        onClose={() => {
+          setScanModalOpen(false)
+          setScannedBillData(null)
+          setScanPreviewUrl(null)
+        }}
+        projects={projects}
+        suppliers={suppliers}
+        defaultSupplierId={defaultSupplierId}
+        scannedData={scannedBillData}
+        imagePreviewUrl={scanPreviewUrl}
+        onSuccess={() => {
+          router.refresh()
+        }}
+      />
     </>
   )
 }

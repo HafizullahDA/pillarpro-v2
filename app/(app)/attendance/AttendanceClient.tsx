@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
@@ -13,6 +13,8 @@ import { PrintPreviewModal } from '@/components/pdf/PrintPreviewModal'
 import { AttendanceMusterRollPDF } from '@/components/pdf/AttendanceMusterRollPDF'
 import { getClientOrganization, OrganizationProfile, DEFAULT_ORGANIZATION } from '@/lib/organization'
 import { generateMusterRollWhatsAppText, openWhatsApp } from '@/lib/whatsapp'
+import { compressImage } from '@/lib/imageCompress'
+import { AttendanceScanConfirmModal } from '@/components/attendance/AttendanceScanConfirmModal'
 import { WageLedgerClient } from './WageLedgerClient'
 
 type Project = { id: string; name: string }
@@ -51,6 +53,14 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
   const [wForm, setWForm]           = useState({ name: '', trade: 'Helper', daily_wage_rate: '' })
   const [wSaving, setWSaving]       = useState(false)
   const [wError, setWError]         = useState('')
+
+  // OCR Muster Roll Scanning state
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
+  const [scanning, setScanning] = useState(false)
+  const [scanModalOpen, setScanModalOpen] = useState(false)
+  const [scannedAttendanceData, setScannedAttendanceData] = useState<any>(null)
+  const [scanPreviewUrl, setScanPreviewUrl] = useState<string | null>(null)
 
   // Adjust day if month has fewer days
   const daysInMonth = new Date(year, month, 0).getDate()
@@ -159,6 +169,56 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
     loadMonthAttendance()
   }
 
+  const handleScanMusterRoll = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setScanning(true)
+    setSaveStatus(null)
+
+    try {
+      const base64Str = await compressImage(file)
+      setScanPreviewUrl(base64Str)
+
+      const res = await fetch('/api/scan-attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64Str }),
+      })
+
+      const json = await res.json()
+      setScanning(false)
+
+      if (!res.ok || json.error) {
+        setSaveStatus({ type: 'error', message: json.error || 'Failed to scan muster roll image.' })
+        return
+      }
+
+      setScannedAttendanceData(json.data)
+      setScanModalOpen(true)
+    } catch (err: any) {
+      setScanning(false)
+      setSaveStatus({ type: 'error', message: err.message || 'Error processing muster roll photo.' })
+    } finally {
+      if (cameraInputRef.current) cameraInputRef.current.value = ''
+      if (galleryInputRef.current) galleryInputRef.current.value = ''
+    }
+  }
+
+  const handleScanSuccess = async (savedDate: string, targetProjectId: string) => {
+    if (targetProjectId !== projectId) {
+      setProjectId(targetProjectId)
+    }
+    const parts = savedDate.split('-').map(Number)
+    if (parts[0] && parts[1] && parts[2]) {
+      setYear(parts[0])
+      setMonth(parts[1])
+      setDay(parts[2])
+    }
+    await loadWorkers()
+    await loadMonthAttendance()
+  }
+
   const saveWorker = async () => {
     if (!wForm.name.trim()) { setWError('Name is required.'); return }
     setWSaving(true); setWError('')
@@ -260,9 +320,37 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
           {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
         </select>
         {canMark && (
-          <Button variant="secondary" size="sm" onClick={() => setWorkerOpen(true)}>
-            Manage Workers
-          </Button>
+          <>
+            <div className="inline-flex items-center rounded-xl bg-blue-50/80 border border-blue-200 p-0.5">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                loading={scanning}
+                onClick={() => cameraInputRef.current?.click()}
+                className="bg-transparent border-0 text-blue-700 hover:bg-white text-xs h-8 px-2.5 shadow-none"
+                title="Capture photo of physical muster roll / labor diary"
+              >
+                <span className="mr-1">📷</span>
+                <span>Scan Muster Roll</span>
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                loading={scanning}
+                onClick={() => galleryInputRef.current?.click()}
+                className="bg-transparent border-0 text-blue-700 hover:bg-white text-xs h-8 px-2 shadow-none"
+                title="Upload muster roll photo / PDF"
+              >
+                <span>🖼️</span>
+              </Button>
+            </div>
+
+            <Button variant="secondary" size="sm" onClick={() => setWorkerOpen(true)}>
+              Manage Workers
+            </Button>
+          </>
         )}
         <Button
           variant="secondary"
@@ -469,6 +557,39 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
           organization={org}
         />
       </PrintPreviewModal>
+
+      {/* Hidden OCR File Inputs */}
+      <input
+        type="file"
+        ref={cameraInputRef}
+        accept="image/*"
+        capture="environment"
+        onChange={handleScanMusterRoll}
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={galleryInputRef}
+        accept="image/*,.pdf"
+        onChange={handleScanMusterRoll}
+        className="hidden"
+      />
+
+      {/* Interactive OCR Confirmation Modal */}
+      <AttendanceScanConfirmModal
+        open={scanModalOpen}
+        onClose={() => {
+          setScanModalOpen(false)
+          setScannedAttendanceData(null)
+          setScanPreviewUrl(null)
+        }}
+        projects={projects}
+        initialProjectId={projectId}
+        existingWorkers={workers}
+        scannedData={scannedAttendanceData}
+        imagePreviewUrl={scanPreviewUrl}
+        onSuccess={handleScanSuccess}
+      />
         </>
       )}
     </div>
