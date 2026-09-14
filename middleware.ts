@@ -44,9 +44,11 @@ export async function middleware(request: NextRequest) {
   const PENDING_ROUTES = ['/pending']
   const PUBLIC_ROUTES  = [...AUTH_ROUTES, ...PENDING_ROUTES]
 
+  const isPublicRoute = pathname === '/' || PUBLIC_ROUTES.some(r => pathname.startsWith(r))
+
   // ── Unauthenticated ──────────────────────────────────────
   if (!user) {
-    if (!PUBLIC_ROUTES.some(r => pathname.startsWith(r))) {
+    if (!isPublicRoute) {
       const url = request.nextUrl.clone()
       url.pathname = '/sign-in'
       return NextResponse.redirect(url)
