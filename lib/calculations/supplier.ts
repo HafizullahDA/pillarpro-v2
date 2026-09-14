@@ -29,10 +29,14 @@ export function calculateSupplierLedger(
 ): SupplierLedgerItem[] {
   let currentBalance = roundToTwo(openingBalance)
 
-  // Sort ascending by date for correct running balance computation
+  // Sort ascending by date (and created_at) for correct running balance computation
   const sorted = [...transactions].sort((a, b) => {
     const cmp = new Date(a.date).getTime() - new Date(b.date).getTime()
-    return cmp !== 0 ? cmp : 0
+    if (cmp !== 0) return cmp
+    if (a.created_at && b.created_at) {
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    }
+    return 0
   })
 
   return sorted.map(tx => {

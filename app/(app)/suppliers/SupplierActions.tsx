@@ -11,6 +11,7 @@ import { findBestSupplierMatch } from '@/lib/fuzzyMatch'
 import { captureFormError } from '@/lib/monitoring'
 import { compressImage } from '@/lib/imageCompress'
 import { getTodayIST } from '@/lib/date'
+import { safeMul, roundToTwo } from '@/lib/calculations/financial'
 
 type Project = { id: string; name: string }
 type SupplierOption = { id: string; name: string }
@@ -208,7 +209,7 @@ export function SupplierActions({
       setError('Material / item description is required.')
       return
     }
-    const amountVal = parseFloat(procForm.amount)
+    const amountVal = roundToTwo(parseFloat(procForm.amount))
     if (isNaN(amountVal) || amountVal <= 0) {
       setError('Please enter a valid procurement amount greater than 0.')
       return
@@ -273,7 +274,7 @@ export function SupplierActions({
       setError('Please select a supplier.')
       return
     }
-    const amountVal = parseFloat(payForm.amount)
+    const amountVal = roundToTwo(parseFloat(payForm.amount))
     if (isNaN(amountVal) || amountVal <= 0) {
       setError('Please enter a valid payment amount greater than 0.')
       return
@@ -547,8 +548,11 @@ export function SupplierActions({
                   setProcForm(f => {
                     const next = { ...f, quantity: qty }
                     if (qty && f.rate) {
-                      const total = parseFloat(qty) * parseFloat(f.rate)
-                      if (!isNaN(total) && total > 0) next.amount = String(total)
+                      const q = parseFloat(qty)
+                      const r = parseFloat(f.rate)
+                      if (!isNaN(q) && !isNaN(r) && q > 0 && r > 0) {
+                        next.amount = String(safeMul(q, r))
+                      }
                     }
                     return next
                   })
@@ -582,8 +586,11 @@ export function SupplierActions({
                   setProcForm(f => {
                     const next = { ...f, rate: rateVal }
                     if (rateVal && f.quantity) {
-                      const total = parseFloat(f.quantity) * parseFloat(rateVal)
-                      if (!isNaN(total) && total > 0) next.amount = String(total)
+                      const q = parseFloat(f.quantity)
+                      const r = parseFloat(rateVal)
+                      if (!isNaN(q) && !isNaN(r) && q > 0 && r > 0) {
+                        next.amount = String(safeMul(q, r))
+                      }
                     }
                     return next
                   })

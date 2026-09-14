@@ -11,6 +11,8 @@ import { formatINR } from '@/lib/format'
 import { getTodayIST } from '@/lib/date'
 import { createRABillSchema } from '@/lib/validations/raBill'
 import { translateError } from '@/lib/errorTranslator'
+import { calculateCumulativeThisBill, calculateRABillNetPayable, calculateStatutoryDeductions } from '@/lib/calculations/raBill'
+import { safeMul, safeSub } from '@/lib/calculations/financial'
 import { ProjectOption, RABillOption } from '@/app/(app)/ra-bills/RABillActions'
 
 interface NewRABillDrawerProps {
@@ -60,19 +62,32 @@ export function NewRABillDrawer({
   const certifiedNum = parseFloat(billForm.work_certified_amount) || 0
   const retentionPctNum = parseFloat(billForm.retention_percentage) || 0
 
-  // Standalone calculation
-  const standaloneRetentionAmount = Math.round((certifiedNum * retentionPctNum) / 100 * 100) / 100
-  const standaloneNetPayable = Math.max(0, certifiedNum - standaloneRetentionAmount)
+  // Pure financial math derivations
+  const standaloneRetention = safeMul(certifiedNum, retentionPctNum / 100)
+  const standaloneNetPayable = calculateRABillNetPayable({
+    workCertified: certifiedNum,
+    totalDeductions: standaloneRetention,
+  })
 
   // Cumulative calculation
-  const thisBillIncrementalCertified = Math.max(0, certifiedNum - prevCertified)
-  const cumulativeRetentionAmount = Math.round((certifiedNum * retentionPctNum) / 100 * 100) / 100
-  const cumulativeNetPassed = Math.max(0, certifiedNum - cumulativeRetentionAmount)
-  const cumulativeNetPayableThisBill = Math.max(0, cumulativeNetPassed - prevReceived)
+  const cumulativeThisBillCertified = calculateCumulativeThisBill({
+    currentCumulative: certifiedNum,
+    previousCumulative: prevCertified,
+  })
+  const cumulativeRetention = safeMul(certifiedNum, retentionPctNum / 100)
+  const cumulativeNetPassed = calculateRABillNetPayable({
+    workCertified: certifiedNum,
+    totalDeductions: cumulativeRetention,
+  })
+  const cumulativeNetPayableThisBill = Math.max(0, safeSub(cumulativeNetPassed, prevReceived))
 
-  const liveRetentionAmount = isCumulative ? cumulativeRetentionAmount : standaloneRetentionAmount
+  const liveRetentionAmount = isCumulative ? cumulativeRetention : standaloneRetention
   const liveNetPayable = isCumulative ? cumulativeNetPayableThisBill : standaloneNetPayable
-  const thisBillCertified = isCumulative ? thisBillIncrementalCertified : certifiedNum
+  const thisBillCertified = isCumulative ? cumulativeThisBillCertified : certifiedNum
+
+  // Estimated statutory treasury deductions (2% IT-TDS, 2% GST-TDS, 1% Labour Cess)
+  const estimatedTreasuryBase = isCumulative ? cumulativeNetPassed : certifiedNum
+  const estimatedTreasury = calculateStatutoryDeductions(estimatedTreasuryBase, { retentionPercent: 0 })
 
   const uploadDocument = async (file: File): Promise<string | null> => {
     try {
@@ -352,7 +367,7 @@ export function NewRABillDrawer({
               </span>
             </div>
             <div className="flex justify-between text-slate-600">
-              <span>Total Work to Date:</span>
+              <span>Total Work to Date (MB Cumulative):</span>
               <span className="font-semibold text-slate-800">{formatINR(certifiedNum)}</span>
             </div>
             <div className="flex justify-between text-slate-600">
@@ -361,11 +376,11 @@ export function NewRABillDrawer({
             </div>
             <div className="flex justify-between text-blue-800 font-semibold pt-1 border-t border-blue-100/60">
               <span>Work Certified This Bill:</span>
-              <span>{formatINR(thisBillIncrementalCertified)}</span>
+              <span>{formatINR(thisBillCertified)}</span>
             </div>
             <div className="flex justify-between text-slate-600">
               <span>Less Retention on Total Work ({retentionPctNum}%):</span>
-              <span className="font-semibold text-red-600">- {formatINR(cumulativeRetentionAmount)}</span>
+              <span className="font-semibold text-red-600">- {formatINR(liveRetentionAmount)}</span>
             </div>
             {prevReceived > 0 && (
               <div className="flex justify-between text-slate-600">
@@ -375,13 +390,53 @@ export function NewRABillDrawer({
             )}
             <div className="flex justify-between items-center text-sm font-bold text-slate-900 pt-1.5 border-t border-blue-200">
               <span>Net Payable This Bill:</span>
-              <span className="text-blue-700">{formatINR(cumulativeNetPayableThisBill)}</span>
+              <span className="text-blue-700">{formatINR(liveNetPayable)}</span>
             </div>
           </div>
         ) : (
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs flex justify-between items-center">
-            <span className="font-medium text-slate-600">Net Payable Amount (before statutory deductions):</span>
-            <span className="font-bold text-slate-900 text-sm">{formatINR(standaloneNetPayable)}</span>
+          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 text-xs space-y-2">
+            <div className="flex justify-between items-center font-semibold text-slate-800 border-b border-slate-200 pb-1.5">
+              <span>Form 26 Deduction Breakdown</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
+                PWD Standard
+              </span>
+            </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Work Certified:</span>
+              <span className="font-semibold text-slate-800">{formatINR(certifiedNum)}</span>
+            </div>
+            <div className="flex justify-between text-amber-700">
+              <span>Less Retention Withheld ({retentionPctNum}%):</span>
+              <span className="font-semibold">- {formatINR(standaloneRetention)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm font-bold text-slate-900 pt-1 border-t border-slate-200">
+              <span>Net Payable (Passed for Payment):</span>
+              <span className="text-blue-700">{formatINR(standaloneNetPayable)}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Estimated Treasury Inflow Card */}
+        {certifiedNum > 0 && (
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 text-xs space-y-1.5">
+            <div className="flex items-center justify-between text-emerald-900 font-semibold">
+              <span className="flex items-center gap-1.5">
+                <span>🏛️</span>
+                <span>Estimated Treasury Realization</span>
+              </span>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                Form 26 Estimate
+              </span>
+            </div>
+            <p className="text-[11px] text-emerald-800/80 leading-relaxed">
+              Expected at treasury release: 2% TDS ({formatINR(estimatedTreasury.itTds)}) + 2% GST-TDS ({formatINR(estimatedTreasury.gstTds)}) + 1% Labour Cess ({formatINR(estimatedTreasury.labourCess)})
+            </p>
+            <div className="flex justify-between items-center pt-1 border-t border-emerald-200/60 font-semibold text-emerald-900">
+              <span>Estimated Net Bank Credit:</span>
+              <span className="text-sm font-bold text-emerald-700">
+                {formatINR(Math.max(0, liveNetPayable - estimatedTreasury.totalDeductions))}
+              </span>
+            </div>
           </div>
         )}
 

@@ -11,6 +11,8 @@ import { formatINR } from '@/lib/format'
 import { getTodayIST } from '@/lib/date'
 import { recordPaymentSchema } from '@/lib/validations/raBill'
 import { translateError } from '@/lib/errorTranslator'
+import { calculateStatutoryDeductions, calculatePaymentTrancheNet } from '@/lib/calculations/raBill'
+import { roundToTwo } from '@/lib/calculations/financial'
 
 export interface AdditionalDeductionItem {
   id: string
@@ -94,8 +96,26 @@ export function RecordPaymentDrawer({
     (sum, item) => sum + (parseFloat(item.amount) || 0),
     0
   )
-  const totalDeductions = tdsNum + gstTdsNum + cessNum + additionalDedsTotal
-  const netBankCredited = Math.max(0, grossNum - totalDeductions)
+  const tranche = calculatePaymentTrancheNet({
+    grossReleased: grossNum,
+    tds: tdsNum,
+    gstTds: gstTdsNum,
+    labourCess: cessNum,
+    otherDeductions: additionalDedsTotal,
+  })
+  const totalDeductions = tranche.totalDeductions
+  const netBankCredited = tranche.netBankCredited
+
+  const handleApplyStandardDeductions = () => {
+    if (grossNum <= 0) return
+    const deductions = calculateStatutoryDeductions(grossNum, { retentionPercent: 0 })
+    setPayForm(f => ({
+      ...f,
+      tds_amount: String(deductions.itTds),
+      gst_tds_amount: String(deductions.gstTds),
+      labour_cess_amount: String(deductions.labourCess),
+    }))
+  }
 
   const handleAddDeductionPreset = (label: string) => {
     setAdditionalDeductions(prev => [
@@ -322,10 +342,23 @@ export function RecordPaymentDrawer({
         {/* Statutory Deductions Panel */}
         <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-900">Treasury Statutory Deductions</span>
-            <span className="text-[10px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
-              Form 26
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-900">Treasury Statutory Deductions</span>
+              <span className="text-[10px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                Form 26
+              </span>
+            </div>
+            {grossNum > 0 && (
+              <button
+                type="button"
+                onClick={handleApplyStandardDeductions}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 hover:underline cursor-pointer"
+                title="Automatically sets 2% IT TDS, 2% GST TDS, and 1% Labour Cess"
+              >
+                <span>⚡</span>
+                <span>Auto-Apply Standard (5%)</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -335,7 +368,7 @@ export function RecordPaymentDrawer({
                 {grossNum > 0 && (
                   <button
                     type="button"
-                    onClick={() => setPayForm(f => ({ ...f, tds_amount: (grossNum * 0.02).toFixed(2) }))}
+                    onClick={() => setPayForm(f => ({ ...f, tds_amount: String(roundToTwo(grossNum * 0.02)) }))}
                     className="text-[10px] text-blue-600 hover:underline font-semibold"
                   >
                     2% Auto
@@ -355,7 +388,7 @@ export function RecordPaymentDrawer({
                 {grossNum > 0 && (
                   <button
                     type="button"
-                    onClick={() => setPayForm(f => ({ ...f, gst_tds_amount: (grossNum * 0.02).toFixed(2) }))}
+                    onClick={() => setPayForm(f => ({ ...f, gst_tds_amount: String(roundToTwo(grossNum * 0.02)) }))}
                     className="text-[10px] text-blue-600 hover:underline font-semibold"
                   >
                     2% Auto
@@ -375,7 +408,7 @@ export function RecordPaymentDrawer({
                 {grossNum > 0 && (
                   <button
                     type="button"
-                    onClick={() => setPayForm(f => ({ ...f, labour_cess_amount: (grossNum * 0.01).toFixed(2) }))}
+                    onClick={() => setPayForm(f => ({ ...f, labour_cess_amount: String(roundToTwo(grossNum * 0.01)) }))}
                     className="text-[10px] text-blue-600 hover:underline font-semibold"
                   >
                     1% Auto

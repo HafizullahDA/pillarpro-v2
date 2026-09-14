@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { SummaryTile } from '@/components/ui/SummaryTile'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { formatINR, formatDate } from '@/lib/format'
+import { calculateSupplierLedger, calculateSupplierTotals } from '@/lib/calculations/supplier'
 import { SupplierActions } from '../SupplierActions'
 import { SupplierStatementButton } from './SupplierStatementButton'
 
@@ -58,28 +59,9 @@ export default async function SupplierDetailPage({ params }: Props) {
     notFound()
   }
 
-  // Calculate chronological running balance
-  let currentBalance = 0
-  const txWithBalance = (transactions ?? []).map(tx => {
-    const isProcurement = tx.transaction_type === 'procurement'
-    const amt = Number(tx.amount) || 0
-    currentBalance += isProcurement ? amt : -amt
-    return {
-      ...tx,
-      runningBalance: currentBalance,
-    }
-  })
-
-  // Totals
-  const totalProcured = txWithBalance
-    .filter(t => t.transaction_type === 'procurement')
-    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
-
-  const totalPaid = txWithBalance
-    .filter(t => t.transaction_type === 'payment')
-    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
-
-  const balanceOwed = totalProcured - totalPaid
+  // Pure calculation engine: chronological running ledger & totals
+  const txWithBalance = calculateSupplierLedger((transactions ?? []) as any[])
+  const { totalProcured, totalPaid, balanceOwed } = calculateSupplierTotals((transactions ?? []) as any[])
 
   // Display newest transaction first in the statement
   const displayTransactions = [...txWithBalance].reverse()
