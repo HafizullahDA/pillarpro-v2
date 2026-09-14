@@ -326,7 +326,6 @@ export function SupplierActions({
         type="file"
         ref={fileInputRef}
         accept="image/*"
-        capture="environment"
         onChange={handleReceiptScan}
         className="hidden"
       />
@@ -439,7 +438,7 @@ export function SupplierActions({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               <span className="text-xs font-semibold text-blue-900">
-                {scanning ? 'Scanning receipt with Gemini OCR...' : 'Auto-fill from Receipt / Invoice'}
+                {scanning ? 'Scanning...' : 'Auto-fill from Receipt / Invoice'}
               </span>
             </div>
             <Button

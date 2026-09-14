@@ -360,7 +360,6 @@ export function AddExpenseButton({
         type="file"
         ref={fileInputRef}
         accept="image/*"
-        capture="environment"
         onChange={handleFileScan}
         className="hidden"
       />
@@ -436,7 +435,7 @@ export function AddExpenseButton({
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
               <div>
-                <p className="text-xs text-blue-900 font-semibold">Scanning receipt with Gemini OCR...</p>
+                <p className="text-xs text-blue-900 font-semibold">Scanning...</p>
                 <p className="text-xs text-blue-700">Extracting vendor, amount, items, and matching supplier account</p>
               </div>
             </div>
