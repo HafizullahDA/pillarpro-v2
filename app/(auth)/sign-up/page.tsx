@@ -175,12 +175,12 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center">
-      <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
+    <div className="min-h-screen bg-[#07090E] flex flex-col justify-center py-8 px-4">
+      <div className="w-full max-w-5xl mx-auto">
+        <div className="relative rounded-2xl bg-gradient-to-b from-[#0F1626] to-[#0A0E1A] border border-slate-800 shadow-2xl shadow-blue-950/40 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[660px]">
           
-          {/* Left Brand Showcase & Value Proposition Column */}
-          <div className="lg:col-span-5 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800/90">
+          {/* Left Brand Showcase & Value Proposition Column (Unified Deep Slate Surface) */}
+          <div className="lg:col-span-5 bg-slate-950/40 p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800/80 relative z-10">
             <div>
               <div className="flex items-center gap-3 mb-8">
                 <Logo theme="dark" size="md" subtitle="Civil Contractor OS" />
@@ -197,9 +197,9 @@ export default function SignUpPage() {
               </h1>
 
               {/* 3 Value Proposition Bullets */}
-              <div className="mt-7 space-y-4 text-xs lg:text-sm text-slate-300 leading-relaxed">
-                <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5 text-blue-400 font-bold text-xs">
+              <div className="mt-7 space-y-3.5 text-xs lg:text-sm text-slate-300 leading-relaxed">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
+                  <div className="h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
                     ✓
                   </div>
                   <p>
@@ -207,8 +207,8 @@ export default function SignUpPage() {
                   </p>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5 text-blue-400 font-bold text-xs">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
+                  <div className="h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
                     ✓
                   </div>
                   <p>
@@ -216,8 +216,8 @@ export default function SignUpPage() {
                   </p>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5 text-blue-400 font-bold text-xs">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
+                  <div className="h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
                     ✓
                   </div>
                   <p>
@@ -228,7 +228,7 @@ export default function SignUpPage() {
             </div>
 
             {/* Trust Footer */}
-            <div className="mt-8 pt-6 border-t border-slate-800/80">
+            <div className="mt-8 pt-5 border-t border-slate-800/80">
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-1.5">
                   <span className="inline-block h-6 w-6 rounded-md bg-blue-600 text-[9px] font-bold text-white flex items-center justify-center ring-2 ring-slate-900">PWD</span>
@@ -242,19 +242,19 @@ export default function SignUpPage() {
             </div>
           </div>
 
-          {/* Right Self-Serve Onboarding Form Column (Refined #F8FAFC Surface) */}
-          <div className="lg:col-span-7 bg-[#F8FAFC] p-8 lg:p-10 flex flex-col justify-center text-slate-900">
+          {/* Right Self-Serve Onboarding Form Column (Unified Dark Surface — ZERO Mismatched Panels) */}
+          <div className="lg:col-span-7 bg-[#0C111E]/90 p-8 lg:p-10 flex flex-col justify-center relative z-10 text-white">
             <div className="max-w-md w-full mx-auto">
               
-              {/* Unified Tab Toggle: Consistent 10px Radius & Brand Blue Active */}
-              <div className="flex rounded-lg bg-slate-200/80 p-1 mb-6 text-xs font-semibold border border-slate-200/90 shadow-2xs">
+              {/* Unified Tab Toggle: Consistent 8px Radius & Brand Blue Active */}
+              <div className="flex rounded-lg bg-slate-950/90 p-1 mb-6 text-xs font-semibold border border-slate-800 shadow-inner">
                 <button
                   type="button"
                   onClick={() => setMode('new_firm')}
-                  className={`flex-1 py-2 rounded-md transition-all text-center ${
+                  className={`flex-1 py-2 rounded-lg transition-all text-center ${
                     mode === 'new_firm'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                      ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                      : 'text-slate-400 hover:text-white font-medium'
                   }`}
                 >
                   Register New Firm
@@ -262,10 +262,10 @@ export default function SignUpPage() {
                 <button
                   type="button"
                   onClick={() => setMode('join_firm')}
-                  className={`flex-1 py-2 rounded-md transition-all text-center ${
+                  className={`flex-1 py-2 rounded-lg transition-all text-center ${
                     mode === 'join_firm'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                      ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                      : 'text-slate-400 hover:text-white font-medium'
                   }`}
                 >
                   Join Existing Firm
@@ -273,10 +273,10 @@ export default function SignUpPage() {
               </div>
 
               <div className="mb-5">
-                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                <h2 className="text-2xl font-bold text-white tracking-tight">
                   {mode === 'new_firm' ? 'Create your contractor workspace' : 'Join your firm’s workspace'}
                 </h2>
-                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                <p className="mt-1 text-xs text-slate-400 leading-relaxed">
                   {mode === 'new_firm'
                     ? 'Set up your firm in 30 seconds. Start managing RA bills and site finances.'
                     : 'Enter your firm’s invite code provided by your contractor owner.'}
@@ -284,8 +284,8 @@ export default function SignUpPage() {
               </div>
 
               {error && (
-                <div className="mb-4 rounded-lg bg-red-50 border border-red-200/90 p-3 text-xs text-red-700 flex items-start gap-2.5 shadow-2xs">
-                  <svg className="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="mb-4 rounded-lg bg-red-950/50 border border-red-800/60 p-3 text-xs text-red-300 flex items-start gap-2.5 shadow-sm">
+                  <svg className="w-4 h-4 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span>{error}</span>
@@ -293,8 +293,8 @@ export default function SignUpPage() {
               )}
 
               {successNotice && (
-                <div className="mb-4 rounded-lg bg-emerald-50 border border-emerald-200/90 p-3 text-xs text-emerald-800 flex items-start gap-2.5 shadow-2xs">
-                  <svg className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="mb-4 rounded-lg bg-emerald-950/50 border border-emerald-800/60 p-3 text-xs text-emerald-300 flex items-start gap-2.5 shadow-sm">
+                  <svg className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   <span>{successNotice}</span>
@@ -304,8 +304,8 @@ export default function SignUpPage() {
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 {mode === 'new_firm' ? (
                   <div>
-                    <label htmlFor="firmName" className="block text-xs font-semibold text-slate-700 mb-1">
-                      Contracting Firm / Company Name <span className="text-blue-600">*</span>
+                    <label htmlFor="firmName" className="block text-xs font-semibold text-slate-300 mb-1">
+                      Contracting Firm / Company Name <span className="text-blue-400">*</span>
                     </label>
                     <input
                       id="firmName"
@@ -313,14 +313,14 @@ export default function SignUpPage() {
                       required
                       value={firmName}
                       onChange={e => setFirmName(e.target.value)}
-                      className="block w-full rounded-lg border border-slate-300/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/15"
+                      className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                       placeholder="e.g. Apex Infratech Pvt. Ltd. or Bhat Constructions"
                     />
                   </div>
                 ) : (
                   <div>
-                    <label htmlFor="joinCode" className="block text-xs font-semibold text-slate-700 mb-1">
-                      Firm Invite Code <span className="text-blue-600">*</span>
+                    <label htmlFor="joinCode" className="block text-xs font-semibold text-slate-300 mb-1">
+                      Firm Invite Code <span className="text-blue-400">*</span>
                     </label>
                     <input
                       id="joinCode"
@@ -328,15 +328,15 @@ export default function SignUpPage() {
                       required
                       value={joinCode}
                       onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                      className="block w-full rounded-lg border border-slate-300/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 font-mono tracking-wider uppercase placeholder-slate-400 shadow-2xs transition-all focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/15"
+                      className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 text-sm text-white font-mono tracking-wider uppercase placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                       placeholder="e.g. APEX26"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label htmlFor="displayName" className="block text-xs font-semibold text-slate-700 mb-1">
-                    Your Full Name <span className="text-blue-600">*</span>
+                  <label htmlFor="displayName" className="block text-xs font-semibold text-slate-300 mb-1">
+                    Your Full Name <span className="text-blue-400">*</span>
                   </label>
                   <input
                     id="displayName"
@@ -345,14 +345,14 @@ export default function SignUpPage() {
                     autoComplete="name"
                     value={displayName}
                     onChange={e => setDisplayName(e.target.value)}
-                    className="block w-full rounded-lg border border-slate-300/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/15"
+                    className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                     placeholder="e.g. Rajesh Kumar"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1">
-                    Work Email Address <span className="text-blue-600">*</span>
+                  <label htmlFor="email" className="block text-xs font-semibold text-slate-300 mb-1">
+                    Work Email Address <span className="text-blue-400">*</span>
                   </label>
                   <input
                     id="email"
@@ -361,15 +361,15 @@ export default function SignUpPage() {
                     required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="block w-full rounded-lg border border-slate-300/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/15"
+                    className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                     placeholder="you@contractorfirm.com"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="password" className="block text-xs font-semibold text-slate-700 mb-1">
-                      Password <span className="text-blue-600">*</span>
+                    <label htmlFor="password" className="block text-xs font-semibold text-slate-300 mb-1">
+                      Password <span className="text-blue-400">*</span>
                     </label>
                     <div className="relative">
                       <input
@@ -379,7 +379,7 @@ export default function SignUpPage() {
                         required
                         value={password}
                         onChange={e => setPassword(e.target.value)}
-                        className="block w-full rounded-lg border border-slate-300/80 bg-white px-3.5 py-2.5 pr-9 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/15"
+                        className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 pr-9 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                         placeholder="Min. 8 chars"
                       />
                       <EyeToggle show={showPassword} onToggle={() => setShowPassword(v => !v)} />
@@ -387,8 +387,8 @@ export default function SignUpPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="confirm" className="block text-xs font-semibold text-slate-700 mb-1">
-                      Confirm Password <span className="text-blue-600">*</span>
+                    <label htmlFor="confirm" className="block text-xs font-semibold text-slate-300 mb-1">
+                      Confirm Password <span className="text-blue-400">*</span>
                     </label>
                     <div className="relative">
                       <input
@@ -398,7 +398,7 @@ export default function SignUpPage() {
                         required
                         value={confirm}
                         onChange={e => setConfirm(e.target.value)}
-                        className="block w-full rounded-lg border border-slate-300/80 bg-white px-3.5 py-2.5 pr-9 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/15"
+                        className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 pr-9 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                         placeholder="Re-enter password"
                       />
                       <EyeToggle show={showConfirm} onToggle={() => setShowConfirm(v => !v)} />
@@ -408,18 +408,18 @@ export default function SignUpPage() {
 
                 {mode === 'new_firm' && (
                   <div className="pt-1">
-                    <label className="relative flex items-start gap-3 p-3 rounded-lg border border-slate-200/90 bg-white hover:border-blue-300/80 shadow-2xs transition-all cursor-pointer">
+                    <label className="relative flex items-start gap-3 p-3.5 rounded-lg border border-slate-800/80 bg-slate-950/50 hover:border-slate-700/80 shadow-inner transition-colors cursor-pointer">
                       <input
                         type="checkbox"
                         checked={seedStarter}
                         onChange={e => setSeedStarter(e.target.checked)}
-                        className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20"
+                        className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500/25"
                       />
                       <div className="text-xs">
-                        <span className="font-semibold text-slate-900 block">
+                        <span className="font-semibold text-slate-200 block">
                           Include sample Highway Project & RA bill template (Recommended)
                         </span>
-                        <span className="text-slate-500 block mt-0.5 leading-normal">
+                        <span className="text-slate-400 block mt-0.5 leading-normal">
                           Populates your workspace with a realistic PWD project, sample RA bill, supplier ledger & muster roll so your dashboard is instantly interactive.
                         </span>
                       </div>
@@ -430,7 +430,7 @@ export default function SignUpPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-sm shadow-blue-600/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
@@ -451,10 +451,10 @@ export default function SignUpPage() {
                 </button>
               </form>
 
-              <div className="mt-5 pt-4 border-t border-slate-200/80 text-center">
-                <p className="text-xs text-slate-500">
+              <div className="mt-5 pt-4 border-t border-slate-800/80 text-center">
+                <p className="text-xs text-slate-400">
                   Already registered?{' '}
-                  <Link href="/sign-in" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                  <Link href="/sign-in" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors">
                     Sign in to your account →
                   </Link>
                 </p>

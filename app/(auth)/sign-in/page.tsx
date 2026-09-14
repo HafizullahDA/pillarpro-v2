@@ -59,19 +59,19 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center">
-      <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
+    <div className="min-h-screen bg-[#07090E] flex flex-col justify-center py-8 px-4">
+      <div className="w-full max-w-5xl mx-auto">
+        <div className="relative rounded-2xl bg-gradient-to-b from-[#0F1626] to-[#0A0E1A] border border-slate-800 shadow-2xl shadow-blue-950/40 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
           
-          {/* Left Brand Showcase & Value Proposition Column */}
-          <div className="lg:col-span-5 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800/90">
+          {/* Left Brand Showcase & Value Proposition Column (Unified Deep Slate Surface) */}
+          <div className="lg:col-span-5 bg-slate-950/40 p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800/80 relative z-10">
             <div>
               <div className="flex items-center gap-3 mb-8">
                 <Logo theme="dark" size="md" subtitle="Civil Contractor OS" />
               </div>
 
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-5">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
                 Civil & Infrastructure Enterprise Suite
               </div>
 
@@ -80,9 +80,9 @@ export default function SignInPage() {
               </h1>
 
               {/* 3 Value Proposition Bullets */}
-              <div className="mt-7 space-y-4 text-xs lg:text-sm text-slate-300 leading-relaxed">
-                <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5 text-blue-400 font-bold text-xs">
+              <div className="mt-7 space-y-3.5 text-xs lg:text-sm text-slate-300 leading-relaxed">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
+                  <div className="h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
                     ✓
                   </div>
                   <p>
@@ -90,8 +90,8 @@ export default function SignInPage() {
                   </p>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5 text-blue-400 font-bold text-xs">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
+                  <div className="h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
                     ✓
                   </div>
                   <p>
@@ -99,8 +99,8 @@ export default function SignInPage() {
                   </p>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 mt-0.5 text-blue-400 font-bold text-xs">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
+                  <div className="h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
                     ✓
                   </div>
                   <p>
@@ -110,34 +110,34 @@ export default function SignInPage() {
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-slate-800/80 text-xs text-slate-400">
+            <div className="mt-8 pt-5 border-t border-slate-800/80 text-xs text-slate-400">
               Trusted by civil, highway & government infrastructure contractors across PWD, CPWD, PMGSY and NHAI.
             </div>
           </div>
 
-          {/* Right Login Form Column (Refined #F8FAFC Surface) */}
-          <div className="lg:col-span-7 bg-[#F8FAFC] p-8 lg:p-10 flex flex-col justify-center text-slate-900">
+          {/* Right Login Form Column (Unified Dark Surface — ZERO Mismatched Panels) */}
+          <div className="lg:col-span-7 bg-[#0C111E]/90 p-8 lg:p-10 flex flex-col justify-center relative z-10 text-white">
             <div className="max-w-md w-full mx-auto">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Sign in to your firm</h2>
-                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                <h2 className="text-2xl font-bold text-white tracking-tight">Sign in to your firm</h2>
+                <p className="mt-1 text-xs text-slate-400 leading-relaxed">
                   Enter your credentials to access your contractor dashboard.
                 </p>
               </div>
 
               {error && (
-                <div className="mb-4 rounded-lg bg-red-50 border border-red-200/90 p-3 text-xs text-red-700 flex items-start gap-2.5 shadow-2xs">
-                  <svg className="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="mb-4 rounded-lg bg-red-950/50 border border-red-800/60 p-3 text-xs text-red-300 flex items-start gap-2.5 shadow-sm">
+                  <svg className="w-4 h-4 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span>{error}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-3.5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1">
-                    Email Address <span className="text-blue-600">*</span>
+                  <label htmlFor="email" className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Email Address <span className="text-blue-400">*</span>
                   </label>
                   <input
                     id="email"
@@ -146,14 +146,14 @@ export default function SignInPage() {
                     required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="block w-full rounded-lg border border-slate-300/80 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/15"
+                    className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                     placeholder="you@contractorfirm.com"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="block text-xs font-semibold text-slate-700 mb-1">
-                    Password <span className="text-blue-600">*</span>
+                  <label htmlFor="password" className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Password <span className="text-blue-400">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -163,7 +163,7 @@ export default function SignInPage() {
                       required
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      className="block w-full rounded-lg border border-slate-300/80 bg-white px-3.5 py-2.5 pr-9 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/15"
+                      className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 pr-9 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                       placeholder="••••••••"
                     />
                     <EyeToggle show={showPassword} onToggle={() => setShowPassword(v => !v)} />
@@ -173,7 +173,7 @@ export default function SignInPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-sm shadow-blue-600/30 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
@@ -194,10 +194,10 @@ export default function SignInPage() {
                 </button>
               </form>
 
-              <div className="mt-6 pt-5 border-t border-slate-200/80 text-center">
-                <p className="text-xs text-slate-500">
+              <div className="mt-6 pt-5 border-t border-slate-800/80 text-center">
+                <p className="text-xs text-slate-400">
                   New contractor?{' '}
-                  <Link href="/sign-up" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                  <Link href="/sign-up" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors">
                     Create your firm workspace →
                   </Link>
                 </p>
