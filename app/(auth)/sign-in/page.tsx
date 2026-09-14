@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -37,12 +37,45 @@ export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError]               = useState('')
   const [loading, setLoading]           = useState(false)
+  const [cooldown, setCooldown]         = useState(0)
+
+  // Countdown timer for security lockout cooldown
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const timer = setInterval(() => {
+      setCooldown(c => Math.max(0, c - 1))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [cooldown])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (cooldown > 0) return
+
     setError('')
     setLoading(true)
 
+    // 1. Enforce sliding-window rate limit pre-flight
+    try {
+      const rlRes = await fetch('/api/auth/rate-limit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sign-in' }),
+      })
+      const rlData = await rlRes.json().catch(() => ({}))
+
+      if (rlRes.status === 429 || rlData.ok === false) {
+        const waitTime = rlData.resetSeconds || 60
+        setCooldown(waitTime)
+        setError(rlData.error || `Too many sign-in attempts. Please wait ${waitTime}s before retrying.`)
+        setLoading(false)
+        return
+      }
+    } catch {
+      // If rate limit endpoint network error, proceed with Supabase auth attempt
+    }
+
+    // 2. Attempt Supabase authentication
     const { error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
@@ -172,7 +205,7 @@ export default function SignInPage() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || cooldown > 0}
                   className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
@@ -183,6 +216,11 @@ export default function SignInPage() {
                       </svg>
                       Signing in…
                     </>
+                  ) : cooldown > 0 ? (
+                    <span className="flex items-center gap-2">
+                      <span>🛡️</span>
+                      <span>Security Cooldown ({cooldown}s)</span>
+                    </span>
                   ) : (
                     <>
                       Sign in to Dashboard

@@ -85,6 +85,24 @@ export default function SignUpPage() {
     setLoading(true)
 
     try {
+      // 0. Enforce sliding-window rate limit pre-flight (anti-bot & spam protection)
+      try {
+        const rlRes = await fetch('/api/auth/rate-limit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'sign-up' }),
+        })
+        const rlData = await rlRes.json().catch(() => ({}))
+
+        if (rlRes.status === 429 || rlData.ok === false) {
+          setError(rlData.error || 'Too many registration attempts from this IP. Please wait before trying again.')
+          setLoading(false)
+          return
+        }
+      } catch {
+        // Continue if pre-flight check fails
+      }
+
       // 1. Sign up user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
