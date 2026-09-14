@@ -521,20 +521,41 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
       </section>
 
       {/* ── Footer ─────────────────────────────────────────── */}
-      <footer className="py-8 border-t border-slate-800 bg-slate-950 text-slate-500 text-xs">
+      <footer className="py-8 pb-24 md:pb-8 border-t border-slate-800 bg-slate-950 text-slate-500 text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Logo theme="dark" size="sm" />
             <span>— The Financial & Operations OS for Infrastructure Contractors</span>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
             <Link href="/sign-in" className="hover:text-slate-300 transition-colors">Sign In</Link>
             <Link href="/sign-up" className="hover:text-slate-300 transition-colors">Create Firm Workspace</Link>
+            <Link href="/privacy" className="hover:text-slate-300 transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-slate-300 transition-colors">Terms of Service</Link>
             <span className="text-slate-600">© 2026 PillarPro. All rights reserved.</span>
           </div>
         </div>
       </footer>
+
+      {/* ── Sticky Mobile CTA Bar (Mobile only) ───────────────── */}
+      <div className="fixed bottom-0 inset-x-0 z-40 md:hidden p-3 bg-slate-950/90 backdrop-blur-lg border-t border-slate-800/80 shadow-2xl">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-white truncate">PillarPro ERP</p>
+            <p className="text-[10px] text-slate-400 truncate">Free trial • No card required</p>
+          </div>
+          <Link
+            href={isLoggedIn ? '/dashboard' : '/sign-up'}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-md shadow-blue-600/30 transition-all shrink-0"
+          >
+            <span>{isLoggedIn ? 'Dashboard' : 'Launch Workspace'}</span>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

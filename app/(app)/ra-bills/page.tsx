@@ -1,9 +1,14 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { RABillsClient, RABillRow, SecurityDepositRow } from './RABillsClient'
 import { ProjectOption } from './RABillActions'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+export const metadata: Metadata = {
+  title: 'RA Bills & Deductions',
+}
 
 export default async function RABillsPage() {
   const supabase = createClient()

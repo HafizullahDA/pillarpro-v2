@@ -1,8 +1,13 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { ExpensesClient, ExpenseRow } from './ExpensesClient'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+export const metadata: Metadata = {
+  title: 'Project Expenses',
+}
 
 export default async function ExpensesPage() {
   const supabase = createClient()

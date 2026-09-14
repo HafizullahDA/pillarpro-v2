@@ -1,8 +1,13 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { ProjectsClient, ProjectRow } from './ProjectsClient'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+export const metadata: Metadata = {
+  title: 'Projects',
+}
 
 export default async function ProjectsPage() {
   const supabase = createClient()

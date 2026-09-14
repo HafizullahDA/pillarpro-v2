@@ -1,8 +1,13 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { AttendanceClient } from './AttendanceClient'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+export const metadata: Metadata = {
+  title: 'Muster Roll Attendance',
+}
 
 export default async function AttendancePage() {
   const supabase = createClient()
