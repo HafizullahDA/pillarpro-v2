@@ -41,7 +41,8 @@ export function SupplierActions({
   const router = useRouter()
   const supabase = createClient()
   const toast = useToast()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
 
   const [which, setWhich] = useState<'supplier' | 'procurement' | 'payment' | null>(null)
   const [saving, setSaving] = useState(false)
@@ -158,7 +159,8 @@ export function SupplierActions({
       const userMsg = await captureFormError('ScanReceiptSupplier', err)
       setError(userMsg)
     } finally {
-      if (fileInputRef.current) fileInputRef.current.value = ''
+      if (cameraInputRef.current) cameraInputRef.current.value = ''
+      if (galleryInputRef.current) galleryInputRef.current.value = ''
     }
   }
 
@@ -322,9 +324,20 @@ export function SupplierActions({
 
   return (
     <>
+      {/* 1. Direct Camera Scanner Input */}
       <input
         type="file"
-        ref={fileInputRef}
+        ref={cameraInputRef}
+        accept="image/*"
+        capture="environment"
+        onChange={handleReceiptScan}
+        className="hidden"
+      />
+
+      {/* 2. Photo Library / Gallery Input */}
+      <input
+        type="file"
+        ref={galleryInputRef}
         accept="image/*"
         onChange={handleReceiptScan}
         className="hidden"
@@ -431,9 +444,9 @@ export function SupplierActions({
           {error && <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>}
 
           {/* Auto-fill from Receipt / Bill */}
-          <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl p-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-blue-50 border border-blue-200 rounded-xl p-3 gap-2.5">
             <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="h-4 w-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
@@ -441,16 +454,30 @@ export function SupplierActions({
                 {scanning ? 'Scanning...' : 'Auto-fill from Receipt / Invoice'}
               </span>
             </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              className="text-xs py-1 px-2.5 h-auto bg-white border-blue-200 text-blue-700 hover:bg-blue-50"
-              loading={scanning}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Scan Receipt
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="text-xs py-1 px-2.5 h-auto bg-white border-blue-200 text-blue-700 hover:bg-blue-50 flex items-center gap-1.5"
+                loading={scanning}
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                <span>📷</span>
+                <span>Camera</span>
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="text-xs py-1 px-2.5 h-auto bg-white border-blue-200 text-blue-700 hover:bg-blue-50 flex items-center gap-1.5"
+                loading={scanning}
+                onClick={() => galleryInputRef.current?.click()}
+              >
+                <span>🖼️</span>
+                <span>Gallery</span>
+              </Button>
+            </div>
           </div>
 
           <FieldWrapper label="Supplier" required>

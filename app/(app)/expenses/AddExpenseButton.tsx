@@ -63,7 +63,9 @@ export function AddExpenseButton({
   const router = useRouter()
   const supabase = createClient()
   const toast = useToast()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
+  const [scanMenuOpen, setScanMenuOpen] = useState(false)
 
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -177,8 +179,9 @@ export function AddExpenseButton({
       })
       setError(userMsg)
     } finally {
-      // Reset file input so re-scanning the same file works
-      if (fileInputRef.current) fileInputRef.current.value = ''
+      // Reset file inputs so re-scanning the same file works
+      if (cameraInputRef.current) cameraInputRef.current.value = ''
+      if (galleryInputRef.current) galleryInputRef.current.value = ''
     }
   }
 
@@ -356,36 +359,89 @@ export function AddExpenseButton({
 
   return (
     <>
+      {/* 1. Direct Camera Scanner Input */}
       <input
         type="file"
-        ref={fileInputRef}
+        ref={cameraInputRef}
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileScan}
+        className="hidden"
+      />
+
+      {/* 2. Photo Library / Gallery Input */}
+      <input
+        type="file"
+        ref={galleryInputRef}
         accept="image/*"
         onChange={handleFileScan}
         className="hidden"
       />
 
       <div className="flex gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <svg
-            className="h-4 w-4 mr-1.5 text-blue-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
+        <div className="relative">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setScanMenuOpen(prev => !prev)}
+            className="flex items-center gap-1.5"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-            />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          Scan Receipt
-        </Button>
+            <svg
+              className="h-4 w-4 text-blue-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>Scan Receipt</span>
+            <svg className="h-3 w-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </Button>
+
+          {scanMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setScanMenuOpen(false)} />
+              <div className="absolute left-0 mt-1.5 w-52 rounded-xl bg-white border border-slate-200 shadow-xl py-1.5 z-30 animate-in fade-in zoom-in-95">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScanMenuOpen(false)
+                    cameraInputRef.current?.click()
+                  }}
+                  className="w-full px-3.5 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2.5 transition-colors"
+                >
+                  <span className="text-lg">📷</span>
+                  <div>
+                    <p className="font-semibold text-slate-900">Take Photo (Camera)</p>
+                    <p className="text-[10px] text-slate-400">Direct camera viewfinder</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScanMenuOpen(false)
+                    galleryInputRef.current?.click()
+                  }}
+                  className="w-full px-3.5 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2.5 border-t border-slate-100 transition-colors"
+                >
+                  <span className="text-lg">🖼️</span>
+                  <div>
+                    <p className="font-semibold text-slate-900">Choose from Gallery</p>
+                    <p className="text-[10px] text-slate-400">Upload saved photo or receipt</p>
+                  </div>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
 
         <Button
           size="sm"
@@ -428,6 +484,43 @@ export function AddExpenseButton({
         }
       >
         <div className="space-y-4">
+          {/* Quick Scan Strip */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-blue-50/80 border border-blue-200/80 rounded-xl p-3 gap-2">
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-xs font-semibold text-blue-900">
+                {scanning ? 'Scanning...' : 'Auto-fill from Receipt / Slip'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="text-xs py-1 px-2.5 h-auto bg-white border-blue-200 text-blue-700 hover:bg-blue-50 flex items-center gap-1.5"
+                loading={scanning}
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                <span>📷</span>
+                <span>Camera</span>
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="text-xs py-1 px-2.5 h-auto bg-white border-blue-200 text-blue-700 hover:bg-blue-50 flex items-center gap-1.5"
+                loading={scanning}
+                onClick={() => galleryInputRef.current?.click()}
+              >
+                <span>🖼️</span>
+                <span>Gallery</span>
+              </Button>
+            </div>
+          </div>
+
           {scanning && (
             <div className="rounded-xl bg-blue-50 border border-blue-200 p-3.5 flex items-center gap-3">
               <svg className="h-5 w-5 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
