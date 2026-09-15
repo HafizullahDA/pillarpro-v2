@@ -8,6 +8,7 @@ import { formatINR, formatDate } from '@/lib/format'
 import { AddExpenseButton } from './AddExpenseButton'
 import { DeleteExpenseModal, ExpenseToDelete } from './DeleteExpenseModal'
 import { canDeleteExpense, canCreateExpense } from '@/lib/permissions'
+import { exportSiteExpenses } from '@/lib/export/csv'
 
 const CATEGORY_VARIANTS: Record<string, 'default' | 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
   labor:      'info',
@@ -83,7 +84,22 @@ export function ExpensesClient({
           <h1 className="text-xl font-bold text-slate-900">Expenses</h1>
           <p className="text-xs text-slate-500 mt-0.5">Track and manage site expenses and receipts</p>
         </div>
-        {canCreate && <AddExpenseButton projects={projects} suppliers={suppliers} partners={partners} />}
+        <div className="flex items-center gap-2">
+          {expenses.length > 0 && (
+            <button
+              type="button"
+              onClick={() => exportSiteExpenses(expenses)}
+              title="Export Site Expenses & Cash Book for CA / ITR Audit (Excel & CSV)"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 transition-colors shadow-xs"
+            >
+              <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export CSV
+            </button>
+          )}
+          {canCreate && <AddExpenseButton projects={projects} suppliers={suppliers} partners={partners} />}
+        </div>
       </div>
 
       {!expenses.length ? (

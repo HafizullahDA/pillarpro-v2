@@ -6,6 +6,7 @@ import { PrintPreviewModal } from '@/components/pdf/PrintPreviewModal'
 import { SupplierStatementPDF } from '@/components/pdf/SupplierStatementPDF'
 import { getClientOrganization, OrganizationProfile, DEFAULT_ORGANIZATION } from '@/lib/organization'
 import { generateSupplierKhataWhatsAppText, openWhatsApp } from '@/lib/whatsapp'
+import { exportSupplierLedgerStatement } from '@/lib/export/csv'
 
 interface SupplierStatementButtonProps {
   supplier: {
@@ -57,6 +58,19 @@ export function SupplierStatementButton({
             />
           </svg>
           Statement (PDF)
+        </Button>
+
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => exportSupplierLedgerStatement(supplier, transactions, totals)}
+          className="inline-flex items-center gap-1.5 text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-xs"
+          title="Export running account ledger to Excel / CSV"
+        >
+          <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Khata (CSV)
         </Button>
 
         <Button

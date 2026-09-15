@@ -9,6 +9,7 @@ import { formatINR } from '@/lib/format'
 import { SupplierActions } from './SupplierActions'
 import { DeleteSupplierModal } from './DeleteSupplierModal'
 import { canDeleteSupplier, canCreateSupplier } from '@/lib/permissions'
+import { exportSuppliersSummary } from '@/lib/export/csv'
 
 export type SupplierSummaryRow = {
   id: string
@@ -150,9 +151,22 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
                 className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder-slate-400"
               />
             </div>
-            <div className="text-xs text-slate-500">
-              Showing <span className="font-medium text-slate-700">{filtered.length}</span> of{' '}
-              {suppliers.length} suppliers
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => exportSuppliersSummary(filtered)}
+                title="Export Supplier Directory & Balances for CA Audit / GSTR-2B (Excel & CSV)"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 transition-colors shadow-xs"
+              >
+                <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export Directory (CSV)
+              </button>
+              <div className="text-xs text-slate-500 hidden sm:block">
+                Showing <span className="font-medium text-slate-700">{filtered.length}</span> of{' '}
+                {suppliers.length} suppliers
+              </div>
             </div>
           </div>
 
