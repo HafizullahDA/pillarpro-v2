@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { SummaryTile } from '@/components/ui/SummaryTile'
 import { Badge } from '@/components/ui/Badge'
 import { formatINR, formatDate } from '@/lib/format'
+import { ContractorOnboardingChecklist } from '@/components/dashboard/ContractorOnboardingChecklist'
 
 type Project = { id: string; name: string; agency_name: string | null }
 type Bill = {
@@ -53,7 +54,6 @@ export function DashboardClient({
 }: DashboardClientProps) {
   const [selectedProject, setSelectedProject] = useState<string>('all')
   const [dateRange, setDateRange] = useState<'month' | 'quarter' | 'all'>('all')
-  const [showGuide, setShowGuide] = useState<boolean>(true)
 
   const now = new Date()
   const currentYear = now.getFullYear()
@@ -182,119 +182,14 @@ export function DashboardClient({
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
-      {/* Onboarding / Quick-Start Contractor Guide */}
-      {showGuide && (
-        <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50/90 via-white to-indigo-50/50 p-5 shadow-xs transition-all">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
-                🏢
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">
-                  Welcome to {orgName ? `${orgName}’s` : 'your'} Contractor Workspace
-                </h2>
-                <p className="text-xs text-slate-600 mt-0.5">
-                  The Financial & Operations Operating System for Civil & Highway Infrastructure Contractors
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowGuide(false)}
-              className="text-xs text-slate-400 hover:text-slate-600 font-medium px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors shrink-0"
-              title="Hide guide"
-            >
-              Dismiss ✕
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-3.5 border-t border-blue-100">
-            <Link
-              href="/projects"
-              className="group p-3 rounded-xl bg-white border border-slate-200/90 hover:border-blue-300 hover:shadow-xs transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-base">🏗️</span>
-                  <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Step 1</span>
-                </div>
-                <h3 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-blue-600 transition-colors">
-                  Civil Projects
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                  Setup PWD / PMGSY / CPWD tenders, contract values & milestones.
-                </p>
-              </div>
-              <span className="text-[11px] font-semibold text-blue-600 mt-2.5 block group-hover:underline">
-                Manage Projects →
-              </span>
-            </Link>
-
-            <Link
-              href="/ra-bills"
-              className="group p-3 rounded-xl bg-white border border-slate-200/90 hover:border-blue-300 hover:shadow-xs transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-base">📄</span>
-                  <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Step 2</span>
-                </div>
-                <h3 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-blue-600 transition-colors">
-                  RA Bills & Deductions
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                  Reconcile certified work vs retention, TDS, GST TDS & net bank credits.
-                </p>
-              </div>
-              <span className="text-[11px] font-semibold text-blue-600 mt-2.5 block group-hover:underline">
-                Record RA Bill →
-              </span>
-            </Link>
-
-            <Link
-              href="/expenses"
-              className="group p-3 rounded-xl bg-white border border-slate-200/90 hover:border-blue-300 hover:shadow-xs transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-base">📸</span>
-                  <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Step 3</span>
-                </div>
-                <h3 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-blue-600 transition-colors">
-                  Site Expenses & Wages
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                  Capture fuel receipts with AI OCR and log daily-wage muster rolls.
-                </p>
-              </div>
-              <span className="text-[11px] font-semibold text-blue-600 mt-2.5 block group-hover:underline">
-                Log Site Cash →
-              </span>
-            </Link>
-
-            <Link
-              href="/security-deposits"
-              className="group p-3 rounded-xl bg-white border border-slate-200/90 hover:border-blue-300 hover:shadow-xs transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-base">🛡️</span>
-                  <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Step 4</span>
-                </div>
-                <h3 className="text-xs font-bold text-slate-900 mt-2 group-hover:text-blue-600 transition-colors">
-                  Bank Guarantees
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                  Monitor 30-day BG expiry warnings to prevent bank encashment.
-                </p>
-              </div>
-              <span className="text-[11px] font-semibold text-blue-600 mt-2.5 block group-hover:underline">
-                Track Guarantees →
-              </span>
-            </Link>
-          </div>
-        </div>
-      )}
+      {/* Interactive Contractor Onboarding Checklist */}
+      <ContractorOnboardingChecklist
+        projectCount={projects.length}
+        supplierCount={suppliers.filter(s => s.project_id === null).length}
+        raBillCount={bills.length}
+        hasExpenseOrLedger={ledger.length > 0}
+        orgName={orgName}
+      />
 
       {/* Top Header & Filters */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
