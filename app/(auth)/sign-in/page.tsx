@@ -232,13 +232,18 @@ export default function SignInPage() {
                 </button>
               </form>
 
-              <div className="mt-6 pt-5 border-t border-slate-800/80 text-center">
+              <div className="mt-6 pt-5 border-t border-slate-800/80 text-center space-y-2.5">
                 <p className="text-xs text-slate-400">
                   New contractor?{' '}
                   <Link href="/sign-up" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors">
                     Create your firm workspace →
                   </Link>
                 </p>
+                <div className="flex items-center justify-center gap-3 text-[11px] text-slate-500">
+                  <Link href="/terms" className="hover:text-slate-400 transition-colors">Terms of Service</Link>
+                  <span>•</span>
+                  <Link href="/privacy" className="hover:text-slate-400 transition-colors">Privacy Policy</Link>
+                </div>
               </div>
             </div>
           </div>

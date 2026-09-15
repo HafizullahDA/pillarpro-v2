@@ -71,6 +71,15 @@ export function Sidebar({
             </svg>
           </button>
         </div>
+        {/* Legal & Version Footer */}
+        <div className="px-4 py-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-500">
+          <div className="flex items-center gap-2">
+            <Link href="/terms" target="_blank" className="hover:text-slate-300 transition-colors">Terms</Link>
+            <span>•</span>
+            <Link href="/privacy" target="_blank" className="hover:text-slate-300 transition-colors">Privacy</Link>
+          </div>
+          <span className="text-slate-600">v0.1.0</span>
+        </div>
       </aside>
 
       <UserProfileModal

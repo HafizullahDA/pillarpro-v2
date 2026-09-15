@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Drawer } from '@/components/ui/Drawer'
 import { FieldWrapper, Input } from '@/components/ui/FormField'
@@ -236,10 +237,18 @@ export function UserProfileModal({
           </div>
         </FieldWrapper>
 
-        <div className="border-t border-slate-100 pt-4">
+        <div className="border-t border-slate-100 pt-4 space-y-3">
           <Button variant="danger" loading={signingOut} onClick={handleSignOut} className="w-full">
             Sign Out
           </Button>
+          <div className="flex items-center justify-between text-xs text-slate-400 px-1 pt-1">
+            <div className="flex items-center gap-3">
+              <Link href="/terms" target="_blank" className="hover:text-slate-600 transition-colors">Terms of Service</Link>
+              <span>•</span>
+              <Link href="/privacy" target="_blank" className="hover:text-slate-600 transition-colors">Privacy Policy</Link>
+            </div>
+            <span>v0.1.0</span>
+          </div>
         </div>
       </div>
     </Drawer>

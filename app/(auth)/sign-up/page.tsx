@@ -467,15 +467,31 @@ export default function SignUpPage() {
                     </>
                   )}
                 </button>
+
+                <p className="mt-3 text-[11px] text-center text-slate-500 leading-relaxed">
+                  By registering, you agree to PillarPro&apos;s{' '}
+                  <Link href="/terms" target="_blank" className="underline hover:text-slate-300 transition-colors">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/privacy" target="_blank" className="underline hover:text-slate-300 transition-colors">
+                    Privacy Policy
+                  </Link>.
+                </p>
               </form>
 
-              <div className="mt-5 pt-4 border-t border-slate-800/80 text-center">
+              <div className="mt-5 pt-4 border-t border-slate-800/80 text-center space-y-2.5">
                 <p className="text-xs text-slate-400">
                   Already registered?{' '}
                   <Link href="/sign-in" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors">
                     Sign in to your account →
                   </Link>
                 </p>
+                <div className="flex items-center justify-center gap-3 text-[11px] text-slate-500">
+                  <Link href="/terms" className="hover:text-slate-400 transition-colors">Terms of Service</Link>
+                  <span>•</span>
+                  <Link href="/privacy" className="hover:text-slate-400 transition-colors">Privacy Policy</Link>
+                </div>
               </div>
             </div>
           </div>
