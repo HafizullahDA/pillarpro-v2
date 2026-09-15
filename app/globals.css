@@ -17,6 +17,30 @@ html {
 }
 
 /* ══════════════════════════════════════════
+   PWA & MOBILE SAFE AREA INSETS
+   ══════════════════════════════════════════ */
+
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-mb {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Standalone PWA adjustments */
+@media all and (display-mode: standalone) {
+  /* Prevent rubber-band effect interfering with bottom bar navigation */
+  body {
+    overscroll-behavior-y: none;
+  }
+}
+
+/* ══════════════════════════════════════════
    PRINT & PDF EXPORT STYLES
    ══════════════════════════════════════════ */
 

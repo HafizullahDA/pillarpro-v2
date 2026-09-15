@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
+import { PwaProvider } from '@/components/pwa/PwaProvider'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -29,9 +30,20 @@ export const metadata: Metadata = {
   creator: 'PillarPro',
   manifest: '/manifest.json',
   icons: {
-    icon: [{ url: '/icon.svg?v=2', type: 'image/svg+xml' }],
-    shortcut: '/icon.svg?v=2',
-    apple: '/icon.svg?v=2',
+    icon: [
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/icon-192.png',
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'PillarPro',
   },
   openGraph: {
     type: 'website',
@@ -55,6 +67,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   themeColor: '#2563eb',
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({
@@ -65,7 +78,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {children}
+        <PwaProvider>
+          {children}
+        </PwaProvider>
         <Analytics />
       </body>
     </html>

@@ -14,6 +14,7 @@ import {
   OrganizationProfile,
   DEFAULT_ORGANIZATION,
 } from '@/lib/organization'
+import { usePwa } from '@/components/pwa/PwaProvider'
 
 export function UserProfileModal({
   open,
@@ -30,6 +31,7 @@ export function UserProfileModal({
 }) {
   const router = useRouter()
   const supabase = createClient()
+  const { isStandalone } = usePwa()
   const [name, setName] = useState(userName)
   const [saving, setSaving] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
@@ -236,6 +238,32 @@ export function UserProfileModal({
             <Button size="sm" loading={saving} onClick={handleSaveName}>Save</Button>
           </div>
         </FieldWrapper>
+
+        {/* PWA App Install Button (When not running in standalone mode) */}
+        {!isStandalone && (
+          <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3 flex items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">📲</span>
+              <div>
+                <p className="text-xs font-bold text-slate-900">Install PillarPro App</p>
+                <p className="text-[11px] text-slate-600">Add to Home Screen for fast field access</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  localStorage.removeItem('pillarpro_pwa_install_dismissed')
+                } catch {}
+                window.dispatchEvent(new CustomEvent('pillarpro-show-install'))
+                onClose()
+              }}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-xs transition-colors shrink-0"
+            >
+              Install
+            </button>
+          </div>
+        )}
 
         <div className="border-t border-slate-100 pt-4 space-y-3">
           <Button variant="danger" loading={signingOut} onClick={handleSignOut} className="w-full">

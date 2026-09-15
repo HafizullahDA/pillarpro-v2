@@ -1,19 +1,38 @@
 {
+  "name": "PillarPro",
   "short_name": "PillarPro",
-  "name": "PillarPro Construction ERP",
-  "description": "Construction ERP — civil construction and manpower supply",
+  "description": "Financial & Operations Operating System for Civil & Infrastructure Contractors. Running Account (RA) bills, supplier khatas, site expenses, and muster rolls.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07090e",
+  "theme_color": "#2563eb",
+  "categories": ["business", "finance", "productivity"],
   "icons": [
     {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "/icon.svg",
-      "type": "image/svg+xml",
       "sizes": "any",
-      "purpose": "any maskable"
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
-  ],
-  "start_url": "/dashboard",
-  "background_color": "#f8fafc",
-  "theme_color": "#2563eb",
-  "display": "standalone",
-  "orientation": "portrait"
+  ]
 }
-

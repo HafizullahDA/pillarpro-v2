@@ -43,7 +43,8 @@ export async function middleware(request: NextRequest) {
   const AUTH_ROUTES    = ['/sign-in', '/sign-up']
   const PENDING_ROUTES = ['/pending']
   const LEGAL_ROUTES   = ['/terms', '/privacy', '/robots.txt', '/sitemap.xml']
-  const PUBLIC_ROUTES  = [...AUTH_ROUTES, ...PENDING_ROUTES, ...LEGAL_ROUTES]
+  const PWA_ROUTES     = ['/sw.js', '/manifest.json', '/offline']
+  const PUBLIC_ROUTES  = [...AUTH_ROUTES, ...PENDING_ROUTES, ...LEGAL_ROUTES, ...PWA_ROUTES]
 
   const isPublicRoute = pathname === '/' || PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r))
 
@@ -65,8 +66,9 @@ export async function middleware(request: NextRequest) {
 
 
   if (isPending) {
-    // Pending users may access /pending or public legal routes
-    if (!PENDING_ROUTES.some(r => pathname.startsWith(r)) && !LEGAL_ROUTES.some(r => pathname.startsWith(r))) {
+    // Pending users may access /pending or public legal & PWA routes
+    const allowedForPending = [...PENDING_ROUTES, ...LEGAL_ROUTES, ...PWA_ROUTES]
+    if (!allowedForPending.some(r => pathname.startsWith(r))) {
       const url = request.nextUrl.clone()
       url.pathname = '/pending'
       return NextResponse.redirect(url)
