@@ -168,12 +168,26 @@ export function SupplierActions({
     setSaving(true)
     setError('')
 
+    // Read the organization at save time instead of relying on an async value
+    // loaded when the drawer mounted. This prevents a fast submission from
+    // inserting a row without organization_id, which RLS correctly rejects.
+    const { data: organizationId, error: organizationError } = await supabase.rpc(
+      'get_user_organization_id'
+    )
+
+    if (organizationError || !organizationId) {
+      setSaving(false)
+      setError('Your account is not linked to an organization. Please contact an administrator.')
+      return
+    }
+
     const { error: err } = await supabase.from('suppliers').insert({
       name: sForm.name.trim(),
       contact_number: sForm.contact_number.trim() || null,
       gst_number: sForm.gst_number.trim().toUpperCase() || null,
       address: sForm.address.trim() || null,
       notes: sForm.notes.trim() || null,
+      organization_id: organizationId,
     })
 
     setSaving(false)
@@ -778,4 +792,3 @@ export function SupplierActions({
     </>
   )
 }
-
