@@ -8,13 +8,14 @@ import { FieldWrapper, Input, Select } from '@/components/ui/FormField'
 import { SummaryTile } from '@/components/ui/SummaryTile'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { formatINR } from '@/lib/format'
-import { canCreateAttendance } from '@/lib/permissions'
+import { canCreateAttendance, canDeleteWorker } from '@/lib/permissions'
 import { PrintPreviewModal } from '@/components/pdf/PrintPreviewModal'
 import { AttendanceMusterRollPDF } from '@/components/pdf/AttendanceMusterRollPDF'
 import { getClientOrganization, OrganizationProfile, DEFAULT_ORGANIZATION } from '@/lib/organization'
 import { generateMusterRollWhatsAppText, openWhatsApp } from '@/lib/whatsapp'
 import { compressImage } from '@/lib/imageCompress'
 import { AttendanceScanConfirmModal } from '@/components/attendance/AttendanceScanConfirmModal'
+import { DeleteWorkerModal } from '@/components/attendance/DeleteWorkerModal'
 import { WageLedgerClient } from './WageLedgerClient'
 
 type Project = { id: string; name: string }
@@ -36,9 +37,11 @@ export function AttendanceClient({
 }) {
   const supabase = createClient()
   const canMark = canCreateAttendance(userRole)
+  const canDelete = canDeleteWorker(userRole)
 
   const today = new Date()
   const [activeTab, setActiveTab] = useState<'attendance' | 'wages'>('attendance')
+  const [workerToDelete, setWorkerToDelete] = useState<Worker | null>(null)
   const [projectId, setProjectId] = useState(projects[0]?.id ?? '')
   const [year, setYear]   = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
@@ -496,6 +499,18 @@ export function AttendanceClient({
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
                         {totalDaysWorked} {totalDaysWorked === 1 ? 'day' : 'days'} worked
                       </span>
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => setWorkerToDelete(w)}
+                          className="p-1 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          title={`Delete ${w.name}`}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">{w.trade ?? 'Worker'} · {formatINR(w.daily_wage_rate)}/day</p>
                   </div>
@@ -532,24 +547,114 @@ export function AttendanceClient({
       )}
 
       {/* Manage Workers Drawer */}
-      <Drawer open={workerOpen} onClose={() => setWorkerOpen(false)} title="Add Worker"
-        footer={<div className="flex gap-3"><Button variant="secondary" className="flex-1" onClick={() => setWorkerOpen(false)}>Cancel</Button><Button className="flex-1" loading={wSaving} onClick={saveWorker}>Save Worker</Button></div>}>
-        <div className="space-y-4">
-          {wError && <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{wError}</div>}
-          <FieldWrapper label="Full Name" required>
-            <Input placeholder="Raju Singh" value={wForm.name} onChange={e => setWForm(f => ({ ...f, name: e.target.value }))} />
-          </FieldWrapper>
-          <FieldWrapper label="Trade / Role" required>
-            <Select value={wForm.trade} onChange={e => setWForm(f => ({ ...f, trade: e.target.value }))}>
-              {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
-            </Select>
-          </FieldWrapper>
-          <FieldWrapper label="Daily Wage" hint="Used to calculate day cost">
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-medium">&#8377;</span>
-              <Input type="number" min="0" className="pl-8 tabular-nums" placeholder="700" value={wForm.daily_wage_rate} onChange={e => setWForm(f => ({ ...f, daily_wage_rate: e.target.value }))} />
+      <Drawer
+        open={workerOpen}
+        onClose={() => setWorkerOpen(false)}
+        title="Manage Workers"
+        size="lg"
+        footer={
+          <div className="flex w-full justify-end">
+            <Button variant="secondary" onClick={() => setWorkerOpen(false)}>
+              Close
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-6 pb-6">
+          {/* Add Worker Section */}
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-3.5">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">Add New Worker</h3>
+            {wError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 p-2.5 text-xs text-red-700">
+                {wError}
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FieldWrapper label="Full Name" required>
+                <Input
+                  placeholder="e.g. Raju Singh"
+                  value={wForm.name}
+                  onChange={e => setWForm(f => ({ ...f, name: e.target.value }))}
+                />
+              </FieldWrapper>
+              <FieldWrapper label="Trade / Role" required>
+                <Select
+                  value={wForm.trade}
+                  onChange={e => setWForm(f => ({ ...f, trade: e.target.value }))}
+                >
+                  {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
+                </Select>
+              </FieldWrapper>
             </div>
-          </FieldWrapper>
+            <FieldWrapper label="Daily Wage (₹)" hint="Used to calculate daily muster roll cost">
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-medium">₹</span>
+                <Input
+                  type="number"
+                  min="0"
+                  className="pl-8 tabular-nums"
+                  placeholder="700"
+                  value={wForm.daily_wage_rate}
+                  onChange={e => setWForm(f => ({ ...f, daily_wage_rate: e.target.value }))}
+                />
+              </div>
+            </FieldWrapper>
+            <Button
+              className="w-full shadow-sm"
+              loading={wSaving}
+              onClick={saveWorker}
+            >
+              Add Worker to Roster
+            </Button>
+          </div>
+
+          {/* Existing Workers List */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                Registered Workers ({workers.length})
+              </h3>
+            </div>
+
+            {!workers.length ? (
+              <p className="text-xs text-slate-400 py-3 text-center">No workers registered yet.</p>
+            ) : (
+              <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white">
+                {workers.map(w => {
+                  const daysCount = monthAttendance.filter(r => r.worker_id === w.id).length
+                  return (
+                    <div key={w.id} className="flex items-center justify-between p-3.5 hover:bg-slate-50 transition-colors">
+                      <div className="pr-3 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold text-slate-900 truncate">{w.name}</p>
+                          <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                            {w.trade || 'Helper'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {formatINR(w.daily_wage_rate)}/day · {daysCount} {daysCount === 1 ? 'day' : 'days'} logged this month
+                        </p>
+                      </div>
+                      {canDelete && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setWorkerToDelete(w)}
+                          className="text-xs text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300 h-8 px-2.5 shadow-none flex items-center gap-1 shrink-0"
+                          title={`Delete ${w.name}`}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          <span>Delete</span>
+                        </Button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </Drawer>
 
@@ -610,6 +715,23 @@ export function AttendanceClient({
         imagePreviewUrl={scanPreviewUrl}
         organizationId={organizationId}
         onSuccess={handleScanSuccess}
+      />
+
+      {/* Delete Worker Confirmation Modal */}
+      <DeleteWorkerModal
+        open={!!workerToDelete}
+        onClose={() => setWorkerToDelete(null)}
+        worker={workerToDelete}
+        attendanceCount={
+          workerToDelete
+            ? monthAttendance.filter(r => r.worker_id === workerToDelete.id).length
+            : 0
+        }
+        onSuccess={() => {
+          setWorkerToDelete(null)
+          loadWorkers()
+          loadMonthAttendance()
+        }}
       />
         </>
       )}

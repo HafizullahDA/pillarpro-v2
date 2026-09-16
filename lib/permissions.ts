@@ -90,7 +90,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     projects: ['view', 'create', 'edit', 'archive'],
     suppliers: ['view', 'create', 'edit', 'delete'],
     ra_bills: ['view', 'create', 'edit'],
-    attendance: ['view', 'create', 'edit'],
+    attendance: ['view', 'create', 'edit', 'delete'],
     expenses: ['view', 'create', 'edit', 'delete'],
     receivables: ['view', 'create', 'edit'],
     partners: ['view', 'create', 'edit'],
@@ -102,7 +102,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     projects: ['view', 'create', 'edit'],
     suppliers: ['view', 'create', 'edit'],
     ra_bills: ['view', 'create', 'edit'],
-    attendance: ['view', 'create', 'edit'],
+    attendance: ['view', 'create', 'edit', 'delete'],
     expenses: ['view', 'create', 'edit'],
     receivables: ['view', 'create', 'edit'],
     partners: ['view', 'create', 'edit'],
@@ -174,6 +174,7 @@ export const canCreateSupplier = (role: string | null | undefined) => can(role, 
 
 export const canCreateRaBill   = (role: string | null | undefined) => can(role, 'ra_bills', 'create')
 export const canCreateAttendance = (role: string | null | undefined) => can(role, 'attendance', 'create')
+export const canDeleteWorker     = (role: string | null | undefined) => can(role, 'attendance', 'delete')
 
 export const canViewPartners   = (role: string | null | undefined) => can(role, 'partners', 'view')
 export const canCreatePartner  = (role: string | null | undefined) => can(role, 'partners', 'create')
