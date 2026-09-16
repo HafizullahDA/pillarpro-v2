@@ -48,6 +48,7 @@ interface AttendanceScanConfirmModalProps {
     }[]
   } | null
   imagePreviewUrl?: string | null
+  organizationId?: string
   onSuccess: (savedDate: string, targetProjectId: string) => void
 }
 
@@ -73,6 +74,7 @@ export function AttendanceScanConfirmModal({
   existingWorkers,
   scannedData,
   imagePreviewUrl,
+  organizationId,
   onSuccess,
 }: AttendanceScanConfirmModalProps) {
   const supabase = createClient()
@@ -229,6 +231,16 @@ export function AttendanceScanConfirmModal({
       const newWorkerEntries = entries.filter(e => e.isNew && !e.matchedWorkerId)
       const workerIdMap = new Map<string, string>()
 
+      let effectiveOrgId = organizationId
+      if (!effectiveOrgId && newWorkerEntries.length > 0) {
+        try {
+          const { data } = await supabase.rpc('get_user_organization_id')
+          if (data) effectiveOrgId = data
+        } catch {
+          // fallback
+        }
+      }
+
       for (const nw of newWorkerEntries) {
         const rateVal = nw.daily_wage_rate ? parseFloat(nw.daily_wage_rate) : null
         const { data: createdWorker, error: wErr } = await supabase
@@ -237,6 +249,7 @@ export function AttendanceScanConfirmModal({
             name: nw.name.trim(),
             trade: nw.trade || 'Helper',
             daily_wage_rate: rateVal && !isNaN(rateVal) ? rateVal : null,
+            ...(effectiveOrgId ? { organization_id: effectiveOrgId } : {}),
           })
           .select('id')
           .single()

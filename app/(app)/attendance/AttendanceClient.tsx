@@ -25,7 +25,15 @@ const TRADES = ['Mason', 'Helper', 'Carpenter', 'Plumber', 'Electrician', 'Welde
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
-export function AttendanceClient({ projects, userRole }: { projects: Project[]; userRole?: string }) {
+export function AttendanceClient({
+  projects,
+  userRole,
+  organizationId,
+}: {
+  projects: Project[]
+  userRole?: string
+  organizationId?: string
+}) {
   const supabase = createClient()
   const canMark = canCreateAttendance(userRole)
 
@@ -222,10 +230,22 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
   const saveWorker = async () => {
     if (!wForm.name.trim()) { setWError('Name is required.'); return }
     setWSaving(true); setWError('')
+
+    let effectiveOrgId = organizationId
+    if (!effectiveOrgId) {
+      try {
+        const { data } = await supabase.rpc('get_user_organization_id')
+        if (data) effectiveOrgId = data
+      } catch {
+        // fallback
+      }
+    }
+
     const { error } = await supabase.from('workers').insert({
       name: wForm.name.trim(),
       trade: wForm.trade,
       daily_wage_rate: wForm.daily_wage_rate ? parseFloat(wForm.daily_wage_rate) : 0,
+      ...(effectiveOrgId ? { organization_id: effectiveOrgId } : {}),
     })
     setWSaving(false)
     if (error) { setWError(error.message); return }
@@ -588,6 +608,7 @@ export function AttendanceClient({ projects, userRole }: { projects: Project[]; 
         existingWorkers={workers}
         scannedData={scannedAttendanceData}
         imagePreviewUrl={scanPreviewUrl}
+        organizationId={organizationId}
         onSuccess={handleScanSuccess}
       />
         </>

@@ -11,8 +11,9 @@ export const metadata: Metadata = {
 
 export default async function AttendancePage() {
   const supabase = createClient()
-  const [{ data: userRole }, { data: projects }] = await Promise.all([
+  const [{ data: userRole }, { data: orgId }, { data: projects }] = await Promise.all([
     supabase.rpc('get_user_role'),
+    supabase.rpc('get_user_organization_id'),
     supabase
       .from('projects')
       .select('id, name')
@@ -23,7 +24,11 @@ export default async function AttendancePage() {
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <h1 className="text-xl font-bold text-slate-900 mb-5">Attendance</h1>
-      <AttendanceClient projects={projects ?? []} userRole={userRole} />
+      <AttendanceClient
+        projects={projects ?? []}
+        userRole={userRole}
+        organizationId={orgId ?? undefined}
+      />
     </div>
   )
 }
