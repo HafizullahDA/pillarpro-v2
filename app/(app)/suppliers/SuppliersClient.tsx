@@ -10,6 +10,7 @@ import { SupplierActions } from './SupplierActions'
 import { DeleteSupplierModal } from './DeleteSupplierModal'
 import { canDeleteSupplier, canCreateSupplier } from '@/lib/permissions'
 import { exportSuppliersSummary } from '@/lib/export/csv'
+import { saveOfflineSnapshot } from '@/lib/offline/db'
 
 export type SupplierSummaryRow = {
   id: string
@@ -45,6 +46,12 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
   useEffect(() => {
     setSuppliers(initialSuppliers)
   }, [initialSuppliers])
+
+  useEffect(() => {
+    if (navigator.onLine) {
+      void saveOfflineSnapshot('/suppliers', { suppliers: initialSuppliers, projects })
+    }
+  }, [initialSuppliers, projects])
 
   const handleOpenDelete = (s: SupplierSummaryRow) => {
     setSupplierToDelete(s)

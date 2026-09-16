@@ -12,6 +12,7 @@ import { RABillCertificatePDF } from '@/components/pdf/RABillCertificatePDF'
 import { getClientOrganization, OrganizationProfile, DEFAULT_ORGANIZATION } from '@/lib/organization'
 import { generateRABillWhatsAppText, openWhatsApp } from '@/lib/whatsapp'
 import { exportRABillsRegister } from '@/lib/export/csv'
+import { saveOfflineSnapshot } from '@/lib/offline/db'
 
 // ════════════════════════════════════════════════════════════════════════
 // CONFIGURABLE THRESHOLD FOR EXPIRING BANK GUARANTEES (IN DAYS)
@@ -102,6 +103,16 @@ export function RABillsClient({
   useEffect(() => {
     getClientOrganization().then(setOrg)
   }, [])
+
+  useEffect(() => {
+    if (navigator.onLine) {
+      void saveOfflineSnapshot('/ra-bills', {
+        bills: initialBills,
+        deposits: initialDeposits,
+        projects,
+      })
+    }
+  }, [initialBills, initialDeposits, projects])
 
   // 1. FILTER BILLS (By Project, Status, Search)
   const filteredBills = useMemo(() => {
@@ -932,4 +943,3 @@ export function RABillsClient({
     </div>
   )
 }
-

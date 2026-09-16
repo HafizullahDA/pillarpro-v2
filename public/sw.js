@@ -27,7 +27,19 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(PRECACHE_ASSETS))
+      .then(async (cache) => {
+        await cache.addAll(PRECACHE_ASSETS)
+
+        // `/offline` is a Next.js page. Cache its generated JS/CSS as well so
+        // the read-only local snapshot viewer can hydrate without a network.
+        const offlinePage = await fetch('/offline', { cache: 'reload' })
+        const html = await offlinePage.clone().text()
+        const assets = [...html.matchAll(/(?:src|href)="([^"?]+(?:\?[^\"]*)?)"/g)]
+          .map((match) => match[1])
+          .filter((asset) => asset.startsWith('/_next/'))
+
+        await Promise.all(assets.map((asset) => cache.add(asset).catch(() => undefined)))
+      })
       .then(() => self.skipWaiting())
   )
 })
@@ -142,4 +154,3 @@ self.addEventListener('fetch', (event) => {
 
   // Default: Pass through to network
 })
-

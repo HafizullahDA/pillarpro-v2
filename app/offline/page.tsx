@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Logo } from '@/components/ui/Logo'
+import { OfflineSnapshotViewer } from './OfflineSnapshotViewer'
 
 export default function OfflinePage() {
   return (
@@ -37,6 +38,8 @@ export default function OfflinePage() {
           </p>
         </div>
 
+        <OfflineSnapshotViewer />
+
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             type="button"
@@ -65,4 +68,3 @@ export default function OfflinePage() {
     </div>
   )
 }
-

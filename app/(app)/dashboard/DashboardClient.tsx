@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { SummaryTile } from '@/components/ui/SummaryTile'
 import { Badge } from '@/components/ui/Badge'
 import { formatINR, formatDate } from '@/lib/format'
 import { ContractorOnboardingChecklist } from '@/components/dashboard/ContractorOnboardingChecklist'
+import { saveOfflineSnapshot } from '@/lib/offline/db'
 
 type Project = { id: string; name: string; agency_name: string | null }
 type Bill = {
@@ -54,6 +55,12 @@ export function DashboardClient({
 }: DashboardClientProps) {
   const [selectedProject, setSelectedProject] = useState<string>('all')
   const [dateRange, setDateRange] = useState<'month' | 'quarter' | 'all'>('all')
+
+  useEffect(() => {
+    if (navigator.onLine) {
+      void saveOfflineSnapshot('/dashboard', { projects, bills, suppliers, ledger, orgName })
+    }
+  }, [projects, bills, suppliers, ledger, orgName])
 
   const now = new Date()
   const currentYear = now.getFullYear()
