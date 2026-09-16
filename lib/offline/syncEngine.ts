@@ -21,6 +21,21 @@ export async function flushOfflineQueue(): Promise<{ synced: number; errors: num
       } else if (item.type === 'attendance') {
         const { error } = await supabase.from('attendance').upsert(item.payload, { onConflict: 'project_id,worker_id,date' })
         if (error) throw error
+      } else if (item.type === 'supplier') {
+        // Offline suppliers have a client-generated UUID, making retries safe.
+        const { data: organizationId, error: organizationError } = await supabase.rpc('get_user_organization_id')
+        if (organizationError || !organizationId) throw organizationError || new Error('Organization is unavailable')
+
+        const { error } = await supabase
+          .from('suppliers')
+          .upsert({ ...item.payload, organization_id: organizationId }, { onConflict: 'id', ignoreDuplicates: true })
+        if (error) throw error
+      } else if (item.type === 'supplier_transaction') {
+        // A client-generated UUID prevents a reconnect retry from duplicating a payment or procurement.
+        const { error } = await supabase
+          .from('supplier_transactions')
+          .upsert(item.payload, { onConflict: 'id', ignoreDuplicates: true })
+        if (error) throw error
       }
 
       await removeFromOfflineQueue(item.id)

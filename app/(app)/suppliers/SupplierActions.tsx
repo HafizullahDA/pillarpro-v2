@@ -15,7 +15,7 @@ import { safeMul, roundToTwo } from '@/lib/calculations/financial'
 import { SupplierScanConfirmModal } from '@/components/suppliers/SupplierScanConfirmModal'
 
 type Project = { id: string; name: string }
-type SupplierOption = { id: string; name: string }
+type SupplierOption = { id: string; name: string; pending?: boolean }
 
 const PAYMENT_MODES = [
   { value: 'cash',          label: 'Cash' },
@@ -64,6 +64,8 @@ export function SupplierActions({
     address: '',
     notes: '',
   })
+  const [offlineSupplierOptions, setOfflineSupplierOptions] = useState<SupplierOption[]>([])
+  const availableSuppliers = [...suppliers, ...offlineSupplierOptions]
 
   const [procForm, setProcForm] = useState({
     supplier_id: defaultSupplierId || '',
@@ -113,9 +115,9 @@ export function SupplierActions({
     if (defaultSupplierId) {
       setProcForm(f => ({ ...f, supplier_id: defaultSupplierId }))
       setPayForm(f => ({ ...f, supplier_id: defaultSupplierId }))
-    } else if (suppliers.length === 1) {
-      setProcForm(f => ({ ...f, supplier_id: suppliers[0].id }))
-      setPayForm(f => ({ ...f, supplier_id: suppliers[0].id }))
+    } else if (availableSuppliers.length === 1) {
+      setProcForm(f => ({ ...f, supplier_id: availableSuppliers[0].id }))
+      setPayForm(f => ({ ...f, supplier_id: availableSuppliers[0].id }))
     }
   }
 
@@ -167,6 +169,33 @@ export function SupplierActions({
 
     setSaving(true)
     setError('')
+
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      try {
+        const { saveToOfflineQueue } = await import('@/lib/offline/db')
+        const offlineSupplierId = crypto.randomUUID()
+        await saveToOfflineQueue('supplier', {
+          id: offlineSupplierId,
+          name: sForm.name.trim(),
+          contact_number: sForm.contact_number.trim() || null,
+          gst_number: sForm.gst_number.trim().toUpperCase() || null,
+          address: sForm.address.trim() || null,
+          notes: sForm.notes.trim() || null,
+        })
+        setOfflineSupplierOptions(options => [
+          ...options,
+          { id: offlineSupplierId, name: sForm.name.trim(), pending: true },
+        ])
+        setWhich(null)
+        setSForm({ name: '', contact_number: '', gst_number: '', address: '', notes: '' })
+        toast.success(`Supplier "${sForm.name.trim()}" saved offline and will sync on reconnect`)
+      } catch {
+        setError('Failed to save the supplier offline. Please try again.')
+      } finally {
+        setSaving(false)
+      }
+      return
+    }
 
     // Read the organization at save time instead of relying on an async value
     // loaded when the drawer mounted. This prevents a fast submission from
@@ -232,6 +261,34 @@ export function SupplierActions({
     const rateVal = procForm.rate ? parseFloat(procForm.rate) : null
     const unitVal = procForm.unit?.trim() || 'nos'
 
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      try {
+        const { saveToOfflineQueue } = await import('@/lib/offline/db')
+        await saveToOfflineQueue('supplier_transaction', {
+          id: crypto.randomUUID(),
+          supplier_id: procForm.supplier_id,
+          project_id: procForm.project_id || null,
+          transaction_type: 'procurement',
+          description: procForm.description.trim(),
+          amount: amountVal,
+          quantity: quantityVal,
+          rate: rateVal,
+          unit: unitVal,
+          date: procForm.date,
+          reference: procForm.reference.trim() || null,
+          notes: procForm.notes.trim() || null,
+        })
+        setWhich(null)
+        setProcForm({ supplier_id: defaultSupplierId || '', project_id: '', description: '', quantity: '', rate: '', unit: 'nos', amount: '', date: getTodayIST(), reference: '', notes: '' })
+        toast.success(`Procurement of ₹${amountVal.toLocaleString('en-IN')} saved offline and will sync on reconnect`)
+      } catch {
+        setError('Failed to save the procurement offline. Please try again.')
+      } finally {
+        setSaving(false)
+      }
+      return
+    }
+
     const { error: err } = await supabase.from('supplier_transactions').insert({
       supplier_id: procForm.supplier_id,
       project_id: procForm.project_id || null, // NULL = General / Central
@@ -292,6 +349,32 @@ export function SupplierActions({
 
     setSaving(true)
     setError('')
+
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      try {
+        const { saveToOfflineQueue } = await import('@/lib/offline/db')
+        await saveToOfflineQueue('supplier_transaction', {
+          id: crypto.randomUUID(),
+          supplier_id: payForm.supplier_id,
+          project_id: payForm.project_id || null,
+          transaction_type: 'payment',
+          description: `Payment to supplier (${payForm.mode.replace('_', ' ')})`,
+          amount: amountVal,
+          mode: payForm.mode,
+          date: payForm.date,
+          reference: payForm.reference.trim() || null,
+          notes: payForm.notes.trim() || null,
+        })
+        setWhich(null)
+        setPayForm({ supplier_id: defaultSupplierId || '', project_id: '', amount: '', mode: 'bank_transfer', date: getTodayIST(), reference: '', notes: '' })
+        toast.success(`Payment of ₹${amountVal.toLocaleString('en-IN')} saved offline and will sync on reconnect`)
+      } catch {
+        setError('Failed to save the payment offline. Please try again.')
+      } finally {
+        setSaving(false)
+      }
+      return
+    }
 
     const { error: err } = await supabase.from('supplier_transactions').insert({
       supplier_id: payForm.supplier_id,
@@ -530,7 +613,7 @@ export function SupplierActions({
             {defaultSupplierId ? (
               <Input
                 disabled
-                value={suppliers.find(s => s.id === defaultSupplierId)?.name ?? 'Selected Supplier'}
+                value={availableSuppliers.find(s => s.id === defaultSupplierId)?.name ?? 'Selected Supplier'}
               />
             ) : (
               <Select
@@ -538,7 +621,7 @@ export function SupplierActions({
                 onChange={e => setProcForm(f => ({ ...f, supplier_id: e.target.value }))}
               >
                 <option value="">Select a supplier...</option>
-                {suppliers.map(s => (
+                {availableSuppliers.map(s => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
@@ -692,7 +775,7 @@ export function SupplierActions({
             {defaultSupplierId ? (
               <Input
                 disabled
-                value={suppliers.find(s => s.id === defaultSupplierId)?.name ?? 'Selected Supplier'}
+                value={availableSuppliers.find(s => s.id === defaultSupplierId)?.name ?? 'Selected Supplier'}
               />
             ) : (
               <Select
@@ -700,7 +783,7 @@ export function SupplierActions({
                 onChange={e => setPayForm(f => ({ ...f, supplier_id: e.target.value }))}
               >
                 <option value="">Select a supplier...</option>
-                {suppliers.map(s => (
+                {availableSuppliers.map(s => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
@@ -781,7 +864,7 @@ export function SupplierActions({
           setScanPreviewUrl(null)
         }}
         projects={projects}
-        suppliers={suppliers}
+        suppliers={availableSuppliers}
         defaultSupplierId={defaultSupplierId}
         scannedData={scannedBillData}
         imagePreviewUrl={scanPreviewUrl}

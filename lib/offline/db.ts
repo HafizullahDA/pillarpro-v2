@@ -13,7 +13,7 @@ type OfflineSnapshot<T = unknown> = {
 
 export type QueuedItem = {
   id: string
-  type: 'expense' | 'attendance'
+  type: 'expense' | 'attendance' | 'supplier' | 'supplier_transaction'
   payload: any
   createdAt: number
 }
@@ -41,7 +41,10 @@ function openDB(): Promise<IDBDatabase> {
   })
 }
 
-export async function saveToOfflineQueue(type: 'expense' | 'attendance', payload: any): Promise<string> {
+export async function saveToOfflineQueue(
+  type: QueuedItem['type'],
+  payload: any
+): Promise<string> {
   const db = await openDB()
   const id = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
   const item: QueuedItem = {
@@ -63,14 +66,14 @@ export async function saveToOfflineQueue(type: 'expense' | 'attendance', payload
 
 export async function getOfflineQueue(): Promise<QueuedItem[]> {
   const db = await openDB()
-  return new Promise((resolve, reject) => {
+  return new Promise<QueuedItem[]>((resolve, reject) => {
     const tx = db.transaction('queue', 'readonly')
     const store = tx.objectStore('queue')
     const req = store.getAll()
 
     req.onsuccess = () => resolve(req.result || [])
     req.onerror = () => reject(req.error)
-  })
+  }).then(items => items.sort((a, b) => a.createdAt - b.createdAt))
 }
 
 export async function removeFromOfflineQueue(id: string): Promise<void> {
