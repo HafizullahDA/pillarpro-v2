@@ -23,6 +23,7 @@ export function LogoIcon({ className = 'w-8 h-8' }: { className?: string }) {
       viewBox="0 0 64 64"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
     >
       {/* Background Rounded Foundation */}
       <rect width="64" height="64" rx="16" className="fill-blue-600" />
@@ -90,7 +91,7 @@ export function Logo({
 
   if (href) {
     return (
-      <Link href={href} className="inline-flex hover:opacity-95 transition-opacity">
+      <Link href={href} aria-label="PillarPro Home" className="inline-flex hover:opacity-95 transition-opacity">
         {content}
       </Link>
     )

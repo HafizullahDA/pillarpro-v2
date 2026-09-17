@@ -75,3 +75,4 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.remove_team_member(UUID) TO authenticated;
+

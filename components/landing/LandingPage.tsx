@@ -42,6 +42,14 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-blue-600 selection:text-white">
+      {/* ── Accessible Skip to Main Content Link ────────────── */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-xl focus:shadow-xl focus:outline-none focus:ring-2 focus:ring-white text-xs font-semibold"
+      >
+        Skip to main content
+      </a>
+
       {/* ── Sticky Top Navbar ────────────────────────────────── */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/85 border-b border-slate-800/80 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -49,7 +57,7 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
             <Logo theme="dark" href="/" size="md" subtitle="Civil Contractor OS" />
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+          <nav aria-label="Main navigation" className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#command-center" className="hover:text-white transition-colors">Live Preview</a>
             <a href="#comparison" className="hover:text-white transition-colors">Why PillarPro</a>
@@ -90,8 +98,10 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
         </div>
       </header>
 
-      {/* ── Hero Section ────────────────────────────────────── */}
-      <section className="relative pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden">
+      {/* ── Main Content Landmark ────────────────────────────── */}
+      <main id="main-content">
+        {/* ── Hero Section ────────────────────────────────────── */}
+        <section className="relative pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden">
         {/* Background Glow Gradients */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-blue-600/15 blur-[120px] pointer-events-none rounded-full" />
         <div className="absolute top-1/3 left-1/4 w-[350px] h-[250px] bg-indigo-600/10 blur-[100px] pointer-events-none rounded-full" />
@@ -176,10 +186,10 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-950/60 p-4 rounded-xl border border-slate-800/60 mb-5">
               <div>
                 <span className="text-[10px] font-bold tracking-wider uppercase text-blue-400">Active Milestone Contract</span>
-                <h3 className="text-base sm:text-lg font-bold text-white mt-0.5">
+                <p className="text-base sm:text-lg font-bold text-white mt-0.5">
                   NH-44 Bypass 4-Lane Widening & Culvert Package (Pkg-02)
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">PWD (R&B) National Highway Division • Tender Value: ₹18.50 Cr</p>
+                </p>
+                <p className="text-xs text-slate-300 mt-0.5">PWD (R&B) National Highway Division • Tender Value: ₹18.50 Cr</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
@@ -191,21 +201,21 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
             {/* Financial Metrics Strip */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
               <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60">
-                <span className="text-xs text-slate-400 block font-medium">Gross Certified (RA Bill 01)</span>
+                <span className="text-xs text-slate-300 block font-medium">Gross Certified (RA Bill 01)</span>
                 <span className="text-xl sm:text-2xl font-bold text-white tracking-tight mt-1 block">₹42,00,000</span>
                 <span className="text-[11px] text-blue-400 mt-0.5 block font-mono">Earthwork & Sub-Base</span>
               </div>
 
               <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60">
-                <span className="text-xs text-slate-400 block font-medium">Statutory Treasury Deductions</span>
+                <span className="text-xs text-slate-300 block font-medium">Statutory Treasury Deductions</span>
                 <span className="text-xl sm:text-2xl font-bold text-amber-400 tracking-tight mt-1 block">₹3,35,000</span>
-                <span className="text-[11px] text-slate-400 mt-0.5 block">5% Retention + TDS + GST + Cess</span>
+                <span className="text-[11px] text-slate-300 mt-0.5 block">5% Retention + TDS + GST + Cess</span>
               </div>
 
               <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60">
-                <span className="text-xs text-slate-400 block font-medium">Net Bank Credit Received</span>
+                <span className="text-xs text-slate-300 block font-medium">Net Bank Credit Received</span>
                 <span className="text-xl sm:text-2xl font-bold text-emerald-400 tracking-tight mt-1 block">₹23,75,000</span>
-                <span className="text-[11px] text-emerald-400/80 mt-0.5 block font-mono">Tranche #1 / Treasury Sanction</span>
+                <span className="text-[11px] text-emerald-400 mt-0.5 block font-mono">Tranche #1 / Treasury Sanction</span>
               </div>
             </div>
 
@@ -217,7 +227,7 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
                   ⚠️
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-amber-200">Bank Guarantee Expiry Alert</h4>
+                  <p className="text-xs font-bold text-amber-200">Bank Guarantee Expiry Alert</p>
                   <p className="text-[11px] text-slate-300 mt-0.5 leading-snug">
                     <strong className="text-white">PBG/HDFC/8912 (₹8.90L)</strong> expires in <span className="text-amber-300 font-bold">24 days</span>. Notice sent to Executive Engineer.
                   </p>
@@ -230,7 +240,7 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
                   📸
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-blue-200">Mobile AI Receipt OCR</h4>
+                  <p className="text-xs font-bold text-blue-200">Mobile AI Receipt OCR</p>
                   <p className="text-[11px] text-slate-300 mt-0.5 leading-snug">
                     Site Supervisor Tariq snapped voucher: <strong className="text-white">Diesel 200L (₹12,500)</strong> auto-posted to JCB ledger.
                   </p>
@@ -243,7 +253,7 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
                   👷
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-emerald-200">Daily Muster Roll Submitted</h4>
+                  <p className="text-xs font-bold text-emerald-200">Daily Muster Roll Submitted</p>
                   <p className="text-[11px] text-slate-300 mt-0.5 leading-snug">
                     <strong className="text-white">16 Workers Present</strong>. ₹12,800 wage accrued today, ₹4,000 partial payout disbursed.
                   </p>
@@ -399,49 +409,49 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
           <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900">
             <table className="w-full text-left text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-950/60 text-slate-400 font-semibold">
-                  <th className="p-4 sm:p-5">Feature / Capability</th>
-                  <th className="p-4 sm:p-5 text-blue-400 font-bold bg-blue-500/10">PillarPro OS</th>
-                  <th className="p-4 sm:p-5">Excel Spreadsheets</th>
-                  <th className="p-4 sm:p-5">Tally / Standard Accounting</th>
+                <tr className="border-b border-slate-800 bg-slate-950/60 text-slate-300 font-semibold">
+                  <th scope="col" className="p-4 sm:p-5">Feature / Capability</th>
+                  <th scope="col" className="p-4 sm:p-5 text-blue-400 font-bold bg-blue-500/10">PillarPro OS</th>
+                  <th scope="col" className="p-4 sm:p-5">Excel Spreadsheets</th>
+                  <th scope="col" className="p-4 sm:p-5">Tally / Standard Accounting</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 text-slate-300">
+              <tbody className="divide-y divide-slate-800 text-slate-200">
                 <tr>
-                  <td className="p-4 sm:p-5 font-semibold text-white">Government RA Bill Deductions (Retention, TDS, Cess)</td>
+                  <th scope="row" className="p-4 sm:p-5 font-semibold text-white text-left font-normal">Government RA Bill Deductions (Retention, TDS, Cess)</th>
                   <td className="p-4 sm:p-5 text-emerald-400 font-semibold bg-blue-500/5">✓ Automated & Reconciled</td>
-                  <td className="p-4 sm:p-5 text-slate-400">Manual formula error risk</td>
-                  <td className="p-4 sm:p-5 text-slate-400">Not built for civil tranches</td>
+                  <td className="p-4 sm:p-5 text-slate-300">Manual formula error risk</td>
+                  <td className="p-4 sm:p-5 text-slate-300">Not built for civil tranches</td>
                 </tr>
                 <tr>
-                  <td className="p-4 sm:p-5 font-semibold text-white">Bank Guarantee & Security Deposit Expiry Alerts</td>
+                  <th scope="row" className="p-4 sm:p-5 font-semibold text-white text-left font-normal">Bank Guarantee & Security Deposit Expiry Alerts</th>
                   <td className="p-4 sm:p-5 text-emerald-400 font-semibold bg-blue-500/5">✓ 30-Day Proactive Radar</td>
-                  <td className="p-4 sm:p-5 text-rose-400">✗ None (Missed deadlines)</td>
-                  <td className="p-4 sm:p-5 text-rose-400">✗ No expiry warning system</td>
+                  <td className="p-4 sm:p-5 text-rose-300">✗ None (Missed deadlines)</td>
+                  <td className="p-4 sm:p-5 text-rose-300">✗ No expiry warning system</td>
                 </tr>
                 <tr>
-                  <td className="p-4 sm:p-5 font-semibold text-white">Site Receipt Capture (Fuel, Cement, Hardware)</td>
+                  <th scope="row" className="p-4 sm:p-5 font-semibold text-white text-left font-normal">Site Receipt Capture (Fuel, Cement, Hardware)</th>
                   <td className="p-4 sm:p-5 text-emerald-400 font-semibold bg-blue-500/5">✓ Mobile AI OCR in 5s</td>
-                  <td className="p-4 sm:p-5 text-rose-400">✗ Manual typing into desktop</td>
-                  <td className="p-4 sm:p-5 text-rose-400">✗ Manual journal voucher entry</td>
+                  <td className="p-4 sm:p-5 text-rose-300">✗ Manual typing into desktop</td>
+                  <td className="p-4 sm:p-5 text-rose-300">✗ Manual journal voucher entry</td>
                 </tr>
                 <tr>
-                  <td className="p-4 sm:p-5 font-semibold text-white">Daily Labor Muster Roll & Partial Wage Draws</td>
+                  <th scope="row" className="p-4 sm:p-5 font-semibold text-white text-left font-normal">Daily Labor Muster Roll & Partial Wage Draws</th>
                   <td className="p-4 sm:p-5 text-emerald-400 font-semibold bg-blue-500/5">✓ 1-Tap Mobile Muster</td>
-                  <td className="p-4 sm:p-5 text-slate-400">Messy paper diary sync</td>
-                  <td className="p-4 sm:p-5 text-rose-400">✗ No daily-wage tracking</td>
+                  <td className="p-4 sm:p-5 text-slate-300">Messy paper diary sync</td>
+                  <td className="p-4 sm:p-5 text-rose-300">✗ No daily-wage tracking</td>
                 </tr>
                 <tr>
-                  <td className="p-4 sm:p-5 font-semibold text-white">Field Supervisor Access Control</td>
+                  <th scope="row" className="p-4 sm:p-5 font-semibold text-white text-left font-normal">Field Supervisor Access Control</th>
                   <td className="p-4 sm:p-5 text-emerald-400 font-semibold bg-blue-500/5">✓ Restricted to Assigned Site</td>
-                  <td className="p-4 sm:p-5 text-rose-400">✗ None (Full sheet exposed)</td>
-                  <td className="p-4 sm:p-5 text-rose-400">✗ Desktop-only installation</td>
+                  <td className="p-4 sm:p-5 text-rose-300">✗ None (Full sheet exposed)</td>
+                  <td className="p-4 sm:p-5 text-rose-300">✗ Desktop-only installation</td>
                 </tr>
                 <tr>
-                  <td className="p-4 sm:p-5 font-semibold text-white">Partner Capital & Drawing Accounts</td>
+                  <th scope="row" className="p-4 sm:p-5 font-semibold text-white text-left font-normal">Partner Capital & Drawing Accounts</th>
                   <td className="p-4 sm:p-5 text-emerald-400 font-semibold bg-blue-500/5">✓ Automated Parity Ledger</td>
-                  <td className="p-4 sm:p-5 text-slate-400">Prone to partner arguments</td>
-                  <td className="p-4 sm:p-5 text-slate-400">Requires chartered accountant</td>
+                  <td className="p-4 sm:p-5 text-slate-300">Prone to partner arguments</td>
+                  <td className="p-4 sm:p-5 text-slate-300">Requires chartered accountant</td>
                 </tr>
               </tbody>
             </table>
@@ -470,16 +480,27 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
               >
                 <button
                   type="button"
+                  id={`faq-btn-${idx}`}
                   onClick={() => toggleFaq(idx)}
-                  className="w-full p-4 sm:p-5 text-left font-semibold text-white flex items-center justify-between gap-4 hover:bg-slate-800/40 transition-colors"
+                  aria-expanded={isOpen}
+                  aria-controls={`faq-answer-${idx}`}
+                  className="w-full p-4 sm:p-5 text-left font-semibold text-white flex items-center justify-between gap-4 hover:bg-slate-800/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   <span className="text-sm sm:text-base">{faq.q}</span>
-                  <span className={`text-blue-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`}>
+                  <span
+                    aria-hidden="true"
+                    className={`text-blue-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+                  >
                     ▼
                   </span>
                 </button>
                 {isOpen && (
-                  <div className="px-4 pb-5 sm:px-5 sm:pb-6 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/50 pt-3">
+                  <div
+                    id={`faq-answer-${idx}`}
+                    role="region"
+                    aria-labelledby={`faq-btn-${idx}`}
+                    className="px-4 pb-5 sm:px-5 sm:pb-6 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/50 pt-3"
+                  >
                     {faq.a}
                   </div>
                 )}
@@ -492,7 +513,7 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
       {/* ── Final Call To Action ────────────────────────────── */}
       <section className="py-16 md:py-24 border-t border-slate-800/80 bg-gradient-to-b from-slate-950 to-blue-950/30">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="h-12 w-12 rounded-2xl bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-xl mx-auto mb-4">
+          <div className="h-12 w-12 rounded-2xl bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-xl mx-auto mb-4" aria-hidden="true">
             🏗️
           </div>
           <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
@@ -514,26 +535,48 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
             </Link>
           </div>
 
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="mt-4 text-xs text-slate-400">
             No credit card required. Isolated private database established in 30 seconds.
           </p>
         </div>
       </section>
+      </main>
+
+      {/* ── JSON-LD Structured Data (Agentic & Search Optimization) ─ */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'SoftwareApplication',
+            name: 'PillarPro',
+            operatingSystem: 'Any',
+            applicationCategory: 'BusinessApplication',
+            offers: {
+              '@type': 'Offer',
+              price: '0',
+              priceCurrency: 'INR',
+            },
+            description:
+              'The Financial & Operations Operating System built specifically for civil infrastructure contractors. RA Billing, statutory deductions, supplier khatas, and site muster rolls.',
+          }),
+        }}
+      />
 
       {/* ── Footer ─────────────────────────────────────────── */}
-      <footer className="py-8 pb-24 md:pb-8 border-t border-slate-800 bg-slate-950 text-slate-500 text-xs">
+      <footer className="py-8 pb-24 md:pb-8 border-t border-slate-800 bg-slate-950 text-slate-400 text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Logo theme="dark" size="sm" />
-            <span>— The Financial & Operations OS for Infrastructure Contractors</span>
+            <Logo theme="dark" size="sm" href="/" />
+            <span className="text-slate-400">— The Financial & Operations OS for Infrastructure Contractors</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-            <Link href="/sign-in" className="hover:text-slate-300 transition-colors">Sign In</Link>
-            <Link href="/sign-up" className="hover:text-slate-300 transition-colors">Create Firm Workspace</Link>
-            <Link href="/privacy" className="hover:text-slate-300 transition-colors">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-slate-300 transition-colors">Terms of Service</Link>
-            <span className="text-slate-600">© 2026 PillarPro. All rights reserved.</span>
+            <Link href="/sign-in" className="hover:text-white transition-colors">Sign In</Link>
+            <Link href="/sign-up" className="hover:text-white transition-colors">Create Firm Workspace</Link>
+            <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+            <span className="text-slate-400">© 2026 PillarPro. All rights reserved.</span>
           </div>
         </div>
       </footer>
