@@ -4,7 +4,6 @@ import { Sidebar } from '@/components/nav/Sidebar'
 import { IconRail } from '@/components/nav/IconRail'
 import { BottomNav } from '@/components/nav/BottomNav'
 import { MobileHeader } from '@/components/nav/MobileHeader'
-import { FAB } from '@/components/nav/FAB'
 import { OfflineStatusBanner } from '@/components/ui/OfflineStatusBanner'
 import { IdleTimeoutProvider } from '@/components/auth/IdleTimeoutProvider'
 import { ToastProvider } from '@/components/ui/Toast'
@@ -36,7 +35,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               </main>
             </div>
             <BottomNav userName={displayName} userRole={userRole} userEmail={user.email} />
-            <FAB userRole={userRole} />
           </div>
         </div>
       </ToastProvider>
