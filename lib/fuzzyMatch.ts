@@ -150,3 +150,48 @@ export function findBestSupplierMatch<T extends { id: string; name: string }>(
     allRanked: scored,
   }
 }
+
+/**
+ * Finds the best matching project from a list of candidates for RA bill OCR
+ */
+export function findBestProjectMatch<T extends { id: string; name: string; agency_name?: string | null }>(
+  ocrProjectText: string,
+  candidates: T[],
+  threshold = 0.35
+): {
+  bestMatch: T | null
+  score: number
+} {
+  if (!ocrProjectText || !candidates.length) {
+    return { bestMatch: null, score: 0 }
+  }
+
+  const cleanText = ocrProjectText.toLowerCase()
+
+  const scored = candidates
+    .map(c => {
+      const cName = c.name.toLowerCase()
+      const cAgency = (c.agency_name || '').toLowerCase()
+
+      // Direct substring match gives high confidence
+      if (cleanText.includes(cName) || cName.includes(cleanText)) {
+        return { project: c, score: 0.95 }
+      }
+
+      const simName = computeSimilarity(ocrProjectText, c.name)
+      const simAgency = cAgency ? computeSimilarity(ocrProjectText, c.agency_name!) : 0
+      const composite = Math.max(simName, simAgency * 0.7)
+
+      return {
+        project: c,
+        score: Math.round(composite * 100) / 100,
+      }
+    })
+    .sort((a, b) => b.score - a.score)
+
+  const top = scored[0]
+  return {
+    bestMatch: top && top.score >= threshold ? top.project : null,
+    score: top ? top.score : 0,
+  }
+}

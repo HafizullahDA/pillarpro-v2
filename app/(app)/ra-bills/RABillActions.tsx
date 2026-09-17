@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/Button'
+import { useToast } from '@/components/ui/Toast'
 import { FEATURES } from '@/lib/features'
+import { compressImage } from '@/lib/imageCompress'
 import { NewRABillDrawer } from '@/components/ra-bills/NewRABillDrawer'
 import { RecordPaymentDrawer } from '@/components/ra-bills/RecordPaymentDrawer'
 import { SecurityDepositDrawer } from '@/components/ra-bills/SecurityDepositDrawer'
+import { RABillScanConfirmModal, ScannedRABillData } from '@/components/ra-bills/RABillScanConfirmModal'
 
 export type ProjectOption = { id: string; name: string; agency_name?: string | null }
 export type RABillOption = {
@@ -56,8 +59,18 @@ export function RABillActions({
   onPaymentSuccess,
   onClosePayment,
 }: RABillActionsProps) {
+  const toast = useToast()
   const [activeDrawer, setActiveDrawer] = useState<'submit_ra' | 'record_payment' | 'add_deposit' | null>(null)
   const [currentBillId, setCurrentBillId] = useState<string | undefined>(preselectedBillId)
+
+  // AI Scan states
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [scanning, setScanning] = useState(false)
+  const [scanModalOpen, setScanModalOpen] = useState(false)
+  const [scannedBillData, setScannedBillData] = useState<ScannedRABillData | null>(null)
+  const [scanPreviewUrl, setScanPreviewUrl] = useState<string | null>(null)
+  const [rawScanFile, setRawScanFile] = useState<File | null>(null)
 
   // Automatically open record payment drawer when a bill is clicked from table
   useEffect(() => {
@@ -73,9 +86,102 @@ export function RABillActions({
     if (onClosePayment) onClosePayment()
   }, [onClosePayment])
 
+  const handleScanFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setScanning(true)
+
+    try {
+      let base64Str = ''
+      if (file.type.startsWith('image/')) {
+        base64Str = await compressImage(file, 2000, 0.85)
+      } else {
+        // PDF document
+        base64Str = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = () => reject(new Error('Failed to read document file.'))
+          reader.readAsDataURL(file)
+        })
+      }
+
+      setScanPreviewUrl(base64Str)
+      setRawScanFile(file)
+
+      const res = await fetch('/api/scan-ra-bill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64Str }),
+      })
+
+      const json = await res.json()
+      setScanning(false)
+
+      if (!res.ok || json.error) {
+        toast.error(json.error || 'Failed to scan and analyze RA Bill.')
+        return
+      }
+
+      setScannedBillData(json.data)
+      setScanModalOpen(true)
+      toast.success('RA Bill analyzed with Gemini 3.6 Flash! Please review.')
+    } catch (err: any) {
+      setScanning(false)
+      toast.error(err.message || 'Failed to scan RA Bill.')
+    } finally {
+      if (cameraInputRef.current) cameraInputRef.current.value = ''
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   return (
     <>
+      {/* Hidden File / Camera Inputs */}
+      <input
+        type="file"
+        ref={cameraInputRef}
+        accept="image/*"
+        capture="environment"
+        onChange={handleScanFile}
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*,application/pdf"
+        onChange={handleScanFile}
+        className="hidden"
+      />
+
       <div className="flex flex-wrap items-center gap-2">
+        {/* Direct AI Scan RA Bill Button */}
+        <div className="inline-flex items-center rounded-xl bg-blue-50 border border-blue-200 p-0.5">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            loading={scanning}
+            onClick={() => cameraInputRef.current?.click()}
+            className="bg-transparent border-0 text-blue-700 hover:bg-white text-xs h-8 px-2.5 shadow-none flex items-center gap-1.5"
+            title="Scan RA bill with phone camera"
+          >
+            <span>📷</span>
+            <span>Scan RA Bill</span>
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            loading={scanning}
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-transparent border-0 text-blue-700 hover:bg-white text-xs h-8 px-2 shadow-none"
+            title="Upload RA bill photo or PDF document"
+          >
+            <span>📄</span>
+          </Button>
+        </div>
+
         <Button size="sm" onClick={() => setActiveDrawer('submit_ra')}>
           <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -107,6 +213,7 @@ export function RABillActions({
         projects={projects}
         raBills={raBills}
         defaultProjectId={defaultProjectId}
+        onTriggerScan={() => fileInputRef.current?.click()}
       />
 
       {/* 2. Modular Record Payment Drawer */}
@@ -127,6 +234,22 @@ export function RABillActions({
           defaultProjectId={defaultProjectId}
         />
       )}
+
+      {/* 4. AI Scanned RA Bill Confirmation Modal */}
+      <RABillScanConfirmModal
+        open={scanModalOpen}
+        onClose={() => setScanModalOpen(false)}
+        scannedData={scannedBillData}
+        scanPreviewUrl={scanPreviewUrl}
+        rawFile={rawScanFile}
+        projects={projects}
+        raBills={raBills}
+        defaultProjectId={defaultProjectId}
+        onSuccess={() => {
+          setScanModalOpen(false)
+          if (onPaymentSuccess) onPaymentSuccess()
+        }}
+      />
     </>
   )
 }

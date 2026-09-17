@@ -21,6 +21,7 @@ interface NewRABillDrawerProps {
   projects: ProjectOption[]
   raBills: RABillOption[]
   defaultProjectId?: string
+  onTriggerScan?: () => void
 }
 
 export function NewRABillDrawer({
@@ -29,6 +30,7 @@ export function NewRABillDrawer({
   projects,
   raBills,
   defaultProjectId,
+  onTriggerScan,
 }: NewRABillDrawerProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -217,6 +219,32 @@ export function NewRABillDrawer({
     >
       <div className="space-y-4">
         {error && <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>}
+
+        {onTriggerScan && (
+          <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-blue-600 text-white flex items-center justify-center text-sm shadow-sm">
+                ✨
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-800">Auto-fill with AI Scan</p>
+                <p className="text-[11px] text-slate-500">Scan Form 26 or bill summary</p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                onClose()
+                onTriggerScan()
+              }}
+              className="text-xs h-7 px-2.5 border-blue-200 text-blue-700 hover:bg-white bg-white/80"
+            >
+              Scan Bill
+            </Button>
+          </div>
+        )}
 
         <FieldWrapper label="Project (Government Site)" required>
           <Select
