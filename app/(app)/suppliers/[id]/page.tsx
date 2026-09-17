@@ -7,6 +7,7 @@ import { formatINR, formatDate } from '@/lib/format'
 import { calculateSupplierLedger, calculateSupplierTotals } from '@/lib/calculations/supplier'
 import { SupplierActions } from '../SupplierActions'
 import { SupplierStatementButton } from './SupplierStatementButton'
+import { DeleteSupplierDetailButton } from './DeleteSupplierDetailButton'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -18,7 +19,8 @@ interface Props {
 export default async function SupplierDetailPage({ params }: Props) {
   const supabase = createClient()
 
-  const [{ data: supplier }, { data: transactions }, { data: projects }] = await Promise.all([
+  const [{ data: userRole }, { data: supplier }, { data: transactions }, { data: projects }] = await Promise.all([
+    supabase.rpc('get_user_role'),
     supabase
       .from('suppliers')
       .select('*')
@@ -123,6 +125,15 @@ export default async function SupplierDetailPage({ params }: Props) {
               suppliers={[{ id: supplier.id, name: supplier.name }]}
               defaultSupplierId={supplier.id}
               showAddSupplier={false}
+            />
+            <DeleteSupplierDetailButton
+              supplier={{
+                ...supplier,
+                total_procured: totalProcured,
+                total_paid: totalPaid,
+                outstanding_balance: balanceOwed,
+              }}
+              userRole={userRole as string}
             />
           </div>
         </div>

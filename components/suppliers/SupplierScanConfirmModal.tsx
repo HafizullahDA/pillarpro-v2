@@ -248,6 +248,8 @@ export function SupplierScanConfirmModal({
     try {
       // 1. If new supplier, create them first in public.suppliers
       if (supplierMode === 'new') {
+        const { data: orgId } = await supabase.rpc('get_user_organization_id')
+
         const { data: created, error: sErr } = await supabase
           .from('suppliers')
           .insert({
@@ -255,6 +257,7 @@ export function SupplierScanConfirmModal({
             gst_number: newSupplier.gst_number.trim().toUpperCase() || null,
             contact_number: newSupplier.contact_number.trim() || null,
             address: newSupplier.address.trim() || null,
+            ...(orgId ? { organization_id: orgId } : {}),
           })
           .select('id')
           .single()

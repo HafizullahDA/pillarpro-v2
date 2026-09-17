@@ -1,3 +1,6 @@
+# Nested workspace / repos
+/PillarPro/
+
 # Logs
 logs
 *.log
