@@ -1,6 +1,13 @@
+/**
+ * PUBLIC API ROUTE: /api/log-error
+ * Reason: Used by client applications to report runtime exceptions and telemetry,
+ * allowing client error captures even when the user's auth session is invalid or expiring.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
-import { FormErrorPayload } from '@/lib/monitoring'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
+import { logErrorRequestSchema } from '@/lib/validations/api'
+import { RateLimitError, ValidationError, formatErrorResponse } from '@/lib/errors/AppError'
 
 const LOG_RATE_LIMIT = { limit: 20, windowMs: 60 * 1000 }
 
@@ -9,13 +16,20 @@ export async function POST(request: NextRequest) {
     const ip = getClientIp(request)
     const rateCheck = checkRateLimit(`log-error:${ip}`, LOG_RATE_LIMIT)
     if (!rateCheck.success) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded for error reporting' },
-        { status: 429 }
+      return formatErrorResponse(
+        new RateLimitError('Rate limit exceeded for error reporting.', rateCheck.resetSeconds)
       )
     }
 
-    const payload: FormErrorPayload = await request.json()
+    const rawBody = await request.json().catch(() => ({}))
+    const parseResult = logErrorRequestSchema.safeParse(rawBody)
+    if (!parseResult.success) {
+      return formatErrorResponse(
+        new ValidationError('Invalid error payload.', parseResult.error.flatten())
+      )
+    }
+
+    const payload = parseResult.data
 
     console.error('🔥 [Production Form Error Received]:', {
       context: payload.context,
@@ -30,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (webhookUrl) {
       // Fire-and-forget alert to external webhook (Slack, Discord, Teams, or Zapier)
       const alertBody = {
-        text: `⚠️ *PillarPro Error Alert*\n*Context:* ${payload.context}\n*Message:* ${payload.message}\n*URL:* ${payload.url || 'N/A'}\n*Time:* ${payload.timestamp}\n\`\`\`json\n${JSON.stringify(payload.metadata || {}, null, 2)}\n\`\`\``,
+        text: `⚠️ *PillarPro Error Alert*\n*Context:* ${payload.context}\n*Message:* ${payload.message}\n*URL:* ${payload.url || 'N/A'}\n*Time:* ${payload.timestamp || new Date().toISOString()}\n\`\`\`json\n${JSON.stringify(payload.metadata || {}, null, 2)}\n\`\`\``,
       }
 
       fetch(webhookUrl, {
@@ -43,9 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true })
-  } catch (err: any) {
-    console.error('Error in /api/log-error:', err)
-    return NextResponse.json({ error: 'Failed to record error' }, { status: 500 })
+  } catch (err: unknown) {
+    return formatErrorResponse(err)
   }
 }
-

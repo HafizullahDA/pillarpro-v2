@@ -87,6 +87,7 @@ export function WageLedgerClient({
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
   const [payments, setPayments] = useState<WagePaymentRecord[]>([])
   const [loading, setLoading] = useState(false)
+  const [fetchError, setFetchError] = useState('')
 
   // Drawer state for recording payment
   const [paymentDrawerOpen, setPaymentDrawerOpen] = useState(false)
@@ -174,10 +175,14 @@ export function WageLedgerClient({
 
   // Load workers
   const loadWorkers = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('workers')
       .select('id, name, trade, daily_wage_rate')
       .order('name')
+    if (error) {
+      setFetchError(`Failed to load workers: ${error.message}`)
+      return
+    }
     setWorkers(data ?? [])
   }, [supabase])
 
@@ -185,26 +190,35 @@ export function WageLedgerClient({
   const loadPeriodData = useCallback(async () => {
     if (!selectedProjectId || !periodStart || !periodEnd) return
     setLoading(true)
+    setFetchError('')
 
-    const [{ data: attData }, { data: payData }] = await Promise.all([
-      supabase
-        .from('attendance')
-        .select('worker_id, date, status')
-        .eq('project_id', selectedProjectId)
-        .gte('date', periodStart)
-        .lte('date', periodEnd),
-      supabase
-        .from('wage_payments')
-        .select('*')
-        .eq('project_id', selectedProjectId)
-        .gte('period_start', periodStart)
-        .lte('period_end', periodEnd)
-        .order('payment_date', { ascending: false }),
-    ])
+    try {
+      const [{ data: attData, error: attErr }, { data: payData, error: payErr }] = await Promise.all([
+        supabase
+          .from('attendance')
+          .select('worker_id, date, status')
+          .eq('project_id', selectedProjectId)
+          .gte('date', periodStart)
+          .lte('date', periodEnd),
+        supabase
+          .from('wage_payments')
+          .select('id, worker_id, amount_paid, payment_date, payment_mode, reference, notes, status, period_start, period_end, days_worked, daily_rate, amount_owed')
+          .eq('project_id', selectedProjectId)
+          .gte('period_start', periodStart)
+          .lte('period_end', periodEnd)
+          .order('payment_date', { ascending: false }),
+      ])
 
-    setAttendance(attData ?? [])
-    setPayments(payData ?? [])
-    setLoading(false)
+      if (attErr) throw new Error(attErr.message)
+      if (payErr) throw new Error(payErr.message)
+
+      setAttendance(attData ?? [])
+      setPayments((payData as WagePaymentRecord[]) ?? [])
+    } catch (err: any) {
+      setFetchError(err?.message || 'Failed to load wage ledger data.')
+    } finally {
+      setLoading(false)
+    }
   }, [selectedProjectId, periodStart, periodEnd, supabase])
 
   useEffect(() => {
@@ -327,6 +341,12 @@ export function WageLedgerClient({
 
   return (
     <div className="space-y-5">
+      {fetchError && (
+        <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+          {fetchError}
+        </div>
+      )}
+
       {/* Period & Project Navigation Controls */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Left: Project Selector & Period Switcher */}

@@ -16,7 +16,7 @@ export default async function ProjectsPage() {
     supabase.rpc('get_user_role'),
     supabase
       .from('projects')
-      .select('*')
+      .select('id, name, agency_name, advertised_cost, awarded_amount, start_date, end_date, status, archived, archived_at, created_at')
       .order('created_at', { ascending: false }),
   ])
 

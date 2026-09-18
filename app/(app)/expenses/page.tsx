@@ -24,7 +24,7 @@ export default async function ExpensesPage() {
     supabase.from('partners').select('id, name').order('name'),
     supabase
       .from('expenses')
-      .select('*, projects(name), partners(name)')
+      .select('id, project_id, description, category, amount, date, payment_mode, receipt_url, paid_by_partner_id, projects(name), partners(name)')
       .order('date', { ascending: false })
       .limit(100),
   ])

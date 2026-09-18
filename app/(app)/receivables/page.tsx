@@ -29,7 +29,7 @@ export default async function ReceivablesPage() {
 
   const { data: bills } = await supabase
     .from('bills')
-    .select('*, projects(name), receivable_payments(amount_received)')
+    .select('id, project_id, bill_number, bill_type, bill_date, gross_amount, deductions, status, notes, projects(name), receivable_payments(amount_received)')
     .order('bill_date', { ascending: false })
 
   const now = new Date().getTime()
@@ -71,7 +71,7 @@ export default async function ReceivablesPage() {
         {can(userRole, 'receivables', 'create') && (
           <ReceivablesActions
             projects={projects ?? []}
-            bills={billsWithStatus.map(b => ({ id: b.id, label: `${b.bill_number} — ${(b.projects as {name:string}|null)?.name ?? ''}` }))}
+            bills={billsWithStatus.map(b => ({ id: b.id, label: `${b.bill_number} — ${(b.projects as any)?.name ?? ''}` }))}
           />
         )}
       </div>
@@ -141,7 +141,7 @@ export default async function ReceivablesPage() {
                       <p className="font-medium text-slate-900">{b.bill_number}</p>
                       <p className="text-xs text-slate-400">{formatDate(b.bill_date)}</p>
                     </td>
-                    <td className="px-4 py-3 text-slate-600 hidden md:table-cell">{(b.projects as {name:string}|null)?.name ?? '—'}</td>
+                    <td className="px-4 py-3 text-slate-600 hidden md:table-cell">{(b.projects as any)?.name ?? '—'}</td>
                     <td className="px-4 py-3 hidden lg:table-cell">
                       <Badge label={b.bill_type ?? 'RA Bill'} variant={BILL_TYPE_VARIANTS[b.bill_type as keyof typeof BILL_TYPE_VARIANTS] ?? 'default'} />
                     </td>

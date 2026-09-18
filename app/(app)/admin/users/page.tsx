@@ -40,7 +40,7 @@ export default async function AdminUsersPage() {
     console.error('PROFILES FETCH ERROR:', JSON.stringify(profilesError))
   }
 
-  const { data: rawRoles, error: rolesError } = await supabase.from('roles').select('*')
+  const { data: rawRoles, error: rolesError } = await supabase.from('roles').select('user_id, role, project_id')
 
   if (rolesError) {
     console.error('ROLES FETCH ERROR:', JSON.stringify(rolesError))

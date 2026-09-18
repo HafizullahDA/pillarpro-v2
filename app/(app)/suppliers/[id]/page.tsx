@@ -23,7 +23,7 @@ export default async function SupplierDetailPage({ params }: Props) {
     supabase.rpc('get_user_role'),
     supabase
       .from('suppliers')
-      .select('*')
+      .select('id, name, gst_number, contact_number, address, notes, created_at, updated_at')
       .eq('id', params.id)
       .single(),
     supabase

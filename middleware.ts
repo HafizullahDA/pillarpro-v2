@@ -46,10 +46,38 @@ export async function middleware(request: NextRequest) {
   const PWA_ROUTES     = ['/sw.js', '/manifest.json', '/offline']
   const PUBLIC_ROUTES  = [...AUTH_ROUTES, ...PENDING_ROUTES, ...LEGAL_ROUTES, ...PWA_ROUTES]
 
+  // Public API routes with explicit justifications:
+  // - /api/health: Public synthetic health check for uptime monitors (BetterUptime, Datadog)
+  // - /api/auth/rate-limit: Public rate limiter guarding unauthenticated sign-in and sign-up attempts
+  // - /api/log-error: Public error telemetry endpoint to capture client exceptions even when auth is broken
+  const PUBLIC_API_ROUTES = [
+    '/api/health',
+    '/api/auth/rate-limit',
+    '/api/log-error',
+  ]
+
+  const isApiRoute = pathname.startsWith('/api/')
+  const isPublicApi = PUBLIC_API_ROUTES.some(r => pathname === r || pathname.startsWith(r))
   const isPublicRoute = pathname === '/' || PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r))
 
   // ── Unauthenticated ──────────────────────────────────────
   if (!user) {
+    if (isApiRoute) {
+      if (!isPublicApi) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'UNAUTHORIZED',
+              message: 'Authentication required. Please sign in to access this API route.',
+            },
+          },
+          { status: 401 }
+        )
+      }
+      return supabaseResponse
+    }
+
     if (!isPublicRoute) {
       const url = request.nextUrl.clone()
       url.pathname = '/sign-in'

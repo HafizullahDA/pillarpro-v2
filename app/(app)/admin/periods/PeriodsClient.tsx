@@ -25,6 +25,7 @@ export function PeriodsClient({ projects, periods }: { projects: Project[]; peri
 
   const [selectedYear, setSelectedYear] = useState<number>(2026)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [error, setError] = useState<string>('')
 
   const periodMap = new Map(
     periods.map(p => [`${p.project_id}_${p.period_year}_${p.period_month}`, p])
@@ -36,31 +37,46 @@ export function PeriodsClient({ projects, periods }: { projects: Project[]; peri
     const isClosed = Boolean(existing?.closed_at)
 
     setUpdatingId(key)
+    setError('')
 
-    if (existing) {
-      // Toggle closed_at
-      await supabase
-        .from('ledger_periods')
-        .update({ closed_at: isClosed ? null : new Date().toISOString() })
-        .eq('id', existing.id)
-    } else {
-      // Insert closed row
-      const { data: { user } } = await supabase.auth.getUser()
-      await supabase.from('ledger_periods').insert({
-        project_id: projectId,
-        period_year: selectedYear,
-        period_month: monthIndex,
-        closed_at: new Date().toISOString(),
-        closed_by: user?.id || null,
-      })
+    try {
+      if (existing) {
+        // Toggle closed_at
+        const { error: updateErr } = await supabase
+          .from('ledger_periods')
+          .update({ closed_at: isClosed ? null : new Date().toISOString() })
+          .eq('id', existing.id)
+
+        if (updateErr) throw new Error(updateErr.message)
+      } else {
+        // Insert closed row
+        const { data: { user } } = await supabase.auth.getUser()
+        const { error: insertErr } = await supabase.from('ledger_periods').insert({
+          project_id: projectId,
+          period_year: selectedYear,
+          period_month: monthIndex,
+          closed_at: new Date().toISOString(),
+          closed_by: user?.id || null,
+        })
+
+        if (insertErr) throw new Error(insertErr.message)
+      }
+      router.refresh()
+    } catch (err: any) {
+      setError(err?.message || 'Failed to update period lock status.')
+    } finally {
+      setUpdatingId(null)
     }
-
-    setUpdatingId(null)
-    router.refresh()
   }
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
       {/* Year Filter */}
       <div className="flex items-center gap-3">
         <span className="text-sm font-semibold text-slate-700">Select Accounting Year:</span>

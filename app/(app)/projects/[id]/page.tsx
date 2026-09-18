@@ -13,7 +13,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
     supabase.rpc('get_user_role'),
     supabase
       .from('projects')
-      .select('*')
+      .select('id, name, agency_name, advertised_cost, awarded_amount, start_date, end_date, status, archived, archived_at, created_at')
       .eq('id', params.id)
       .single(),
   ])

@@ -3,6 +3,16 @@ import { GoogleGenAI } from '@google/genai'
 import { createClient } from '@/lib/supabase/server'
 import { canCreateRaBill } from '@/lib/permissions'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
+import { scanDocumentRequestSchema } from '@/lib/validations/api'
+import { parseBase64Payload } from '@/lib/base64'
+import {
+  UnauthorizedError,
+  ForbiddenError,
+  RateLimitError,
+  ValidationError,
+  AppError,
+  formatErrorResponse,
+} from '@/lib/errors/AppError'
 
 // Rate limit configuration: 10 RA bill scans per user every 2 minutes
 const RATE_LIMIT_CONFIG = {
@@ -20,19 +30,13 @@ export async function POST(req: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Authentication required. Please sign in to scan RA bills.' },
-        { status: 401 }
-      )
+      throw new UnauthorizedError('Authentication required. Please sign in to scan RA bills.')
     }
 
     // 2. Authorize user role
     const { data: userRole } = await supabase.rpc('get_user_role')
     if (!canCreateRaBill(userRole as string | null)) {
-      return NextResponse.json(
-        { error: 'Forbidden. Your role does not have permission to create or submit RA bills.' },
-        { status: 403 }
-      )
+      throw new ForbiddenError('Forbidden. Your role does not have permission to create or submit RA bills.')
     }
 
     // 3. Enforce sliding-window rate limit
@@ -41,18 +45,9 @@ export async function POST(req: NextRequest) {
     const rateLimit = checkRateLimit(rateLimitKey, RATE_LIMIT_CONFIG)
 
     if (!rateLimit.success) {
-      return NextResponse.json(
-        {
-          error: `Rate limit reached. You can scan up to ${RATE_LIMIT_CONFIG.limit} bills every 2 minutes. Please wait ${rateLimit.resetSeconds}s.`,
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': String(rateLimit.resetSeconds),
-            'X-RateLimit-Limit': String(rateLimit.limit),
-            'X-RateLimit-Remaining': '0',
-          },
-        }
+      throw new RateLimitError(
+        `Rate limit reached. You can scan up to ${RATE_LIMIT_CONFIG.limit} bills every 2 minutes. Please wait ${rateLimit.resetSeconds}s.`,
+        rateLimit.resetSeconds
       )
     }
 
@@ -63,35 +58,20 @@ export async function POST(req: NextRequest) {
       process.env.GOOGLE_API_KEY
 
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'GOOGLE_GENERATIVE_AI_API_KEY is not configured in environment.' },
-        { status: 500 }
+      throw new AppError('AI vision scanner is not properly configured in this environment.', 500)
+    }
+
+    // 5. Parse and validate request body with Zod
+    const rawBody = await req.json().catch(() => ({}))
+    const parseResult = scanDocumentRequestSchema.safeParse(rawBody)
+    if (!parseResult.success) {
+      throw new ValidationError(
+        parseResult.error.issues[0]?.message || 'Invalid RA bill document payload.',
+        parseResult.error.flatten()
       )
     }
 
-    // 5. Parse request body
-    const { imageBase64 } = await req.json()
-    if (!imageBase64) {
-      return NextResponse.json({ error: 'imageBase64 field is required' }, { status: 400 })
-    }
-
-    // Guard against oversized payloads (limit to 10 MB base64)
-    if (imageBase64.length > 10 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: 'Document is too large (> 7.5 MB). Please take a smaller photo or compress the file.' },
-        { status: 413 }
-      )
-    }
-
-    // Strip header prefix if present
-    const base64Data = imageBase64.includes(',')
-      ? imageBase64.split(',')[1]
-      : imageBase64
-
-    let mimeType = 'image/jpeg'
-    if (imageBase64.startsWith('data:image/png')) mimeType = 'image/png'
-    if (imageBase64.startsWith('data:image/webp')) mimeType = 'image/webp'
-    if (imageBase64.startsWith('data:application/pdf')) mimeType = 'application/pdf'
+    const { base64Data, mimeType } = parseBase64Payload(parseResult.data.imageBase64, 'image/jpeg')
 
     const ai = new GoogleGenAI({ apiKey })
 
@@ -166,7 +146,12 @@ Critical Guidelines:
       .replace(/```$/i, '')
       .trim()
 
-    const extracted = JSON.parse(cleanJsonStr)
+    let extracted: any
+    try {
+      extracted = JSON.parse(cleanJsonStr)
+    } catch {
+      throw new AppError('Failed to parse AI structured response from RA Bill. Please try with a clearer photo or PDF.', 422)
+    }
 
     return NextResponse.json(
       { success: true, data: extracted },
@@ -177,12 +162,7 @@ Critical Guidelines:
         },
       }
     )
-  } catch (err: any) {
-    console.error('Error in scan-ra-bill route:', err)
-    return NextResponse.json(
-      { error: err.message || 'Failed to scan and analyze RA Bill.' },
-      { status: 500 }
-    )
+  } catch (err: unknown) {
+    return formatErrorResponse(err)
   }
 }
-

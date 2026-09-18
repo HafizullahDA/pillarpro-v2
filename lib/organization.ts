@@ -84,3 +84,24 @@ export async function updateClientOrganization(
   }
 }
 
+let cachedOrgId: string | null = null
+
+/**
+ * Retrieves the current user's organization ID client-side with short-term caching.
+ */
+export async function getUserOrganizationId(): Promise<string | null> {
+  if (cachedOrgId) return cachedOrgId
+
+  const supabase = createClient()
+  try {
+    const { data, error } = await supabase.rpc('get_user_organization_id')
+    if (!error && data) {
+      cachedOrgId = data
+      return data
+    }
+  } catch {
+    // Return null on failure
+  }
+  return null
+}
+

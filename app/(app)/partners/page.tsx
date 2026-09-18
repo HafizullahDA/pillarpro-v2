@@ -56,7 +56,7 @@ export default async function PartnersPage() {
       .order('created_at', { ascending: true }),
     supabase
       .from('partner_transactions')
-      .select('*, partners(name), projects(name)')
+      .select('id, partner_id, project_id, transaction_type, purpose, amount, date, mode, reference, notes, partners(name), projects(name)')
       .order('date', { ascending: false })
       .limit(50)
   ])

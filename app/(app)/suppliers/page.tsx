@@ -16,7 +16,7 @@ export default async function SuppliersPage() {
     supabase.rpc('get_user_role'),
     supabase
       .from('supplier_summary')
-      .select('*')
+      .select('id, name, contact_number, gst_number, address, created_at, updated_at, total_procured, total_paid, outstanding_balance')
       .order('name'),
     supabase
       .from('projects')

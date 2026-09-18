@@ -46,7 +46,7 @@ export default async function PartnerDetailPage({
       .eq('partner_id', params.id),
     supabase
       .from('partner_transactions')
-      .select('*, projects(name)')
+      .select('id, partner_id, project_id, transaction_type, purpose, amount, date, mode, reference, notes, projects(name)')
       .eq('partner_id', params.id)
       .order('date', { ascending: true })
   ])

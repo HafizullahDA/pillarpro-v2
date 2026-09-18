@@ -73,16 +73,26 @@ export function AttendanceClient({
   const [scannedAttendanceData, setScannedAttendanceData] = useState<any>(null)
   const [scanPreviewUrl, setScanPreviewUrl] = useState<string | null>(null)
 
+  const [loadingWorkers, setLoadingWorkers]   = useState(false)
+  const [fetchError, setFetchError]           = useState('')
+
   // Adjust day if month has fewer days
   const daysInMonth = new Date(year, month, 0).getDate()
   const safeDay = Math.min(day, daysInMonth)
   const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(safeDay).padStart(2,'0')}`
 
   const loadWorkers = useCallback(async () => {
-    const { data } = await supabase
+    setLoadingWorkers(true)
+    setFetchError('')
+    const { data, error } = await supabase
       .from('workers')
       .select('id, name, trade, daily_wage_rate')
       .order('name')
+    setLoadingWorkers(false)
+    if (error) {
+      setFetchError(`Failed to load workers: ${error.message}`)
+      return
+    }
     setWorkers(data ?? [])
   }, [supabase])
 
@@ -91,13 +101,17 @@ export function AttendanceClient({
     const startDate = `${year}-${String(month).padStart(2,'0')}-01`
     const endDate   = `${year}-${String(month).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('attendance')
       .select('worker_id, date, status')
       .eq('project_id', projectId)
       .gte('date', startDate)
       .lte('date', endDate)
 
+    if (error) {
+      setFetchError(`Failed to load monthly attendance: ${error.message}`)
+      return
+    }
     setMonthAttendance(data ?? [])
   }, [projectId, year, month, daysInMonth, supabase])
 
@@ -319,6 +333,12 @@ export function AttendanceClient({
         />
       ) : (
         <>
+          {fetchError && (
+            <div className="rounded-xl bg-red-50 border border-red-200 p-3 mb-4 text-sm text-red-700">
+              {fetchError}
+            </div>
+          )}
+
           {/* Controls */}
           <div className="flex flex-wrap gap-3 mb-5">
             <select

@@ -22,7 +22,7 @@ export default async function AdminPeriodsPage() {
     .select('id, name')
     .eq('archived', false)
     .order('name')
-  const { data: periods } = await supabase.from('ledger_periods').select('*')
+  const { data: periods } = await supabase.from('ledger_periods').select('id, project_id, period_year, period_month, closed_at')
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
