@@ -6,7 +6,7 @@ import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pillarpro.in'
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pillarprojk.com'
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description:
     'The Financial & Operations Operating System built specifically for civil infrastructure contractors. RA Billing, statutory deductions, supplier khatas, and site muster rolls.',
   keywords: [
+    'pillarprojk',
+    'pillarprojk.com',
+    'pillarpro jk',
     'civil contractor software',
     'construction erp',
     'ra bill generator',
