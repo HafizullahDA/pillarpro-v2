@@ -58,7 +58,7 @@ export async function middleware(request: NextRequest) {
 
   const isApiRoute = pathname.startsWith('/api/')
   const isPublicApi = PUBLIC_API_ROUTES.some(r => pathname === r || pathname.startsWith(r))
-  const isPublicRoute = pathname === '/' || PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r))
+  const isPublicRoute = pathname === '/' || pathname.startsWith('/google') || PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(r))
 
   // ── Unauthenticated ──────────────────────────────────────
   if (!user) {
@@ -116,6 +116,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html|txt)$).*)',
   ],
 }
