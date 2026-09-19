@@ -72,6 +72,7 @@ export type AppModule =
   | 'partners'
   | 'periods'
   | 'users'
+  | 'machinery'
 
 export type AppAction =
   | 'view'
@@ -96,6 +97,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     partners: ['view', 'create', 'edit'],
     periods: ['view', 'manage'],
     users: ['view', 'manage'],
+    machinery: ['view', 'create', 'edit', 'delete'],
   },
   partner: {
     dashboard: ['view'],
@@ -106,6 +108,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     expenses: ['view', 'create', 'edit'],
     receivables: ['view', 'create', 'edit'],
     partners: ['view', 'create', 'edit'],
+    machinery: ['view', 'create', 'edit'],
     // periods: None
     // users: None
   },
@@ -117,6 +120,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     attendance: ['view', 'create', 'edit'],
     expenses: ['view', 'create', 'edit'],
     receivables: ['view'],
+    machinery: ['view', 'create', 'edit'],
     // partners: None
     // periods: None
     // users: None
@@ -129,6 +133,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     attendance: ['view'],
     expenses: ['view', 'create', 'edit'],
     receivables: ['view', 'create', 'edit'],
+    machinery: ['view', 'create', 'edit'],
     // partners: None
     // periods: None
     // users: None
@@ -141,6 +146,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     attendance: ['view'],
     expenses: ['view'],
     receivables: ['view'],
+    machinery: ['view'],
     // partners: None
     // periods: None
     // users: None
@@ -185,4 +191,8 @@ export const canManageWages    = (role: string | null | undefined) => {
   const r = normalizeRole(role)
   return r === 'owner' || r === 'partner' || r === 'accountant'
 }
+
+export const canManageMachinery = (role: string | null | undefined) => can(role, 'machinery', 'create')
+export const canDeleteMachinery = (role: string | null | undefined) => can(role, 'machinery', 'delete')
+
 

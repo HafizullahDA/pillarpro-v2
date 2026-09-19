@@ -6,6 +6,7 @@ export const NAV_ITEMS = [
   { href: '/projects',    label: 'Projects',    icon: 'projects'  },
   { href: '/suppliers',   label: 'Suppliers',   icon: 'suppliers' },
   { href: '/attendance',  label: 'Attendance',  icon: 'attendance'},
+  { href: '/machinery',   label: 'Machinery & Fuel', icon: 'machinery' },
   { href: '/receivables', label: 'Receivables', icon: 'receivables'},
   { href: '/ra-bills',    label: 'RA Bills',    icon: 'ra_bills'   },
   { href: '/partners',    label: 'Partners',    icon: 'partners'  },
