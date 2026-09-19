@@ -73,6 +73,7 @@ export type AppModule =
   | 'periods'
   | 'users'
   | 'machinery'
+  | 'dpr'
 
 export type AppAction =
   | 'view'
@@ -98,6 +99,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     periods: ['view', 'manage'],
     users: ['view', 'manage'],
     machinery: ['view', 'create', 'edit', 'delete'],
+    dpr: ['view', 'create', 'edit', 'delete'],
   },
   partner: {
     dashboard: ['view'],
@@ -109,6 +111,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     receivables: ['view', 'create', 'edit'],
     partners: ['view', 'create', 'edit'],
     machinery: ['view', 'create', 'edit'],
+    dpr: ['view', 'create', 'edit'],
     // periods: None
     // users: None
   },
@@ -121,6 +124,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     expenses: ['view', 'create', 'edit'],
     receivables: ['view'],
     machinery: ['view', 'create', 'edit'],
+    dpr: ['view', 'create', 'edit'],
     // partners: None
     // periods: None
     // users: None
@@ -134,6 +138,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     expenses: ['view', 'create', 'edit'],
     receivables: ['view', 'create', 'edit'],
     machinery: ['view', 'create', 'edit'],
+    dpr: ['view'],
     // partners: None
     // periods: None
     // users: None
@@ -147,6 +152,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     expenses: ['view'],
     receivables: ['view'],
     machinery: ['view'],
+    dpr: ['view'],
     // partners: None
     // periods: None
     // users: None
@@ -194,5 +200,9 @@ export const canManageWages    = (role: string | null | undefined) => {
 
 export const canManageMachinery = (role: string | null | undefined) => can(role, 'machinery', 'create')
 export const canDeleteMachinery = (role: string | null | undefined) => can(role, 'machinery', 'delete')
+
+export const canManageDPR = (role: string | null | undefined) => can(role, 'dpr', 'create')
+export const canDeleteDPR = (role: string | null | undefined) => can(role, 'dpr', 'delete')
+
 
 
