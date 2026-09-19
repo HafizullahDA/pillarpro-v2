@@ -5,6 +5,7 @@ export const NAV_ITEMS = [
   { href: '/dashboard',   label: 'Dashboard',   icon: 'dashboard' },
   { href: '/projects',    label: 'Projects',    icon: 'projects'  },
   { href: '/suppliers',   label: 'Suppliers',   icon: 'suppliers' },
+  { href: '/inventory',   label: 'Store & Stock', icon: 'inventory' },
   { href: '/attendance',  label: 'Attendance',  icon: 'attendance'},
   { href: '/machinery',   label: 'Machinery & Fuel', icon: 'machinery' },
   { href: '/receivables', label: 'Receivables', icon: 'receivables'},

@@ -74,6 +74,7 @@ export type AppModule =
   | 'users'
   | 'machinery'
   | 'dpr'
+  | 'inventory'
 
 export type AppAction =
   | 'view'
@@ -100,6 +101,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     users: ['view', 'manage'],
     machinery: ['view', 'create', 'edit', 'delete'],
     dpr: ['view', 'create', 'edit', 'delete'],
+    inventory: ['view', 'create', 'edit', 'delete'],
   },
   partner: {
     dashboard: ['view'],
@@ -112,6 +114,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     partners: ['view', 'create', 'edit'],
     machinery: ['view', 'create', 'edit'],
     dpr: ['view', 'create', 'edit'],
+    inventory: ['view', 'create', 'edit'],
     // periods: None
     // users: None
   },
@@ -125,6 +128,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     receivables: ['view'],
     machinery: ['view', 'create', 'edit'],
     dpr: ['view', 'create', 'edit'],
+    inventory: ['view', 'create', 'edit'],
     // partners: None
     // periods: None
     // users: None
@@ -139,6 +143,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     receivables: ['view', 'create', 'edit'],
     machinery: ['view', 'create', 'edit'],
     dpr: ['view'],
+    inventory: ['view', 'create', 'edit'],
     // partners: None
     // periods: None
     // users: None
@@ -153,6 +158,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
     receivables: ['view'],
     machinery: ['view'],
     dpr: ['view'],
+    inventory: ['view'],
     // partners: None
     // periods: None
     // users: None
@@ -203,6 +209,10 @@ export const canDeleteMachinery = (role: string | null | undefined) => can(role,
 
 export const canManageDPR = (role: string | null | undefined) => can(role, 'dpr', 'create')
 export const canDeleteDPR = (role: string | null | undefined) => can(role, 'dpr', 'delete')
+
+export const canManageInventory = (role: string | null | undefined) => can(role, 'inventory', 'create')
+export const canDeleteInventory = (role: string | null | undefined) => can(role, 'inventory', 'delete')
+
 
 
 
