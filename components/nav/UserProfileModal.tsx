@@ -15,6 +15,7 @@ import {
   DEFAULT_ORGANIZATION,
 } from '@/lib/organization'
 import { usePwa } from '@/components/pwa/PwaProvider'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 export function UserProfileModal({
   open,
@@ -32,6 +33,7 @@ export function UserProfileModal({
   const router = useRouter()
   const supabase = createClient()
   const { isStandalone } = usePwa()
+  const { locale, setLocale, t } = useLanguage()
   const [name, setName] = useState(userName)
   const [saving, setSaving] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
@@ -231,11 +233,42 @@ export function UserProfileModal({
           )}
         </div>
 
+        {/* Language Selection */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">🌐</span>
+            <div>
+              <p className="text-xs font-bold text-slate-900">{locale === 'hi' ? 'ऐप की भाषा' : 'App Language'}</p>
+              <p className="text-[11px] text-slate-500">{locale === 'hi' ? 'हिन्दी (Hindi) सक्रिय' : 'English (Active)'}</p>
+            </div>
+          </div>
+          <div className="inline-flex rounded-lg bg-white p-0.5 border border-slate-200 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setLocale('en')}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                locale === 'en' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              onClick={() => setLocale('hi')}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                locale === 'hi' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              हिन्दी
+            </button>
+          </div>
+        </div>
+
         {/* Display Name Edit */}
         <FieldWrapper label="Your Display Name">
           <div className="flex gap-2">
             <Input value={name} onChange={e => setName(e.target.value)} placeholder="Your Name" />
-            <Button size="sm" loading={saving} onClick={handleSaveName}>Save</Button>
+            <Button size="sm" loading={saving} onClick={handleSaveName}>{t('common.save', 'Save')}</Button>
           </div>
         </FieldWrapper>
 

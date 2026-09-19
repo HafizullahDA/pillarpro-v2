@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { UserProfileModal } from './UserProfileModal'
 import { Logo } from '@/components/ui/Logo'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 export function MobileHeader({
   userName,
@@ -14,6 +15,7 @@ export function MobileHeader({
   userEmail?: string | null
 }) {
   const [profileOpen, setProfileOpen] = useState(false)
+  const { locale, setLocale } = useLanguage()
 
   return (
     <>
@@ -25,17 +27,29 @@ export function MobileHeader({
           </span>
         </div>
 
-        {/* Tappable Mobile User Avatar */}
-        <button
-          onClick={() => setProfileOpen(true)}
-          className="flex items-center gap-1.5 p-1 rounded-full hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-          title="Account Settings & Profile"
-          aria-label="Open Profile and Account Settings"
-        >
-          <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-xs border border-blue-400/30">
-            {userName.slice(0, 2).toUpperCase()}
-          </div>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Quick Language Switcher Button for Foremen on mobile */}
+          <button
+            type="button"
+            onClick={() => setLocale(locale === 'en' ? 'hi' : 'en')}
+            className="px-2 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+            title="Switch Language / भाषा बदलें"
+          >
+            {locale === 'en' ? 'हिन्दी' : 'EN'}
+          </button>
+
+          {/* Tappable Mobile User Avatar */}
+          <button
+            onClick={() => setProfileOpen(true)}
+            className="flex items-center gap-1.5 p-1 rounded-full hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            title="Account Settings & Profile"
+            aria-label="Open Profile and Account Settings"
+          >
+            <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-xs border border-blue-400/30">
+              {userName.slice(0, 2).toUpperCase()}
+            </div>
+          </button>
+        </div>
       </header>
 
       <UserProfileModal

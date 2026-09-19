@@ -8,6 +8,7 @@ import { Icons } from './NavIcons'
 import { UserProfileModal } from './UserProfileModal'
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/ui/Logo'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 export function Sidebar({
   userName,
@@ -20,6 +21,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
+  const { locale, setLocale, t } = useLanguage()
 
   const visibleNavItems = NAV_ITEMS.filter(item => isNavVisible(item.href, userRole))
 
@@ -34,6 +36,7 @@ export function Sidebar({
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           {visibleNavItems.map(item => {
             const active = pathname.startsWith(item.href)
+            const label = t((item as any).i18nKey || '', item.label)
             return (
               <Link
                 key={item.href}
@@ -48,11 +51,39 @@ export function Sidebar({
                 <span className={active ? 'text-white' : 'text-slate-500'}>
                   {Icons[item.icon as keyof typeof Icons]}
                 </span>
-                {item.label}
+                {label}
               </Link>
             )
           })}
         </nav>
+
+        {/* Bilingual Hindi/English Language Switcher */}
+        <div className="px-4 py-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+          <span className="text-slate-400 flex items-center gap-1.5 font-medium">
+            <span>🌐</span> {locale === 'hi' ? 'भाषा' : 'Language'}
+          </span>
+          <div className="inline-flex rounded-lg bg-slate-800 p-0.5 border border-slate-700">
+            <button
+              onClick={() => setLocale('en')}
+              className={cn(
+                'px-2 py-0.5 rounded text-[11px] font-semibold transition-colors',
+                locale === 'en' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+              )}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLocale('hi')}
+              className={cn(
+                'px-2 py-0.5 rounded text-[11px] font-semibold transition-colors',
+                locale === 'hi' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+              )}
+            >
+              हिन्दी
+            </button>
+          </div>
+        </div>
+
         {/* User - Clickable Profile Button */}
         <div className="px-3 py-3 border-t border-slate-800">
           <button

@@ -8,12 +8,13 @@ import { Icons } from './NavIcons'
 import { UserProfileModal } from './UserProfileModal'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 const PRIMARY_TABS = [
-  { href: '/dashboard',  label: 'Home',       icon: 'dashboard'  },
-  { href: '/projects',   label: 'Projects',   icon: 'projects'   },
-  { href: '/attendance', label: 'Attendance', icon: 'attendance' },
-  { href: '/expenses',   label: 'Expenses',   icon: 'expenses'   },
+  { href: '/dashboard',  label: 'Home',       i18nKey: 'nav.dashboard',  icon: 'dashboard'  },
+  { href: '/projects',   label: 'Projects',   i18nKey: 'nav.projects',   icon: 'projects'   },
+  { href: '/attendance', label: 'Attendance', i18nKey: 'nav.attendance', icon: 'attendance' },
+  { href: '/expenses',   label: 'Expenses',   i18nKey: 'nav.expenses',   icon: 'expenses'   },
 ]
 
 // All other NAV_ITEMS appear in the "More" drawer on mobile
@@ -31,6 +32,7 @@ export function BottomNav({
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const { t } = useLanguage()
   const [moreOpen, setMoreOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
 
@@ -120,7 +122,9 @@ export function BottomNav({
                     <span className={active ? 'text-blue-600' : 'text-slate-500'}>
                       {Icons[item.icon as keyof typeof Icons]}
                     </span>
-                    <span className="truncate max-w-full">{item.label}</span>
+                    <span className="truncate max-w-full">
+                      {t((item as any).i18nKey || '', item.label)}
+                    </span>
                   </Link>
                 )
               })}
@@ -139,7 +143,7 @@ export function BottomNav({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </span>
-                <span className="truncate max-w-full">Profile</span>
+                <span className="truncate max-w-full">{t('common.edit', 'Profile')}</span>
               </button>
             </div>
 
@@ -148,7 +152,7 @@ export function BottomNav({
               onClick={signOut}
               className="w-full py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-xl transition-colors border border-rose-100 mt-auto"
             >
-              Sign out
+              {t('common.logout', 'Sign out')}
             </button>
           </div>
         </div>
@@ -158,6 +162,7 @@ export function BottomNav({
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 flex md:hidden safe-area-pb shadow-lg">
         {PRIMARY_TABS.map(tab => {
           const active = pathname.startsWith(tab.href)
+          const tabLabel = t(tab.i18nKey, tab.label)
           return (
             <Link
               key={tab.href}
@@ -170,7 +175,7 @@ export function BottomNav({
               <span className={active ? 'text-blue-600' : 'text-slate-400'}>
                 {Icons[tab.icon as keyof typeof Icons]}
               </span>
-              {tab.label}
+              {tabLabel}
             </Link>
           )
         })}
@@ -187,7 +192,7 @@ export function BottomNav({
           <span className={moreOpen || isMoreActive ? 'text-blue-600' : 'text-slate-400'}>
             {Icons.more}
           </span>
-          More
+          {t('nav.more', 'More')}
         </button>
       </nav>
 

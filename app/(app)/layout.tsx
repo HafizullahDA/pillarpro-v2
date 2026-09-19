@@ -7,6 +7,7 @@ import { MobileHeader } from '@/components/nav/MobileHeader'
 import { OfflineStatusBanner } from '@/components/ui/OfflineStatusBanner'
 import { IdleTimeoutProvider } from '@/components/auth/IdleTimeoutProvider'
 import { ToastProvider } from '@/components/ui/Toast'
+import { LanguageProvider } from '@/lib/i18n/LanguageContext'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -23,20 +24,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <IdleTimeoutProvider>
       <ToastProvider>
-        <div className="flex flex-col min-h-screen bg-slate-100">
-          <OfflineStatusBanner />
-          <MobileHeader userName={displayName} userRole={userRole} userEmail={user.email} />
-          <div className="flex-1 flex min-w-0">
-            <Sidebar userName={displayName} userRole={userRole} userEmail={user.email} />
-            <IconRail userName={displayName} userRole={userRole} userEmail={user.email} />
-            <div className="flex-1 flex flex-col min-w-0">
-              <main className="flex-1 pb-20 md:pb-0">
-                {children}
-              </main>
+        <LanguageProvider>
+          <div className="flex flex-col min-h-screen bg-slate-100">
+            <OfflineStatusBanner />
+            <MobileHeader userName={displayName} userRole={userRole} userEmail={user.email} />
+            <div className="flex-1 flex min-w-0">
+              <Sidebar userName={displayName} userRole={userRole} userEmail={user.email} />
+              <IconRail userName={displayName} userRole={userRole} userEmail={user.email} />
+              <div className="flex-1 flex flex-col min-w-0">
+                <main className="flex-1 pb-20 md:pb-0">
+                  {children}
+                </main>
+              </div>
+              <BottomNav userName={displayName} userRole={userRole} userEmail={user.email} />
             </div>
-            <BottomNav userName={displayName} userRole={userRole} userEmail={user.email} />
           </div>
-        </div>
+        </LanguageProvider>
       </ToastProvider>
     </IdleTimeoutProvider>
   )

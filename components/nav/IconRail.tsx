@@ -9,6 +9,8 @@ import { UserProfileModal } from './UserProfileModal'
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/ui/Logo'
 
+import { useLanguage } from '@/lib/i18n/LanguageContext'
+
 export function IconRail({
   userName,
   userRole = 'Owner',
@@ -20,6 +22,7 @@ export function IconRail({
 }) {
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
+  const { t } = useLanguage()
 
   const visibleNavItems = NAV_ITEMS.filter(item => isNavVisible(item.href, userRole))
 
@@ -32,11 +35,12 @@ export function IconRail({
         </div>
         {visibleNavItems.map(item => {
           const active = pathname.startsWith(item.href)
+          const title = t((item as any).i18nKey || '', item.label)
           return (
             <Link
               key={item.href}
               href={item.href}
-              title={item.label}
+              title={title}
               className={cn(
                 'flex items-center justify-center h-10 w-10 rounded-xl transition-colors',
                 active
