@@ -13,7 +13,7 @@ type OfflineSnapshot<T = unknown> = {
 
 export type QueuedItem = {
   id: string
-  type: 'expense' | 'attendance' | 'supplier' | 'supplier_transaction'
+  type: 'expense' | 'attendance' | 'supplier' | 'supplier_transaction' | 'diesel_log'
   payload: any
   createdAt: number
 }
@@ -28,12 +28,12 @@ function openDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = () => {
       const db = request.result
-    if (!db.objectStoreNames.contains('queue')) {
-      db.createObjectStore('queue', { keyPath: 'id' })
-    }
-    if (!db.objectStoreNames.contains('snapshots')) {
-      db.createObjectStore('snapshots', { keyPath: 'id' })
-    }
+      if (!db.objectStoreNames.contains('queue')) {
+        db.createObjectStore('queue', { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains('snapshots')) {
+        db.createObjectStore('snapshots', { keyPath: 'id' })
+      }
     }
 
     request.onsuccess = () => resolve(request.result)
@@ -101,9 +101,28 @@ export async function clearOfflineQueue(): Promise<void> {
 }
 
 async function getCurrentUserId(): Promise<string | null> {
-  const { createClient } = await import('@/lib/supabase/client')
-  const { data: { session } } = await createClient().auth.getSession()
-  return session?.user.id ?? null
+  try {
+    const { createClient } = await import('@/lib/supabase/client')
+    const { data: { session } } = await createClient().auth.getSession()
+    if (session?.user?.id) {
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('pillarpro_last_user_id', session.user.id)
+        } catch {}
+      }
+      return session.user.id
+    }
+  } catch {
+    // Session fetch may fail when offline or token refresh encounters network errors
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem('pillarpro_last_user_id')
+      if (cached) return cached
+    } catch {}
+  }
+  return null
 }
 
 /**
@@ -111,8 +130,7 @@ async function getCurrentUserId(): Promise<string | null> {
  * Snapshots are keyed by user id and are cleared when the user signs out.
  */
 export async function saveOfflineSnapshot<T>(route: string, payload: T): Promise<void> {
-  const userId = await getCurrentUserId()
-  if (!userId) return
+  const userId = (await getCurrentUserId()) || 'local'
 
   const db = await openDB()
   const snapshot: OfflineSnapshot<T> = {
@@ -132,20 +150,67 @@ export async function saveOfflineSnapshot<T>(route: string, payload: T): Promise
 
 export async function getOfflineSnapshot<T>(route: string): Promise<{ payload: T; savedAt: number } | null> {
   const userId = await getCurrentUserId()
-  if (!userId) return null
-
   const db = await openDB()
+
   return new Promise((resolve, reject) => {
-    const req = db.transaction('snapshots', 'readonly').objectStore('snapshots').get(`${userId}:${route}`)
+    const req = db.transaction('snapshots', 'readonly').objectStore('snapshots').getAll()
     req.onsuccess = () => {
-      const snapshot = req.result as OfflineSnapshot<T> | undefined
-      resolve(snapshot ? { payload: snapshot.payload, savedAt: snapshot.savedAt } : null)
+      const all = (req.result || []) as OfflineSnapshot<T>[]
+      // Exact match for active user & route
+      let match = userId ? all.find(s => s.userId === userId && s.route === route) : undefined
+      // Fallback: match by route across device snapshots (e.g. offline session fallback)
+      if (!match) {
+        match = all.find(s => s.route === route)
+      }
+      resolve(match ? { payload: match.payload, savedAt: match.savedAt } : null)
+    }
+    req.onerror = () => reject(req.error)
+  })
+}
+
+/**
+ * Retrieve all offline snapshots cached on this device.
+ * Used by the offline page to display Dashboard, Suppliers, Bills, Projects, etc.
+ */
+export async function getAllOfflineSnapshots(): Promise<Record<string, { payload: any; savedAt: number }>> {
+  const db = await openDB()
+  const userId = await getCurrentUserId()
+
+  return new Promise((resolve, reject) => {
+    const req = db.transaction('snapshots', 'readonly').objectStore('snapshots').getAll()
+    req.onsuccess = () => {
+      const all = (req.result || []) as OfflineSnapshot<any>[]
+      const map: Record<string, { payload: any; savedAt: number }> = {}
+
+      for (const item of all) {
+        if (!userId || item.userId === userId || item.userId === 'local' || !item.userId) {
+          if (!map[item.route] || map[item.route].savedAt < item.savedAt) {
+            map[item.route] = { payload: item.payload, savedAt: item.savedAt }
+          }
+        }
+      }
+
+      // If map is empty and userId filter was too restrictive, fallback to any available snapshots
+      if (Object.keys(map).length === 0 && all.length > 0) {
+        for (const item of all) {
+          if (!map[item.route] || map[item.route].savedAt < item.savedAt) {
+            map[item.route] = { payload: item.payload, savedAt: item.savedAt }
+          }
+        }
+      }
+
+      resolve(map)
     }
     req.onerror = () => reject(req.error)
   })
 }
 
 export async function clearOfflineData(): Promise<void> {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('pillarpro_last_user_id')
+    } catch {}
+  }
   const db = await openDB()
   await Promise.all(['queue', 'snapshots'].map(storeName => new Promise<void>((resolve, reject) => {
     const req = db.transaction(storeName, 'readwrite').objectStore(storeName).clear()

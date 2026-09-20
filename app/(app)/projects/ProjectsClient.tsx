@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -9,6 +9,7 @@ import { formatINR, formatDate } from '@/lib/format'
 import { AddProjectButton } from './AddProjectButton'
 import { ArchiveProjectModal } from './ArchiveProjectModal'
 import { canArchiveProject, canCreateProject } from '@/lib/permissions'
+import { saveOfflineSnapshot } from '@/lib/offline/db'
 
 export interface ProjectRow {
   id: string
@@ -42,6 +43,12 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalProject, setModalProject] = useState<ProjectRow | null>(null)
   const [modalMode, setModalMode] = useState<'archive' | 'unarchive'>('archive')
+
+  useEffect(() => {
+    if (projects && projects.length > 0) {
+      void saveOfflineSnapshot('/projects', { projects })
+    }
+  }, [projects])
 
   const canArchive = canArchiveProject(userRole)
   const canCreate = canCreateProject(userRole)

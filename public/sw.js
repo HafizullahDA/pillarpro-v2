@@ -9,7 +9,7 @@
  * 4. Stale-while-revalidate for hashed static assets (/_next/static/).
  */
 
-const CACHE_NAME = 'pillarpro-v1'
+const CACHE_NAME = 'pillarpro-v2'
 
 // Core static assets required for standalone app shell & offline page
 const PRECACHE_ASSETS = [

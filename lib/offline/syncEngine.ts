@@ -36,6 +36,16 @@ export async function flushOfflineQueue(): Promise<{ synced: number; errors: num
           .from('supplier_transactions')
           .upsert(item.payload, { onConflict: 'id', ignoreDuplicates: true })
         if (error) throw error
+      } else if (item.type === 'diesel_log') {
+        let payload = item.payload
+        if (!payload.organization_id) {
+          const { data: organizationId } = await supabase.rpc('get_user_organization_id')
+          if (organizationId) payload = { ...payload, organization_id: organizationId }
+        }
+        const { error } = await supabase
+          .from('machinery_logs')
+          .upsert(payload, { onConflict: 'id', ignoreDuplicates: true })
+        if (error) throw error
       }
 
       await removeFromOfflineQueue(item.id)

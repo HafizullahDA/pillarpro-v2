@@ -17,6 +17,7 @@ import { compressImage } from '@/lib/imageCompress'
 import { AttendanceScanConfirmModal } from '@/components/attendance/AttendanceScanConfirmModal'
 import { DeleteWorkerModal } from '@/components/attendance/DeleteWorkerModal'
 import { WageLedgerClient } from './WageLedgerClient'
+import { saveOfflineSnapshot } from '@/lib/offline/db'
 
 type Project = { id: string; name: string }
 type Worker = { id: string; name: string; trade: string | null; daily_wage_rate: number | null }
@@ -93,8 +94,12 @@ export function AttendanceClient({
       setFetchError(`Failed to load workers: ${error.message}`)
       return
     }
-    setWorkers(data ?? [])
-  }, [supabase])
+    const workerList = data ?? []
+    setWorkers(workerList)
+    if (workerList.length > 0) {
+      void saveOfflineSnapshot('/attendance', { workers: workerList, projects })
+    }
+  }, [supabase, projects])
 
   const loadMonthAttendance = useCallback(async () => {
     if (!projectId) return

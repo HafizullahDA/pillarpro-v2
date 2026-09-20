@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -8,6 +8,7 @@ import { formatINR, formatDate } from '@/lib/format'
 import { NewAssetDrawer } from '@/components/machinery/NewAssetDrawer'
 import { LogDieselDrawer } from '@/components/machinery/LogDieselDrawer'
 import { canManageMachinery } from '@/lib/permissions'
+import { saveOfflineSnapshot } from '@/lib/offline/db'
 
 export interface MachineryAsset {
   id: string
@@ -69,6 +70,12 @@ export function MachineryClient({
   const [filterAsset, setFilterAsset] = useState<string>('all')
 
   const canManage = canManageMachinery(userRole)
+
+  useEffect(() => {
+    if (initialAssets && initialAssets.length > 0) {
+      void saveOfflineSnapshot('/machinery', { assets: initialAssets, projects })
+    }
+  }, [initialAssets, projects])
 
   // Metrics calculation
   const metrics = useMemo(() => {
