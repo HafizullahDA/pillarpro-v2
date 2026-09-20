@@ -60,3 +60,4 @@ export interface CSVBOQRow {
   tender_quantity: number
   awarded_rate: number
 }
+

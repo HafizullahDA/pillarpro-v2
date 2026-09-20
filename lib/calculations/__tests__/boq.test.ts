@@ -119,3 +119,4 @@ describe('BOQ Calculations & Progress Engine', () => {
     expect(result.warnings[0]).toContain('exceeds tender quantity (100) by 10 (10% variation)')
   })
 })
+

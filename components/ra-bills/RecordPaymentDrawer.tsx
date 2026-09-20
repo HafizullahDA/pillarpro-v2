@@ -106,14 +106,28 @@ export function RecordPaymentDrawer({
   const totalDeductions = tranche.totalDeductions
   const netBankCredited = tranche.netBankCredited
 
-  const handleApplyStandardDeductions = () => {
+  const handleApplyDeductions = (itTdsRate: 1 | 2) => {
     if (grossNum <= 0) return
-    const deductions = calculateStatutoryDeductions(grossNum, { retentionPercent: 0 })
+    const deductions = calculateStatutoryDeductions(grossNum, {
+      retentionPercent: 0,
+      itTdsPercent: itTdsRate,
+      gstTdsPercent: 2,
+      labourCessPercent: 1,
+    })
     setPayForm(f => ({
       ...f,
       tds_amount: String(deductions.itTds),
       gst_tds_amount: String(deductions.gstTds),
       labour_cess_amount: String(deductions.labourCess),
+    }))
+  }
+
+  const handleClearDeductions = () => {
+    setPayForm(f => ({
+      ...f,
+      tds_amount: '',
+      gst_tds_amount: '',
+      labour_cess_amount: '',
     }))
   }
 
@@ -341,38 +355,73 @@ export function RecordPaymentDrawer({
 
         {/* Statutory Deductions Panel */}
         <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-900">Treasury Statutory Deductions</span>
-              <span className="text-[10px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
-                Form 26
-              </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-900">Treasury Statutory Deductions</span>
+                <span className="text-[10px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                  Form 26 / Audit
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Auto-calculate by entity type or manually type exact voucher figures:
+              </p>
             </div>
             {grossNum > 0 && (
-              <button
-                type="button"
-                onClick={handleApplyStandardDeductions}
-                className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 hover:underline cursor-pointer"
-                title="Automatically sets 2% IT TDS, 2% GST TDS, and 1% Labour Cess"
-              >
-                <span>⚡</span>
-                <span>Auto-Apply Standard (5%)</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleApplyDeductions(1)}
+                  className="text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200 transition-colors"
+                  title="Auto-applies 1% IT TDS (Proprietorship/Individual), 2% GST TDS, 1% Cess"
+                >
+                  ⚡ Auto 1% TDS (Ind/Prop)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyDeductions(2)}
+                  className="text-[11px] font-semibold text-slate-700 bg-white hover:bg-slate-100 px-2 py-1 rounded border border-slate-200 transition-colors"
+                  title="Auto-applies 2% IT TDS (Company/Firm), 2% GST TDS, 1% Cess"
+                >
+                  ⚡ Auto 2% TDS (Firm/Co)
+                </button>
+                {(tdsNum > 0 || gstTdsNum > 0 || cessNum > 0) && (
+                  <button
+                    type="button"
+                    onClick={handleClearDeductions}
+                    className="text-[11px] text-slate-500 hover:text-slate-700 px-1.5 py-1"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="text-[11px] font-medium text-slate-600">Income Tax (TDS)</label>
+                <label className="text-[11px] font-medium text-slate-700">IT TDS (Sec 194C)</label>
                 {grossNum > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setPayForm(f => ({ ...f, tds_amount: String(roundToTwo(grossNum * 0.02)) }))}
-                    className="text-[10px] text-blue-600 hover:underline font-semibold"
-                  >
-                    2% Auto
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setPayForm(f => ({ ...f, tds_amount: String(roundToTwo(grossNum * 0.01)) }))}
+                      className="text-[10px] text-blue-600 hover:underline font-semibold"
+                      title="1% for Individuals and Sole Proprietorships"
+                    >
+                      1%
+                    </button>
+                    <span className="text-[9px] text-slate-300">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setPayForm(f => ({ ...f, tds_amount: String(roundToTwo(grossNum * 0.02)) }))}
+                      className="text-[10px] text-blue-600 hover:underline font-semibold"
+                      title="2% for Companies, LLPs, and Partnership Firms"
+                    >
+                      2%
+                    </button>
+                  </div>
                 )}
               </div>
               <CurrencyInput
@@ -380,16 +429,18 @@ export function RecordPaymentDrawer({
                 onChange={e => setPayForm(f => ({ ...f, tds_amount: e.target.value }))}
                 placeholder="0.00"
               />
+              <p className="text-[10px] text-slate-400 mt-0.5">1% Ind/Prop • 2% Firm/Co</p>
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="text-[11px] font-medium text-slate-600">GST-TDS (2%)</label>
+                <label className="text-[11px] font-medium text-slate-700">GST-TDS (Sec 51)</label>
                 {grossNum > 0 && (
                   <button
                     type="button"
                     onClick={() => setPayForm(f => ({ ...f, gst_tds_amount: String(roundToTwo(grossNum * 0.02)) }))}
                     className="text-[10px] text-blue-600 hover:underline font-semibold"
+                    title="2% (1% CGST + 1% SGST) on taxable supplies > ₹2.5L"
                   >
                     2% Auto
                   </button>
@@ -400,16 +451,18 @@ export function RecordPaymentDrawer({
                 onChange={e => setPayForm(f => ({ ...f, gst_tds_amount: e.target.value }))}
                 placeholder="0.00"
               />
+              <p className="text-[10px] text-slate-400 mt-0.5">2% on taxable value &gt; ₹2.5L</p>
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="text-[11px] font-medium text-slate-600">Labour Cess (1%)</label>
+                <label className="text-[11px] font-medium text-slate-700">Labour Cess (BOCW)</label>
                 {grossNum > 0 && (
                   <button
                     type="button"
                     onClick={() => setPayForm(f => ({ ...f, labour_cess_amount: String(roundToTwo(grossNum * 0.01)) }))}
                     className="text-[10px] text-blue-600 hover:underline font-semibold"
+                    title="1% Building & Other Construction Workers Welfare Cess"
                   >
                     1% Auto
                   </button>
@@ -420,6 +473,7 @@ export function RecordPaymentDrawer({
                 onChange={e => setPayForm(f => ({ ...f, labour_cess_amount: e.target.value }))}
                 placeholder="0.00"
               />
+              <p className="text-[10px] text-slate-400 mt-0.5">1% construction welfare</p>
             </div>
           </div>
         </div>
@@ -428,13 +482,21 @@ export function RecordPaymentDrawer({
         <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs font-semibold text-slate-900 block">Departmental / Other Deductions</span>
-              <span className="text-[11px] text-slate-500">Royalty, DMFT, penalties, or statutory adjustments</span>
+              <span className="text-xs font-bold text-slate-900 block">Departmental / Other Deductions</span>
+              <span className="text-[11px] text-slate-500">Mineral royalty, testing charges, water/power, or advance recovery</span>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-1.5 pt-1">
-            {['Royalty', 'GST on Royalty', 'TCS', 'DMFT', 'Time Extension Penalty'].map(tag => (
+            {[
+              'Mineral Royalty',
+              'QC Lab Testing',
+              'Water & Power (1%)',
+              'Mobilization Advance',
+              'GST on Royalty',
+              'DMFT Cess',
+              'Penalty / LD',
+            ].map(tag => (
               <button
                 key={tag}
                 type="button"

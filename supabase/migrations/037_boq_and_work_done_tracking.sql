@@ -179,3 +179,4 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.get_project_boq_summary(UUID) TO authenticated;
+

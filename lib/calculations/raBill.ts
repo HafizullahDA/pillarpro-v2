@@ -1,10 +1,14 @@
 import { roundToTwo, safeAdd, safeSub, safeMul } from './financial'
 
+export type ContractorEntityType = 'individual_proprietor' | 'company_firm'
+
 export interface StatutoryRates {
-  retentionPercent?: number // Default: 5% (PWD Security Deposit)
-  itTdsPercent?: number     // Default: 2% (Income Tax TDS for Contractors Section 194C)
-  gstTdsPercent?: number    // Default: 2% (GST TDS under Section 51)
-  labourCessPercent?: number // Default: 1% (BOCW Labour Welfare Cess Act 1996)
+  contractorType?: ContractorEntityType // 'individual_proprietor' (1% TDS) or 'company_firm' (2% TDS)
+  retentionPercent?: number // Contractual Security Deposit: typically 0%, 2.5%, 5%, or 10% (Default: 5%)
+  itTdsPercent?: number     // Section 194C: 1% for Ind/Prop, 2% for Co/Firm (Default depends on contractorType)
+  gstTdsPercent?: number    // Section 51: 2% on taxable contracts > ₹2.5L (Default: 2%)
+  labourCessPercent?: number // 1% BOCW Labour Welfare Cess Act 1996 (Default: 1%)
+  additionalDeductionsAmount?: number // Mineral royalty, testing charges, water/power recoveries
 }
 
 export interface StatutoryDeductionBreakdown {
@@ -12,11 +16,15 @@ export interface StatutoryDeductionBreakdown {
   itTds: number
   gstTds: number
   labourCess: number
+  additionalDeductions: number
   totalDeductions: number
 }
 
 /**
  * Calculates standard Indian government contracting statutory deductions on a gross certified bill.
+ * Accurately accounts for Section 194C differential rates:
+ * - 1% for Individuals and Sole Proprietorships
+ * - 2% for Companies, Partnership Firms, and LLPs
  */
 export function calculateStatutoryDeductions(
   grossAmount: number,
@@ -29,27 +37,32 @@ export function calculateStatutoryDeductions(
       itTds: 0,
       gstTds: 0,
       labourCess: 0,
+      additionalDeductions: 0,
       totalDeductions: 0,
     }
   }
 
+  // Derive IT TDS rate based on contractor entity type if not explicitly overridden
+  const defaultItTdsRate = rates.contractorType === 'individual_proprietor' ? 1 : 2
   const retRate = (rates.retentionPercent ?? 5) / 100
-  const itRate = (rates.itTdsPercent ?? 2) / 100
+  const itRate = (rates.itTdsPercent ?? defaultItTdsRate) / 100
   const gstRate = (rates.gstTdsPercent ?? 2) / 100
   const cessRate = (rates.labourCessPercent ?? 1) / 100
+  const additional = Math.max(0, roundToTwo(rates.additionalDeductionsAmount ?? 0))
 
   const retention = safeMul(gross, retRate)
   const itTds = safeMul(gross, itRate)
   const gstTds = safeMul(gross, gstRate)
   const labourCess = safeMul(gross, cessRate)
 
-  const totalDeductions = safeAdd(retention, itTds, gstTds, labourCess)
+  const totalDeductions = safeAdd(retention, itTds, gstTds, labourCess, additional)
 
   return {
     retention,
     itTds,
     gstTds,
     labourCess,
+    additionalDeductions: additional,
     totalDeductions,
   }
 }

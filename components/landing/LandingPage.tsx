@@ -107,18 +107,39 @@ export function LandingPage({
 }: LandingPageProps) {
   const [activeFaq, setActiveFaq] = useState<number | null>(0)
   const [calcBillAmount, setCalcBillAmount] = useState<number>(5000000) // Default ₹50 Lakhs
+  const [calcContractorType, setCalcContractorType] = useState<'individual_proprietor' | 'company_firm'>('company_firm')
+  const [calcRetentionRate, setCalcRetentionRate] = useState<number>(5)
+  const [calcMode, setCalcMode] = useState<'auto' | 'manual'>('auto')
+
+  // Manual override states
+  const [manualRetention, setManualRetention] = useState('')
+  const [manualItTds, setManualItTds] = useState('')
+  const [manualGstTds, setManualGstTds] = useState('')
+  const [manualLabourCess, setManualLabourCess] = useState('')
+  const [manualRoyalty, setManualRoyalty] = useState('')
+  const [manualTesting, setManualTesting] = useState('')
 
   const toggleFaq = (idx: number) => {
     setActiveFaq(activeFaq === idx ? null : idx)
   }
 
   // Statutory calculation values
-  const retention = Math.round(calcBillAmount * 0.05) // 5% Security Deposit
-  const itTds = Math.round(calcBillAmount * 0.02)     // 2% Income Tax TDS
-  const gstTds = Math.round(calcBillAmount * 0.02)    // 2% GST TDS
-  const labourCess = Math.round(calcBillAmount * 0.01) // 1% BOCW Labour Cess
-  const totalDeductions = retention + itTds + gstTds + labourCess
-  const netDisbursed = calcBillAmount - totalDeductions
+  const itTdsRate = calcContractorType === 'individual_proprietor' ? 0.01 : 0.02
+  const autoRetention = Math.round(calcBillAmount * (calcRetentionRate / 100))
+  const autoItTds = Math.round(calcBillAmount * itTdsRate)
+  const autoGstTds = Math.round(calcBillAmount * 0.02)
+  const autoLabourCess = Math.round(calcBillAmount * 0.01)
+
+  const retention = calcMode === 'manual' ? (parseFloat(manualRetention) || 0) : autoRetention
+  const itTds = calcMode === 'manual' ? (parseFloat(manualItTds) || 0) : autoItTds
+  const gstTds = calcMode === 'manual' ? (parseFloat(manualGstTds) || 0) : autoGstTds
+  const labourCess = calcMode === 'manual' ? (parseFloat(manualLabourCess) || 0) : autoLabourCess
+  const royalty = calcMode === 'manual' ? (parseFloat(manualRoyalty) || 0) : 0
+  const testing = calcMode === 'manual' ? (parseFloat(manualTesting) || 0) : 0
+
+  const totalDeductions = retention + itTds + gstTds + labourCess + royalty + testing
+  const netDisbursed = Math.max(0, calcBillAmount - totalDeductions)
+  const totalDeductionsPct = calcBillAmount > 0 ? ((totalDeductions / calcBillAmount) * 100).toFixed(1) : '0.0'
 
   const faqs = [
     {
@@ -127,7 +148,7 @@ export function LandingPage({
     },
     {
       q: 'How are statutory deductions tracked across multiple payment tranches?',
-      a: 'When an RA Bill is logged, PillarPro automatically calculates the statutory deductions: 5% Security Deposit (Retention), 2% IT TDS (Sec 194C), 2% GST TDS (Sec 51), and 1% BOCW Labour Welfare Cess, plus any departmental royalty or testing charges. When the department releases payments in split tranches over weeks or months, each bank credit is logged against the bill until the net payable balance reconciles to zero variance.',
+      a: 'When an RA Bill is logged, PillarPro automatically applies statutory rates based on your entity constitution and contract agreement: IT TDS under Section 194C (1% for Proprietorships/Individuals or 2% for Companies/LLPs), GST TDS under Section 51 (2% on taxable contracts > ₹2.5L), 1% BOCW Labour Welfare Cess, and contractual Security Deposit / Retention (customizable 0% to 10%, commonly 2.5% or 5%). Contractors can also manually input or override exact deduction figures and add departmental recoveries (Mineral Royalty, QC Testing, Water/Electricity, Mobilization Advance). When the department releases split payment tranches over weeks or months, each bank credit is logged against the bill with actual deducted amounts until the net payable balance reconciles to zero variance.',
     },
     {
       q: 'How does the Bank Guarantee (BG) and EMD radar protect our firm?',
@@ -424,40 +445,226 @@ export function LandingPage({
                 </div>
               </div>
 
-              {/* Calculated Breakdown Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                  <p className="text-[11px] font-semibold text-slate-500">5% Retention (SD)</p>
-                  <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
-                    -₹{retention.toLocaleString('en-IN')}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Held till DLP expiry</p>
+              {/* Calculator Settings Bar (Entity & Retention & Mode) */}
+              <div className="p-3.5 bg-white rounded-xl border border-slate-200 mb-5 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800">Contractor Legal Entity</span>
+                    <p className="text-[11px] text-slate-500">Determines Income Tax TDS rate under Section 194C</p>
+                  </div>
+                  <div className="inline-flex rounded-lg bg-slate-100 p-1 text-xs font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setCalcContractorType('individual_proprietor')}
+                      className={`px-3 py-1 rounded-md transition-all ${
+                        calcContractorType === 'individual_proprietor'
+                          ? 'bg-white text-slate-900 shadow-2xs'
+                          : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      Proprietorship / Individual (1% TDS)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCalcContractorType('company_firm')}
+                      className={`px-3 py-1 rounded-md transition-all ${
+                        calcContractorType === 'company_firm'
+                          ? 'bg-white text-slate-900 shadow-2xs'
+                          : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      Company / Partnership Firm (2% TDS)
+                    </button>
+                  </div>
                 </div>
 
-                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                  <p className="text-[11px] font-semibold text-slate-500">2% IT TDS (Sec 194C)</p>
-                  <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
-                    -₹{itTds.toLocaleString('en-IN')}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Direct tax credit</p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800">Contractual Security Deposit (Retention)</span>
+                    <p className="text-[11px] text-slate-500">Based on tender agreement or PBG exemption</p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {[
+                      { label: '0% (Full PBG)', val: 0 },
+                      { label: '2.5% (CPWD)', val: 2.5 },
+                      { label: '5% (Standard PWD)', val: 5 },
+                      { label: '10%', val: 10 },
+                    ].map(p => (
+                      <button
+                        key={p.val}
+                        type="button"
+                        onClick={() => setCalcRetentionRate(p.val)}
+                        className={`text-xs px-2.5 py-1 rounded-md border font-semibold transition-colors ${
+                          calcRetentionRate === p.val
+                            ? 'bg-slate-900 text-white border-slate-900'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                  <p className="text-[11px] font-semibold text-slate-500">2% GST TDS (Sec 51)</p>
-                  <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
-                    -₹{gstTds.toLocaleString('en-IN')}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">1% CGST + 1% SGST</p>
-                </div>
-
-                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                  <p className="text-[11px] font-semibold text-slate-500">1% BOCW Cess</p>
-                  <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
-                    -₹{labourCess.toLocaleString('en-IN')}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Labour Welfare Board</p>
+                {/* Mode Selector: Auto vs Manual Overrides */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <span className="text-xs font-bold text-slate-800">Calculation Method</span>
+                  <div className="inline-flex rounded-lg bg-slate-100 p-0.5 text-xs font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setCalcMode('auto')}
+                      className={`px-2.5 py-1 rounded transition-all ${
+                        calcMode === 'auto' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                      }`}
+                    >
+                      ⚡ Standard Rates
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCalcMode('manual')
+                        if (!manualRetention) setManualRetention(String(autoRetention))
+                        if (!manualItTds) setManualItTds(String(autoItTds))
+                        if (!manualGstTds) setManualGstTds(String(autoGstTds))
+                        if (!manualLabourCess) setManualLabourCess(String(autoLabourCess))
+                      }}
+                      className={`px-2.5 py-1 rounded transition-all ${
+                        calcMode === 'manual' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-500'
+                      }`}
+                    >
+                      ✏️ Manual Input & Overrides
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              {/* Deductions Breakdown Grid */}
+              {calcMode === 'auto' ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  <div className="p-3 bg-white rounded-lg border border-slate-200">
+                    <p className="text-[11px] font-semibold text-slate-500">
+                      {calcRetentionRate}% Retention (SD)
+                    </p>
+                    <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
+                      -₹{retention.toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Held till DLP expiry</p>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-lg border border-slate-200">
+                    <p className="text-[11px] font-semibold text-slate-500">
+                      {itTdsRate * 100}% IT TDS (Sec 194C)
+                    </p>
+                    <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
+                      -₹{itTds.toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {calcContractorType === 'individual_proprietor' ? '1% Individual/Prop' : '2% Company/Firm'}
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-lg border border-slate-200">
+                    <p className="text-[11px] font-semibold text-slate-500">2% GST TDS (Sec 51)</p>
+                    <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
+                      -₹{gstTds.toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">1% CGST + 1% SGST</p>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-lg border border-slate-200">
+                    <p className="text-[11px] font-semibold text-slate-500">1% BOCW Cess</p>
+                    <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
+                      -₹{labourCess.toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Labour Welfare Board</p>
+                  </div>
+                </div>
+              ) : (
+                /* Manual Custom Entry Grid */
+                <div className="space-y-3 mb-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3 bg-white rounded-lg border border-slate-200">
+                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                        Security Deposit / Retention (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={manualRetention}
+                        onChange={e => setManualRetention(e.target.value)}
+                        placeholder="0"
+                        className="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
+                      />
+                    </div>
+
+                    <div className="p-3 bg-white rounded-lg border border-slate-200">
+                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                        IT TDS (Sec 194C) (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={manualItTds}
+                        onChange={e => setManualItTds(e.target.value)}
+                        placeholder="0"
+                        className="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
+                      />
+                    </div>
+
+                    <div className="p-3 bg-white rounded-lg border border-slate-200">
+                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                        GST TDS (Sec 51) (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={manualGstTds}
+                        onChange={e => setManualGstTds(e.target.value)}
+                        placeholder="0"
+                        className="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
+                      />
+                    </div>
+
+                    <div className="p-3 bg-white rounded-lg border border-slate-200">
+                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                        BOCW Labour Cess (1%) (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={manualLabourCess}
+                        onChange={e => setManualLabourCess(e.target.value)}
+                        placeholder="0"
+                        className="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3 bg-white rounded-lg border border-slate-200">
+                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                        Mineral Royalty / Transit Pass (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={manualRoyalty}
+                        onChange={e => setManualRoyalty(e.target.value)}
+                        placeholder="e.g. 25000"
+                        className="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
+                      />
+                    </div>
+
+                    <div className="p-3 bg-white rounded-lg border border-slate-200">
+                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
+                        QC Testing & Inspection Charges (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={manualTesting}
+                        onChange={e => setManualTesting(e.target.value)}
+                        placeholder="e.g. 15000"
+                        className="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Net Disbursed Result */}
               <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -466,7 +673,7 @@ export function LandingPage({
                     Expected Net Bank Disbursement
                   </p>
                   <p className="text-xs text-emerald-700 mt-0.5">
-                    Total Deductions: ₹{totalDeductions.toLocaleString('en-IN')} (10.0% of Gross Bill)
+                    Total Deductions: ₹{totalDeductions.toLocaleString('en-IN')} ({totalDeductionsPct}% of Gross Bill)
                   </p>
                 </div>
                 <div className="text-left sm:text-right">
@@ -474,10 +681,14 @@ export function LandingPage({
                     ₹{netDisbursed.toLocaleString('en-IN')}
                   </span>
                   <span className="block text-[11px] text-emerald-700 font-medium">
-                    Reconciles across PFMS / Finance / Treasury
+                    Reconciles across PFMS / Finance / State Treasury
                   </span>
                 </div>
               </div>
+
+              <p className="text-[11px] text-slate-400 mt-3 text-center">
+                Statutory Note: IT TDS is 1% for individuals/proprietorships and 2% for companies/LLPs under Sec 194C. GST TDS applies at 2% on taxable contracts &gt; ₹2.5L under Sec 51. Security deposit varies by agreement (0%–10%). All figures can be auto-applied or manually entered in PillarPro.
+              </p>
             </div>
           </div>
         </section>

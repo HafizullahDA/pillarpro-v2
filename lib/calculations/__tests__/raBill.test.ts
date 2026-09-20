@@ -20,22 +20,38 @@ describe('RA Bill Statutory Deductions & Net Payable Calculations', () => {
     expect(result.totalDeductions).toBe(1000000) // Total 10% = ₹10,00,000
   })
 
-  it('supports custom deduction percentages', () => {
+  it('applies 1% IT TDS for Individual/Proprietorship and 2% for Company/Firm', () => {
+    const gross = 2000000 // ₹20 Lakhs
+
+    const individualResult = calculateStatutoryDeductions(gross, {
+      contractorType: 'individual_proprietor',
+    })
+    expect(individualResult.itTds).toBe(20000) // 1% = ₹20,000
+
+    const companyResult = calculateStatutoryDeductions(gross, {
+      contractorType: 'company_firm',
+    })
+    expect(companyResult.itTds).toBe(40000) // 2% = ₹40,000
+  })
+
+  it('supports custom deduction percentages and departmental additions', () => {
     const gross = 5000000 // ₹50 Lakhs
     const customRates = {
-      retentionPercent: 10,  // 10% retention
+      retentionPercent: 2.5, // 2.5% CPWD retention
       itTdsPercent: 1,      // 1% TDS for individual contractor
       gstTdsPercent: 2,
       labourCessPercent: 1,
+      additionalDeductionsAmount: 35000, // ₹35,000 Mineral Royalty
     }
 
     const result = calculateStatutoryDeductions(gross, customRates)
 
-    expect(result.retention).toBe(500000)
+    expect(result.retention).toBe(125000) // 2.5% = ₹1,25,000
     expect(result.itTds).toBe(50000)
     expect(result.gstTds).toBe(100000)
     expect(result.labourCess).toBe(50000)
-    expect(result.totalDeductions).toBe(700000)
+    expect(result.additionalDeductions).toBe(35000)
+    expect(result.totalDeductions).toBe(360000)
   })
 
   it('correctly calculates net bill payable after deductions', () => {

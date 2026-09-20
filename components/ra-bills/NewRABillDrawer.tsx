@@ -52,6 +52,8 @@ export function NewRABillDrawer({
     Record<string, { currentQty: string; remarks: string }>
   >({})
 
+  const [contractorType, setContractorType] = useState<'individual_proprietor' | 'company_firm'>('company_firm')
+
   const [billForm, setBillForm] = useState({
     project_id: defaultProjectId || '',
     bill_number: '',
@@ -175,9 +177,12 @@ export function NewRABillDrawer({
   const liveNetPayable = isCumulative ? cumulativeNetPayableThisBill : standaloneNetPayable
   const thisBillCertified = isCumulative ? cumulativeThisBillCertified : certifiedNum
 
-  // Estimated statutory treasury deductions (2% IT-TDS, 2% GST-TDS, 1% Labour Cess)
+  // Estimated statutory treasury deductions (1% or 2% IT-TDS, 2% GST-TDS, 1% Labour Cess)
   const estimatedTreasuryBase = isCumulative ? cumulativeNetPassed : certifiedNum
-  const estimatedTreasury = calculateStatutoryDeductions(estimatedTreasuryBase, { retentionPercent: 0 })
+  const estimatedTreasury = calculateStatutoryDeductions(estimatedTreasuryBase, {
+    contractorType,
+    retentionPercent: 0,
+  })
 
   const uploadDocument = async (file: File): Promise<string | null> => {
     try {
@@ -632,24 +637,54 @@ export function NewRABillDrawer({
         </FieldWrapper>
 
         {/* Retention Percentage & Breakdown */}
-        <div className="grid grid-cols-2 gap-3">
-          <FieldWrapper label="Retention Deducted (%)" required hint="Typically 5% on civil contracts">
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              max="100"
-              value={billForm.retention_percentage}
-              onChange={e => setBillForm(f => ({ ...f, retention_percentage: e.target.value }))}
-              placeholder="5.00"
-            />
-          </FieldWrapper>
-
-          <FieldWrapper label="Retention Amount" hint="Held by department">
-            <div className="h-10 px-3 flex items-center rounded-lg bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700">
-              {formatINR(liveRetentionAmount)}
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-1">
+            <label className="text-xs font-semibold text-slate-700">
+              Contractual Security Deposit / Retention
+            </label>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-slate-400">Presets:</span>
+              {[
+                { label: '0% (PBG)', val: '0' },
+                { label: '2.5% (CPWD)', val: '2.50' },
+                { label: '5% (PWD)', val: '5.00' },
+                { label: '10%', val: '10.00' },
+              ].map(p => (
+                <button
+                  key={p.val}
+                  type="button"
+                  onClick={() => setBillForm(f => ({ ...f, retention_percentage: p.val }))}
+                  className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                    billForm.retention_percentage === p.val
+                      ? 'bg-slate-900 text-white border-slate-900 font-bold'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
             </div>
-          </FieldWrapper>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FieldWrapper label="Retention (%)" required hint="Adjustable per tender agreement">
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={billForm.retention_percentage}
+                onChange={e => setBillForm(f => ({ ...f, retention_percentage: e.target.value }))}
+                placeholder="5.00"
+              />
+            </FieldWrapper>
+
+            <FieldWrapper label="Withheld Retention (₹)" hint="Auto-computed or held till DLP">
+              <div className="h-10 px-3 flex items-center rounded-lg bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700">
+                {formatINR(liveRetentionAmount)}
+              </div>
+            </FieldWrapper>
+          </div>
         </div>
 
         {/* Cumulative Math Calculation Breakdown Card */}
@@ -711,24 +746,51 @@ export function NewRABillDrawer({
           </div>
         )}
 
-        {/* Estimated Treasury Inflow Card */}
+        {/* Estimated Treasury Inflow Card with Entity Selection */}
         {certifiedNum > 0 && (
-          <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 text-xs space-y-1.5">
-            <div className="flex items-center justify-between text-emerald-900 font-semibold">
-              <span className="flex items-center gap-1.5">
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3.5 text-xs space-y-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+              <span className="flex items-center gap-1.5 font-bold text-emerald-900">
                 <span>🏛️</span>
                 <span>Estimated Treasury Realization</span>
               </span>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
-                Form 26 Estimate
-              </span>
+              {/* Entity Selector */}
+              <div className="inline-flex rounded-lg bg-white border border-emerald-200 p-0.5 text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => setContractorType('individual_proprietor')}
+                  className={`px-2 py-0.5 rounded transition-colors ${
+                    contractorType === 'individual_proprietor'
+                      ? 'bg-emerald-700 text-white font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Proprietor (1% TDS)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContractorType('company_firm')}
+                  className={`px-2 py-0.5 rounded transition-colors ${
+                    contractorType === 'company_firm'
+                      ? 'bg-emerald-700 text-white font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Firm / Co (2% TDS)
+                </button>
+              </div>
             </div>
+
             <p className="text-[11px] text-emerald-800/80 leading-relaxed">
-              Expected at treasury release: 2% TDS ({formatINR(estimatedTreasury.itTds)}) + 2% GST-TDS ({formatINR(estimatedTreasury.gstTds)}) + 1% Labour Cess ({formatINR(estimatedTreasury.labourCess)})
+              Statutory audit estimate: {contractorType === 'individual_proprietor' ? '1%' : '2%'} IT TDS ({formatINR(estimatedTreasury.itTds)}) + 2% GST-TDS ({formatINR(estimatedTreasury.gstTds)}) + 1% Labour Cess ({formatINR(estimatedTreasury.labourCess)}).
+              <span className="block text-[10px] text-emerald-600 mt-0.5">
+                Note: Exact deductions and departmental recoveries (Royalty, Testing) can be manually modified when logging the payment voucher.
+              </span>
             </p>
-            <div className="flex justify-between items-center pt-1 border-t border-emerald-200/60 font-semibold text-emerald-900">
+
+            <div className="flex justify-between items-center pt-1.5 border-t border-emerald-200/60 font-semibold text-emerald-900">
               <span>Estimated Net Bank Credit:</span>
-              <span className="text-sm font-bold text-emerald-700">
+              <span className="text-sm font-bold text-emerald-700 tabular-nums">
                 {formatINR(Math.max(0, liveNetPayable - estimatedTreasury.totalDeductions))}
               </span>
             </div>
