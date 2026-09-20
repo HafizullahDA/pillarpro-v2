@@ -92,85 +92,102 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#07090E] flex flex-col justify-center py-8 px-4">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-5xl mx-auto">
-        <div className="relative rounded-2xl bg-gradient-to-b from-[#0F1626] to-[#0A0E1A] border border-slate-800 shadow-2xl shadow-blue-950/40 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
+        <div className="relative rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
           
-          {/* Left Brand Showcase & Value Proposition Column (Unified Deep Slate Surface) */}
-          <div className="lg:col-span-5 bg-slate-950/40 p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800/80 relative z-10">
+          {/* Left Brand Showcase Column — Order-2 on mobile so form appears first without scrolling */}
+          <div className="order-2 lg:order-1 lg:col-span-5 bg-slate-50/70 p-6 sm:p-8 lg:p-10 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-slate-200 relative z-10">
             <div>
-              <div className="flex items-center gap-3 mb-8">
-                <Logo theme="dark" size="md" subtitle="Civil Contractor OS" />
+              <div className="hidden lg:flex items-center gap-3 mb-7">
+                <Logo theme="light" size="md" subtitle="Civil Contractor OS" href="/" />
               </div>
 
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-5">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-semibold mb-4">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
                 Civil & Infrastructure Enterprise Suite
               </div>
 
-              <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-snug">
-                Contractor Financials, Treasury RA Bills & Site Controls
+              <h1 className="text-xl sm:text-2xl lg:text-2xl font-bold text-slate-900 tracking-tight leading-snug">
+                Contractor Financials, Multi-Agency RA Bills & Site Controls
               </h1>
 
               {/* 3 Value Proposition Bullets */}
-              <div className="mt-7 space-y-3.5 text-xs lg:text-sm text-slate-300 leading-relaxed">
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
-                  <div className="h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
+              <div className="mt-6 space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                     ✓
                   </div>
-                  <p>
-                    <strong className="text-white font-semibold">Treasury RA Bill Reconciliation:</strong> Reconcile gross certified bills vs statutory deductions (retention, TDS, GST TDS, labor cess) and net bank credits.
-                  </p>
+                  <div>
+                    <strong className="text-slate-900 font-semibold block mb-0.5">Multi-Agency RA Bill Audit</strong>
+                    <span>Reconcile gross certified bills vs statutory deductions (Sec 194C TDS, GST TDS, Cess, Retention) and credits via PFMS, State Treasuries, or PSU Corporate Finance.</span>
+                  </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
-                  <div className="h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                     ✓
                   </div>
-                  <p>
-                    <strong className="text-white font-semibold">Site-to-Office Control:</strong> Real-time daily-wage labor muster rolls, AI receipt scanning for petty site expenses, and supplier khata ledgers.
-                  </p>
+                  <div>
+                    <strong className="text-slate-900 font-semibold block mb-0.5">Site-to-Office Control</strong>
+                    <span>Daily labor muster rolls, AI receipt scanning for petty site cash, and real-time supplier khata ledgers.</span>
+                  </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
-                  <div className="h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                     ✓
                   </div>
-                  <p>
-                    <strong className="text-white font-semibold">Capital & BG Protection:</strong> Automated 30-day Bank Guarantee expiry warnings and partner drawing parity accounts.
-                  </p>
+                  <div>
+                    <strong className="text-slate-900 font-semibold block mb-0.5">Capital & BG Protection</strong>
+                    <span>Automated 30-day Bank Guarantee expiry warnings, partner equity parity accounts, and BOQ work-done tracking.</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-8 pt-5 border-t border-slate-800/80 text-xs text-slate-400">
-              Trusted by civil, highway & government infrastructure contractors across PWD, CPWD, PMGSY and NHAI.
+            <div className="mt-8 pt-5 border-t border-slate-200 text-xs text-slate-500">
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                <span className="font-semibold text-slate-700">Trusted across agencies:</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">PWD</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">CPWD</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">PMGSY</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">NHAI</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">NHPC</span>
+              </div>
+              <span>Airtight multi-tenant isolation. Each contracting firm operates in its own encrypted workspace.</span>
             </div>
           </div>
 
-          {/* Right Login Form Column (Unified Dark Surface — ZERO Mismatched Panels) */}
-          <div className="lg:col-span-7 bg-[#0C111E]/90 p-8 lg:p-10 flex flex-col justify-center relative z-10 text-white">
+          {/* Right Login Form Column — Order-1 on mobile so user sees inputs immediately */}
+          <div className="order-1 lg:order-2 lg:col-span-7 bg-white p-6 sm:p-8 lg:p-10 flex flex-col justify-center relative z-10 text-slate-900">
             <div className="max-w-md w-full mx-auto">
+              
+              {/* Mobile Header Logo */}
+              <div className="lg:hidden flex items-center justify-between pb-5 mb-5 border-b border-slate-100">
+                <Logo theme="light" size="md" subtitle="Civil Contractor OS" href="/" />
+              </div>
+
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white tracking-tight">Sign in to your firm</h2>
-                <p className="mt-1 text-xs text-slate-400 leading-relaxed">
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Sign in to your firm</h2>
+                <p className="mt-1 text-xs sm:text-sm text-slate-500 leading-relaxed">
                   Enter your credentials to access your contractor dashboard.
                 </p>
               </div>
 
               {error && (
-                <div className="mb-4 rounded-lg bg-red-950/50 border border-red-800/60 p-3 text-xs text-red-300 flex items-start gap-2.5 shadow-sm">
-                  <svg className="w-4 h-4 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="mb-5 rounded-xl bg-red-50 border border-red-200 p-3.5 text-xs text-red-700 flex items-start gap-2.5 shadow-2xs">
+                  <svg className="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>{error}</span>
+                  <span className="font-medium">{error}</span>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="email" className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Email Address <span className="text-blue-400">*</span>
+                  <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                    Email Address <span className="text-blue-600">*</span>
                   </label>
                   <input
                     id="email"
@@ -179,15 +196,17 @@ export default function SignInPage() {
                     required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+                    className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
                     placeholder="you@contractorfirm.com"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Password <span className="text-blue-400">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label htmlFor="password" className="block text-xs font-semibold text-slate-700">
+                      Password <span className="text-blue-600">*</span>
+                    </label>
+                  </div>
                   <div className="relative">
                     <input
                       id="password"
@@ -196,7 +215,7 @@ export default function SignInPage() {
                       required
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 pr-9 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+                      className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
                       placeholder="••••••••"
                     />
                     <EyeToggle show={showPassword} onToggle={() => setShowPassword(v => !v)} />
@@ -206,7 +225,7 @@ export default function SignInPage() {
                 <button
                   type="submit"
                   disabled={loading || cooldown > 0}
-                  className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
@@ -232,17 +251,17 @@ export default function SignInPage() {
                 </button>
               </form>
 
-              <div className="mt-6 pt-5 border-t border-slate-800/80 text-center space-y-2.5">
-                <p className="text-xs text-slate-400">
+              <div className="mt-6 pt-5 border-t border-slate-100 text-center space-y-2.5">
+                <p className="text-xs text-slate-600">
                   New contractor?{' '}
-                  <Link href="/sign-up" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors">
+                  <Link href="/sign-up" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
                     Create your firm workspace →
                   </Link>
                 </p>
-                <div className="flex items-center justify-center gap-3 text-[11px] text-slate-500">
-                  <Link href="/terms" className="hover:text-slate-400 transition-colors">Terms of Service</Link>
+                <div className="flex items-center justify-center gap-3 text-[11px] text-slate-400">
+                  <Link href="/terms" className="hover:text-slate-600 transition-colors">Terms of Service</Link>
                   <span>•</span>
-                  <Link href="/privacy" className="hover:text-slate-400 transition-colors">Privacy Policy</Link>
+                  <Link href="/privacy" className="hover:text-slate-600 transition-colors">Privacy Policy</Link>
                 </div>
               </div>
             </div>
