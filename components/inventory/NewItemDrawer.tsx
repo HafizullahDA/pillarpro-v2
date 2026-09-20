@@ -150,7 +150,6 @@ export function NewItemDrawer({ open, onClose, projects }: NewItemDrawerProps) {
           </FieldWrapper>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <FieldWrapper label="Initial Opening Stock">
             <Input
@@ -163,7 +162,6 @@ export function NewItemDrawer({ open, onClose, projects }: NewItemDrawerProps) {
             />
           </FieldWrapper>
 
-          <FieldWrapper label="Min Buffer Alert" hint="Triggers low-stock warning">
           <FieldWrapper label="Min Buffer Alert" hint="Low-stock warning">
             <Input
               type="number"

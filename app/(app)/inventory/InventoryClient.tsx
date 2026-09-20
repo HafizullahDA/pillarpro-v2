@@ -66,11 +66,9 @@ export function InventoryClient({
 
   const canManage = canManageInventory(userRole)
 
-  // Metrics
   // Metrics & Wastage Analysis
   const metrics = useMemo(() => {
     let lowStockCount = 0
-    let totalItems = initialItems.length
     let highWastageCount = 0
     const totalItems = initialItems.length
     const wastageByItem: Record<string, { issued: number; wasted: number; pct: number; threshold: number; exceeded: boolean }> = {}
@@ -96,7 +94,6 @@ export function InventoryClient({
     const totalReceipts = initialTransactions.filter(t => t.transaction_type === 'receipt_in').length
     const totalIssues = initialTransactions.filter(t => t.transaction_type === 'issue_out').length
 
-    return { totalItems, lowStockCount, totalReceipts, totalIssues }
     return { totalItems, lowStockCount, highWastageCount, totalReceipts, totalIssues, wastageByItem }
   }, [initialItems, initialTransactions])
 
@@ -168,7 +165,6 @@ export function InventoryClient({
       </div>
 
       {/* KPI Overview Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tracked Materials</p>
@@ -184,7 +180,6 @@ export function InventoryClient({
             <span className={`text-2xl font-bold ${metrics.lowStockCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
               {metrics.lowStockCount}
             </span>
-            <span className="text-xs text-slate-500">items below buffer</span>
             <span className="text-xs text-slate-500">below buffer</span>
           </div>
         </div>
@@ -207,7 +202,6 @@ export function InventoryClient({
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm col-span-2 lg:col-span-1">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Site Issue Slips</p>
           <div className="mt-1.5 flex items-baseline gap-2">
@@ -286,7 +280,6 @@ export function InventoryClient({
                   <div
                     key={item.id}
                     className={`bg-white p-5 rounded-2xl border shadow-sm flex flex-col justify-between transition-all ${
-                      isLow ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200/90 hover:border-slate-300'
                       wastageInfo?.exceeded
                         ? 'border-rose-300 bg-rose-50/20'
                         : isLow
@@ -302,10 +295,6 @@ export function InventoryClient({
                             <span className="text-[10px] text-slate-400 font-mono">{item.item_code}</span>
                           )}
                         </div>
-                        <Badge
-                          label={isLow ? 'Low Stock' : 'In Stock'}
-                          variant={isLow ? 'warning' : 'success'}
-                        />
                         <div className="flex items-center gap-1.5">
                           {wastageInfo?.exceeded && (
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 animate-pulse">

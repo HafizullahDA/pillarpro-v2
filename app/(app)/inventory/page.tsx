@@ -24,7 +24,6 @@ export default async function InventoryPage() {
     supabase.from('suppliers').select('id, name').order('name'),
     supabase
       .from('inventory_items')
-      .select('id, item_name, item_code, category, unit, current_stock, minimum_stock_alert, notes, project_id, projects(name)')
       .select('id, item_name, item_code, category, unit, current_stock, minimum_stock_alert, wastage_threshold_pct, notes, project_id, projects(name)')
       .order('item_name', { ascending: true }),
     supabase

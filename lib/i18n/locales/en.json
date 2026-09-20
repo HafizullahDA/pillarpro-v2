@@ -41,7 +41,6 @@
   "contractor.dpr": "Daily Progress Report (DPR)",
   "contractor.store": "Physical Store & Stock",
   "contractor.ra_bill": "Running Account (RA) Bill",
-  "contractor.tender": "Civil Tender & Works"
   "contractor.tender": "Civil Tender & Works",
 
   "attendance.present": "Full Day (Present)",
@@ -77,4 +76,3 @@
   "supplier.total_paid": "Total Payments Disbursed",
   "supplier.balance_owed": "Net Outstanding Due"
 }
-

@@ -1,29 +1,17 @@
-import { formatINR, formatDate } from './format'
-import { OrganizationProfile } from './organization'
 import { formatINR } from './format'
 
 /**
- * Open WhatsApp with pre-filled text, targeting a phone number if provided.
  * Encodes text and generates a WhatsApp Web / App share URL.
  * If phone is provided, formats with international dialing code (defaulting to +91 India).
  */
-export function openWhatsApp(text: string, phone?: string | null) {
-  const cleanPhone = phone ? phone.replace(/[^0-9]/g, '') : ''
-  const encodedText = encodeURIComponent(text)
 export function getWhatsAppUrl(text: string, phone?: string | null): string {
   let cleanPhone = (phone || '').replace(/[^0-9]/g, '')
   if (cleanPhone.length === 10) {
     cleanPhone = '91' + cleanPhone
   }
 
-  let url: string
   const encoded = encodeURIComponent(text)
   if (cleanPhone) {
-    // If international code missing (standard 10-digit Indian mobile), prepend 91
-    const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone
-    url = `https://wa.me/${finalPhone}?text=${encodedText}`
-  } else {
-    url = `https://wa.me/?text=${encodedText}`
     return `https://wa.me/${cleanPhone}?text=${encoded}`
   }
   return `https://api.whatsapp.com/send?text=${encoded}`
@@ -40,37 +28,8 @@ export function shareOnWhatsApp(text: string, phone?: string | null): void {
 export const openWhatsApp = shareOnWhatsApp
 
 /**
- * Generates an official WhatsApp message for Running Account (RA) Bills.
  * Format Daily Progress Report (DPR) summary for WhatsApp
  */
-export function generateRABillWhatsAppText(
-  bill: any,
-  organization?: OrganizationProfile
-): string {
-  const orgName = organization?.name || 'Civil Contractor'
-  const projName = bill.projects?.name || 'Civil Works Project'
-  const billNo = bill.bill_number || 'RA Bill'
-  const billDate = bill.bill_date ? formatDate(bill.bill_date) : 'N/A'
-
-  const isCum = bill.billing_mode === 'cumulative'
-  const grossCertified = isCum && bill.this_bill_work_certified != null
-    ? Number(bill.this_bill_work_certified)
-    : Number(bill.work_certified_amount || 0)
-
-  const retention = Number(bill.retention_amount || 0)
-  const itTds = Number(bill.tds_deducted || 0)
-  const gstTds = Number(bill.gst_tds_deducted || 0)
-  const labourCess = Number(bill.labour_cess_deducted || 0)
-  const other = Number(bill.other_deductions || 0)
-  const totalDeductions = Number(bill.total_deductions) || (retention + itTds + gstTds + labourCess + other)
-
-  const netPayable = bill.net_payable_this_bill != null
-    ? Number(bill.net_payable_this_bill)
-    : (Number(bill.net_payable_amount) || Math.max(0, grossCertified - retention))
-
-  const received = Number(bill.amount_received || 0)
-  const pending = Math.max(0, netPayable - received)
-
 export function formatDPRWhatsAppMessage(params: {
   projectName: string
   reportDate: string
@@ -84,13 +43,6 @@ export function formatDPRWhatsAppMessage(params: {
   submittedBy?: string | null
 }): string {
   const lines = [
-    `📄 *RUNNING ACCOUNT (RA) BILL STATEMENT*`,
-    `🏢 *Contractor:* ${orgName}`,
-    `🏗️ *Project:* ${projName}`,
-    `📋 *Bill No:* ${billNo} (${billDate})`,
-    `────────────────────────`,
-    `*Gross Work Certified:* ${formatINR(grossCertified)}`,
-    `*Total Deductions:* -${formatINR(totalDeductions)}`,
     `*DAILY PROGRESS REPORT (DPR)*`,
     `*Project:* ${params.projectName}`,
     `*Date:* ${params.reportDate}`,
@@ -105,25 +57,12 @@ export function formatDPRWhatsAppMessage(params: {
     params.workCompletedNotes,
   ]
 
-  if (retention > 0) lines.push(`  • Retention (Security): ${formatINR(retention)}`)
-  if (itTds > 0) lines.push(`  • Income Tax TDS: ${formatINR(itTds)}`)
-  if (gstTds > 0) lines.push(`  • GST TDS (2%): ${formatINR(gstTds)}`)
-  if (labourCess > 0) lines.push(`  • Labour Cess (1%): ${formatINR(labourCess)}`)
-  if (other > 0) lines.push(`  • Other Deductions: ${formatINR(other)}`)
   if (params.impediments && params.impediments.trim()) {
     lines.push(`--------------------------------`)
     lines.push(`*Site Impediments / Delays:*`)
     lines.push(params.impediments)
   }
 
-  lines.push(
-    `────────────────────────`,
-    `*Net Amount Certified:* ${formatINR(netPayable)}`,
-    `*Bank Credit Received:* ${formatINR(received)}`,
-    `*Balance Due:* ${formatINR(pending)}`,
-    `────────────────────────`,
-    `_Generated via PillarPro Civil Contractor ERP_`
-  )
   lines.push(`--------------------------------`)
   lines.push(`_Generated via PillarPro Construction ERP_`)
 
@@ -131,7 +70,6 @@ export function formatDPRWhatsAppMessage(params: {
 }
 
 /**
- * Generates an official WhatsApp statement for a Supplier Khata.
  * Format Supplier Khata Balance Confirmation for WhatsApp
  */
 export function formatSupplierKhataWhatsAppMessage(params: {
@@ -164,14 +102,8 @@ export function formatSupplierKhataWhatsAppMessage(params: {
 export function generateSupplierKhataWhatsAppText(
   supplier: { name: string; contact_number?: string | null },
   totals: { totalProcured: number; totalPaid: number; balanceOwed: number },
-  organization?: OrganizationProfile
   org?: { name?: string }
 ): string {
-  const orgName = organization?.name || 'Civil Contractor'
-  const today = new Date().toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
   return formatSupplierKhataWhatsAppMessage({
     supplierName: supplier.name,
     firmName: org?.name,
@@ -195,17 +127,6 @@ export function formatRABillWhatsAppMessage(params: {
   balanceReceivable: number
 }): string {
   return [
-    `📋 *SUPPLIER KHATA ACCOUNT STATEMENT*`,
-    `🏢 *Firm:* ${orgName}`,
-    `🤝 *Supplier:* ${supplier.name}`,
-    `📅 *As of:* ${today}`,
-    `────────────────────────`,
-    `*Total Materials Procured:* ${formatINR(totals.totalProcured)}`,
-    `*Total Payments Cleared:* ${formatINR(totals.totalPaid)}`,
-    `*Net Balance Due:* ${formatINR(totals.balanceOwed)}`,
-    `────────────────────────`,
-    `_Please check and confirm with your ledger records._`,
-    `_Generated via PillarPro Civil Contractor ERP_`,
     `*RUNNING ACCOUNT (RA) BILL UPDATE*`,
     `*Project:* ${params.projectName}`,
     `*Bill No:* ${params.billNumber}`,
@@ -221,9 +142,6 @@ export function formatRABillWhatsAppMessage(params: {
   ].join('\n')
 }
 
-/**
- * Generates an official WhatsApp daily muster roll report for site attendance.
- */
 // Backward-compatible helper for RABillsClient
 export function generateRABillWhatsAppText(bill: any, org?: any): string {
   const isCum = bill.billing_mode === 'cumulative'
@@ -258,27 +176,12 @@ export function generateRABillWhatsAppText(bill: any, org?: any): string {
 export function generateMusterRollWhatsAppText(
   dateStr: string,
   projectName: string,
-  presentCount: number,
-  totalWages: number,
-  organization?: OrganizationProfile
   onSiteCount: number,
   dayCost: number,
   org?: { name?: string }
 ): string {
-  const orgName = organization?.name || 'Civil Contractor'
-  const formattedDate = formatDate(dateStr)
-
   const firm = org?.name || 'Our Firm'
   return [
-    `👷 *DAILY SITE MUSTER ROLL REPORT*`,
-    `🏢 *Firm:* ${orgName}`,
-    `🏗️ *Project:* ${projectName}`,
-    `📅 *Date:* ${formattedDate}`,
-    `────────────────────────`,
-    `*Total Workers Present:* ${presentCount}`,
-    `*Total Daily Wage Payable:* ${formatINR(totalWages)}`,
-    `────────────────────────`,
-    `_Generated via PillarPro Civil Contractor ERP_`,
     `*DAILY MUSTER ROLL & LABOR DEPLOYMENT*`,
     `*Firm:* ${firm}`,
     `*Project:* ${projectName}`,
@@ -290,4 +193,3 @@ export function generateMusterRollWhatsAppText(
     `_PillarPro Civil Contractor Operating System_`,
   ].join('\n')
 }
-

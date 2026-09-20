@@ -41,7 +41,6 @@
   "contractor.dpr": "दैनिक कार्य प्रगति (DPR)",
   "contractor.store": "साइट स्टोर और गोदाम",
   "contractor.ra_bill": "रनिंग बिल (आर.ए. बिल)",
-  "contractor.tender": "सरकारी ठेका और टेंडर"
   "contractor.tender": "सरकारी ठेका और टेंडर",
 
   "attendance.present": "पूरा दिन (हाजिर)",
@@ -77,4 +76,3 @@
   "supplier.total_paid": "कुल किया गया भुगतान",
   "supplier.balance_owed": "शेष देय बकाया"
 }
-

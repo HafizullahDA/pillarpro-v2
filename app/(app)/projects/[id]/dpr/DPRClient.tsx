@@ -68,8 +68,6 @@ ${dpr.impediments_delays ? `\n*⚠️ Delays / Bottlenecks:*\n${dpr.impediments_
 ${dpr.photos.length > 0 ? `\n*📸 Site Photos Attached:* ${dpr.photos.length} photo(s)` : ''}`
 
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(text)
-      alert('DPR copied to clipboard! Ready to paste on WhatsApp.')
       navigator.clipboard.writeText(text).catch(() => {})
     }
     const encoded = encodeURIComponent(text)

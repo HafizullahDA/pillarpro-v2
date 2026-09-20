@@ -43,21 +43,6 @@ export function RABillCertificatePDF({ bill, organization }: RABillCertificatePD
     <div className="text-slate-900 font-sans leading-relaxed">
       {/* Header */}
       <div className="border-b-2 border-slate-900 pb-4 mb-5">
-        <div className="flex items-start justify-between">
-          <div className="max-w-2xl">
-            <h1 className="text-xl font-black tracking-tight uppercase text-slate-900">
-              {organization?.name || 'Civil Engineering & Construction'}
-            </h1>
-            <div className="flex items-center gap-x-2 gap-y-0.5 flex-wrap text-xs text-slate-600 mt-1">
-              {organization?.registration_no && (
-                <span className="font-semibold text-slate-800">{organization.registration_no}</span>
-              )}
-              {organization?.gstin && (
-                <span>· GSTIN: <strong className="font-mono text-slate-800">{organization.gstin}</strong></span>
-              )}
-              {organization?.address && (
-                <span>· {organization.address}</span>
-              )}
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3.5 max-w-2xl">
             {organization?.logo_url && (
@@ -86,11 +71,7 @@ export function RABillCertificatePDF({ bill, organization }: RABillCertificatePD
                 Running Account (RA) Bill Certificate
               </h2>
             </div>
-            <h2 className="text-xs font-bold text-slate-500 tracking-wider uppercase mt-2">
-              Running Account (RA) Bill Certificate
-            </h2>
           </div>
-          <div className="text-right text-xs text-slate-500">
           <div className="text-right text-xs text-slate-500 shrink-0">
             <p><strong>Date:</strong> {generatedAt}</p>
             <p className="font-mono text-[11px] text-slate-400">Bill ID: {bill.id.slice(0, 8)}</p>
@@ -278,7 +259,6 @@ export function RABillCertificatePDF({ bill, organization }: RABillCertificatePD
       {/* Sign-off & Certification Block */}
       <div className="pt-6 border-t border-slate-200 grid grid-cols-3 gap-6 text-center text-xs text-slate-600">
         <div>
-          <div className="h-12 border-b border-slate-400 mb-2" />
           <div className="h-16 border-b border-slate-400 mb-2 flex items-center justify-center">
             {organization?.signature_url ? (
               <img
@@ -292,13 +272,11 @@ export function RABillCertificatePDF({ bill, organization }: RABillCertificatePD
           <p className="text-[11px] text-slate-500">Authorized Signature & Seal</p>
         </div>
         <div>
-          <div className="h-12 border-b border-slate-400 mb-2" />
           <div className="h-16 border-b border-slate-400 mb-2" />
           <p className="font-bold text-slate-800">Junior / Site Engineer</p>
           <p className="text-[11px] text-slate-500">Measured & Certified</p>
         </div>
         <div>
-          <div className="h-12 border-b border-slate-400 mb-2" />
           <div className="h-16 border-b border-slate-400 mb-2" />
           <p className="font-bold text-slate-800">Executive Engineer / DDO</p>
           <p className="text-[11px] text-slate-500">Passed & Verified</p>
