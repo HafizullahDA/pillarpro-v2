@@ -32,21 +32,64 @@ export function AddProjectButton() {
     if (!form.name.trim()) { setError('Project name is required.'); return }
     setSaving(true); setError('')
 
-    const { error: err } = await supabase.from('projects').insert({
-      name: form.name.trim(),
-      agency_name: form.agency_name.trim() || null,
-      advertised_cost: form.advertised_cost ? Number(form.advertised_cost) : null,
-      awarded_amount: form.awarded_amount ? Number(form.awarded_amount) : null,
-      start_date: form.start_date || null,
-      end_date: form.end_date || null,
-      status: form.status,
-    })
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
 
-    setSaving(false)
-    if (err) { setError(err.message); return }
-    setOpen(false)
-    setForm({ name: '', agency_name: '', advertised_cost: '', awarded_amount: '', start_date: '', end_date: '', status: 'active' })
-    router.refresh()
+      let orgId: string | null = null
+      const { data: rpcOrgId } = await supabase.rpc('get_user_organization_id')
+      if (rpcOrgId) {
+        orgId = rpcOrgId
+      } else if (user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .maybeSingle()
+        orgId = profile?.organization_id ?? null
+      }
+
+      const payload: Record<string, any> = {
+        name: form.name.trim(),
+        agency_name: form.agency_name.trim() || null,
+        advertised_cost: form.advertised_cost ? Number(form.advertised_cost) : null,
+        awarded_amount: form.awarded_amount ? Number(form.awarded_amount) : null,
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+        status: form.status,
+      }
+      if (orgId) payload.organization_id = orgId
+      if (user?.id) payload.created_by = user.id
+
+      let { error: err } = await supabase.from('projects').insert(payload)
+
+      // Fallback: If direct insert encountered an RLS policy issue, attempt create_project RPC
+      if (err) {
+        const { error: rpcErr } = await supabase.rpc('create_project', {
+          p_name: form.name.trim(),
+          p_agency_name: form.agency_name.trim() || null,
+          p_advertised_cost: form.advertised_cost ? Number(form.advertised_cost) : null,
+          p_awarded_amount: form.awarded_amount ? Number(form.awarded_amount) : null,
+          p_start_date: form.start_date || null,
+          p_end_date: form.end_date || null,
+          p_status: form.status,
+        })
+
+        if (!rpcErr) {
+          err = null
+        } else {
+          err = rpcErr
+        }
+      }
+
+      setSaving(false)
+      if (err) { setError(err.message); return }
+      setOpen(false)
+      setForm({ name: '', agency_name: '', advertised_cost: '', awarded_amount: '', start_date: '', end_date: '', status: 'active' })
+      router.refresh()
+    } catch (e: any) {
+      setSaving(false)
+      setError(e.message || 'An unexpected error occurred while saving the project.')
+    }
   }
 
   return (
