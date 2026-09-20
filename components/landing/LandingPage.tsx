@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Logo } from '@/components/ui/Logo'
 
-// ── Monochrome Lucide-style SVG Wireframe Icons ────────────────
+// ── Monochrome Minimal SVG Icons ───────────────────────────────
 function IconFileText({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
@@ -50,27 +50,20 @@ function IconScale({ className = 'w-5 h-5' }: { className?: string }) {
   )
 }
 
-function IconLock({ className = 'w-5 h-5' }: { className?: string }) {
+function IconTruck({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  )
-}
-
-function IconBuilding({ className = 'w-5 h-5' }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-      <rect x="4" y="2" width="16" height="20" rx="1" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 22v-4h6v4M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01" />
+      <rect x="1" y="3" width="15" height="13" rx="1" />
+      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+      <circle cx="5.5" cy="18.5" r="2.5" />
+      <circle cx="18.5" cy="18.5" r="2.5" />
     </svg>
   )
 }
 
 function IconCheck({ className = 'w-4 h-4' }: { className?: string }) {
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.25} aria-hidden="true">
       <polyline points="20 6 9 17 4 12" />
     </svg>
   )
@@ -107,65 +100,83 @@ interface LandingPageProps {
   orgName?: string | null
 }
 
-export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps) {
-  const [activeFaq, setActiveFaq] = useState<number | null>(null)
+export function LandingPage({
+  isLoggedIn = false,
+  userName,
+  orgName,
+}: LandingPageProps) {
+  const [activeFaq, setActiveFaq] = useState<number | null>(0)
+  const [calcBillAmount, setCalcBillAmount] = useState<number>(5000000) // Default ₹50 Lakhs
 
   const toggleFaq = (idx: number) => {
     setActiveFaq(activeFaq === idx ? null : idx)
   }
 
+  // Statutory calculation values
+  const retention = Math.round(calcBillAmount * 0.05) // 5% Security Deposit
+  const itTds = Math.round(calcBillAmount * 0.02)     // 2% Income Tax TDS
+  const gstTds = Math.round(calcBillAmount * 0.02)    // 2% GST TDS
+  const labourCess = Math.round(calcBillAmount * 0.01) // 1% BOCW Labour Cess
+  const totalDeductions = retention + itTds + gstTds + labourCess
+  const netDisbursed = calcBillAmount - totalDeductions
+
   const faqs = [
     {
-      q: 'Is my contracting firm’s financial data completely private and isolated?',
-      a: 'Yes, 100%. PillarPro is built with enterprise multi-tenant Row Level Security (RLS). Your projects, RA bills, partner equity splits, and supplier khatas are stored in an isolated, encrypted partition. No other contractor or outside user can ever see your numbers.',
+      q: 'How does PillarPro reconcile payments across different government agencies?',
+      a: 'PillarPro is specifically calibrated for Indian civil agency disbursement pathways. For CPWD and Central Ministry tenders, it reconciles accounts audited by the Accounts Branch and credited via PFMS (Public Financial Management System). For PSUs like NHPC, NTPC, and NHAI, it reconciles milestone payments released by internal corporate finance departments. For State PWD (R&B), PMGSY, and Irrigation departments, it tracks State Treasury sanction vouchers and Letters of Credit (LoC).',
     },
     {
-      q: 'Can site supervisors (munshis/engineers) use this on their phones at active job sites?',
-      a: 'Absolutely. PillarPro is optimized for mobile browsers. Site supervisors can take photos of diesel fuel receipts with their phone camera for instant AI OCR extraction and mark daily worker attendance directly on site in under 60 seconds.',
+      q: 'How are statutory deductions tracked across multiple payment tranches?',
+      a: 'When an RA Bill is logged, PillarPro automatically calculates the statutory deductions: 5% Security Deposit (Retention), 2% IT TDS (Sec 194C), 2% GST TDS (Sec 51), and 1% BOCW Labour Welfare Cess, plus any departmental royalty or testing charges. When the department releases payments in split tranches over weeks or months, each bank credit is logged against the bill until the net payable balance reconciles to zero variance.',
     },
     {
-      q: 'Can I stop site supervisors from seeing overall tender margins or partner profit shares?',
-      a: 'Yes. PillarPro features strict Role-Based Access Control (RBAC). When you assign a user as a Site Supervisor, they can only view and log expenses/attendance for their specific assigned project. Partner drawings, company-wide profits, and central treasury ledgers are strictly restricted to Owners and Partners.',
+      q: 'How does the Bank Guarantee (BG) and EMD radar protect our firm?',
+      a: 'Government tenders require Performance Bank Guarantees (PBG), Mobilization Advances, and Earnest Money Deposits (EMD) that lock your cash limits. PillarPro maintains an active radar showing days-to-expiry with 30-day alerts. Once a package is certified, it prompts you to claim the original BG from the Executive Engineer’s division so you can surrender it to your bank and stop recurring quarterly commission charges.',
     },
     {
-      q: 'How does the Treasury RA Bill deduction tracker work?',
-      a: 'When you log a Running Account (RA) bill, PillarPro calculates the gross certified amount, automatically calculates statutory deductions (5% retention, 2% IT TDS, 2% GST TDS, 1% BOCW labour cess), and compares it against actual net bank credits across multiple payment tranches.',
+      q: 'Can our site supervisors (munshis/engineers) use this on phones under direct sunlight?',
+      a: 'Yes. PillarPro is built with a high-contrast architectural slate layout designed specifically for readability on mobile screens in harsh outdoor daylight on active road, bridge, and building sites. Supervisors can snap photos of cement, fuel, and repair slips for AI OCR extraction, record itemized carriage/transport charges, and log daily worker muster rolls with full offline support.',
     },
     {
-      q: 'Can I start with a clean slate or test with a sample project?',
-      a: 'During sign-up, you can choose either option. If you select "Include sample project template", your workspace is instantly populated with a realistic PWD highway contract, sample RA bill, supplier ledger, and muster roll so you can explore all features immediately.',
+      q: 'How does PillarPro prevent partner disputes in joint ventures?',
+      a: 'In Indian civil contracting partnerships, partners frequently pay for diesel, materials, or labour out of their personal bank accounts or cash drawers. PillarPro features a Partner Equity & Parity Ledger that tracks every out-of-pocket contribution and cash drawing, automatically calculating net profit sharing and capital balances to eliminate year-end disputes.',
+    },
+    {
+      q: 'Can site supervisors see our firm’s profit margins or other project financials?',
+      a: 'Never. PillarPro enforces strict Role-Based Access Control (RBAC). Site Supervisors are strictly siloed to their assigned project and cannot see tender margins, company-wide profits, partner drawings, or other contracts. Full financial transparency is reserved exclusively for Owners and Managing Partners.',
     },
   ]
 
   return (
-    <div className="min-h-screen bg-[#0B0F17] text-slate-200 font-sans selection:bg-blue-700 selection:text-white antialiased">
-      {/* ── Accessible Skip to Main Content Link ────────────── */}
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans antialiased selection:bg-slate-900 selection:text-white">
+      {/* ── Skip to Main Content Link ───────────────────────── */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-700 focus:text-white focus:rounded-md focus:outline-none focus:ring-1 focus:ring-white text-xs font-semibold"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-slate-900 focus:text-white focus:rounded-md text-xs font-semibold"
       >
         Skip to main content
       </a>
 
       {/* ── Top Architectural Navbar ────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-[#0B0F17] border-b border-slate-800">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Logo theme="dark" href="/" size="md" subtitle="Civil Contractor OS" />
+            <Logo theme="light" href="/" size="md" subtitle="Civil Contractor OS" />
           </div>
 
-          <nav aria-label="Main navigation" className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            <a href="#features" className="hover:text-slate-100 transition-colors">Features</a>
-            <a href="#project-ledger" className="hover:text-slate-100 transition-colors">Active Project Ledger</a>
-            <a href="#comparison" className="hover:text-slate-100 transition-colors">Audit Comparison</a>
-            <a href="#faq" className="hover:text-slate-100 transition-colors">FAQ</a>
+          <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-7 text-xs font-semibold text-slate-600">
+            <a href="#audit-preview" className="hover:text-slate-900 transition-colors">Bill Audit Preview</a>
+            <a href="#calculator" className="hover:text-slate-900 transition-colors">Deduction Calculator</a>
+            <a href="#capabilities" className="hover:text-slate-900 transition-colors">System Capabilities</a>
+            <a href="#specification" className="hover:text-slate-900 transition-colors">Audit Comparison</a>
+            <a href="#faq" className="hover:text-slate-900 transition-colors">FAQ</a>
           </nav>
 
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md text-xs font-semibold text-white bg-blue-700 hover:bg-blue-600 border border-blue-600 transition-colors"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
               >
                 <span>Dashboard ({userName || orgName || 'Firm'})</span>
                 <IconArrowRight className="w-3.5 h-3.5" />
@@ -174,13 +185,13 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
               <>
                 <Link
                   href="/sign-in"
-                  className="px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+                  className="px-3 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/sign-up"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-semibold text-white bg-blue-700 hover:bg-blue-600 border border-blue-600 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
                 >
                   <span>Start Free Trial</span>
                   <IconArrowRight className="w-3.5 h-3.5" />
@@ -191,399 +202,462 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
         </div>
       </header>
 
-      {/* ── Main Content Landmark ────────────────────────────── */}
+      {/* ── Main Content ─────────────────────────────────────── */}
       <main id="main-content">
-        {/* ── Hero Section (Flat Architectural Field Slate) ────── */}
-        <section className="pt-16 pb-16 md:pt-20 md:pb-24 border-b border-slate-800 bg-[#0F172A]">
+        {/* ── Hero Section (Architectural Studio Field Slate) ─── */}
+        <section className="pt-12 pb-14 md:pt-18 md:pb-20 bg-white border-b border-slate-200">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            {/* Architectural System Tag */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#111827] border border-slate-700 text-slate-300 text-xs font-mono tracking-wide uppercase mb-6">
-              <span className="h-2 w-2 rounded-sm bg-blue-500" />
-              CIVIL CONTRACTING ERP • MILITARY-GRADE AUDIT TRAIL
+            
+            {/* Government Department Channels Tag */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold tracking-wide mb-6">
+              <span className="h-2 w-2 rounded-full bg-emerald-600" />
+              <span>CPWD (PFMS) • NHPC & PSUs (FINANCE) • STATE PWD & PMGSY (TREASURY)</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
-              The Financial Operating System for Government Contractors
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.12]">
+              The Financial Operating System for Indian Civil Contractors
             </h1>
 
-            <p className="mt-6 text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed font-normal">
-              Stop leaking profits in spreadsheets. Reconcile PWD, CPWD, NHPC & PMGSY Running Account (RA) bills against treasury deductions, scan site expense receipts with AI, track Bank Guarantee expiries, and automate daily muster rolls.
+            <p className="mt-5 text-base sm:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed font-normal">
+              Stop leaking profits in spreadsheets. Reconcile multi-crore milestone contracts against statutory deductions (5% Retention, IT TDS, GST TDS, Labour Cess) and disbursements across <strong className="text-slate-900">PFMS</strong>, <strong className="text-slate-900">PSU Corporate Finance</strong>, and <strong className="text-slate-900">State Treasuries</strong>. Eliminate partner disputes and track site khatas with zero lost paper.
             </p>
 
-            {/* Flat Industrial CTAs */}
+            {/* Quiet, Grounded Action Buttons */}
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/sign-up"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md text-xs font-bold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-600 border border-blue-600 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
               >
                 <span>Launch Contractor Workspace</span>
                 <IconArrowRight className="w-4 h-4" />
               </Link>
 
               <a
-                href="#project-ledger"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md text-xs font-bold uppercase tracking-wider text-slate-300 bg-[#111827] border border-slate-700 hover:bg-slate-800 hover:text-white transition-colors"
+                href="#audit-preview"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors"
               >
-                <span>View Active Project Ledger</span>
-                <IconChevronDown className="w-4 h-4 text-slate-400" />
+                <span>View Live Contract Audit</span>
+                <IconChevronDown className="w-4 h-4 text-slate-500" />
               </a>
             </div>
 
-            {/* Architectural Trust Points */}
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-y-2 gap-x-6 text-xs text-slate-400 font-mono">
+            {/* Contractor Credibility Badges */}
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-y-2 gap-x-8 text-xs text-slate-500 font-medium">
               <span className="flex items-center gap-1.5">
-                <IconCheck className="w-3.5 h-3.5 text-slate-300" />
+                <IconCheck className="w-4 h-4 text-slate-700" />
+                Built for Class-A & Prime Civil Contractors
+              </span>
+              <span className="flex items-center gap-1.5">
+                <IconCheck className="w-4 h-4 text-slate-700" />
                 30-Second Self-Serve Setup
               </span>
               <span className="flex items-center gap-1.5">
-                <IconCheck className="w-3.5 h-3.5 text-slate-300" />
-                No Credit Card Required
-              </span>
-              <span className="flex items-center gap-1.5">
-                <IconCheck className="w-3.5 h-3.5 text-slate-300" />
-                PostgreSQL Row-Level Security Isolation
+                <IconCheck className="w-4 h-4 text-slate-700" />
+                Multi-Tenant Encrypted RLS Isolation
               </span>
             </div>
           </div>
         </section>
 
-        {/* ── Active Project Ledger Live Preview ─────────────── */}
-        <section id="project-ledger" className="py-14 bg-[#0B0F17] border-b border-slate-800">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-[#111827] border border-slate-800 rounded-lg p-4 sm:p-6">
-              
-              {/* Ledger Terminal Bar */}
-              <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-sm bg-slate-700" />
-                    <span className="h-2.5 w-2.5 rounded-sm bg-slate-700" />
-                    <span className="h-2.5 w-2.5 rounded-sm bg-slate-700" />
-                  </div>
-                  <span className="ml-2 text-xs font-mono font-medium text-slate-300 tracking-wider">
-                    PillarPro ERP: Active Project Ledger
+        {/* ── Hero Anchor: Authentic Bill Audit Sheet Preview ─── */}
+        <section id="audit-preview" className="py-12 md:py-16 bg-[#F8FAFC] border-b border-slate-200">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+              {/* Document Header Bar */}
+              <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Government Milestone Contract Audit Voucher
                   </span>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 mt-0.5">
+                    NH-44 Bypass 4-Lane Widening & Culvert Package (Pkg-02)
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Agency: PWD (R&B) Division / CPWD (PFMS) / NHPC • Agreement Value: ₹18.50 Cr
+                  </p>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] font-mono font-semibold px-2.5 py-1 rounded-sm bg-slate-900 border border-slate-700 text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  LIVE TELEMETRY • ACTIVE
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    Status: RA Bill 01 Certified & Reconciled
+                  </span>
                 </div>
               </div>
 
-              {/* Active Contract Info Banner */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#0B0F17] p-4 rounded-md border border-slate-800 mb-5">
-                <div>
-                  <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-400">
-                    Active Milestone Contract
+              {/* 3-Column Financial Audit Breakdown */}
+              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+                {/* Column 1: Gross Certified */}
+                <div className="p-5">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Gross Work Certified</p>
+                  <p className="text-2xl font-black text-slate-900 mt-1 tabular-nums">₹42,00,000</p>
+                  <p className="text-xs text-slate-500 mt-1">Abstract of Measurements (MB 142)</p>
+                  <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Earthwork Excavation:</span>
+                      <span className="font-semibold text-slate-900">₹18,50,000</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Sub-Base & RCC Culverts:</span>
+                      <span className="font-semibold text-slate-900">₹23,50,000</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Column 2: Statutory Deductions */}
+                <div className="p-5 bg-slate-50/50">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-rose-700 uppercase tracking-wider">Statutory Deductions (10%)</p>
+                    <span className="text-xs font-bold text-rose-700">-₹4,20,000</span>
+                  </div>
+                  <div className="mt-3 space-y-1.5 text-xs">
+                    <div className="flex justify-between text-slate-700">
+                      <span>Security Deposit (5% Retention):</span>
+                      <span className="font-mono font-medium text-slate-900">₹2,10,000</span>
+                    </div>
+                    <div className="flex justify-between text-slate-700">
+                      <span>Income Tax TDS (2% u/s 194C):</span>
+                      <span className="font-mono font-medium text-slate-900">₹84,000</span>
+                    </div>
+                    <div className="flex justify-between text-slate-700">
+                      <span>GST TDS (2% u/s 51):</span>
+                      <span className="font-mono font-medium text-slate-900">₹84,000</span>
+                    </div>
+                    <div className="flex justify-between text-slate-700">
+                      <span>BOCW Labour Cess (1%):</span>
+                      <span className="font-mono font-medium text-slate-900">₹42,00,0</span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-3 pt-2 border-t border-slate-200">
+                    Retention tracked for Defect Liability Period (DLP) release.
+                  </p>
+                </div>
+
+                {/* Column 3: Multi-Tranche Disbursements */}
+                <div className="p-5">
+                  <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Net Bank Credits Received</p>
+                  <p className="text-2xl font-black text-emerald-700 mt-1 tabular-nums">₹37,80,000</p>
+                  <p className="text-xs text-slate-500 mt-1">Multi-Tranche Agency Disbursement</p>
+                  <div className="mt-3 space-y-1.5 text-xs text-slate-700">
+                    <div className="flex justify-between">
+                      <span>Tranche #1 (PFMS / RTGS):</span>
+                      <span className="font-semibold text-slate-900">₹20,00,000</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Tranche #2 (Balance Credit):</span>
+                      <span className="font-semibold text-slate-900">₹17,80,000</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-slate-100 font-bold text-slate-900">
+                      <span>Net Audit Variance:</span>
+                      <span className="text-emerald-700">₹0 (Matched)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Real-world Operational Radar Footer */}
+              <div className="px-5 py-3.5 bg-slate-100/70 border-t border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
+                  <span className="text-slate-700">
+                    <strong className="text-slate-900">BG Radar:</strong> PBG/8912 expires in 24 days (Executive Engineer extension alert active)
                   </span>
-                  <p className="text-base sm:text-lg font-bold text-white mt-0.5 tracking-tight">
-                    NH-44 Bypass 4-Lane Widening & Culvert Package (Pkg-02)
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1 font-mono">
-                    PWD (R&B) / NHPC / CPWD National Highway Division • Tender Value: ₹18.50 Cr
-                  </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-semibold text-emerald-300 bg-emerald-950/40 border border-emerald-800 px-2.5 py-1 rounded-sm">
-                    Status: RA Bill 01 Certified
+                  <span className="h-2 w-2 rounded-full bg-blue-600 shrink-0" />
+                  <span className="text-slate-700">
+                    <strong className="text-slate-900">Site Munshi:</strong> 16 workers on site, muster roll verified
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-600 shrink-0" />
+                  <span className="text-slate-700">
+                    <strong className="text-slate-900">Supplier Khata:</strong> Cement challan + carriage charges logged
                   </span>
                 </div>
               </div>
-
-              {/* Financial Metrics Architectural Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-                <div className="p-4 rounded-md bg-[#0B0F17] border border-slate-800">
-                  <span className="text-xs text-slate-400 block font-mono uppercase tracking-wider">Gross Certified (RA Bill 01)</span>
-                  <span className="text-xl sm:text-2xl font-mono font-bold text-white tracking-tight mt-1 block">₹42,00,000</span>
-                  <span className="text-[11px] text-slate-400 mt-1 block font-mono">Earthwork & Sub-Base Tranche</span>
-                </div>
-
-                <div className="p-4 rounded-md bg-[#0B0F17] border border-slate-800">
-                  <span className="text-xs text-slate-400 block font-mono uppercase tracking-wider">Statutory Deductions</span>
-                  <span className="text-xl sm:text-2xl font-mono font-bold text-amber-400 tracking-tight mt-1 block">₹3,35,000</span>
-                  <span className="text-[11px] text-slate-400 mt-1 block font-mono">5% Retention + IT TDS + GST TDS + Cess</span>
-                </div>
-
-                <div className="p-4 rounded-md bg-[#0B0F17] border border-slate-800">
-                  <span className="text-xs text-slate-400 block font-mono uppercase tracking-wider">Net Bank Credit Received</span>
-                  <span className="text-xl sm:text-2xl font-mono font-bold text-emerald-400 tracking-tight mt-1 block">₹23,75,000</span>
-                  <span className="text-[11px] text-emerald-400/80 mt-1 block font-mono">Tranche #1 / Treasury Sanction</span>
-                </div>
-              </div>
-
-              {/* Strict Wireframe Operational Alerts Strip */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Alert 1: BG Warning */}
-                <div className="p-3.5 rounded-md border border-slate-800 bg-[#0B0F17] flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-md bg-slate-900 border border-slate-700 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                    <IconShieldAlert className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">Bank Guarantee Expiry Alert</p>
-                    <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-                      <strong className="text-slate-200">PBG/HDFC/8912 (₹8.90L)</strong> expires in <span className="text-amber-400 font-mono font-semibold">24 days</span>. Notice sent to Executive Engineer.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Alert 2: AI Receipt Scan */}
-                <div className="p-3.5 rounded-md border border-slate-800 bg-[#0B0F17] flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-md bg-slate-900 border border-slate-700 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
-                    <IconCamera className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">Mobile AI Receipt OCR</p>
-                    <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-                      Site Supervisor Tariq logged voucher: <strong className="text-slate-200">Diesel 200L (₹12,500)</strong> auto-posted to JCB ledger.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Alert 3: Daily Muster Roll */}
-                <div className="p-3.5 rounded-md border border-slate-800 bg-[#0B0F17] flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-md bg-slate-900 border border-slate-700 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                    <IconUsers className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">Daily Muster Roll Submitted</p>
-                    <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-                      <strong className="text-slate-200">16 Workers Present</strong>. ₹12,800 wage accrued today, ₹4,000 partial payout disbursed.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
             </div>
+
           </div>
         </section>
 
-        {/* ── Government Compliance Tenders Blueprint Grid ────── */}
-        <section className="py-10 border-b border-slate-800 bg-[#0F172A]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p className="text-[11px] font-mono font-semibold uppercase tracking-widest text-slate-400 mb-5">
-              Engineered For Contracts & Tenders Across Indian Government Departments
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-slate-300 font-mono text-xs font-medium">
-              <span className="p-2.5 rounded-md bg-[#111827] border border-slate-800 text-center">PWD (R&B)</span>
-              <span className="p-2.5 rounded-md bg-[#111827] border border-slate-800 text-center">CPWD Central</span>
-              <span className="p-2.5 rounded-md bg-[#111827] border border-slate-800 text-center">NHPC Hydro</span>
-              <span className="p-2.5 rounded-md bg-[#111827] border border-slate-800 text-center">PMGSY Roads</span>
-              <span className="p-2.5 rounded-md bg-[#111827] border border-slate-800 text-center">NHAI Highways</span>
-              <span className="p-2.5 rounded-md bg-[#111827] border border-slate-800 text-center">Irrigation & Flood</span>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Core Architectural Product Pillars ─────────────── */}
-        <section id="features" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-14">
-            <h2 className="text-xs font-mono font-semibold uppercase tracking-widest text-slate-400">
-              [SYSTEM CAPABILITIES]
-            </h2>
-            <h3 className="text-2xl sm:text-3xl font-bold text-white mt-2 tracking-tight">
-              Contractor-Grade Infrastructure Accounting
-            </h3>
-            <p className="text-sm text-slate-400 mt-3 leading-relaxed">
-              Generic ERPs and accounting software treat construction like retail inventory. PillarPro is tailored exclusively for milestone-based civil contracting and statutory treasury reconciliations.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Feature 1 */}
-            <div className="rounded-lg bg-[#111827] border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700 transition-colors">
-              <div>
-                <div className="h-9 w-9 rounded-md bg-slate-900 border border-slate-700 text-slate-300 flex items-center justify-center mb-4">
-                  <IconFileText className="w-4 h-4" />
-                </div>
-                <h4 className="text-base font-bold text-white tracking-tight">Treasury RA Bill & Deductions Engine</h4>
-                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                  Compare gross certified bills against statutory deductions (5% retention, 2% IT TDS, 2% GST TDS, 1% labour cess) and actual net bank credits across milestone tranches.
-                </p>
-              </div>
-              <div className="mt-5 pt-3 border-t border-slate-800 text-[11px] font-mono text-slate-400">
-                Zero variance between treasury sanctions & bank credit
-              </div>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="rounded-lg bg-[#111827] border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700 transition-colors">
-              <div>
-                <div className="h-9 w-9 rounded-md bg-slate-900 border border-slate-700 text-slate-300 flex items-center justify-center mb-4">
-                  <IconCamera className="w-4 h-4" />
-                </div>
-                <h4 className="text-base font-bold text-white tracking-tight">Site-to-Office Mobile AI Receipt OCR</h4>
-                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                  Field supervisors snap a photo of fuel, cement, or machinery repair slips on their phone. Google Gemini AI extracts vendor, amount, and items directly into the project ledger.
-                </p>
-              </div>
-              <div className="mt-5 pt-3 border-t border-slate-800 text-[11px] font-mono text-slate-400">
-                End lost paper receipts & unaccounted cash outlays
-              </div>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="rounded-lg bg-[#111827] border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700 transition-colors">
-              <div>
-                <div className="h-9 w-9 rounded-md bg-slate-900 border border-slate-700 text-slate-300 flex items-center justify-center mb-4">
-                  <IconShieldAlert className="w-4 h-4" />
-                </div>
-                <h4 className="text-base font-bold text-white tracking-tight">Bank Guarantee (BG) Expiry Radar</h4>
-                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                  Active countdown and automated 30-day alerts for Performance BGs, Mobilization Advances, and EMDs before deadlines to prevent bank encashment and departmental forfeiture.
-                </p>
-              </div>
-              <div className="mt-5 pt-3 border-t border-slate-800 text-[11px] font-mono text-slate-400">
-                Protect working capital & bank credit limits
-              </div>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="rounded-lg bg-[#111827] border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700 transition-colors">
-              <div>
-                <div className="h-9 w-9 rounded-md bg-slate-900 border border-slate-700 text-slate-300 flex items-center justify-center mb-4">
-                  <IconUsers className="w-4 h-4" />
-                </div>
-                <h4 className="text-base font-bold text-white tracking-tight">Daily-Wage Labor Muster Rolls</h4>
-                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                  Log daily full/half shifts on site in seconds. Automatically calculates daily wage liability, records partial payouts from cash drawers, and tracks individual laborer khata balances.
-                </p>
-              </div>
-              <div className="mt-5 pt-3 border-t border-slate-800 text-[11px] font-mono text-slate-400">
-                Contract Labour Act compliant field records
-              </div>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="rounded-lg bg-[#111827] border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700 transition-colors">
-              <div>
-                <div className="h-9 w-9 rounded-md bg-slate-900 border border-slate-700 text-slate-300 flex items-center justify-center mb-4">
-                  <IconScale className="w-4 h-4" />
-                </div>
-                <h4 className="text-base font-bold text-white tracking-tight">Partner Capital & Out-of-Pocket Parity</h4>
-                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                  Maintain 100% transparency between contracting partners. Track who infused working capital, who paid for diesel out-of-pocket, and who withdrew profit distributions.
-                </p>
-              </div>
-              <div className="mt-5 pt-3 border-t border-slate-800 text-[11px] font-mono text-slate-400">
-                Eliminate partnership disputes & suspicion
-              </div>
-            </div>
-
-            {/* Feature 6 */}
-            <div className="rounded-lg bg-[#111827] border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700 transition-colors">
-              <div>
-                <div className="h-9 w-9 rounded-md bg-slate-900 border border-slate-700 text-slate-300 flex items-center justify-center mb-4">
-                  <IconLock className="w-4 h-4" />
-                </div>
-                <h4 className="text-base font-bold text-white tracking-tight">Site-Restricted Roles (RBAC)</h4>
-                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                  Assign junior engineers and site munshis strictly to their active package. They cannot view your tender margins, other projects, or overall partner equity accounts.
-                </p>
-              </div>
-              <div className="mt-5 pt-3 border-t border-slate-800 text-[11px] font-mono text-slate-400">
-                Enterprise confidentiality for contractor staff
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Comparison Table: PillarPro vs Excel / Tally ────────── */}
-        <section id="comparison" className="py-16 bg-[#0F172A] border-t border-slate-800">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <h2 className="text-xs font-mono font-semibold uppercase tracking-widest text-slate-400">
-                [AUDIT SCHEDULE SPECIFICATION]
+        {/* ── Interactive Statutory Deduction Calculator ──────── */}
+        <section id="calculator" className="py-14 bg-white border-b border-slate-200">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-8">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Interactive Audit Tool
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">
+                Calculate the True Statutory Squeeze on Your RA Bill
               </h2>
-              <h3 className="text-2xl sm:text-3xl font-bold text-white mt-2 tracking-tight">
-                Architectural Workflow vs Generic Spreadsheets
-              </h3>
+              <p className="text-sm text-slate-600 mt-2">
+                See exactly where your milestone payments get deducted before bank credit. Slide to test any contract amount:
+              </p>
             </div>
 
-            <div className="overflow-x-auto rounded-md border border-slate-800 bg-[#111827]">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+              {/* Bill Amount Slider & Input */}
+              <div className="mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                  <label htmlFor="bill-slider" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Gross Certified RA Bill Amount (₹)
+                  </label>
+                  <span className="text-xl font-black text-slate-900 tabular-nums">
+                    ₹{calcBillAmount.toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <input
+                  id="bill-slider"
+                  type="range"
+                  min="500000"
+                  max="50000000"
+                  step="500000"
+                  value={calcBillAmount}
+                  onChange={e => setCalcBillAmount(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-900"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-medium">
+                  <span>₹5 Lakhs</span>
+                  <span>₹1 Crore</span>
+                  <span>₹2.5 Crore</span>
+                  <span>₹5 Crore</span>
+                </div>
+              </div>
+
+              {/* Calculated Breakdown Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div className="p-3 bg-white rounded-lg border border-slate-200">
+                  <p className="text-[11px] font-semibold text-slate-500">5% Retention (SD)</p>
+                  <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
+                    -₹{retention.toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Held till DLP expiry</p>
+                </div>
+
+                <div className="p-3 bg-white rounded-lg border border-slate-200">
+                  <p className="text-[11px] font-semibold text-slate-500">2% IT TDS (Sec 194C)</p>
+                  <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
+                    -₹{itTds.toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Direct tax credit</p>
+                </div>
+
+                <div className="p-3 bg-white rounded-lg border border-slate-200">
+                  <p className="text-[11px] font-semibold text-slate-500">2% GST TDS (Sec 51)</p>
+                  <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
+                    -₹{gstTds.toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">1% CGST + 1% SGST</p>
+                </div>
+
+                <div className="p-3 bg-white rounded-lg border border-slate-200">
+                  <p className="text-[11px] font-semibold text-slate-500">1% BOCW Cess</p>
+                  <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
+                    -₹{labourCess.toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Labour Welfare Board</p>
+                </div>
+              </div>
+
+              {/* Net Disbursed Result */}
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-emerald-900 uppercase tracking-wider">
+                    Expected Net Bank Disbursement
+                  </p>
+                  <p className="text-xs text-emerald-700 mt-0.5">
+                    Total Deductions: ₹{totalDeductions.toLocaleString('en-IN')} (10.0% of Gross Bill)
+                  </p>
+                </div>
+                <div className="text-left sm:text-right">
+                  <span className="text-2xl font-black text-emerald-900 tabular-nums">
+                    ₹{netDisbursed.toLocaleString('en-IN')}
+                  </span>
+                  <span className="block text-[11px] text-emerald-700 font-medium">
+                    Reconciles across PFMS / Finance / Treasury
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── The 3 Real Moats (Replacing Generic AI Cards) ───── */}
+        <section id="capabilities" className="py-16 md:py-20 bg-[#F8FAFC] border-b border-slate-200">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-3xl mx-auto mb-12">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Purpose-Built for Infrastructure
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 mt-1 tracking-tight">
+                Three Capabilities That Separate Us From Generic Software
+              </h2>
+              <p className="text-sm text-slate-600 mt-3 leading-relaxed">
+                Generic apps treat civil contracting like retail inventory or office task boards. PillarPro solves the four brutal financial bottlenecks that cause contractors to bleed money.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Moat 1: Multi-Agency RA Bill Audit */}
+              <div className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
+                <div>
+                  <div className="h-10 w-10 rounded-lg bg-slate-100 border border-slate-200 text-slate-900 flex items-center justify-center mb-4">
+                    <IconFileText className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Pillar 01</span>
+                  <h3 className="text-lg font-bold text-slate-900 mt-1">Multi-Agency RA Bill Audit & Deductions</h3>
+                  <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
+                    Built for <strong className="text-slate-900">CPWD</strong> (audited by Accounts Branch & credited via PFMS), <strong className="text-slate-900">NHPC & PSUs</strong> (disbursed through corporate finance RTGS), and <strong className="text-slate-900">State PWD & PMGSY</strong> (disbursed through State Treasuries). Reconciles statutory deductions and split bank credit tranches down to the exact rupee.
+                  </p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
+                  ✓ Retention, IT TDS, GST TDS & Labour Cess
+                </div>
+              </div>
+
+              {/* Moat 2: Bank Guarantee & EMD Radar */}
+              <div className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
+                <div>
+                  <div className="h-10 w-10 rounded-lg bg-slate-100 border border-slate-200 text-slate-900 flex items-center justify-center mb-4">
+                    <IconShieldAlert className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Pillar 02</span>
+                  <h3 className="text-lg font-bold text-slate-900 mt-1">Bank Guarantee (PBG) & EMD Radar</h3>
+                  <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
+                    Never lose track of a Performance BG, Mobilization Advance BG, or Earnest Money Deposit. Proactive 30-day alerts notify you before renewal deadlines, preventing departmental invocation and stopping banks from quietly deducting quarterly commission charges on completed projects.
+                  </p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
+                  ✓ Protects working capital & bank credit limits
+                </div>
+              </div>
+
+              {/* Moat 3: Partner Capital Parity & Field Khata */}
+              <div className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
+                <div>
+                  <div className="h-10 w-10 rounded-lg bg-slate-100 border border-slate-200 text-slate-900 flex items-center justify-center mb-4">
+                    <IconScale className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Pillar 03</span>
+                  <h3 className="text-lg font-bold text-slate-900 mt-1">Partner Parity & Field Site Khata</h3>
+                  <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
+                    Civil tenders run as multi-partner joint ventures. PillarPro tracks out-of-pocket partner payments (SBI personal, cash drawers) and capital infusions. Field supervisors log supplier deliveries with itemized <strong className="text-slate-900">carriage/transport charges</strong> and send 1-click WhatsApp Khatas.
+                  </p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
+                  ✓ Zero partner disputes & carriage cost tracking
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Audit Comparison Specification Table ───────────── */}
+        <section id="specification" className="py-16 bg-white border-b border-slate-200">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-10">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Feature Specification
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">
+                PillarPro vs Generic Spreadsheets & Standard Accounting
+              </h2>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-800 bg-[#0B0F17] text-slate-300 font-mono uppercase tracking-wider text-[11px]">
-                    <th scope="col" className="p-4">Feature / Audit Capability</th>
-                    <th scope="col" className="p-4 text-white font-bold bg-slate-800/60 border-x border-slate-700">PillarPro ERP</th>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
+                    <th scope="col" className="p-4">Capability</th>
+                    <th scope="col" className="p-4 text-slate-900 bg-slate-100/80 border-x border-slate-200 font-black">PillarPro OS</th>
                     <th scope="col" className="p-4">Excel Spreadsheets</th>
-                    <th scope="col" className="p-4">Tally / Standard Accounting</th>
+                    <th scope="col" className="p-4">Tally / Standard ERP</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 text-slate-300">
+                <tbody className="divide-y divide-slate-200 text-slate-600">
                   <tr>
-                    <th scope="row" className="p-4 font-medium text-slate-200 text-left font-sans">Government RA Bill Deductions (Retention, TDS, Cess)</th>
-                    <td className="p-4 text-emerald-400 font-mono font-semibold bg-slate-800/30 border-x border-slate-700 flex items-center gap-1.5">
-                      <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <th scope="row" className="p-4 font-semibold text-slate-900 font-sans">
+                      Government RA Bill Statutory Deductions (Retention, TDS, Cess)
+                    </th>
+                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/50 border-x border-slate-200 flex items-center gap-1.5">
+                      <IconCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                       Automated & Reconciled
                     </td>
-                    <td className="p-4 text-slate-400">Manual formula error risk</td>
-                    <td className="p-4 text-slate-400">Not built for civil tranches</td>
+                    <td className="p-4 text-slate-500">Manual formula error risk</td>
+                    <td className="p-4 text-slate-500">Requires complex journal adjustments</td>
                   </tr>
                   <tr>
-                    <th scope="row" className="p-4 font-medium text-slate-200 text-left font-sans">Bank Guarantee & Security Deposit Expiry Alerts</th>
-                    <td className="p-4 text-emerald-400 font-mono font-semibold bg-slate-800/30 border-x border-slate-700 flex items-center gap-1.5">
-                      <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      30-Day Proactive Radar
+                    <th scope="row" className="p-4 font-semibold text-slate-900 font-sans">
+                      Multi-Agency Disbursement Tracking (PFMS, PSU Finance, State Treasuries)
+                    </th>
+                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/50 border-x border-slate-200 flex items-center gap-1.5">
+                      <IconCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      Tranche-by-Tranche Audit
                     </td>
-                    <td className="p-4 text-rose-400/90 flex items-center gap-1">
+                    <td className="p-4 text-rose-600/90 flex items-center gap-1">
                       <IconX className="w-3.5 h-3.5" />
-                      None (Missed deadlines)
+                      Lost in bank statement rows
                     </td>
-                    <td className="p-4 text-rose-400/90 flex items-center gap-1">
+                    <td className="p-4 text-rose-600/90 flex items-center gap-1">
+                      <IconX className="w-3.5 h-3.5" />
+                      No milestone link
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row" className="p-4 font-semibold text-slate-900 font-sans">
+                      Bank Guarantee & EMD Expiry Radar
+                    </th>
+                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/50 border-x border-slate-200 flex items-center gap-1.5">
+                      <IconCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      30-Day Automated Alert
+                    </td>
+                    <td className="p-4 text-rose-600/90 flex items-center gap-1">
+                      <IconX className="w-3.5 h-3.5" />
+                      None (Missed surrender)
+                    </td>
+                    <td className="p-4 text-rose-600/90 flex items-center gap-1">
                       <IconX className="w-3.5 h-3.5" />
                       No expiry warning system
                     </td>
                   </tr>
                   <tr>
-                    <th scope="row" className="p-4 font-medium text-slate-200 text-left font-sans">Site Receipt Capture (Fuel, Cement, Hardware)</th>
-                    <td className="p-4 text-emerald-400 font-mono font-semibold bg-slate-800/30 border-x border-slate-700 flex items-center gap-1.5">
-                      <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      Mobile AI OCR in 5s
+                    <th scope="row" className="p-4 font-semibold text-slate-900 font-sans">
+                      Supplier Procurement with Carriage / Freight Charges
+                    </th>
+                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/50 border-x border-slate-200 flex items-center gap-1.5">
+                      <IconCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      Itemized Transport Cost
                     </td>
-                    <td className="p-4 text-rose-400/90 flex items-center gap-1">
-                      <IconX className="w-3.5 h-3.5" />
-                      Manual typing into desktop
-                    </td>
-                    <td className="p-4 text-rose-400/90 flex items-center gap-1">
-                      <IconX className="w-3.5 h-3.5" />
-                      Manual journal voucher entry
-                    </td>
+                    <td className="p-4 text-slate-500">Unclear landed cost</td>
+                    <td className="p-4 text-slate-500">Manual voucher split</td>
                   </tr>
                   <tr>
-                    <th scope="row" className="p-4 font-medium text-slate-200 text-left font-sans">Daily Labor Muster Roll & Partial Wage Draws</th>
-                    <td className="p-4 text-emerald-400 font-mono font-semibold bg-slate-800/30 border-x border-slate-700 flex items-center gap-1.5">
-                      <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      1-Tap Mobile Muster
+                    <th scope="row" className="p-4 font-semibold text-slate-900 font-sans">
+                      Partner Capital Parity & Out-of-Pocket Ledger
+                    </th>
+                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/50 border-x border-slate-200 flex items-center gap-1.5">
+                      <IconCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      Real-time Equity Reconciliation
                     </td>
-                    <td className="p-4 text-slate-400">Messy paper diary sync</td>
-                    <td className="p-4 text-rose-400/90 flex items-center gap-1">
-                      <IconX className="w-3.5 h-3.5" />
-                      No daily-wage tracking
-                    </td>
+                    <td className="p-4 text-slate-500">Frequent partner disputes</td>
+                    <td className="p-4 text-slate-500">Requires chartered accountant</td>
                   </tr>
                   <tr>
-                    <th scope="row" className="p-4 font-medium text-slate-200 text-left font-sans">Field Supervisor Access Control</th>
-                    <td className="p-4 text-emerald-400 font-mono font-semibold bg-slate-800/30 border-x border-slate-700 flex items-center gap-1.5">
-                      <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      Restricted to Assigned Site
+                    <th scope="row" className="p-4 font-semibold text-slate-900 font-sans">
+                      Mobile Field Usability Under Direct Sunlight
+                    </th>
+                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/50 border-x border-slate-200 flex items-center gap-1.5">
+                      <IconCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      High-Contrast Glare-Free UI
                     </td>
-                    <td className="p-4 text-rose-400/90 flex items-center gap-1">
+                    <td className="p-4 text-rose-600/90 flex items-center gap-1">
                       <IconX className="w-3.5 h-3.5" />
-                      None (Full sheet exposed)
+                      Tiny mobile sheet cells
                     </td>
-                    <td className="p-4 text-rose-400/90 flex items-center gap-1">
+                    <td className="p-4 text-rose-600/90 flex items-center gap-1">
                       <IconX className="w-3.5 h-3.5" />
-                      Desktop-only installation
+                      Desktop-only software
                     </td>
-                  </tr>
-                  <tr>
-                    <th scope="row" className="p-4 font-medium text-slate-200 text-left font-sans">Partner Capital & Drawing Accounts</th>
-                    <td className="p-4 text-emerald-400 font-mono font-semibold bg-slate-800/30 border-x border-slate-700 flex items-center gap-1.5">
-                      <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      Automated Parity Ledger
-                    </td>
-                    <td className="p-4 text-slate-400">Prone to partner arguments</td>
-                    <td className="p-4 text-slate-400">Requires chartered accountant</td>
                   </tr>
                 </tbody>
               </table>
@@ -591,88 +665,87 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
           </div>
         </section>
 
-        {/* ── FAQ Section ─────────────────────────────────────── */}
-        <section id="faq" className="py-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-xs font-mono font-semibold uppercase tracking-widest text-slate-400">
-              [TECHNICAL INQUIRIES]
-            </h2>
-            <h3 className="text-2xl sm:text-3xl font-bold text-white mt-2 tracking-tight">
-              Frequently Asked Questions
-            </h3>
-          </div>
+        {/* ── FAQ Section (Clean Accordion) ───────────────────── */}
+        <section id="faq" className="py-16 bg-[#F8FAFC] border-b border-slate-200">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-10">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Common Inquiries
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">
+                Frequently Asked Questions
+              </h2>
+            </div>
 
-          <div className="space-y-2.5">
-            {faqs.map((faq, idx) => {
-              const isOpen = activeFaq === idx
-              return (
-                <div
-                  key={idx}
-                  className="rounded-md border border-slate-800 bg-[#111827] overflow-hidden"
-                >
-                  <button
-                    type="button"
-                    id={`faq-btn-${idx}`}
-                    onClick={() => toggleFaq(idx)}
-                    aria-expanded={isOpen}
-                    aria-controls={`faq-answer-${idx}`}
-                    className="w-full p-4 sm:p-5 text-left font-semibold text-slate-100 flex items-center justify-between gap-4 hover:bg-slate-800/40 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
+            <div className="space-y-3">
+              {faqs.map((faq, idx) => {
+                const isOpen = activeFaq === idx
+                return (
+                  <div
+                    key={idx}
+                    className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm"
                   >
-                    <span className="text-sm">{faq.q}</span>
-                    <span
-                      aria-hidden="true"
-                      className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+                    <button
+                      type="button"
+                      id={`faq-btn-${idx}`}
+                      onClick={() => toggleFaq(idx)}
+                      aria-expanded={isOpen}
+                      aria-controls={`faq-answer-${idx}`}
+                      className="w-full p-4 sm:p-5 text-left font-semibold text-slate-900 flex items-center justify-between gap-4 hover:bg-slate-50 transition-colors focus:outline-none"
                     >
-                      <IconChevronDown className="w-4 h-4" />
-                    </span>
-                  </button>
-                  {isOpen && (
-                    <div
-                      id={`faq-answer-${idx}`}
-                      role="region"
-                      aria-labelledby={`faq-btn-${idx}`}
-                      className="px-4 pb-5 sm:px-5 sm:pb-6 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800/70 pt-3"
-                    >
-                      {faq.a}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                      <span className="text-sm font-bold">{faq.q}</span>
+                      <span
+                        aria-hidden="true"
+                        className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+                      >
+                        <IconChevronDown className="w-4 h-4" />
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <div
+                        id={`faq-answer-${idx}`}
+                        role="region"
+                        aria-labelledby={`faq-btn-${idx}`}
+                        className="px-4 pb-5 sm:px-5 sm:pb-6 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3"
+                      >
+                        {faq.a}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </section>
 
-        {/* ── Final Architectural Call To Action ──────────────── */}
-        <section className="py-16 md:py-20 border-t border-slate-800 bg-[#0F172A]">
+        {/* ── Final Call To Action ────────────────────────────── */}
+        <section className="py-16 md:py-20 bg-white">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div className="h-10 w-10 rounded-md bg-slate-900 border border-slate-700 text-slate-300 flex items-center justify-center mx-auto mb-4" aria-hidden="true">
-              <IconBuilding className="w-5 h-5" />
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              Ready to take command of your contracting business?
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+              Take Command of Your Contracting Finances Today
             </h2>
-            <p className="mt-3 text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
-              Join forward-thinking infrastructure contractors simplifying RA bills, protecting working capital, and eliminating spreadsheet chaos.
+            <p className="mt-3 text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
+              Join infrastructure and PWD contractors who have eliminated spreadsheet chaos, audited their statutory deductions, and protected their working capital.
             </p>
 
             <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/sign-up"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-md text-xs font-bold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-600 border border-blue-600 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
               >
-                <span>Launch Your Contractor Workspace Free</span>
+                <span>Launch Contractor Workspace Free</span>
                 <IconArrowRight className="w-4 h-4" />
               </Link>
             </div>
 
-            <p className="mt-4 text-xs font-mono text-slate-400">
-              No credit card required. Multi-tenant database partition provisioned in 30 seconds.
+            <p className="mt-4 text-xs text-slate-500">
+              No credit card required. Isolated database partition provisioned in 30 seconds.
             </p>
           </div>
         </section>
       </main>
 
-      {/* ── JSON-LD Structured Data (Agentic & Search Optimization) ─ */}
+      {/* ── JSON-LD Structured Data ──────────────────────────── */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -688,41 +761,43 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
               priceCurrency: 'INR',
             },
             description:
-              'The Financial & Operations Operating System built specifically for civil infrastructure contractors. RA Billing, statutory deductions, supplier khatas, and site muster rolls.',
+              'The Financial & Operations Operating System built specifically for Indian civil infrastructure contractors. RA Billing, statutory deductions, PFMS reconciliation, supplier khatas, and site muster rolls.',
           }),
         }}
       />
 
-      {/* ── Architectural Field Slate Footer ─────────────────── */}
-      <footer className="py-8 pb-24 md:pb-8 border-t border-slate-800 bg-[#0B0F17] text-slate-400 text-xs">
+      {/* ── Minimal Architectural Footer ─────────────────────── */}
+      <footer className="py-8 pb-24 md:pb-8 border-t border-slate-200 bg-white text-slate-500 text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Logo theme="dark" size="sm" href="/" />
-            <span className="text-slate-400 font-mono text-[11px]">— Financial & Operations OS for Infrastructure Contractors</span>
+            <Logo theme="light" size="sm" href="/" />
+            <span className="text-slate-500 text-[11px]">
+              — Financial & Operations OS for Infrastructure Contractors
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 font-mono text-[11px]">
-            <Link href="/sign-in" className="hover:text-white transition-colors">Sign In</Link>
-            <Link href="/sign-up" className="hover:text-white transition-colors">Create Firm Workspace</Link>
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
-            <span className="text-slate-500">© 2026 PillarPro. All rights reserved.</span>
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[11px] text-slate-600 font-medium">
+            <Link href="/sign-in" className="hover:text-slate-900 transition-colors">Sign In</Link>
+            <Link href="/sign-up" className="hover:text-slate-900 transition-colors">Create Firm Workspace</Link>
+            <Link href="/privacy" className="hover:text-slate-900 transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-slate-900 transition-colors">Terms of Service</Link>
+            <span className="text-slate-400">© 2026 PillarPro. All rights reserved.</span>
           </div>
         </div>
       </footer>
 
-      {/* ── Sticky Mobile CTA Bar (Mobile only) ───────────────── */}
-      <div className="fixed bottom-0 inset-x-0 z-40 md:hidden p-3 bg-[#0B0F17] border-t border-slate-800">
+      {/* ── Sticky Mobile Action Bar (Clean High-Contrast) ──── */}
+      <div className="fixed bottom-0 inset-x-0 z-40 md:hidden p-3 bg-white/95 backdrop-blur-sm border-t border-slate-200 shadow-lg">
         <div className="flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white truncate font-mono">PillarPro ERP</p>
-            <p className="text-[10px] text-slate-400 truncate font-mono">Active Project Ledger</p>
+            <p className="text-xs font-bold text-slate-900 truncate">PillarPro OS</p>
+            <p className="text-[10px] text-slate-500 truncate">Civil Contractor Financials</p>
           </div>
           <Link
             href={isLoggedIn ? '/dashboard' : '/sign-up'}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-bold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-600 border border-blue-600 transition-colors shrink-0"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm shrink-0"
           >
-            <span>{isLoggedIn ? 'Dashboard' : 'Launch'}</span>
+            <span>{isLoggedIn ? 'Dashboard' : 'Start Trial'}</span>
             <IconArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -730,4 +805,3 @@ export function LandingPage({ isLoggedIn, userName, orgName }: LandingPageProps)
     </div>
   )
 }
-

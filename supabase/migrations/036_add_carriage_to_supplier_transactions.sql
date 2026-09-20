@@ -10,3 +10,4 @@ ALTER TABLE public.supplier_transactions
 
 COMMENT ON COLUMN public.supplier_transactions.carriage_amount IS 
   'Carriage, freight, transport, or loading/unloading charges included in the procurement';
+
