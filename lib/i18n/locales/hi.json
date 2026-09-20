@@ -28,6 +28,9 @@
   "common.close": "बंद करें",
   "common.logout": "लॉग आउट",
   "common.language": "भाषा / Language",
+  "common.total": "कुल राशि",
+  "common.download_pdf": "PDF डाउनलोड करें",
+  "common.share_whatsapp": "व्हाट्सएप पर भेजें",
 
   "contractor.muster": "दैनिक हाजिरी (मस्टर रोल)",
   "contractor.mason": "मिस्त्री",
@@ -39,5 +42,39 @@
   "contractor.store": "साइट स्टोर और गोदाम",
   "contractor.ra_bill": "रनिंग बिल (आर.ए. बिल)",
   "contractor.tender": "सरकारी ठेका और टेंडर"
+  "contractor.tender": "सरकारी ठेका और टेंडर",
+
+  "attendance.present": "पूरा दिन (हाजिर)",
+  "attendance.half_day": "आधा दिन (हाफ डे)",
+  "attendance.absent": "गैरहाजिर",
+  "attendance.advance": "नकद अग्रिम दिया",
+  "attendance.payout": "मजदूरी भुगतान",
+  "attendance.total_workers": "कुल उपस्थित मजदूर",
+
+  "inventory.grn": "सामग्री आवक (GRN)",
+  "inventory.issue": "साइट निर्गमन पर्ची",
+  "inventory.stock": "वर्तमान स्टॉक शेष",
+  "inventory.min_buffer": "न्यूनतम बफर चेतावनी",
+  "inventory.wastage": "सामग्री बर्बादी / स्क्रैप",
+  "inventory.wastage_alert": "बर्बादी सीमा से अधिक",
+
+  "machinery.hour_meter": "घंटा मीटर रीडिंग",
+  "machinery.fuel_added": "डीजल डाला (लीटर)",
+  "machinery.idle": "मशीन बंद / ब्रेकडाउन",
+  "machinery.running": "साइट पर कार्यरत",
+
+  "rabill.gross_certified": "सकल प्रमाणित कार्य",
+  "rabill.deductions": "सरकारी कटौतियां",
+  "rabill.retention": "सिक्योरिटी डिपॉजिट (5%)",
+  "rabill.tds": "आयकर टीडीएस (2%)",
+  "rabill.gst_tds": "जीएसटी टीडीएस (2%)",
+  "rabill.cess": "श्रम कल्याण सेस (1%)",
+  "rabill.net_passed": "स्वीकृत देय राशि",
+  "rabill.bank_received": "बैंक में प्राप्त राशि",
+  "rabill.pending_balance": "शेष प्राप्य बकाया",
+
+  "supplier.total_billed": "कुल सामग्री खरीद",
+  "supplier.total_paid": "कुल किया गया भुगतान",
+  "supplier.balance_owed": "शेष देय बकाया"
 }
 

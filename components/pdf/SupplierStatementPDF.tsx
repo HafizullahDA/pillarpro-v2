@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import { formatINR, formatDate } from '@/lib/format'
 import { OrganizationProfile } from '@/lib/organization'
@@ -70,6 +71,33 @@ export function SupplierStatementPDF({
               {organization?.address && (
                 <span>· {organization.address}</span>
               )}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3.5 max-w-2xl">
+            {organization?.logo_url && (
+              <img
+                src={organization.logo_url}
+                alt="Logo"
+                className="h-14 max-w-[120px] object-contain shrink-0 mt-0.5"
+              />
+            )}
+            <div>
+              <h1 className="text-xl font-black tracking-tight uppercase text-slate-900">
+                {organization?.name || 'Civil Engineering & Construction'}
+              </h1>
+              <div className="flex items-center gap-x-2 gap-y-0.5 flex-wrap text-xs text-slate-600 mt-1">
+                {organization?.registration_no && (
+                  <span className="font-semibold text-slate-800">{organization.registration_no}</span>
+                )}
+                {organization?.gstin && (
+                  <span>· GSTIN: <strong className="font-mono text-slate-800">{organization.gstin}</strong></span>
+                )}
+                {organization?.address && (
+                  <span>· {organization.address}</span>
+                )}
+              </div>
+              <h2 className="text-xs font-bold text-slate-500 tracking-wider uppercase mt-2">
+                Supplier Statement of Account
+              </h2>
             </div>
             <h2 className="text-xs font-bold text-slate-500 tracking-wider uppercase mt-2">
               Supplier Statement of Account
@@ -223,11 +251,21 @@ export function SupplierStatementPDF({
       <div className="pt-6 border-t border-slate-200 grid grid-cols-2 gap-8 text-center text-xs text-slate-600">
         <div>
           <div className="h-12 border-b border-slate-400 mb-2" />
+          <div className="h-16 border-b border-slate-400 mb-2" />
           <p className="font-bold text-slate-800">For {supplier.name}</p>
           <p className="text-[11px] text-slate-500">Supplier / Authorized Representative</p>
         </div>
         <div>
           <div className="h-12 border-b border-slate-400 mb-2" />
+          <div className="h-16 border-b border-slate-400 mb-2 flex items-center justify-center">
+            {organization?.signature_url ? (
+              <img
+                src={organization.signature_url}
+                alt="Authorized Signatory & Seal"
+                className="h-14 max-w-full object-contain"
+              />
+            ) : null}
+          </div>
           <p className="font-bold text-slate-800">For {organization?.name || 'Contractor'}</p>
           <p className="text-[11px] text-slate-500">Authorized Account Signatory</p>
         </div>

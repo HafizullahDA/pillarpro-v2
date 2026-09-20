@@ -70,7 +70,10 @@ ${dpr.photos.length > 0 ? `\n*📸 Site Photos Attached:* ${dpr.photos.length} p
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text)
       alert('DPR copied to clipboard! Ready to paste on WhatsApp.')
+      navigator.clipboard.writeText(text).catch(() => {})
     }
+    const encoded = encodeURIComponent(text)
+    window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank', 'noopener,noreferrer')
   }
 
   return (

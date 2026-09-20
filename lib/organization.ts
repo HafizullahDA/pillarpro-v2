@@ -11,6 +11,7 @@ export interface OrganizationProfile {
   phone?: string | null
   email?: string | null
   logo_url?: string | null
+  signature_url?: string | null
 }
 
 export const DEFAULT_ORGANIZATION: OrganizationProfile = {
@@ -23,6 +24,8 @@ export const DEFAULT_ORGANIZATION: OrganizationProfile = {
   address: 'Srinagar, Jammu & Kashmir',
   phone: '',
   email: '',
+  logo_url: null,
+  signature_url: null,
 }
 
 /**

@@ -28,6 +28,7 @@ export const createInventoryItemSchema = z.object({
   unit: inventoryUnitEnum.default('bags'),
   current_stock: z.coerce.number().min(0, 'Starting stock cannot be negative.').default(0),
   minimum_stock_alert: z.coerce.number().min(0, 'Minimum buffer cannot be negative.').default(0),
+  wastage_threshold_pct: z.coerce.number().min(0, 'Wastage threshold cannot be negative.').max(100, 'Threshold cannot exceed 100%.').default(3.00),
   project_id: z.string().uuid().optional().or(z.literal('')),
   notes: z.string().trim().max(500).optional().or(z.literal('')),
 })

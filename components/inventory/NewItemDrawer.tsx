@@ -40,6 +40,7 @@ export function NewItemDrawer({ open, onClose, projects }: NewItemDrawerProps) {
     unit: 'bags',
     current_stock: '0',
     minimum_stock_alert: '10',
+    wastage_threshold_pct: '3.00',
     project_id: '',
     notes: '',
   })
@@ -54,6 +55,7 @@ export function NewItemDrawer({ open, onClose, projects }: NewItemDrawerProps) {
       ...form,
       current_stock: Number(form.current_stock) || 0,
       minimum_stock_alert: Number(form.minimum_stock_alert) || 0,
+      wastage_threshold_pct: Number(form.wastage_threshold_pct) || 3,
       project_id: form.project_id || undefined,
     })
 
@@ -81,6 +83,7 @@ export function NewItemDrawer({ open, onClose, projects }: NewItemDrawerProps) {
       unit: form.unit as any,
       current_stock: Number(form.current_stock) || 0,
       minimum_stock_alert: Number(form.minimum_stock_alert) || 0,
+      wastage_threshold_pct: Number(form.wastage_threshold_pct) || 3,
       project_id: form.project_id || null,
       notes: form.notes.trim() || null,
     })
@@ -100,6 +103,7 @@ export function NewItemDrawer({ open, onClose, projects }: NewItemDrawerProps) {
       unit: 'bags',
       current_stock: '0',
       minimum_stock_alert: '10',
+      wastage_threshold_pct: '3.00',
       project_id: '',
       notes: '',
     })
@@ -147,6 +151,7 @@ export function NewItemDrawer({ open, onClose, projects }: NewItemDrawerProps) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <FieldWrapper label="Initial Opening Stock">
             <Input
               type="number"
@@ -159,6 +164,7 @@ export function NewItemDrawer({ open, onClose, projects }: NewItemDrawerProps) {
           </FieldWrapper>
 
           <FieldWrapper label="Min Buffer Alert" hint="Triggers low-stock warning">
+          <FieldWrapper label="Min Buffer Alert" hint="Low-stock warning">
             <Input
               type="number"
               step="any"
@@ -166,6 +172,18 @@ export function NewItemDrawer({ open, onClose, projects }: NewItemDrawerProps) {
               value={form.minimum_stock_alert}
               onChange={e => setField('minimum_stock_alert', e.target.value)}
               placeholder="10"
+            />
+          </FieldWrapper>
+
+          <FieldWrapper label="Wastage Limit (%)" hint="Allowable tolerance">
+            <Input
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              value={form.wastage_threshold_pct}
+              onChange={e => setField('wastage_threshold_pct', e.target.value)}
+              placeholder="3.0"
             />
           </FieldWrapper>
         </div>

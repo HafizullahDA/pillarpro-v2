@@ -28,6 +28,9 @@
   "common.close": "Close",
   "common.logout": "Sign Out",
   "common.language": "Language",
+  "common.total": "Total",
+  "common.download_pdf": "Download PDF",
+  "common.share_whatsapp": "Share on WhatsApp",
 
   "contractor.muster": "Daily Attendance (Muster Roll)",
   "contractor.mason": "Mason (मिस्त्री)",
@@ -39,5 +42,39 @@
   "contractor.store": "Physical Store & Stock",
   "contractor.ra_bill": "Running Account (RA) Bill",
   "contractor.tender": "Civil Tender & Works"
+  "contractor.tender": "Civil Tender & Works",
+
+  "attendance.present": "Full Day (Present)",
+  "attendance.half_day": "Half Day",
+  "attendance.absent": "Absent",
+  "attendance.advance": "Cash Advance Disbursed",
+  "attendance.payout": "Wages Paid",
+  "attendance.total_workers": "Total Workers Present",
+
+  "inventory.grn": "Goods Receipt (GRN)",
+  "inventory.issue": "Site Issue Slip",
+  "inventory.stock": "Current Stock Balance",
+  "inventory.min_buffer": "Minimum Buffer Alert",
+  "inventory.wastage": "Wastage / Scrap Loss",
+  "inventory.wastage_alert": "Wastage Exceeded Limit",
+
+  "machinery.hour_meter": "Hour Meter Reading",
+  "machinery.fuel_added": "Diesel Added (Liters)",
+  "machinery.idle": "Idle / Breakdown",
+  "machinery.running": "Active on Site",
+
+  "rabill.gross_certified": "Gross Work Certified",
+  "rabill.deductions": "Statutory Deductions",
+  "rabill.retention": "Retention Money (5%)",
+  "rabill.tds": "Income Tax TDS (2%)",
+  "rabill.gst_tds": "GST TDS (2%)",
+  "rabill.cess": "Labour Welfare Cess (1%)",
+  "rabill.net_passed": "Net Passed Amount",
+  "rabill.bank_received": "Net Bank Credit Realized",
+  "rabill.pending_balance": "Pending Balance Receivable",
+
+  "supplier.total_billed": "Total Materials Procured",
+  "supplier.total_paid": "Total Payments Disbursed",
+  "supplier.balance_owed": "Net Outstanding Due"
 }
 

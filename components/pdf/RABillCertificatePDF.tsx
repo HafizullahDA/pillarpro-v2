@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import { formatINR, formatDate } from '@/lib/format'
 import { RABillRow } from '@/app/(app)/ra-bills/RABillsClient'
@@ -57,12 +58,40 @@ export function RABillCertificatePDF({ bill, organization }: RABillCertificatePD
               {organization?.address && (
                 <span>· {organization.address}</span>
               )}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3.5 max-w-2xl">
+            {organization?.logo_url && (
+              <img
+                src={organization.logo_url}
+                alt="Logo"
+                className="h-14 max-w-[120px] object-contain shrink-0 mt-0.5"
+              />
+            )}
+            <div>
+              <h1 className="text-xl font-black tracking-tight uppercase text-slate-900">
+                {organization?.name || 'Civil Engineering & Construction'}
+              </h1>
+              <div className="flex items-center gap-x-2 gap-y-0.5 flex-wrap text-xs text-slate-600 mt-1">
+                {organization?.registration_no && (
+                  <span className="font-semibold text-slate-800">{organization.registration_no}</span>
+                )}
+                {organization?.gstin && (
+                  <span>· GSTIN: <strong className="font-mono text-slate-800">{organization.gstin}</strong></span>
+                )}
+                {organization?.address && (
+                  <span>· {organization.address}</span>
+                )}
+              </div>
+              <h2 className="text-xs font-bold text-slate-500 tracking-wider uppercase mt-2">
+                Running Account (RA) Bill Certificate
+              </h2>
             </div>
             <h2 className="text-xs font-bold text-slate-500 tracking-wider uppercase mt-2">
               Running Account (RA) Bill Certificate
             </h2>
           </div>
           <div className="text-right text-xs text-slate-500">
+          <div className="text-right text-xs text-slate-500 shrink-0">
             <p><strong>Date:</strong> {generatedAt}</p>
             <p className="font-mono text-[11px] text-slate-400">Bill ID: {bill.id.slice(0, 8)}</p>
           </div>
@@ -250,16 +279,27 @@ export function RABillCertificatePDF({ bill, organization }: RABillCertificatePD
       <div className="pt-6 border-t border-slate-200 grid grid-cols-3 gap-6 text-center text-xs text-slate-600">
         <div>
           <div className="h-12 border-b border-slate-400 mb-2" />
+          <div className="h-16 border-b border-slate-400 mb-2 flex items-center justify-center">
+            {organization?.signature_url ? (
+              <img
+                src={organization.signature_url}
+                alt="Authorized Signatory & Seal"
+                className="h-14 max-w-full object-contain"
+              />
+            ) : null}
+          </div>
           <p className="font-bold text-slate-800">For {organization?.name || 'Contractor / Agency'}</p>
           <p className="text-[11px] text-slate-500">Authorized Signature & Seal</p>
         </div>
         <div>
           <div className="h-12 border-b border-slate-400 mb-2" />
+          <div className="h-16 border-b border-slate-400 mb-2" />
           <p className="font-bold text-slate-800">Junior / Site Engineer</p>
           <p className="text-[11px] text-slate-500">Measured & Certified</p>
         </div>
         <div>
           <div className="h-12 border-b border-slate-400 mb-2" />
+          <div className="h-16 border-b border-slate-400 mb-2" />
           <p className="font-bold text-slate-800">Executive Engineer / DDO</p>
           <p className="text-[11px] text-slate-500">Passed & Verified</p>
         </div>

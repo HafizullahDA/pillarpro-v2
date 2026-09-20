@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -48,6 +49,8 @@ export function UserProfileModal({
     registration_no: '',
     gstin: '',
     address: '',
+    logo_url: '',
+    signature_url: '',
   })
   const [savingOrg, setSavingOrg] = useState(false)
 
@@ -62,6 +65,8 @@ export function UserProfileModal({
           registration_no: data.registration_no || '',
           gstin: data.gstin || '',
           address: data.address || '',
+          logo_url: data.logo_url || '',
+          signature_url: data.signature_url || '',
         })
       })
     }
@@ -102,6 +107,8 @@ export function UserProfileModal({
       registration_no: orgForm.registration_no.trim() || null,
       gstin: orgForm.gstin.trim() || null,
       address: orgForm.address.trim() || null,
+      logo_url: orgForm.logo_url || null,
+      signature_url: orgForm.signature_url || null,
     })
 
     setSavingOrg(false)
@@ -116,11 +123,31 @@ export function UserProfileModal({
       registration_no: orgForm.registration_no.trim() || null,
       gstin: orgForm.gstin.trim() || null,
       address: orgForm.address.trim() || null,
+      logo_url: orgForm.logo_url || null,
+      signature_url: orgForm.signature_url || null,
     }))
     setEditingOrg(false)
     setSuccess('Company details updated successfully!')
     setTimeout(() => setSuccess(''), 3000)
     router.refresh()
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'logo_url' | 'signature_url') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image must be under 2MB')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setOrgForm(prev => ({ ...prev, [field]: reader.result as string }))
+      }
+    }
+    reader.readAsDataURL(file)
   }
 
   const handleSignOut = async () => {
@@ -184,6 +211,24 @@ export function UserProfileModal({
                   <span className="text-slate-600 text-right">{org.address}</span>
                 </div>
               )}
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60">
+                <div className="text-xs">
+                  <span className="text-slate-500 font-medium block mb-1">Firm Logo</span>
+                  {org.logo_url ? (
+                    <img src={org.logo_url} alt="Logo" className="h-10 max-w-full object-contain rounded border border-slate-200 bg-white p-1" />
+                  ) : (
+                    <span className="text-[11px] text-slate-400 italic">No logo uploaded</span>
+                  )}
+                </div>
+                <div className="text-xs">
+                  <span className="text-slate-500 font-medium block mb-1">Official Seal / Sign</span>
+                  {org.signature_url ? (
+                    <img src={org.signature_url} alt="Signature" className="h-10 max-w-full object-contain rounded border border-slate-200 bg-white p-1" />
+                  ) : (
+                    <span className="text-[11px] text-slate-400 italic">No seal uploaded</span>
+                  )}
+                </div>
+              </div>
               <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60">
                 <span className="text-slate-500 font-medium">Account Status</span>
                 <span className="inline-flex items-center gap-1 font-semibold text-emerald-700">
@@ -221,6 +266,48 @@ export function UserProfileModal({
                   placeholder="City, State"
                 />
               </FieldWrapper>
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <FieldWrapper label="Company Logo (PDF Header)">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => handleImageUpload(e, 'logo_url')}
+                    className="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                  />
+                  {orgForm.logo_url && (
+                    <div className="mt-1 flex items-center gap-2">
+                      <img src={orgForm.logo_url} alt="Logo preview" className="h-8 max-w-[80px] object-contain rounded border border-slate-200 bg-white p-0.5" />
+                      <button
+                        type="button"
+                        onClick={() => setOrgForm(f => ({ ...f, logo_url: '' }))}
+                        className="text-[10px] text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </FieldWrapper>
+                <FieldWrapper label="Official Seal & Sign (PDF)">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => handleImageUpload(e, 'signature_url')}
+                    className="block w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                  />
+                  {orgForm.signature_url && (
+                    <div className="mt-1 flex items-center gap-2">
+                      <img src={orgForm.signature_url} alt="Signature preview" className="h-8 max-w-[80px] object-contain rounded border border-slate-200 bg-white p-0.5" />
+                      <button
+                        type="button"
+                        onClick={() => setOrgForm(f => ({ ...f, signature_url: '' }))}
+                        className="text-[10px] text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </FieldWrapper>
+              </div>
               <div className="flex gap-2 pt-2">
                 <Button size="sm" variant="secondary" onClick={() => setEditingOrg(false)} className="flex-1">
                   Cancel

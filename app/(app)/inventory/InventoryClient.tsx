@@ -17,6 +17,7 @@ export interface InventoryItemRow {
   unit: string
   current_stock: number
   minimum_stock_alert: number
+  wastage_threshold_pct?: number
   notes: string | null
   project_id: string | null
   projects?: { name: string } | null
@@ -66,20 +67,37 @@ export function InventoryClient({
   const canManage = canManageInventory(userRole)
 
   // Metrics
+  // Metrics & Wastage Analysis
   const metrics = useMemo(() => {
     let lowStockCount = 0
     let totalItems = initialItems.length
+    let highWastageCount = 0
+    const totalItems = initialItems.length
+    const wastageByItem: Record<string, { issued: number; wasted: number; pct: number; threshold: number; exceeded: boolean }> = {}
 
     initialItems.forEach(item => {
       if (item.current_stock <= item.minimum_stock_alert) {
         lowStockCount++
       }
+
+      const itemTrx = initialTransactions.filter(t => t.item_id === item.id)
+      const issued = itemTrx.filter(t => t.transaction_type === 'issue_out').reduce((sum, t) => sum + Number(t.quantity), 0)
+      const wasted = itemTrx.filter(t => t.transaction_type === 'wastage_adjustment').reduce((sum, t) => sum + Number(t.quantity), 0)
+      const threshold = item.wastage_threshold_pct != null ? Number(item.wastage_threshold_pct) : 3.0
+      const totalCons = issued + wasted
+      const pct = totalCons > 0 ? (wasted / totalCons) * 100 : 0
+      const exceeded = wasted > 0 && pct > threshold
+
+      if (exceeded) highWastageCount++
+
+      wastageByItem[item.id] = { issued, wasted, pct, threshold, exceeded }
     })
 
     const totalReceipts = initialTransactions.filter(t => t.transaction_type === 'receipt_in').length
     const totalIssues = initialTransactions.filter(t => t.transaction_type === 'issue_out').length
 
     return { totalItems, lowStockCount, totalReceipts, totalIssues }
+    return { totalItems, lowStockCount, highWastageCount, totalReceipts, totalIssues, wastageByItem }
   }, [initialItems, initialTransactions])
 
   // Filtered items
@@ -151,6 +169,7 @@ export function InventoryClient({
 
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tracked Materials</p>
           <div className="mt-1.5 flex items-baseline gap-2">
@@ -166,6 +185,17 @@ export function InventoryClient({
               {metrics.lowStockCount}
             </span>
             <span className="text-xs text-slate-500">items below buffer</span>
+            <span className="text-xs text-slate-500">below buffer</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Wastage Alerts</p>
+          <div className="mt-1.5 flex items-baseline gap-2">
+            <span className={`text-2xl font-bold ${metrics.highWastageCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+              {metrics.highWastageCount}
+            </span>
+            <span className="text-xs text-slate-500">exceeding threshold</span>
           </div>
         </div>
 
@@ -178,6 +208,7 @@ export function InventoryClient({
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm col-span-2 lg:col-span-1">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Site Issue Slips</p>
           <div className="mt-1.5 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-amber-600">{metrics.totalIssues}</span>
@@ -249,12 +280,18 @@ export function InventoryClient({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredItems.map(item => {
                 const isLow = item.current_stock <= item.minimum_stock_alert
+                const wastageInfo = metrics.wastageByItem[item.id]
 
                 return (
                   <div
                     key={item.id}
                     className={`bg-white p-5 rounded-2xl border shadow-sm flex flex-col justify-between transition-all ${
                       isLow ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200/90 hover:border-slate-300'
+                      wastageInfo?.exceeded
+                        ? 'border-rose-300 bg-rose-50/20'
+                        : isLow
+                        ? 'border-amber-300 bg-amber-50/20'
+                        : 'border-slate-200/90 hover:border-slate-300'
                     }`}
                   >
                     <div>
@@ -269,6 +306,17 @@ export function InventoryClient({
                           label={isLow ? 'Low Stock' : 'In Stock'}
                           variant={isLow ? 'warning' : 'success'}
                         />
+                        <div className="flex items-center gap-1.5">
+                          {wastageInfo?.exceeded && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 animate-pulse">
+                              High Wastage
+                            </span>
+                          )}
+                          <Badge
+                            label={isLow ? 'Low Stock' : 'In Stock'}
+                            variant={isLow ? 'warning' : 'success'}
+                          />
+                        </div>
                       </div>
 
                       <div className="mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs">
@@ -282,6 +330,14 @@ export function InventoryClient({
                         <div className="flex items-center justify-between text-slate-600">
                           <span className="text-slate-400">Min Buffer Alert:</span>
                           <span className="font-semibold">{item.minimum_stock_alert} {item.unit}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span className="text-slate-400">Wastage / Scrap:</span>
+                          <span className={`font-semibold ${wastageInfo?.exceeded ? 'text-rose-700 font-bold' : 'text-slate-700'}`}>
+                            {wastageInfo?.wasted ? `${wastageInfo.wasted} ${item.unit} (${wastageInfo.pct.toFixed(1)}%)` : `0 ${item.unit} (0%)`}
+                            <span className="text-[10px] text-slate-400 ml-1 font-normal">/ max {item.wastage_threshold_pct ?? 3}%</span>
+                          </span>
                         </div>
 
                         <div className="flex items-center justify-between text-slate-600">
