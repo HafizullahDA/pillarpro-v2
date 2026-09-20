@@ -193,78 +193,52 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#07090E] flex flex-col justify-center py-8 px-4">
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-5xl mx-auto">
-        <div className="relative rounded-2xl bg-gradient-to-b from-[#0F1626] to-[#0A0E1A] border border-slate-800 shadow-2xl shadow-blue-950/40 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[660px]">
         <div className="relative rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[660px]">
           
-          {/* Left Brand Showcase & Value Proposition Column (Unified Deep Slate Surface) */}
-          <div className="lg:col-span-5 bg-slate-950/40 p-8 lg:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800/80 relative z-10">
           {/* Left Brand Showcase Column — Order-2 on mobile so form appears first without scrolling */}
           <div className="order-2 lg:order-1 lg:col-span-5 bg-slate-50/70 p-6 sm:p-8 lg:p-10 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-slate-200 relative z-10">
             <div>
-              <div className="flex items-center gap-3 mb-8">
-                <Logo theme="dark" size="md" subtitle="Civil Contractor OS" />
               <div className="hidden lg:flex items-center gap-3 mb-7">
                 <Logo theme="light" size="md" subtitle="Civil Contractor OS" href="/" />
               </div>
 
-              {/* Tagline Badge */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-5">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-semibold mb-4">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
                 Built for Civil & Highway Infrastructure
               </div>
 
-              <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-snug">
               <h1 className="text-xl sm:text-2xl lg:text-2xl font-bold text-slate-900 tracking-tight leading-snug">
                 The Financial & Operations OS for Government Contractors
               </h1>
 
               {/* 3 Value Proposition Bullets */}
-              <div className="mt-7 space-y-3.5 text-xs lg:text-sm text-slate-300 leading-relaxed">
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
-                  <div className="h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
               <div className="mt-6 space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
                 <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
                   <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                     ✓
                   </div>
-                  <p>
-                    <strong className="text-white font-semibold">Treasury RA Bill Reconciliation:</strong> Reconcile government bill sanctions vs statutory deductions (retention, TDS, GST TDS, labor cess) and net bank credits for PWD, CPWD & PMGSY.
-                  </p>
                   <div>
                     <strong className="text-slate-900 font-semibold block mb-0.5">Multi-Agency RA Bill Audit</strong>
                     <span>Reconcile government bill sanctions vs statutory deductions (Sec 194C TDS, GST TDS, Cess, Retention) and net bank credits across PFMS, State Treasuries, and PSU Corporate Finance.</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
-                  <div className="h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
                 <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
                   <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                     ✓
                   </div>
-                  <p>
-                    <strong className="text-white font-semibold">Site-to-Office Control:</strong> Log field expenses with mobile AI receipt scanning, muster daily-wage labor, and manage supplier khata ledgers without messy spreadsheets.
-                  </p>
                   <div>
                     <strong className="text-slate-900 font-semibold block mb-0.5">Site-to-Office Control</strong>
                     <span>Log field expenses with mobile AI receipt scanning, muster daily-wage labor, and manage supplier khata ledgers without messy spreadsheets.</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-900/50 border border-slate-800/60">
-                  <div className="h-5 w-5 rounded-md bg-blue-500/15 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-[10px]">
                 <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
                   <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                     ✓
                   </div>
-                  <p>
-                    <strong className="text-white font-semibold">Capital & BG Protection:</strong> Automated 30-day Bank Guarantee expiry warnings, partner equity parity ledgers, and live project cost tracking.
-                  </p>
                   <div>
                     <strong className="text-slate-900 font-semibold block mb-0.5">Capital & BG Protection</strong>
                     <span>Automated 30-day Bank Guarantee expiry warnings, partner equity parity ledgers, and BOQ work-done tracking.</span>
@@ -273,17 +247,6 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            {/* Trust Footer */}
-            <div className="mt-8 pt-5 border-t border-slate-800/80">
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-1.5">
-                  <span className="inline-block h-6 w-6 rounded-md bg-blue-600 text-[9px] font-bold text-white flex items-center justify-center ring-2 ring-slate-900">PWD</span>
-                  <span className="inline-block h-6 w-6 rounded-md bg-emerald-600 text-[9px] font-bold text-white flex items-center justify-center ring-2 ring-slate-900">R&B</span>
-                  <span className="inline-block h-6 w-6 rounded-md bg-amber-600 text-[9px] font-bold text-white flex items-center justify-center ring-2 ring-slate-900">NH</span>
-                </div>
-                <div className="text-xs text-slate-400 leading-snug">
-                  Airtight multi-tenant isolation. Each contracting firm operates in its own private encrypted workspace.
-                </div>
             <div className="mt-8 pt-5 border-t border-slate-200 text-xs text-slate-500">
               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                 <span className="font-semibold text-slate-700">Supported authorities:</span>
@@ -297,14 +260,10 @@ export default function SignUpPage() {
             </div>
           </div>
 
-          {/* Right Self-Serve Onboarding Form Column (Unified Dark Surface — ZERO Mismatched Panels) */}
-          <div className="lg:col-span-7 bg-[#0C111E]/90 p-8 lg:p-10 flex flex-col justify-center relative z-10 text-white">
           {/* Right Self-Serve Onboarding Form Column — Order-1 on mobile so user sees inputs immediately */}
           <div className="order-1 lg:order-2 lg:col-span-7 bg-white p-6 sm:p-8 lg:p-10 flex flex-col justify-center relative z-10 text-slate-900">
             <div className="max-w-md w-full mx-auto">
               
-              {/* Unified Tab Toggle: Consistent 8px Radius & Brand Blue Active */}
-              <div className="flex rounded-lg bg-slate-950/90 p-1 mb-6 text-xs font-semibold border border-slate-800 shadow-inner">
               {/* Mobile Header Logo */}
               <div className="lg:hidden flex items-center justify-between pb-5 mb-5 border-b border-slate-100">
                 <Logo theme="light" size="md" subtitle="Civil Contractor OS" href="/" />
@@ -317,8 +276,6 @@ export default function SignUpPage() {
                   onClick={() => setMode('new_firm')}
                   className={`flex-1 py-2 rounded-lg transition-all text-center ${
                     mode === 'new_firm'
-                      ? 'bg-blue-600 text-white shadow-sm font-semibold'
-                      : 'text-slate-400 hover:text-white font-medium'
                       ? 'bg-white text-slate-900 shadow-xs font-bold'
                       : 'text-slate-600 hover:text-slate-900 font-medium'
                   }`}
@@ -330,8 +287,6 @@ export default function SignUpPage() {
                   onClick={() => setMode('join_firm')}
                   className={`flex-1 py-2 rounded-lg transition-all text-center ${
                     mode === 'join_firm'
-                      ? 'bg-blue-600 text-white shadow-sm font-semibold'
-                      : 'text-slate-400 hover:text-white font-medium'
                       ? 'bg-white text-slate-900 shadow-xs font-bold'
                       : 'text-slate-600 hover:text-slate-900 font-medium'
                   }`}
@@ -341,11 +296,9 @@ export default function SignUpPage() {
               </div>
 
               <div className="mb-5">
-                <h2 className="text-2xl font-bold text-white tracking-tight">
                 <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
                   {mode === 'new_firm' ? 'Create your contractor workspace' : 'Join your firm’s workspace'}
                 </h2>
-                <p className="mt-1 text-xs text-slate-400 leading-relaxed">
                 <p className="mt-1 text-xs sm:text-sm text-slate-500 leading-relaxed">
                   {mode === 'new_firm'
                     ? 'Set up your firm in 30 seconds. Start managing RA bills and site finances.'
@@ -354,25 +307,19 @@ export default function SignUpPage() {
               </div>
 
               {error && (
-                <div className="mb-4 rounded-lg bg-red-950/50 border border-red-800/60 p-3 text-xs text-red-300 flex items-start gap-2.5 shadow-sm">
-                  <svg className="w-4 h-4 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <div className="mb-5 rounded-xl bg-red-50 border border-red-200 p-3.5 text-xs text-red-700 flex items-start gap-2.5 shadow-2xs">
                   <svg className="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>{error}</span>
                   <span className="font-medium">{error}</span>
                 </div>
               )}
 
               {successNotice && (
-                <div className="mb-4 rounded-lg bg-emerald-950/50 border border-emerald-800/60 p-3 text-xs text-emerald-300 flex items-start gap-2.5 shadow-sm">
-                  <svg className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <div className="mb-5 rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-800 flex items-start gap-2.5 shadow-2xs">
                   <svg className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>{successNotice}</span>
                   <span className="font-medium">{successNotice}</span>
                 </div>
               )}
@@ -380,8 +327,6 @@ export default function SignUpPage() {
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 {mode === 'new_firm' ? (
                   <div>
-                    <label htmlFor="firmName" className="block text-xs font-semibold text-slate-300 mb-1">
-                      Contracting Firm / Company Name <span className="text-blue-400">*</span>
                     <label htmlFor="firmName" className="block text-xs font-semibold text-slate-700 mb-1">
                       Contracting Firm / Company Name <span className="text-blue-600">*</span>
                     </label>
@@ -391,15 +336,12 @@ export default function SignUpPage() {
                       required
                       value={firmName}
                       onChange={e => setFirmName(e.target.value)}
-                      className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                       className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
                       placeholder="e.g. Apex Infratech Pvt. Ltd. or Bhat Constructions"
                     />
                   </div>
                 ) : (
                   <div>
-                    <label htmlFor="joinCode" className="block text-xs font-semibold text-slate-300 mb-1">
-                      Firm Invite Code <span className="text-blue-400">*</span>
                     <label htmlFor="joinCode" className="block text-xs font-semibold text-slate-700 mb-1">
                       Firm Invite Code <span className="text-blue-600">*</span>
                     </label>
@@ -409,7 +351,6 @@ export default function SignUpPage() {
                       required
                       value={joinCode}
                       onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                      className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 text-sm text-white font-mono tracking-wider uppercase placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                       className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 font-mono tracking-wider uppercase placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
                       placeholder="e.g. APEX26"
                     />
@@ -417,8 +358,6 @@ export default function SignUpPage() {
                 )}
 
                 <div>
-                  <label htmlFor="displayName" className="block text-xs font-semibold text-slate-300 mb-1">
-                    Your Full Name <span className="text-blue-400">*</span>
                   <label htmlFor="displayName" className="block text-xs font-semibold text-slate-700 mb-1">
                     Your Full Name <span className="text-blue-600">*</span>
                   </label>
@@ -429,15 +368,12 @@ export default function SignUpPage() {
                     autoComplete="name"
                     value={displayName}
                     onChange={e => setDisplayName(e.target.value)}
-                    className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                     className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
                     placeholder="e.g. Rajesh Kumar"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-xs font-semibold text-slate-300 mb-1">
-                    Work Email Address <span className="text-blue-400">*</span>
                   <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1">
                     Work Email Address <span className="text-blue-600">*</span>
                   </label>
@@ -448,7 +384,6 @@ export default function SignUpPage() {
                     required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                     className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
                     placeholder="you@contractorfirm.com"
                   />
@@ -456,8 +391,6 @@ export default function SignUpPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="password" className="block text-xs font-semibold text-slate-300 mb-1">
-                      Password <span className="text-blue-400">*</span>
                     <label htmlFor="password" className="block text-xs font-semibold text-slate-700 mb-1">
                       Password <span className="text-blue-600">*</span>
                     </label>
@@ -469,7 +402,6 @@ export default function SignUpPage() {
                         required
                         value={password}
                         onChange={e => setPassword(e.target.value)}
-                        className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 pr-9 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                         className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 pr-9 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
                         placeholder="Min. 8 chars"
                       />
@@ -478,8 +410,6 @@ export default function SignUpPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="confirm" className="block text-xs font-semibold text-slate-300 mb-1">
-                      Confirm Password <span className="text-blue-400">*</span>
                     <label htmlFor="confirm" className="block text-xs font-semibold text-slate-700 mb-1">
                       Confirm Password <span className="text-blue-600">*</span>
                     </label>
@@ -491,7 +421,6 @@ export default function SignUpPage() {
                         required
                         value={confirm}
                         onChange={e => setConfirm(e.target.value)}
-                        className="block w-full rounded-lg border border-slate-800 bg-[#080C16] px-3.5 py-2.5 pr-9 text-sm text-white placeholder-slate-500 shadow-inner transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                         className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 pr-9 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
                         placeholder="Re-enter password"
                       />
@@ -502,21 +431,17 @@ export default function SignUpPage() {
 
                 {mode === 'new_firm' && (
                   <div className="pt-1">
-                    <label className="relative flex items-start gap-3 p-3.5 rounded-lg border border-slate-800/80 bg-slate-950/50 hover:border-slate-700/80 shadow-inner transition-colors cursor-pointer">
                     <label className="relative flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/60 shadow-2xs transition-colors cursor-pointer">
                       <input
                         type="checkbox"
                         checked={seedStarter}
                         onChange={e => setSeedStarter(e.target.checked)}
-                        className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500/25"
                         className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600/20"
                       />
                       <div className="text-xs">
-                        <span className="font-semibold text-slate-200 block">
                         <span className="font-semibold text-slate-800 block">
                           Include sample Highway Project & RA bill template (Recommended)
                         </span>
-                        <span className="text-slate-400 block mt-0.5 leading-normal">
                         <span className="text-slate-500 block mt-0.5 leading-normal">
                           Populates your workspace with a realistic PWD project, sample RA bill, supplier ledger & muster roll so your dashboard is instantly interactive.
                         </span>
@@ -528,7 +453,6 @@ export default function SignUpPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
@@ -551,34 +475,26 @@ export default function SignUpPage() {
 
                 <p className="mt-3 text-[11px] text-center text-slate-500 leading-relaxed">
                   By registering, you agree to PillarPro&apos;s{' '}
-                  <Link href="/terms" target="_blank" className="underline hover:text-slate-300 transition-colors">
                   <Link href="/terms" target="_blank" className="underline hover:text-slate-700 transition-colors">
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link href="/privacy" target="_blank" className="underline hover:text-slate-300 transition-colors">
                   <Link href="/privacy" target="_blank" className="underline hover:text-slate-700 transition-colors">
                     Privacy Policy
                   </Link>.
                 </p>
               </form>
 
-              <div className="mt-5 pt-4 border-t border-slate-800/80 text-center space-y-2.5">
-                <p className="text-xs text-slate-400">
               <div className="mt-5 pt-4 border-t border-slate-100 text-center space-y-2.5">
                 <p className="text-xs text-slate-600">
                   Already registered?{' '}
-                  <Link href="/sign-in" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors">
                   <Link href="/sign-in" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
                     Sign in to your account →
                   </Link>
                 </p>
-                <div className="flex items-center justify-center gap-3 text-[11px] text-slate-500">
-                  <Link href="/terms" className="hover:text-slate-400 transition-colors">Terms of Service</Link>
                 <div className="flex items-center justify-center gap-3 text-[11px] text-slate-400">
                   <Link href="/terms" className="hover:text-slate-600 transition-colors">Terms of Service</Link>
                   <span>•</span>
-                  <Link href="/privacy" className="hover:text-slate-400 transition-colors">Privacy Policy</Link>
                   <Link href="/privacy" className="hover:text-slate-600 transition-colors">Privacy Policy</Link>
                 </div>
               </div>

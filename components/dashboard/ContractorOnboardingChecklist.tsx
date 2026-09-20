@@ -59,8 +59,6 @@ export function ContractorOnboardingChecklist({
     },
     {
       id: 'ra_bill',
-      title: 'Draft or Record a Government RA Bill',
-      description: 'Generate CPWD/PWD Form 26 cumulative bills with auto-reconciled retention, TDS & labour cess.',
       title: 'Draft or Record an RA Bill',
       description: 'Generate CPWD/PWD Form 26 bills with statutory deductions (Sec 194C TDS, GST TDS, Cess, Retention) & settlement tracking.',
       href: '/ra-bills',
@@ -124,12 +122,10 @@ export function ContractorOnboardingChecklist({
   }
 
   return (
-    <div className="rounded-2xl border border-blue-200/90 bg-gradient-to-br from-blue-50/90 via-white to-indigo-50/40 p-4 sm:p-5 shadow-xs transition-all">
     <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xs transition-all">
       {/* ── HEADER & PROGRESS SUMMARY ── */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
           <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
             {allCompleted ? '🎉' : '🚀'}
           </div>
@@ -144,7 +140,6 @@ export function ContractorOnboardingChecklist({
                 className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
                   allCompleted
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-blue-100 text-blue-700 border-blue-200'
                     : 'bg-blue-50 text-blue-700 border-blue-200'
                 }`}
               >
@@ -184,13 +179,11 @@ export function ContractorOnboardingChecklist({
 
       {/* ── PROGRESS BAR ── */}
       <div className="mt-3.5 pt-1">
-        <div className="w-full bg-slate-200/80 rounded-full h-2 overflow-hidden">
         <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200/60">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
               allCompleted
                 ? 'bg-emerald-500'
-                : 'bg-gradient-to-r from-blue-500 to-indigo-600'
                 : 'bg-blue-600'
             }`}
             style={{ width: `${progressPercent}%` }}
@@ -200,7 +193,6 @@ export function ContractorOnboardingChecklist({
 
       {/* ── INTERACTIVE STEPS GRID (Visible when not collapsed) ── */}
       {!collapsed && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-3.5 border-t border-blue-100/80">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-3.5 border-t border-slate-100">
           {steps.map((step) => {
             return (
