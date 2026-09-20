@@ -152,3 +152,4 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.create_project(TEXT, TEXT, NUMERIC, NUMERIC, DATE, DATE, TEXT) TO authenticated;
+

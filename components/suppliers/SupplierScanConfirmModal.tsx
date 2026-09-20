@@ -33,6 +33,7 @@ export interface ScannedSupplierBillData {
   quantity: number | null
   unit: string | null
   rate: number | null
+  carriage_amount?: number | null
   amount: number | null
 }
 
@@ -98,6 +99,7 @@ export function SupplierScanConfirmModal({
     quantity: '',
     unit: 'bags',
     rate: '',
+    carriage: '',
     amount: '',
     notes: '',
   })
@@ -152,13 +154,15 @@ export function SupplierScanConfirmModal({
     // 3. Procurement details
     const qtyStr = scannedData.quantity != null ? String(scannedData.quantity) : ''
     const rateStr = scannedData.rate != null ? String(scannedData.rate) : ''
+    const carriageStr = scannedData.carriage_amount != null ? String(scannedData.carriage_amount) : ''
     let amtStr = scannedData.amount != null ? String(scannedData.amount) : ''
 
+    const c = parseFloat(carriageStr) || 0
     if (!amtStr && qtyStr && rateStr) {
       const q = parseFloat(qtyStr)
       const r = parseFloat(rateStr)
       if (!isNaN(q) && !isNaN(r) && q > 0 && r > 0) {
-        amtStr = String(safeMul(q, r))
+        amtStr = String(safeMul(q, r) + c)
       }
     }
 
@@ -169,39 +173,43 @@ export function SupplierScanConfirmModal({
       quantity: qtyStr,
       unit: scannedData.unit || 'bags',
       rate: rateStr,
+      carriage: carriageStr,
       amount: amtStr,
       notes: scannedData.project_name ? `Delivered to: ${scannedData.project_name}` : '',
     })
-
-    setError('')
   }, [scannedData, defaultSupplierId, suppliers, projects])
 
-  const handleQtyChange = (val: string) => {
-    setProcurement(prev => {
-      const next = { ...prev, quantity: val }
-      if (val && prev.rate) {
-        const q = parseFloat(val)
-        const r = parseFloat(prev.rate)
-        if (!isNaN(q) && !isNaN(r) && q > 0 && r > 0) {
-          next.amount = String(safeMul(q, r))
-        }
+  const updateScanProcAmount = (
+    current: typeof procurement,
+    override?: Partial<typeof procurement>
+  ) => {
+    const next = { ...current, ...override }
+    const q = parseFloat(next.quantity)
+    const r = parseFloat(next.rate)
+    const c = parseFloat(next.carriage) || 0
+
+    if (!isNaN(q) && !isNaN(r) && q > 0 && r > 0) {
+      next.amount = String(safeMul(q, r) + c)
+    } else if (override && 'carriage' in override && next.amount) {
+      const prevC = parseFloat(current.carriage) || 0
+      const baseAmt = Math.max(0, (parseFloat(current.amount) || 0) - prevC)
+      if (baseAmt > 0) {
+        next.amount = String(baseAmt + c)
       }
-      return next
-    })
+    }
+    return next
+  }
+
+  const handleQtyChange = (val: string) => {
+    setProcurement(prev => updateScanProcAmount(prev, { quantity: val }))
   }
 
   const handleRateChange = (val: string) => {
-    setProcurement(prev => {
-      const next = { ...prev, rate: val }
-      if (val && prev.quantity) {
-        const q = parseFloat(prev.quantity)
-        const r = parseFloat(val)
-        if (!isNaN(q) && !isNaN(r) && q > 0 && r > 0) {
-          next.amount = String(safeMul(q, r))
-        }
-      }
-      return next
-    })
+    setProcurement(prev => updateScanProcAmount(prev, { rate: val }))
+  }
+
+  const handleCarriageChange = (val: string) => {
+    setProcurement(prev => updateScanProcAmount(prev, { carriage: val }))
   }
 
   const handleConfirm = async () => {
@@ -271,8 +279,9 @@ export function SupplierScanConfirmModal({
       // 2. Insert procurement transaction into public.supplier_transactions
       const qtyNum = procurement.quantity ? parseFloat(procurement.quantity) : null
       const rateNum = procurement.rate ? parseFloat(procurement.rate) : null
+      const carriageNum = procurement.carriage ? parseFloat(procurement.carriage) : 0
 
-      const { error: txErr } = await supabase.from('supplier_transactions').insert({
+      const txPayload: Record<string, any> = {
         supplier_id: targetSupplierId,
         project_id: selectedProjectId || null, // NULL = General / Central Purchase
         transaction_type: 'procurement',
@@ -281,10 +290,26 @@ export function SupplierScanConfirmModal({
         quantity: qtyNum && !isNaN(qtyNum) ? qtyNum : null,
         rate: rateNum && !isNaN(rateNum) ? rateNum : null,
         unit: procurement.unit || 'nos',
+        carriage_amount: carriageNum && !isNaN(carriageNum) ? carriageNum : 0,
         date: procurement.date,
         reference: procurement.reference.trim() || null,
         notes: procurement.notes.trim() || null,
-      })
+      }
+
+      let { error: txErr } = await supabase.from('supplier_transactions').insert(txPayload)
+
+      // Graceful fallback if carriage_amount column does not exist on remote DB yet
+      if (txErr && (txErr.message?.includes('carriage_amount') || (txErr as any).code === '42703')) {
+        const fallbackPayload = { ...txPayload }
+        delete fallbackPayload.carriage_amount
+        if (carriageNum > 0) {
+          fallbackPayload.notes = fallbackPayload.notes
+            ? `${fallbackPayload.notes} (Includes ₹${carriageNum} Carriage)`
+            : `Includes ₹${carriageNum} Carriage`
+        }
+        const fallbackRes = await supabase.from('supplier_transactions').insert(fallbackPayload)
+        txErr = fallbackRes.error
+      }
 
       if (txErr) {
         throw new Error(`Failed to record procurement: ${txErr.message}`)
@@ -523,6 +548,32 @@ export function SupplierScanConfirmModal({
                 placeholder="0.00"
               />
             </FieldWrapper>
+          </div>
+
+          {/* Carriage Charges & Breakdown */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <FieldWrapper label="Carriage Charges (₹)" hint="Freight / transport / loading">
+              <CurrencyInput
+                value={procurement.carriage}
+                onChange={e => handleCarriageChange(e.target.value)}
+                placeholder="0.00"
+              />
+            </FieldWrapper>
+
+            <div className="flex flex-col justify-end">
+              {Boolean(procurement.carriage && parseFloat(procurement.carriage) > 0) && (
+                <div className="rounded-lg bg-white border border-slate-200 p-2 text-xs text-slate-600 mb-1">
+                  <span className="font-semibold text-slate-800">Breakdown: </span>
+                  {procurement.quantity && procurement.rate ? (
+                    <span>
+                      Material ₹{safeMul(parseFloat(procurement.quantity) || 0, parseFloat(procurement.rate) || 0).toLocaleString('en-IN')} + Carriage ₹{(parseFloat(procurement.carriage) || 0).toLocaleString('en-IN')}
+                    </span>
+                  ) : (
+                    <span>Includes ₹{(parseFloat(procurement.carriage) || 0).toLocaleString('en-IN')} carriage</span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="pt-2 border-t border-slate-200">

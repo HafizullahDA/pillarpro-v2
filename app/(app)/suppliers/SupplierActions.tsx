@@ -74,11 +74,33 @@ export function SupplierActions({
     quantity: '',
     rate: '',
     unit: 'nos',
+    carriage: '',
     amount: '',
     date: getTodayIST(),
     reference: '',
     notes: '',
   })
+
+  const updateProcAmount = (
+    current: typeof procForm,
+    override?: Partial<typeof procForm>
+  ) => {
+    const next = { ...current, ...override }
+    const q = parseFloat(next.quantity)
+    const r = parseFloat(next.rate)
+    const c = parseFloat(next.carriage) || 0
+
+    if (!isNaN(q) && !isNaN(r) && q > 0 && r > 0) {
+      next.amount = String(safeMul(q, r) + c)
+    } else if (override && 'carriage' in override && next.amount) {
+      const prevC = parseFloat(current.carriage) || 0
+      const baseAmt = Math.max(0, (parseFloat(current.amount) || 0) - prevC)
+      if (baseAmt > 0) {
+        next.amount = String(baseAmt + c)
+      }
+    }
+    return next
+  }
 
   const [payForm, setPayForm] = useState({
     supplier_id: defaultSupplierId || '',
@@ -260,6 +282,7 @@ export function SupplierActions({
     const quantityVal = procForm.quantity ? parseFloat(procForm.quantity) : null
     const rateVal = procForm.rate ? parseFloat(procForm.rate) : null
     const unitVal = procForm.unit?.trim() || 'nos'
+    const carriageVal = procForm.carriage ? parseFloat(procForm.carriage) : 0
 
     if (typeof window !== 'undefined' && !navigator.onLine) {
       try {
@@ -274,12 +297,13 @@ export function SupplierActions({
           quantity: quantityVal,
           rate: rateVal,
           unit: unitVal,
+          carriage_amount: carriageVal,
           date: procForm.date,
           reference: procForm.reference.trim() || null,
           notes: procForm.notes.trim() || null,
         })
         setWhich(null)
-        setProcForm({ supplier_id: defaultSupplierId || '', project_id: '', description: '', quantity: '', rate: '', unit: 'nos', amount: '', date: getTodayIST(), reference: '', notes: '' })
+        setProcForm({ supplier_id: defaultSupplierId || '', project_id: '', description: '', quantity: '', rate: '', unit: 'nos', carriage: '', amount: '', date: getTodayIST(), reference: '', notes: '' })
         toast.success(`Procurement of ₹${amountVal.toLocaleString('en-IN')} saved offline and will sync on reconnect`)
       } catch {
         setError('Failed to save the procurement offline. Please try again.')
@@ -289,7 +313,7 @@ export function SupplierActions({
       return
     }
 
-    const { error: err } = await supabase.from('supplier_transactions').insert({
+    const payload: Record<string, any> = {
       supplier_id: procForm.supplier_id,
       project_id: procForm.project_id || null, // NULL = General / Central
       transaction_type: 'procurement',
@@ -298,10 +322,26 @@ export function SupplierActions({
       quantity: quantityVal,
       rate: rateVal,
       unit: unitVal,
+      carriage_amount: carriageVal,
       date: procForm.date,
       reference: procForm.reference.trim() || null,
       notes: procForm.notes.trim() || null,
-    })
+    }
+
+    let { error: err } = await supabase.from('supplier_transactions').insert(payload)
+
+    // Graceful fallback if carriage_amount column does not exist in DB yet
+    if (err && (err.message?.includes('carriage_amount') || (err as any).code === '42703')) {
+      const fallbackPayload = { ...payload }
+      delete fallbackPayload.carriage_amount
+      if (carriageVal > 0) {
+        fallbackPayload.notes = fallbackPayload.notes
+          ? `${fallbackPayload.notes} (Includes ₹${carriageVal} Carriage)`
+          : `Includes ₹${carriageVal} Carriage`
+      }
+      const fallbackRes = await supabase.from('supplier_transactions').insert(fallbackPayload)
+      err = fallbackRes.error
+    }
 
     setSaving(false)
     if (err) {
@@ -321,6 +361,7 @@ export function SupplierActions({
       quantity: '',
       rate: '',
       unit: 'nos',
+      carriage: '',
       amount: '',
       date: getTodayIST(),
       reference: '',
@@ -662,17 +703,7 @@ export function SupplierActions({
                 value={procForm.quantity}
                 onChange={e => {
                   const qty = e.target.value
-                  setProcForm(f => {
-                    const next = { ...f, quantity: qty }
-                    if (qty && f.rate) {
-                      const q = parseFloat(qty)
-                      const r = parseFloat(f.rate)
-                      if (!isNaN(q) && !isNaN(r) && q > 0 && r > 0) {
-                        next.amount = String(safeMul(q, r))
-                      }
-                    }
-                    return next
-                  })
+                  setProcForm(f => updateProcAmount(f, { quantity: qty }))
                 }}
               />
             </FieldWrapper>
@@ -700,20 +731,49 @@ export function SupplierActions({
                 value={procForm.rate}
                 onChange={e => {
                   const rateVal = e.target.value
-                  setProcForm(f => {
-                    const next = { ...f, rate: rateVal }
-                    if (rateVal && f.quantity) {
-                      const q = parseFloat(f.quantity)
-                      const r = parseFloat(rateVal)
-                      if (!isNaN(q) && !isNaN(r) && q > 0 && r > 0) {
-                        next.amount = String(safeMul(q, r))
-                      }
-                    }
-                    return next
-                  })
+                  setProcForm(f => updateProcAmount(f, { rate: rateVal }))
                 }}
               />
             </FieldWrapper>
+          </div>
+
+          {/* Carriage / Freight Charges */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FieldWrapper label="Carriage Charges (₹)" hint="Freight / Transport / Loading">
+              <CurrencyInput
+                placeholder="0"
+                value={procForm.carriage}
+                onChange={e => {
+                  const carriageVal = e.target.value
+                  setProcForm(f => updateProcAmount(f, { carriage: carriageVal }))
+                }}
+              />
+            </FieldWrapper>
+
+            {/* Subtotal Calculation Helper */}
+            <div className="flex flex-col justify-end">
+              {Boolean(procForm.carriage && parseFloat(procForm.carriage) > 0) && (
+                <div className="rounded-lg bg-slate-50 border border-slate-200 p-2.5 text-xs text-slate-600 mb-0.5">
+                  <div className="font-semibold text-slate-800 flex items-center justify-between">
+                    <span>Cost Breakdown</span>
+                    <span className="text-blue-600 font-bold">
+                      ₹{(parseFloat(procForm.amount) || 0).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">
+                    {procForm.quantity && procForm.rate ? (
+                      <>
+                        Material: ₹{safeMul(parseFloat(procForm.quantity) || 0, parseFloat(procForm.rate) || 0).toLocaleString('en-IN')} + Carriage: ₹{(parseFloat(procForm.carriage) || 0).toLocaleString('en-IN')}
+                      </>
+                    ) : (
+                      <>
+                        Includes ₹{(parseFloat(procForm.carriage) || 0).toLocaleString('en-IN')} carriage charges
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

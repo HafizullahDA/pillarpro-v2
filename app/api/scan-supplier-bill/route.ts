@@ -90,11 +90,12 @@ Return raw JSON ONLY matching this exact structure:
   "quantity": 100 or null if not applicable,
   "unit": "bags|tonnes|nos|kg|cum|sqm|rmt|litre|trips or null",
   "rate": 380 or null if not indicated,
-  "amount": 38000 or null if total cannot be determined
+  "carriage_amount": 2000 or null if no separate freight/transport/loading/carriage charges,
+  "amount": 40000 or null if total cannot be determined
 }
 
 Rules:
-1. If quantity and rate are present, calculate or verify amount = quantity * rate.
+1. If quantity, rate, and carriage are present, verify amount = (quantity * rate) + carriage.
 2. If supplier name is not clearly visible or missing, set supplier_name to null.
 3. If project name is not mentioned (very common on vendor invoices), set project_name to null.
 4. Normalize dates to YYYY-MM-DD format.

@@ -188,6 +188,11 @@ export function SupplierStatementPDF({
                       {tx.quantity && tx.rate && (
                         <div className="text-[10px] text-slate-400 font-mono">
                           {tx.quantity} {tx.unit ?? 'units'} @ ₹{tx.rate}
+                          {Number((tx as any).carriage_amount) > 0 && (
+                            <span className="text-slate-600 font-semibold ml-1">
+                              (+ ₹{Number((tx as any).carriage_amount).toLocaleString('en-IN')} carriage)
+                            </span>
+                          )}
                         </div>
                       )}
                       {tx.reference && (

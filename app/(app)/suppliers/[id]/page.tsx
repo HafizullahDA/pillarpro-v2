@@ -29,21 +29,7 @@ export default async function SupplierDetailPage({ params }: Props) {
     supabase
       .from('supplier_transactions')
       .select(`
-        id,
-        supplier_id,
-        project_id,
-        transaction_type,
-        description,
-        amount,
-        quantity,
-        rate,
-        unit,
-        date,
-        mode,
-        reference,
-        expense_id,
-        notes,
-        created_at,
+        *,
         projects (name),
         expenses (description, receipt_url)
       `)
@@ -221,6 +207,11 @@ export default async function SupplierDetailPage({ params }: Props) {
                     {((tx as any).quantity != null && (tx as any).rate != null) && (
                       <div className="text-xs font-mono text-slate-500">
                         {Number((tx as any).quantity).toLocaleString()} {(tx as any).unit || 'nos'} @ {formatINR(Number((tx as any).rate))}/{(tx as any).unit || 'nos'}
+                        {(Number((tx as any).carriage_amount) || 0) > 0 && (
+                          <span className="text-blue-700 font-semibold ml-1.5">
+                            (+ {formatINR(Number((tx as any).carriage_amount))} carriage)
+                          </span>
+                        )}
                       </div>
                     )}
 
@@ -314,6 +305,11 @@ export default async function SupplierDetailPage({ params }: Props) {
                         {((tx as any).quantity != null && (tx as any).rate != null) && (
                           <div className="text-xs font-mono text-slate-500 mt-0.5">
                             {Number((tx as any).quantity).toLocaleString()} {(tx as any).unit || 'nos'} @ {formatINR(Number((tx as any).rate))}/{(tx as any).unit || 'nos'}
+                            {(Number((tx as any).carriage_amount) || 0) > 0 && (
+                              <span className="text-blue-700 font-semibold ml-1.5">
+                                (+ {formatINR(Number((tx as any).carriage_amount))} carriage)
+                              </span>
+                            )}
                           </div>
                         )}
                         {tx.notes && <div className="text-xs text-slate-400 mt-0.5">{tx.notes}</div>}
