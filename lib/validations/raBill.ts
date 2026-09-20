@@ -6,6 +6,7 @@ import { z } from 'zod'
 export const createRABillSchema = z.object({
   project_id: z.string().uuid('Please select a valid civil project.'),
   bill_number: z.string().trim().min(1, 'RA Bill Number (e.g. RA-01 or 1st & Final) is required.').max(100),
+  bill_type: z.enum(['running', 'first_and_final', 'final']).default('running'),
   submission_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Valid submission date (YYYY-MM-DD) is required.'),
   billing_mode: z.enum(['standalone', 'cumulative']),
   previous_bill_id: z.string().uuid().optional().or(z.literal('')),
@@ -17,6 +18,19 @@ export const createRABillSchema = z.object({
     .min(0, 'Retention percentage cannot be negative.')
     .max(25, 'Retention percentage typically does not exceed 25%.')
     .default(5.0),
+  // CPWA Code Form 23 & 26 Citation & Recovery Fields
+  mb_number: z.string().trim().max(100).optional().or(z.literal('')),
+  mb_page_start: z.coerce.number().int().min(1).optional().nullable(),
+  mb_page_end: z.coerce.number().int().min(1).optional().nullable(),
+  measurement_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
+  measuring_officer_name: z.string().trim().max(100).optional().or(z.literal('')),
+  measuring_officer_designation: z.string().trim().max(50).optional().default('Junior Engineer'),
+  advance_payments_unmeasured: z.coerce.number().min(0).optional().default(0),
+  cement_recovery: z.coerce.number().min(0).optional().default(0),
+  steel_recovery: z.coerce.number().min(0).optional().default(0),
+  other_material_recovery: z.coerce.number().min(0).optional().default(0),
+  actual_completion_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
+  dlp_months: z.coerce.number().int().min(0).max(60).optional().default(12),
   remarks: z.string().trim().max(500).optional().or(z.literal('')),
 })
 

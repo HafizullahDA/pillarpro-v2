@@ -5,6 +5,8 @@ import {
   calculateCumulativeThisBill,
   calculatePaymentTrancheNet,
   deriveBillPaymentStatus,
+  calculateCPWAMemorandum,
+  calculateDLPReleaseDate,
 } from '../raBill'
 
 describe('RA Bill Statutory Deductions & Net Payable Calculations', () => {
@@ -95,6 +97,42 @@ describe('RA Bill Statutory Deductions & Net Payable Calculations', () => {
     expect(deriveBillPaymentStatus({ netPayable, totalReceived: 500000 })).toBe('partially_paid')
     expect(deriveBillPaymentStatus({ netPayable, totalReceived: 999999.5 })).toBe('fully_paid')
     expect(deriveBillPaymentStatus({ netPayable, totalReceived: 1000000 })).toBe('fully_paid')
+  })
+
+  it('accurately computes CPWA Form 26 Account III Memorandum of Payments with item 8a and 8b recoveries', () => {
+    const memo = calculateCPWAMemorandum({
+      measuredWorkValue: 5000000,          // Item 1: ₹50 Lakhs measured
+      advanceUnmeasured: 200000,           // Item 2: ₹2 Lakhs unmeasured advance
+      securedAdvance: 500000,              // Item 3: ₹5 Lakhs secured advance on materials
+      retentionPercent: 5,                 // Item 5: 5% retention on ₹50L = ₹2.5L
+      previousPaymentsAlreadyMade: 2500000,// Item 7: ₹25 Lakhs previously paid
+      cementRecovery: 50000,               // Item 8(a): ₹50,000 departmental cement
+      steelRecovery: 100000,               // Item 8(a): ₹1,00,000 departmental steel
+      contractorType: 'company_firm',      // 2% IT TDS
+      gstTdsPercent: 2,
+      labourCessPercent: 1,
+    })
+
+    expect(memo.item4_grossUpToDate).toBe(5700000) // ₹50L + ₹2L + ₹5L
+    expect(memo.item5_retentionWithheld).toBe(250000) // 5% of ₹50L
+    expect(memo.item6_balanceUpToDate).toBe(5450000) // ₹57L - ₹2.5L
+    expect(memo.item8a_workRecoveries.total).toBe(150000) // ₹50k + ₹100k
+
+    // Current gross due before deductions: ₹54,50,000 - ₹25,00,000 = ₹29,50,000
+    // Statutory taxes on ₹29.5L: 2% TDS (₹59,000) + 2% GST TDS (₹59,000) + 1% Cess (₹29,500) = ₹1,47,500
+    expect(memo.item8b_statutoryRecoveries.itTds).toBe(59000)
+    expect(memo.item8b_statutoryRecoveries.gstTds).toBe(59000)
+    expect(memo.item8b_statutoryRecoveries.labourCess).toBe(29500)
+    expect(memo.item8b_statutoryRecoveries.total).toBe(147500)
+
+    // Net payable now: ₹29,50,000 - ₹1,50,000 (materials) - ₹1,47,500 (taxes) = ₹26,52,500
+    expect(memo.item8c_netPayableNow).toBe(2652500)
+  })
+
+  it('correctly calculates Defect Liability Period (DLP) release date', () => {
+    expect(calculateDLPReleaseDate('2026-03-31', 12)).toBe('2027-03-31')
+    expect(calculateDLPReleaseDate('2026-01-15', 6)).toBe('2026-07-15')
+    expect(calculateDLPReleaseDate('', 12)).toBe('')
   })
 })
 

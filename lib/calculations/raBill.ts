@@ -143,3 +143,120 @@ export function deriveBillPaymentStatus({
   return 'partially_paid'
 }
 
+export interface CPWAMemorandumParams {
+  measuredWorkValue: number           // Item 1: Account I, Entry A
+  advanceUnmeasured?: number          // Item 2: Advance for unmeasured work
+  securedAdvance?: number             // Item 3: Form 26-A materials advance
+  retentionPercent?: number           // Item 5(b): Retention percentage
+  previousPaymentsAlreadyMade?: number // Item 7: Payments made as per last bill
+  cementRecovery?: number             // Item 8(a): Departmental cement recovery
+  steelRecovery?: number              // Item 8(a): Departmental steel recovery
+  otherWorkRecoveries?: number        // Item 8(a): Mobilization advance / store recovery
+  contractorType?: ContractorEntityType
+  itTdsPercent?: number               // Item 8(b): Income Tax TDS (1% vs 2%)
+  gstTdsPercent?: number              // Item 8(b): GST TDS (2%)
+  labourCessPercent?: number          // Item 8(b): Labour Cess (1%)
+  additionalRecoveries?: number       // Item 8(b): Royalty, testing charges
+}
+
+export interface CPWAMemorandumResult {
+  item1_measuredWork: number
+  item2_advanceUnmeasured: number
+  item3_securedAdvance: number
+  item4_grossUpToDate: number
+  item5_retentionWithheld: number
+  item6_balanceUpToDate: number
+  item7_previousPaymentsMade: number
+  item8a_workRecoveries: {
+    cement: number
+    steel: number
+    other: number
+    total: number
+  }
+  item8b_statutoryRecoveries: {
+    itTds: number
+    gstTds: number
+    labourCess: number
+    other: number
+    total: number
+  }
+  item8c_netPayableNow: number
+}
+
+/**
+ * Computes official CPWA Form 26 Account III Memorandum of Payments.
+ * Strictly implements the $(1 + 2 + 3 - 5 - 7 - 8a - 8b)$ hierarchy.
+ */
+export function calculateCPWAMemorandum(params: CPWAMemorandumParams): CPWAMemorandumResult {
+  const item1 = Math.max(0, roundToTwo(params.measuredWorkValue))
+  const item2 = Math.max(0, roundToTwo(params.advanceUnmeasured ?? 0))
+  const item3 = Math.max(0, roundToTwo(params.securedAdvance ?? 0))
+  const item4 = safeAdd(item1, item2, item3)
+
+  const retPercent = (params.retentionPercent ?? 5) / 100
+  const item5 = safeMul(item1, retPercent)
+  const item6 = Math.max(0, safeSub(item4, item5))
+
+  const item7 = Math.max(0, roundToTwo(params.previousPaymentsAlreadyMade ?? 0))
+  const grossCurrentDue = Math.max(0, safeSub(item6, item7))
+
+  // Item 8(a): Recoveries creditable to this work (departmental stores, mobilization advance)
+  const cement = Math.max(0, roundToTwo(params.cementRecovery ?? 0))
+  const steel = Math.max(0, roundToTwo(params.steelRecovery ?? 0))
+  const otherWork = Math.max(0, roundToTwo(params.otherWorkRecoveries ?? 0))
+  const total8a = safeAdd(cement, steel, otherWork)
+
+  // Item 8(b): Recoveries creditable to other heads (Sec 194C TDS, GST TDS, Cess, Royalty)
+  const defaultTdsRate = params.contractorType === 'individual_proprietor' ? 1 : 2
+  const tdsRate = (params.itTdsPercent ?? defaultTdsRate) / 100
+  const gstRate = (params.gstTdsPercent ?? 2) / 100
+  const cessRate = (params.labourCessPercent ?? 1) / 100
+
+  // Taxes are assessed on current work certified
+  const itTds = safeMul(grossCurrentDue, tdsRate)
+  const gstTds = safeMul(grossCurrentDue, gstRate)
+  const labourCess = safeMul(grossCurrentDue, cessRate)
+  const otherTaxes = Math.max(0, roundToTwo(params.additionalRecoveries ?? 0))
+  const total8b = safeAdd(itTds, gstTds, labourCess, otherTaxes)
+
+  // Item 8(c): Net payable by Cheque / PFMS / RTGS
+  const item8c = Math.max(0, safeSub(grossCurrentDue, safeAdd(total8a, total8b)))
+
+  return {
+    item1_measuredWork: item1,
+    item2_advanceUnmeasured: item2,
+    item3_securedAdvance: item3,
+    item4_grossUpToDate: item4,
+    item5_retentionWithheld: item5,
+    item6_balanceUpToDate: item6,
+    item7_previousPaymentsMade: item7,
+    item8a_workRecoveries: {
+      cement,
+      steel,
+      other: otherWork,
+      total: total8a,
+    },
+    item8b_statutoryRecoveries: {
+      itTds,
+      gstTds,
+      labourCess,
+      other: otherTaxes,
+      total: total8b,
+    },
+    item8c_netPayableNow: item8c,
+  }
+}
+
+/**
+ * Calculates Defect Liability Period (DLP) retention release milestone date
+ * based on physical completion date and specified warranty months.
+ */
+export function calculateDLPReleaseDate(completionDate: string, dlpMonths: number = 12): string {
+  if (!completionDate) return ''
+  const date = new Date(completionDate)
+  if (isNaN(date.getTime())) return ''
+  date.setMonth(date.getMonth() + dlpMonths)
+  return date.toISOString().split('T')[0]
+}
+
+

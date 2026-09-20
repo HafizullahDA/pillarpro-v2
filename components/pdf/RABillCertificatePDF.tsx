@@ -27,13 +27,17 @@ export function RABillCertificatePDF({ bill, organization }: RABillCertificatePD
   const gstTds = Number(bill.gst_tds_deducted) || 0
   const labourCess = Number(bill.labour_cess_deducted) || 0
   const otherDeductions = Number(bill.other_deductions) || 0
-  const totalDeductions = Number(bill.total_deductions) || (retention + tds + gstTds + labourCess + otherDeductions)
+  const cementRec = Number(bill.cement_recovery) || 0
+  const steelRec = Number(bill.steel_recovery) || 0
+  const otherMatRec = Number(bill.other_material_recovery) || 0
+  const totalMatRecoveries = cementRec + steelRec + otherMatRec
+  const totalDeductions = Number(bill.total_deductions) || (retention + tds + gstTds + labourCess + otherDeductions + totalMatRecoveries)
 
   const netPassed = bill.net_payable_this_bill != null
     ? Number(bill.net_payable_this_bill)
     : (Number(bill.net_payable_amount) != null && !isNaN(Number(bill.net_payable_amount))
       ? Number(bill.net_payable_amount)
-      : (workCertified - retention))
+      : (workCertified - retention - totalMatRecoveries))
 
   const received = Number(bill.amount_received) || 0
   const netBankReceived = Number(bill.net_bank_received) || (received > 0 ? Math.max(0, received - totalDeductions) : 0)
@@ -67,19 +71,29 @@ export function RABillCertificatePDF({ bill, organization }: RABillCertificatePD
                   <span>· {organization.address}</span>
                 )}
               </div>
-              <h2 className="text-xs font-bold text-slate-500 tracking-wider uppercase mt-2">
-                Running Account (RA) Bill Certificate
-              </h2>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-[11px] font-black tracking-wider uppercase px-2 py-0.5 rounded bg-slate-900 text-white">
+                  {bill.bill_type === 'final' ? 'FORM CPWA 27-B' : bill.bill_type === 'first_and_final' ? 'FORM CPWA 24' : 'FORM CPWA 26'}
+                </span>
+                <h2 className="text-xs font-bold text-slate-600 tracking-wider uppercase">
+                  {bill.bill_type === 'final' ? 'Final Bill Certificate (Form 27-B)' : bill.bill_type === 'first_and_final' ? 'First & Final Bill' : 'Running Account (RA) Bill Certificate'}
+                </h2>
+              </div>
             </div>
           </div>
           <div className="text-right text-xs text-slate-500 shrink-0">
             <p><strong>Date:</strong> {generatedAt}</p>
             <p className="font-mono text-[11px] text-slate-400">Bill ID: {bill.id.slice(0, 8)}</p>
+            {bill.bill_type === 'final' && (
+              <span className="inline-block mt-1 text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded">
+                Final Settlement
+              </span>
+            )}
           </div>
         </div>
 
         {/* Project & Bill Metadata */}
-        <div className="mt-4 pt-3 border-t border-slate-200 grid grid-cols-2 gap-4 text-xs">
+        <div className="mt-4 pt-3 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
           <div>
             <p className="text-[11px] uppercase font-bold text-slate-500 tracking-wider">Work Order & Project</p>
             <p className="text-base font-bold text-slate-900 mt-0.5">{bill.projects?.name || 'Project Site'}</p>
@@ -91,12 +105,27 @@ export function RABillCertificatePDF({ bill, organization }: RABillCertificatePD
             </p>
           </div>
 
-          <div className="text-right">
+          <div>
+            <p className="text-[11px] uppercase font-bold text-slate-500 tracking-wider">Measurement Book (e-MB)</p>
+            <p className="font-mono font-bold text-slate-900 mt-0.5">
+              {bill.mb_number ? `MB #${bill.mb_number}` : 'e-MB Registered'}
+            </p>
+            <p className="text-slate-600 mt-0.5">
+              <strong>Pages:</strong> {bill.mb_page_start ? `${bill.mb_page_start} to ${bill.mb_page_end || bill.mb_page_start}` : 'Electronic'}
+            </p>
+            {bill.measuring_officer_name && (
+              <p className="text-slate-600 mt-0.5">
+                <strong>Officer:</strong> {bill.measuring_officer_name} ({bill.measuring_officer_designation || 'JE'})
+              </p>
+            )}
+          </div>
+
+          <div className="text-right sm:text-right">
             <p className="text-[11px] uppercase font-bold text-slate-500 tracking-wider">Bill Details</p>
             <p className="text-base font-mono font-bold text-blue-700 mt-0.5">{bill.bill_number}</p>
-            <p className="text-slate-600 mt-0.5"><strong>Submission Date:</strong> {formatDate(bill.submission_date)}</p>
+            <p className="text-slate-600 mt-0.5"><strong>Submission:</strong> {formatDate(bill.submission_date)}</p>
             <p className="text-slate-600 mt-0.5">
-              <strong>Bill Status:</strong>{' '}
+              <strong>Status:</strong>{' '}
               <span className="uppercase font-semibold">{bill.status.replace(/_/g, ' ')}</span>
             </p>
           </div>
@@ -190,6 +219,27 @@ export function RABillCertificatePDF({ bill, organization }: RABillCertificatePD
                 <td className="py-2 px-3">Building & Other Construction Workers (BOCW) Labour Welfare Cess</td>
                 <td className="py-2 px-3 text-center text-slate-500 font-mono">1.0%</td>
                 <td className="py-2 px-3 text-right tabular-nums font-medium text-slate-800">{formatINR(labourCess)}</td>
+              </tr>
+            )}
+            {cementRec > 0 && (
+              <tr>
+                <td className="py-2 px-3">Departmental Cement Recovery (CPWA Form 35-A)</td>
+                <td className="py-2 px-3 text-center text-slate-500 font-mono">Store Issue</td>
+                <td className="py-2 px-3 text-right tabular-nums font-medium text-amber-800">{formatINR(cementRec)}</td>
+              </tr>
+            )}
+            {steelRec > 0 && (
+              <tr>
+                <td className="py-2 px-3">Departmental Steel Recovery (CPWA Form 35-A)</td>
+                <td className="py-2 px-3 text-center text-slate-500 font-mono">Store Issue</td>
+                <td className="py-2 px-3 text-right tabular-nums font-medium text-amber-800">{formatINR(steelRec)}</td>
+              </tr>
+            )}
+            {otherMatRec > 0 && (
+              <tr>
+                <td className="py-2 px-3">Other Material / Machinery Recovery</td>
+                <td className="py-2 px-3 text-center text-slate-500 font-mono">Work Credit</td>
+                <td className="py-2 px-3 text-right tabular-nums font-medium text-amber-800">{formatINR(otherMatRec)}</td>
               </tr>
             )}
             {bill.bill_deductions && bill.bill_deductions.map((d, i) => (

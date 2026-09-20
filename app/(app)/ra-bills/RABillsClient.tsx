@@ -50,6 +50,19 @@ export type RABillRow = {
   previous_received_amount?: number
   net_payable_this_bill?: number
   this_bill_work_certified?: number
+  bill_type?: 'running' | 'first_and_final' | 'final'
+  mb_number?: string | null
+  mb_page_start?: number | null
+  mb_page_end?: number | null
+  measurement_date?: string | null
+  measuring_officer_name?: string | null
+  measuring_officer_designation?: string | null
+  advance_payments_unmeasured?: number
+  cement_recovery?: number
+  steel_recovery?: number
+  other_material_recovery?: number
+  actual_completion_date?: string | null
+  dlp_months?: number
   status: 'submitted' | 'partially_paid' | 'fully_paid'
   document_url: string | null
   remarks: string | null
@@ -679,9 +692,24 @@ export function RABillsClient({
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-bold text-slate-900 text-sm">{b.bill_number}</span>
+                          {b.bill_type === 'final' && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                              Final Bill (Form 27-B)
+                            </span>
+                          )}
+                          {b.bill_type === 'first_and_final' && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200">
+                              1st & Final (Form 24)
+                            </span>
+                          )}
                           {isCum && (
                             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                               Cumulative
+                            </span>
+                          )}
+                          {b.mb_number && (
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                              MB #{b.mb_number}
                             </span>
                           )}
                           {b.document_url && (
@@ -803,9 +831,24 @@ export function RABillsClient({
                       <td className="px-4 py-3.5">
                         <div className="font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
                           {b.bill_number}
+                          {b.bill_type === 'final' && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                              Final Bill (Form 27-B)
+                            </span>
+                          )}
+                          {b.bill_type === 'first_and_final' && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200">
+                              1st & Final (Form 24)
+                            </span>
+                          )}
                           {isCum && (
                             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                               Cumulative
+                            </span>
+                          )}
+                          {b.mb_number && (
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                              MB #{b.mb_number}
                             </span>
                           )}
                           {b.document_url && (
