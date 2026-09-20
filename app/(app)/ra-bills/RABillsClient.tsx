@@ -7,12 +7,16 @@ import { Button } from '@/components/ui/Button'
 import { formatINR, formatDate } from '@/lib/format'
 import { RABillActions, ProjectOption, RABillOption } from './RABillActions'
 import { canCreateRaBill } from '@/lib/permissions'
+import { createClient } from '@/lib/supabase/client'
 import { PrintPreviewModal } from '@/components/pdf/PrintPreviewModal'
 import { RABillCertificatePDF } from '@/components/pdf/RABillCertificatePDF'
+import { MeasurementSheetPDF } from '@/components/pdf/MeasurementSheetPDF'
 import { getClientOrganization, OrganizationProfile, DEFAULT_ORGANIZATION } from '@/lib/organization'
 import { generateRABillWhatsAppText, openWhatsApp } from '@/lib/whatsapp'
 import { exportRABillsRegister } from '@/lib/export/csv'
 import { saveOfflineSnapshot } from '@/lib/offline/db'
+import { useToast } from '@/components/ui/Toast'
+import { RABillItem } from '@/lib/types/boq'
 
 // ════════════════════════════════════════════════════════════════════════
 // CONFIGURABLE THRESHOLD FOR EXPIRING BANK GUARANTEES (IN DAYS)
@@ -39,6 +43,7 @@ export type RABillRow = {
   date_received: string | null
   outstanding_balance: number
   billing_mode?: 'standalone' | 'cumulative'
+  billing_entry_mode?: 'lump_sum' | 'item_wise'
   previous_bill_id?: string | null
   cumulative_certified_amount?: number | null
   previous_certified_amount?: number
@@ -87,6 +92,8 @@ export function RABillsClient({
   projects,
   userRole,
 }: RABillsClientProps) {
+  const supabase = createClient()
+  const toast = useToast()
   const canCreate = canCreateRaBill(userRole)
   // Filters
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all')
@@ -98,7 +105,27 @@ export function RABillsClient({
   const [payBillId, setPayBillId] = useState<string | undefined>(undefined)
   // Printable Certificate State
   const [certBill, setCertBill] = useState<RABillRow | null>(null)
+  const [embModal, setEmbModal] = useState<{ bill: RABillRow; items: RABillItem[] } | null>(null)
+  const [loadingEmbId, setLoadingEmbId] = useState<string | null>(null)
   const [org, setOrg] = useState<OrganizationProfile>(DEFAULT_ORGANIZATION)
+
+  const handleOpenEmbSheet = async (bill: RABillRow) => {
+    setLoadingEmbId(bill.id)
+    try {
+      const { data, error } = await supabase
+        .from('ra_bill_items')
+        .select('*, boq_items(item_number, description, unit, tender_quantity, awarded_rate)')
+        .eq('ra_bill_id', bill.id)
+        .order('created_at', { ascending: true })
+
+      if (error) throw error
+      setEmbModal({ bill, items: (data || []) as RABillItem[] })
+    } catch {
+      toast.error('Could not load e-MB measurement items for this bill.')
+    } finally {
+      setLoadingEmbId(null)
+    }
+  }
 
   useEffect(() => {
     getClientOrganization().then(setOrg)
@@ -895,6 +922,18 @@ export function RABillsClient({
                           </button>
                           <button
                             type="button"
+                            onClick={() => handleOpenEmbSheet(b)}
+                            disabled={loadingEmbId === b.id}
+                            title="View / Print CPWD Form 26 Measurement Sheet (e-MB)"
+                            className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors font-semibold"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                            </svg>
+                            {loadingEmbId === b.id ? '...' : 'e-MB'}
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => openWhatsApp(generateRABillWhatsAppText(b, org))}
                             title="Share bill details via WhatsApp"
                             className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors font-semibold"
@@ -938,6 +977,22 @@ export function RABillsClient({
           whatsappText={generateRABillWhatsAppText(certBill, org)}
         >
           <RABillCertificatePDF bill={certBill} organization={org} />
+        </PrintPreviewModal>
+      )}
+
+      {/* Printable CPWD Form 26 Measurement Sheet Modal */}
+      {embModal && (
+        <PrintPreviewModal
+          open={!!embModal}
+          onClose={() => setEmbModal(null)}
+          title={`e-MB Measurement Sheet — ${embModal.bill.bill_number}`}
+          subtitle={embModal.bill.projects?.name || 'CPWD Form 26 Abstract of Measurements'}
+        >
+          <MeasurementSheetPDF
+            bill={embModal.bill}
+            items={embModal.items}
+            organization={org}
+          />
         </PrintPreviewModal>
       )}
     </div>

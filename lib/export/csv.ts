@@ -389,3 +389,83 @@ export function exportSiteExpenses(expenses: ExportableExpenseRow[], projectFilt
   const csv = buildCsvString(headers, rows)
   triggerCsvDownload(csv, filename)
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. BOQ SCHEDULE & WORK-DONE % REGISTER EXPORT
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ExportableBOQItem {
+  item_number: string
+  description: string
+  unit: string
+  tender_quantity: number
+  awarded_rate: number
+  tender_amount: number
+  cumulative_executed_qty: number
+  remaining_qty: number
+  cumulative_executed_amount: number
+  work_done_percentage: number
+}
+
+export function exportBOQScheduleCSV(
+  items: ExportableBOQItem[],
+  projectName: string
+): void {
+  const headers = [
+    'Item No / DSR Code',
+    'Description of Work',
+    'Unit',
+    'Tender Qty',
+    'Awarded Rate (INR)',
+    'Tender Amount (INR)',
+    'Executed Qty Till Date',
+    'Remaining Qty',
+    'Executed Amount (INR)',
+    'Work Done (%)',
+  ]
+
+  let totalTender = 0
+  let totalExecuted = 0
+
+  const rows: CsvCellValue[][] = items.map(item => {
+    const tAmt = roundToTwo(Number(item.tender_amount) || 0)
+    const eAmt = roundToTwo(Number(item.cumulative_executed_amount) || 0)
+    totalTender += tAmt
+    totalExecuted += eAmt
+
+    return [
+      item.item_number,
+      item.description,
+      item.unit,
+      Number(item.tender_quantity) || 0,
+      Number(item.awarded_rate) || 0,
+      tAmt,
+      Number(item.cumulative_executed_qty) || 0,
+      Number(item.remaining_qty) || 0,
+      eAmt,
+      `${Number(item.work_done_percentage) || 0}%`,
+    ]
+  })
+
+  const overallPct = totalTender > 0 ? roundToTwo((totalExecuted / totalTender) * 100) : 0
+
+  rows.push([
+    'TOTAL',
+    '',
+    '',
+    '',
+    '',
+    roundToTwo(totalTender),
+    '',
+    '',
+    roundToTwo(totalExecuted),
+    `${overallPct}%`,
+  ])
+
+  const dateTag = new Date().toISOString().split('T')[0]
+  const cleanName = projectName.replace(/[^a-zA-Z0-9]/g, '_')
+  const filename = `BOQ_Schedule_${cleanName}_${dateTag}.csv`
+
+  const csv = buildCsvString(headers, rows)
+  triggerCsvDownload(csv, filename)
+}
