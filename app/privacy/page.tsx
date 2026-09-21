@@ -174,7 +174,10 @@ export default function PrivacyPolicyPage() {
               <span className="text-blue-500">8.</span> Contact for Privacy Inquiries
             </h2>
             <p>
-              If you have questions regarding this Privacy Policy or wish to exercise data rights regarding your contracting firm workspace, please contact our data governance team through our official communication channels or by emailing our designated privacy administrator.
+              If you have questions regarding this Privacy Policy or wish to exercise data rights regarding your contracting firm workspace, please contact our data governance team at{' '}
+              <a href="mailto:contact@pillarprojk.com" className="text-blue-400 hover:text-blue-300 underline font-medium">
+                contact@pillarprojk.com
+              </a>.
             </p>
           </section>
         </div>

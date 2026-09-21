@@ -990,6 +990,7 @@ export function LandingPage({
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[11px] text-slate-600 font-medium">
             <Link href="/sign-in" className="hover:text-slate-900 transition-colors">Sign In</Link>
             <Link href="/sign-up" className="hover:text-slate-900 transition-colors">Create Firm Workspace</Link>
+            <a href="mailto:contact@pillarprojk.com" className="hover:text-slate-900 transition-colors">Contact Us</a>
             <Link href="/privacy" className="hover:text-slate-900 transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-slate-900 transition-colors">Terms of Service</Link>
             <span className="text-slate-400">© 2026 PillarPro. All rights reserved.</span>

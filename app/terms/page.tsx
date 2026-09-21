@@ -159,6 +159,19 @@ export default function TermsOfServicePage() {
               These Terms shall be governed by and construed in accordance with the laws of India. Any legal dispute or proceeding arising out of or related to these Terms shall be subject to the exclusive jurisdiction of the competent courts in India.
             </p>
           </section>
+
+          {/* Section 9 */}
+          <section className="space-y-3">
+            <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              <span className="text-blue-500">9.</span> Contact & Customer Support
+            </h2>
+            <p>
+              For enterprise inquiries, contract support, or administrative queries, please contact our team at{' '}
+              <a href="mailto:contact@pillarprojk.com" className="text-blue-400 hover:text-blue-300 underline font-medium">
+                contact@pillarprojk.com
+              </a>.
+            </p>
+          </section>
         </div>
 
         {/* Bottom Navigation */}
