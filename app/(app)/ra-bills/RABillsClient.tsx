@@ -329,6 +329,7 @@ export function RABillsClient({
             defaultProjectId={selectedProjectId !== 'all' ? selectedProjectId : undefined}
             preselectedBillId={payBillId}
             onClosePayment={() => setPayBillId(undefined)}
+            org={org}
           />
         )}
       </div>

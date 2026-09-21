@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Badge } from '@/components/ui/Badge'
@@ -10,6 +10,9 @@ import { Modal } from '@/components/ui/Modal'
 import { FieldWrapper } from '@/components/ui/FormField'
 import { useToast } from '@/components/ui/Toast'
 import { formatINR, formatDate } from '@/lib/format'
+import { getClientOrganization, OrganizationProfile, DEFAULT_ORGANIZATION } from '@/lib/organization'
+import { canAccessFeature, PlanTier } from '@/lib/subscription'
+import { UpgradeModal } from '@/components/subscription/UpgradeModal'
 import {
   HindranceItem,
   HindranceCategory,
@@ -58,6 +61,23 @@ export function HindranceClient({
   const [hindrances, setHindrances] = useState<HindranceItem[]>(initialHindrances)
   const [eotApps, setEotApps] = useState<any[]>(initialEOTApplications)
   const [activeTab, setActiveTab] = useState<'register' | 'eot' | 'notices'>('register')
+
+  // Organization & Subscription State
+  const [org, setOrg] = useState<OrganizationProfile>(DEFAULT_ORGANIZATION)
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false)
+  const [upgradeConfig, setUpgradeConfig] = useState<{
+    title: string
+    description: string
+    requiredPlan: PlanTier
+  }>({
+    title: 'Subscription Required',
+    description: '',
+    requiredPlan: 'growth',
+  })
+
+  useEffect(() => {
+    getClientOrganization().then(setOrg)
+  }, [])
 
   // Drawer & Modal States
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -116,6 +136,21 @@ export function HindranceClient({
   }
 
   const handleOpenDrawer = (h?: HindranceItem) => {
+    const access = canAccessFeature('hasDelayDefense', org)
+    if (!access.allowed) {
+      setUpgradeConfig({
+        title: access.reason?.includes('expired')
+          ? 'Subscription Expired'
+          : 'Growth Contractor Plan Required',
+        description:
+          access.reason ||
+          'Delay Defense, statutory Clause 5 hindrances, and EOT claims are available on the Growth Contractor and Enterprise Infra plans.',
+        requiredPlan: access.requiredPlan,
+      })
+      setUpgradeModalOpen(true)
+      return
+    }
+
     if (h) {
       setEditingHindrance(h)
       setCategory(h.category)
@@ -134,6 +169,24 @@ export function HindranceClient({
       resetHindranceForm()
     }
     setDrawerOpen(true)
+  }
+
+  const handleOpenEotModal = () => {
+    const access = canAccessFeature('hasDelayDefense', org)
+    if (!access.allowed) {
+      setUpgradeConfig({
+        title: access.reason?.includes('expired')
+          ? 'Subscription Expired'
+          : 'Growth Contractor Plan Required',
+        description:
+          access.reason ||
+          'Extension of Time (EOT) claim applications and liquidated damages defense tools require an active Growth Contractor or Enterprise subscription.',
+        requiredPlan: access.requiredPlan,
+      })
+      setUpgradeModalOpen(true)
+      return
+    }
+    setEotModalOpen(true)
   }
 
   // Save Hindrance (Create or Update)
@@ -365,7 +418,7 @@ export function HindranceClient({
             size="sm"
             variant="secondary"
             className="text-xs font-semibold"
-            onClick={() => setEotModalOpen(true)}
+            onClick={handleOpenEotModal}
           >
             <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -672,7 +725,7 @@ export function HindranceClient({
             <Button
               size="sm"
               className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => setEotModalOpen(true)}
+              onClick={handleOpenEotModal}
             >
               + Create EOT Claim
             </Button>
@@ -690,7 +743,7 @@ export function HindranceClient({
               <Button
                 size="sm"
                 className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => setEotModalOpen(true)}
+                onClick={handleOpenEotModal}
               >
                 + Draft EOT Application (Form 27)
               </Button>
@@ -1136,6 +1189,16 @@ export function HindranceClient({
           </div>
         </div>
       </Modal>
+
+      {/* Upgrade Modal for Feature Gating */}
+      <UpgradeModal
+        open={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        title={upgradeConfig.title}
+        description={upgradeConfig.description}
+        requiredPlan={upgradeConfig.requiredPlan}
+        currentPlan={(org?.plan_tier as any) || 'bootstrap'}
+      />
     </div>
   )
 }

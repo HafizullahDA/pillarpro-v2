@@ -5,6 +5,7 @@ import { IconRail } from '@/components/nav/IconRail'
 import { BottomNav } from '@/components/nav/BottomNav'
 import { MobileHeader } from '@/components/nav/MobileHeader'
 import { OfflineStatusBanner } from '@/components/ui/OfflineStatusBanner'
+import { SubscriptionStatusBanner } from '@/components/subscription/SubscriptionStatusBanner'
 import { IdleTimeoutProvider } from '@/components/auth/IdleTimeoutProvider'
 import { ToastProvider } from '@/components/ui/Toast'
 import { LanguageProvider } from '@/lib/i18n/LanguageContext'
@@ -27,6 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <LanguageProvider>
           <div className="flex flex-col min-h-screen bg-slate-100">
             <OfflineStatusBanner />
+            <SubscriptionStatusBanner />
             <MobileHeader userName={displayName} userRole={userRole} userEmail={user.email} />
             <div className="flex-1 flex min-w-0">
               <Sidebar userName={displayName} userRole={userRole} userEmail={user.email} />

@@ -6,6 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { FieldWrapper, Input, Select, CurrencyInput } from '@/components/ui/FormField'
+import { UpgradeModal } from '@/components/subscription/UpgradeModal'
+import { getClientOrganization } from '@/lib/organization'
+import { getEffectiveSubscription, PlanTier } from '@/lib/subscription'
 
 const STATUS_OPTIONS = [
   { value: 'active',    label: 'Active'    },
@@ -19,7 +22,17 @@ export function AddProjectButton() {
   const supabase = createClient()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [checking, setChecking] = useState(false)
   const [error, setError] = useState('')
+
+  // Upgrade modal state
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
+  const [upgradeInfo, setUpgradeInfo] = useState({
+    title: '',
+    description: '',
+    requiredPlan: 'growth' as PlanTier,
+    currentPlan: 'bootstrap' as PlanTier,
+  })
 
   const [form, setForm] = useState({
     name: '', agency_name: '', advertised_cost: '', awarded_amount: '',
@@ -92,14 +105,70 @@ export function AddProjectButton() {
     }
   }
 
+  const handleOpenClick = async () => {
+    setChecking(true)
+    try {
+      const org = await getClientOrganization()
+      const sub = getEffectiveSubscription(org)
+
+      if (!sub.isActive) {
+        setUpgradeInfo({
+          title: 'Subscription Expired',
+          description:
+            'Your workspace is currently in Read-Only mode. Please reactivate your subscription to create new project sites and continue execution.',
+          requiredPlan: sub.planTier,
+          currentPlan: sub.planTier,
+        })
+        setUpgradeOpen(true)
+        setChecking(false)
+        return
+      }
+
+      // Check current active site count
+      const { count } = await supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true })
+        .is('archived', false)
+
+      const activeCount = count || 0
+      if (activeCount >= sub.maxActiveSites) {
+        const nextPlan: PlanTier = sub.planTier === 'bootstrap' ? 'growth' : 'enterprise'
+        setUpgradeInfo({
+          title: 'Active Site Limit Reached',
+          description: `You have reached your active site limit (${activeCount}/${sub.maxActiveSites} sites) on the ${sub.planConfig.name} plan. Archive a completed project or upgrade your plan to create additional active packages.`,
+          requiredPlan: nextPlan,
+          currentPlan: sub.planTier,
+        })
+        setUpgradeOpen(true)
+        setChecking(false)
+        return
+      }
+
+      setOpen(true)
+    } catch {
+      setOpen(true)
+    } finally {
+      setChecking(false)
+    }
+  }
+
   return (
     <>
-      <Button onClick={() => setOpen(true)} size="sm">
+      <Button onClick={handleOpenClick} loading={checking} size="sm">
         <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
         </svg>
         Add Project
       </Button>
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        title={upgradeInfo.title}
+        description={upgradeInfo.description}
+        requiredPlan={upgradeInfo.requiredPlan}
+        currentPlan={upgradeInfo.currentPlan}
+      />
 
       <Drawer
         open={open}

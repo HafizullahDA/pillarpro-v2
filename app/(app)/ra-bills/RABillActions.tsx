@@ -9,6 +9,8 @@ import { NewRABillDrawer } from '@/components/ra-bills/NewRABillDrawer'
 import { RecordPaymentDrawer } from '@/components/ra-bills/RecordPaymentDrawer'
 import { SecurityDepositDrawer } from '@/components/ra-bills/SecurityDepositDrawer'
 import { RABillScanConfirmModal, ScannedRABillData } from '@/components/ra-bills/RABillScanConfirmModal'
+import { UpgradeModal } from '@/components/subscription/UpgradeModal'
+import { isSubscriptionActive, SubscriptionOrgData } from '@/lib/subscription'
 
 export type ProjectOption = { id: string; name: string; agency_name?: string | null }
 export type RABillOption = {
@@ -56,6 +58,7 @@ export interface RABillActionsProps {
   preselectedBillId?: string
   onPaymentSuccess?: () => void
   onClosePayment?: () => void
+  org?: SubscriptionOrgData
 }
 
 /**
@@ -71,10 +74,16 @@ export function RABillActions({
   preselectedBillId,
   onPaymentSuccess,
   onClosePayment,
+  org,
 }: RABillActionsProps) {
   const toast = useToast()
   const [activeDrawer, setActiveDrawer] = useState<'submit_ra' | 'record_payment' | 'add_deposit' | null>(null)
   const [currentBillId, setCurrentBillId] = useState<string | undefined>(preselectedBillId)
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false)
+  const [upgradeContent, setUpgradeContent] = useState<{ title: string; description: string }>({
+    title: 'Subscription Required',
+    description: '',
+  })
 
   // AI Scan states
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -84,6 +93,39 @@ export function RABillActions({
   const [scannedBillData, setScannedBillData] = useState<ScannedRABillData | null>(null)
   const [scanPreviewUrl, setScanPreviewUrl] = useState<string | null>(null)
   const [rawScanFile, setRawScanFile] = useState<File | null>(null)
+
+  const isOrgActive = !org || isSubscriptionActive(org)
+
+  const triggerScan = (type: 'camera' | 'file') => {
+    if (!isOrgActive) {
+      setUpgradeContent({
+        title: 'Subscription Required for AI RA Bill Scanner',
+        description:
+          'Your workspace is currently in Read-Only mode. Please reactivate your subscription to use the Gemini AI OCR Scanner on physical bills and measurement books.',
+      })
+      setUpgradeModalOpen(true)
+      return
+    }
+
+    if (type === 'camera') {
+      cameraInputRef.current?.click()
+    } else {
+      fileInputRef.current?.click()
+    }
+  }
+
+  const handleOpenSubmit = () => {
+    if (!isOrgActive) {
+      setUpgradeContent({
+        title: 'Subscription Required to Submit RA Bills',
+        description:
+          'Your workspace is currently in Read-Only mode. Existing bills and certificates remain viewable and printable. Please reactivate your subscription to create and submit new Running Account bills.',
+      })
+      setUpgradeModalOpen(true)
+      return
+    }
+    setActiveDrawer('submit_ra')
+  }
 
   // Automatically open record payment drawer when a bill is clicked from table
   useEffect(() => {
@@ -175,7 +217,7 @@ export function RABillActions({
             variant="secondary"
             size="sm"
             loading={scanning}
-            onClick={() => cameraInputRef.current?.click()}
+            onClick={() => triggerScan('camera')}
             className="bg-transparent border-0 text-blue-700 hover:bg-white text-xs h-8 px-2.5 shadow-none flex items-center gap-1.5"
             title="Scan RA bill with phone camera"
           >
@@ -187,7 +229,7 @@ export function RABillActions({
             variant="secondary"
             size="sm"
             loading={scanning}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => triggerScan('file')}
             className="bg-transparent border-0 text-blue-700 hover:bg-white text-xs h-8 px-2 shadow-none"
             title="Upload RA bill photo or PDF document"
           >
@@ -195,7 +237,7 @@ export function RABillActions({
           </Button>
         </div>
 
-        <Button size="sm" onClick={() => setActiveDrawer('submit_ra')}>
+        <Button size="sm" onClick={handleOpenSubmit}>
           <svg className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
@@ -226,7 +268,7 @@ export function RABillActions({
         projects={projects}
         raBills={raBills}
         defaultProjectId={defaultProjectId}
-        onTriggerScan={() => fileInputRef.current?.click()}
+        onTriggerScan={() => triggerScan('file')}
       />
 
       {/* 2. Modular Record Payment Drawer */}
@@ -262,6 +304,16 @@ export function RABillActions({
           setScanModalOpen(false)
           if (onPaymentSuccess) onPaymentSuccess()
         }}
+      />
+
+      {/* 5. Subscription Upgrade Modal */}
+      <UpgradeModal
+        open={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        title={upgradeContent.title}
+        description={upgradeContent.description}
+        requiredPlan="growth"
+        currentPlan={(org?.plan_tier as any) || 'bootstrap'}
       />
     </>
   )

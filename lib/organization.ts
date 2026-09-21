@@ -12,6 +12,12 @@ export interface OrganizationProfile {
   email?: string | null
   logo_url?: string | null
   signature_url?: string | null
+  plan_tier?: string | null
+  subscription_status?: string | null
+  trial_ends_at?: string | null
+  current_period_end?: string | null
+  max_active_sites?: number | null
+  billing_cycle?: string | null
 }
 
 export const DEFAULT_ORGANIZATION: OrganizationProfile = {
@@ -26,6 +32,12 @@ export const DEFAULT_ORGANIZATION: OrganizationProfile = {
   email: '',
   logo_url: null,
   signature_url: null,
+  plan_tier: 'growth',
+  subscription_status: 'trialing',
+  trial_ends_at: null,
+  current_period_end: null,
+  max_active_sites: 6,
+  billing_cycle: 'monthly',
 }
 
 /**

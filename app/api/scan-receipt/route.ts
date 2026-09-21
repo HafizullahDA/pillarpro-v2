@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenAI } from '@google/genai'
 import { createClient } from '@/lib/supabase/server'
 import { canCreateExpense } from '@/lib/permissions'
+import { isSubscriptionActive } from '@/lib/subscription'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { scanImageRequestSchema } from '@/lib/validations/api'
 import { parseBase64Payload } from '@/lib/base64'
@@ -37,6 +38,20 @@ export async function POST(req: NextRequest) {
     const { data: userRole } = await supabase.rpc('get_user_role')
     if (!canCreateExpense(userRole as string | null)) {
       throw new ForbiddenError('Forbidden. Your role does not have permission to scan receipts or add expenses.')
+    }
+
+    // 2b. Guard: Verify organization subscription is active
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('plan_tier, subscription_status, trial_ends_at, current_period_end')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (orgData && !isSubscriptionActive(orgData)) {
+      throw new ForbiddenError(
+        'Subscription required. Your workspace is currently in Read-Only mode. Please reactivate your plan to use the AI OCR Scanner.'
+      )
     }
 
     // 3. Enforce sliding-window rate limit (keyed by user ID)
