@@ -4,6 +4,7 @@ import { canViewPartners, canManageUsers, canManagePeriods } from '@/lib/permiss
 export const NAV_ITEMS = [
   { href: '/dashboard',   label: 'Dashboard',   i18nKey: 'nav.dashboard',   icon: 'dashboard' },
   { href: '/projects',    label: 'Projects',    i18nKey: 'nav.projects',    icon: 'projects'  },
+  { href: '/hindrances',  label: 'Delay Defense', i18nKey: 'nav.hindrances', icon: 'shield' },
   { href: '/suppliers',   label: 'Suppliers',   i18nKey: 'nav.suppliers',   icon: 'suppliers' },
   { href: '/inventory',   label: 'Store & Stock', i18nKey: 'nav.inventory', icon: 'inventory' },
   { href: '/attendance',  label: 'Attendance',  i18nKey: 'nav.attendance',  icon: 'attendance'},

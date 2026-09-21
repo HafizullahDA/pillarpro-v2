@@ -182,6 +182,19 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
                       {p.agency_name && (
                         <p className="text-xs text-slate-400 md:hidden mt-0.5">{p.agency_name}</p>
                       )}
+                      <div className="flex items-center gap-2 mt-1.5 text-[11px] font-semibold">
+                        <Link href={`/projects/${p.id}/hindrances`} className="text-blue-600 hover:underline flex items-center gap-1">
+                          🛡️ Delay Defense (EOT)
+                        </Link>
+                        <span className="text-slate-300">&bull;</span>
+                        <Link href={`/projects/${p.id}/boq`} className="text-slate-500 hover:text-slate-800 hover:underline">
+                          e-MB
+                        </Link>
+                        <span className="text-slate-300">&bull;</span>
+                        <Link href={`/projects/${p.id}/dpr`} className="text-slate-500 hover:text-slate-800 hover:underline">
+                          DPR
+                        </Link>
+                      </div>
                     </td>
 
                     {/* Agency */}

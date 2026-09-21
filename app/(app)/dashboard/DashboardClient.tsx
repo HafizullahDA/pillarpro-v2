@@ -198,6 +198,32 @@ export function DashboardClient({
         orgName={orgName}
       />
 
+      {/* Enterprise Delay Defense & EOT Shield Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-2xl p-4 md:p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs border border-slate-800">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-xl bg-blue-600/30 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 text-xl font-bold">
+            🛡️
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-sm font-bold text-white">Delay Defense &amp; EOT Engine (CPWD Clause 5)</h2>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                10% LD Shield
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+              Maintain contemporaneous site hindrance registers, 14-day statutory notice countdowns, and official Form 27 Extension of Time claims to protect your firm from liquidated damages.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/hindrances"
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shrink-0 shadow-xs transition-colors"
+        >
+          Open Hindrance Register &rarr;
+        </Link>
+      </div>
+
       {/* Top Header & Filters */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
