@@ -39,6 +39,30 @@ export default function SignInPage() {
   const [loading, setLoading]           = useState(false)
   const [cooldown, setCooldown]         = useState(0)
 
+  // Unconfirmed email & OTP verification state
+  const [isEmailUnconfirmed, setIsEmailUnconfirmed] = useState(false)
+  const [otpCode, setOtpCode]                       = useState('')
+  const [verifyLoading, setVerifyLoading]           = useState(false)
+  const [verifyError, setVerifyError]               = useState('')
+  const [resendNotice, setResendNotice]             = useState('')
+  const [resendCooldown, setResendCooldown]         = useState(0)
+  const [resendLoading, setResendLoading]           = useState(false)
+
+  // Read ?error= or ?email= from query parameters
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const errParam = params.get('error')
+      const emailParam = params.get('email')
+      if (errParam) {
+        setError(decodeURIComponent(errParam))
+      }
+      if (emailParam) {
+        setEmail(decodeURIComponent(emailParam))
+      }
+    }
+  }, [])
+
   // Countdown timer for security lockout cooldown
   useEffect(() => {
     if (cooldown <= 0) return
@@ -48,11 +72,52 @@ export default function SignInPage() {
     return () => clearInterval(timer)
   }, [cooldown])
 
+  // Countdown timer for resend email cooldown
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const timer = setInterval(() => {
+      setResendCooldown(c => Math.max(0, c - 1))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [resendCooldown])
+
+  const ensureUserProvisioned = async (user: any) => {
+    if (!user) return
+    try {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('organization_id, status')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (!profile?.organization_id || profile?.status !== 'active') {
+        const meta = user.user_metadata || {}
+        if (meta.join_code) {
+          await supabase.rpc('join_organization', {
+            p_join_code: meta.join_code,
+            p_display_name: meta.display_name || user.email?.split('@')[0],
+            p_role: 'site_supervisor',
+          })
+        } else {
+          await supabase.rpc('onboard_contractor', {
+            p_firm_name: meta.firm_name || 'My Contracting Firm',
+            p_display_name: meta.display_name || user.email?.split('@')[0],
+            p_seed_starter: meta.seed_starter !== false,
+          })
+        }
+      }
+    } catch (e) {
+      console.warn('Post-login provisioning check notice:', e)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (cooldown > 0) return
 
     setError('')
+    setVerifyError('')
+    setResendNotice('')
     setLoading(true)
 
     // 1. Enforce sliding-window rate limit pre-flight
@@ -76,19 +141,95 @@ export default function SignInPage() {
     }
 
     // 2. Attempt Supabase authentication
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
     })
 
     if (authError) {
-      setError(authError.message)
+      const isUnconfirmed = authError.message.toLowerCase().includes('not confirmed') ||
+                            authError.message.toLowerCase().includes('unconfirmed')
+
+      if (isUnconfirmed) {
+        setIsEmailUnconfirmed(true)
+        setError('Your email address has not been confirmed yet. Check your inbox or resend the confirmation email below.')
+      } else {
+        setError(authError.message)
+      }
       setLoading(false)
       return
     }
 
+    if (authData?.user) {
+      await ensureUserProvisioned(authData.user)
+    }
+
     router.refresh()
     router.push('/dashboard')
+  }
+
+  // Handle OTP verification from sign-in
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!otpCode.trim() || !email.trim()) return
+
+    setVerifyError('')
+    setVerifyLoading(true)
+
+    try {
+      const { data: verifyData, error: verifyErr } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: otpCode.trim(),
+        type: 'signup',
+      })
+
+      if (verifyErr) {
+        setVerifyError(verifyErr.message || 'Invalid or expired verification code.')
+        setVerifyLoading(false)
+        return
+      }
+
+      if (verifyData?.user) {
+        await ensureUserProvisioned(verifyData.user)
+      }
+
+      router.refresh()
+      router.push('/dashboard')
+    } catch (err: any) {
+      setVerifyError(err?.message || 'Verification failed. Please try again.')
+      setVerifyLoading(false)
+    }
+  }
+
+  // Handle resending confirmation email from sign-in
+  const handleResendEmail = async () => {
+    if (!email.trim() || resendCooldown > 0 || resendLoading) return
+
+    setResendLoading(true)
+    setResendNotice('')
+    setVerifyError('')
+
+    try {
+      const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined
+      const { error: resendErr } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim().toLowerCase(),
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
+      })
+
+      if (resendErr) {
+        setVerifyError(resendErr.message)
+      } else {
+        setResendCooldown(60)
+        setResendNotice(`Confirmation email resent to ${email.trim().toLowerCase()}! Please check your inbox and spam folder.`)
+      }
+    } catch (err: any) {
+      setVerifyError(err?.message || 'Failed to resend confirmation email.')
+    } finally {
+      setResendLoading(false)
+    }
   }
 
   return (
@@ -159,7 +300,7 @@ export default function SignInPage() {
             </div>
           </div>
 
-          {/* Right Login Form Column — Order-1 on mobile so user sees inputs immediately */}
+          {/* Right Login Form Column */}
           <div className="order-1 lg:order-2 lg:col-span-7 bg-white p-6 sm:p-8 lg:p-10 flex flex-col justify-center relative z-10 text-slate-900">
             <div className="max-w-md w-full mx-auto">
               
@@ -184,6 +325,72 @@ export default function SignInPage() {
                 </div>
               )}
 
+              {/* Unconfirmed Email Action Box */}
+              {isEmailUnconfirmed && (
+                <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900 shadow-2xs space-y-3">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="font-bold text-amber-950">Email Confirmation Required</p>
+                      <p className="text-amber-800 mt-0.5 leading-relaxed">
+                        Your account is registered, but your email has not been confirmed. You can resend the link or enter your 6-digit code below:
+                      </p>
+                    </div>
+                  </div>
+
+                  {verifyError && (
+                    <div className="p-2.5 rounded-lg bg-red-100/80 border border-red-200 text-red-800 text-xs font-medium">
+                      {verifyError}
+                    </div>
+                  )}
+
+                  {resendNotice && (
+                    <div className="p-2.5 rounded-lg bg-emerald-100/80 border border-emerald-200 text-emerald-900 text-xs font-medium">
+                      {resendNotice}
+                    </div>
+                  )}
+
+                  {/* Resend button */}
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleResendEmail}
+                      disabled={resendCooldown > 0 || resendLoading || !email.trim()}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-semibold shadow-2xs transition-colors disabled:opacity-50"
+                    >
+                      {resendLoading ? (
+                        'Resending email…'
+                      ) : resendCooldown > 0 ? (
+                        `Resend email in ${resendCooldown}s`
+                      ) : (
+                        'Resend Confirmation Email'
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Inline OTP verification */}
+                  <form onSubmit={handleVerifyOtp} className="pt-2 border-t border-amber-200/80 flex gap-2">
+                    <input
+                      type="text"
+                      value={otpCode}
+                      onChange={e => setOtpCode(e.target.value.replace(/\s+/g, ''))}
+                      maxLength={8}
+                      placeholder="Enter 6-digit code"
+                      className="flex-1 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-mono uppercase text-slate-900 focus:border-amber-600 focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={verifyLoading || !otpCode.trim()}
+                      className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors disabled:opacity-50"
+                    >
+                      {verifyLoading ? 'Verifying…' : 'Verify Code'}
+                    </button>
+                  </form>
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -195,7 +402,10 @@ export default function SignInPage() {
                     autoComplete="email"
                     required
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={e => {
+                      setEmail(e.target.value)
+                      if (isEmailUnconfirmed) setIsEmailUnconfirmed(false)
+                    }}
                     className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
                     placeholder="you@contractorfirm.com"
                   />

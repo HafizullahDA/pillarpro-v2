@@ -40,11 +40,12 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  const AUTH_ROUTES    = ['/sign-in', '/sign-up']
-  const PENDING_ROUTES = ['/pending']
-  const LEGAL_ROUTES   = ['/terms', '/privacy', '/robots.txt', '/sitemap.xml']
-  const PWA_ROUTES     = ['/sw.js', '/manifest.json', '/offline']
-  const PUBLIC_ROUTES  = [...AUTH_ROUTES, ...PENDING_ROUTES, ...LEGAL_ROUTES, ...PWA_ROUTES]
+  const AUTH_ROUTES     = ['/sign-in', '/sign-up']
+  const CALLBACK_ROUTES = ['/auth/callback']
+  const PENDING_ROUTES  = ['/pending']
+  const LEGAL_ROUTES    = ['/terms', '/privacy', '/robots.txt', '/sitemap.xml']
+  const PWA_ROUTES      = ['/sw.js', '/manifest.json', '/offline']
+  const PUBLIC_ROUTES   = [...AUTH_ROUTES, ...CALLBACK_ROUTES, ...PENDING_ROUTES, ...LEGAL_ROUTES, ...PWA_ROUTES]
 
   // Public API routes with explicit justifications:
   // - /api/health: Public synthetic health check for uptime monitors (BetterUptime, Datadog)
