@@ -469,3 +469,74 @@ export function exportBOQScheduleCSV(
   const csv = buildCsvString(headers, rows)
   triggerCsvDownload(csv, filename)
 }
+
+/**
+ * Exports CPWA Form 43 (P.W.A. 14) Contractor's Running Ledger to CSV
+ */
+export function exportContractorLedgerCSV(
+  projectName: string,
+  transactions: {
+    date: string
+    voucher_or_bill_number: string
+    description: string
+    gross_work_certified: number
+    advance_payments: number
+    total_deductions: number
+    bank_payment_disbursed: number
+    running_balance_due: number
+    mb_reference?: string | null
+    remarks?: string | null
+  }[],
+  totals: {
+    totalGross: number
+    totalBank: number
+    totalDeductions: number
+    netBalance: number
+  }
+): void {
+  const headers = [
+    'Date',
+    'Voucher / Bill Ref',
+    'Transaction Description',
+    'Gross Work Certified (INR)',
+    'Advance Payments (INR)',
+    'Deductions & Recoveries (INR)',
+    'Bank Payment Released (INR)',
+    'Running Balance Due (INR)',
+    'MB Reference',
+    'Remarks',
+  ]
+
+  const rows: CsvCellValue[][] = transactions.map(t => [
+    t.date,
+    t.voucher_or_bill_number,
+    t.description,
+    roundToTwo(t.gross_work_certified),
+    roundToTwo(t.advance_payments),
+    roundToTwo(t.total_deductions),
+    roundToTwo(t.bank_payment_disbursed),
+    roundToTwo(t.running_balance_due),
+    t.mb_reference || '',
+    t.remarks || '',
+  ])
+
+  rows.push([
+    'TOTAL CONTRACT POSITION',
+    '',
+    '',
+    roundToTwo(totals.totalGross),
+    '',
+    roundToTwo(totals.totalDeductions),
+    roundToTwo(totals.totalBank),
+    roundToTwo(totals.netBalance),
+    '',
+    '',
+  ])
+
+  const dateTag = new Date().toISOString().split('T')[0]
+  const cleanName = projectName.replace(/[^a-zA-Z0-9]/g, '_')
+  const filename = `CPWA_Form_43_Ledger_${cleanName}_${dateTag}.csv`
+
+  const csv = buildCsvString(headers, rows)
+  triggerCsvDownload(csv, filename)
+}
