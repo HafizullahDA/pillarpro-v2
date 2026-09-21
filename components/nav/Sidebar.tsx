@@ -105,6 +105,8 @@ export function Sidebar({
         {/* Legal & Version Footer */}
         <div className="px-4 py-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-500">
           <div className="flex items-center gap-2">
+            <Link href="/pricing" target="_blank" className="hover:text-slate-300 transition-colors">Pricing</Link>
+            <span>•</span>
             <Link href="/terms" target="_blank" className="hover:text-slate-300 transition-colors">Terms</Link>
             <span>•</span>
             <Link href="/privacy" target="_blank" className="hover:text-slate-300 transition-colors">Privacy</Link>

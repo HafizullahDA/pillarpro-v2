@@ -385,15 +385,35 @@ export function UserProfileModal({
           </div>
         )}
 
+        {/* Subscription & Active Sites */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">💳</span>
+            <div>
+              <p className="text-xs font-bold text-slate-900">Subscription & Sites</p>
+              <p className="text-[11px] text-slate-500">Active Sites + Unlimited Users model</p>
+            </div>
+          </div>
+          <Link
+            href="/pricing"
+            target="_blank"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-800 bg-white border border-slate-300 hover:bg-slate-50 shadow-2xs transition-colors shrink-0"
+          >
+            View Plans
+          </Link>
+        </div>
+
         <div className="border-t border-slate-100 pt-4 space-y-3">
           <Button variant="danger" loading={signingOut} onClick={handleSignOut} className="w-full">
             Sign Out
           </Button>
           <div className="flex items-center justify-between text-xs text-slate-400 px-1 pt-1">
-            <div className="flex items-center gap-3">
-              <Link href="/terms" target="_blank" className="hover:text-slate-600 transition-colors">Terms of Service</Link>
+            <div className="flex items-center gap-2.5">
+              <Link href="/pricing" target="_blank" className="hover:text-slate-600 transition-colors">Pricing</Link>
               <span>•</span>
-              <Link href="/privacy" target="_blank" className="hover:text-slate-600 transition-colors">Privacy Policy</Link>
+              <Link href="/terms" target="_blank" className="hover:text-slate-600 transition-colors">Terms</Link>
+              <span>•</span>
+              <Link href="/privacy" target="_blank" className="hover:text-slate-600 transition-colors">Privacy</Link>
             </div>
             <span>v0.1.0</span>
           </div>

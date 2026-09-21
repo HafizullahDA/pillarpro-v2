@@ -190,6 +190,7 @@ export function LandingPage({
             <a href="#calculator" className="hover:text-slate-900 transition-colors">Deduction Calculator</a>
             <a href="#capabilities" className="hover:text-slate-900 transition-colors">System Capabilities</a>
             <a href="#specification" className="hover:text-slate-900 transition-colors">Audit Comparison</a>
+            <Link href="/pricing" className="text-slate-900 font-bold hover:text-blue-600 transition-colors">Pricing</Link>
             <a href="#faq" className="hover:text-slate-900 transition-colors">FAQ</a>
           </nav>
 
@@ -988,6 +989,7 @@ export function LandingPage({
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[11px] text-slate-600 font-medium">
+            <Link href="/pricing" className="hover:text-slate-900 transition-colors">Plans & Pricing</Link>
             <Link href="/sign-in" className="hover:text-slate-900 transition-colors">Sign In</Link>
             <Link href="/sign-up" className="hover:text-slate-900 transition-colors">Create Firm Workspace</Link>
             <a href="mailto:contact@pillarprojk.com" className="hover:text-slate-900 transition-colors">Contact Us</a>
