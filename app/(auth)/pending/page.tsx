@@ -46,11 +46,20 @@ export default function PendingPage() {
 
         if (meta.firm_name) {
           if (isMounted) setActivating(true)
-          const { error: onboardErr } = await supabase.rpc('onboard_contractor', {
+          let { error: onboardErr } = await supabase.rpc('onboard_contractor', {
             p_firm_name: meta.firm_name,
             p_display_name: meta.display_name || user.email?.split('@')[0],
             p_seed_starter: meta.seed_starter !== false,
           })
+
+          if (onboardErr) {
+            const { error: retryErr } = await supabase.rpc('onboard_contractor', {
+              p_firm_name: meta.firm_name,
+              p_display_name: meta.display_name || user.email?.split('@')[0],
+              p_seed_starter: false,
+            })
+            if (!retryErr) onboardErr = null
+          }
 
           if (!onboardErr) {
             router.push('/dashboard')
@@ -104,11 +113,23 @@ export default function PendingPage() {
         return
       }
 
-      const { error: rpcErr } = await supabase.rpc('onboard_contractor', {
+      let { error: rpcErr } = await supabase.rpc('onboard_contractor', {
         p_firm_name: firmName.trim(),
         p_display_name: user.user_metadata?.display_name || user.email?.split('@')[0],
         p_seed_starter: true,
       })
+
+      if (rpcErr) {
+        // Fallback 1: Retry without starter seeding
+        const { error: retryErr } = await supabase.rpc('onboard_contractor', {
+          p_firm_name: firmName.trim(),
+          p_display_name: user.user_metadata?.display_name || user.email?.split('@')[0],
+          p_seed_starter: false,
+        })
+        if (!retryErr) {
+          rpcErr = null
+        }
+      }
 
       if (rpcErr) {
         // Direct fallback
