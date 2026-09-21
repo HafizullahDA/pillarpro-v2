@@ -267,6 +267,7 @@ export function RABillScanConfirmModal({
             <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
             <span className="text-xs font-semibold text-blue-900">
               Scanned with Gemini AI • Review extracted values & choose Billing Mode
+              Digitized by PillarVision™ Intelligence • Review extracted values & choose Billing Mode
             </span>
           </div>
           {scanPreviewUrl && (

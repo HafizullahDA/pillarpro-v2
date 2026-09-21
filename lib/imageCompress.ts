@@ -1,7 +1,7 @@
 /**
  * Client-side canvas image compression utility.
  * Compresses oversized phone camera photos (10-25 MB) down to lightweight JPEGs (< 1 MB)
- * before uploading or sending to the Gemini Vision API.
+ * before uploading or processing with optical intelligence.
  */
 
 export async function compressImage(

@@ -37,6 +37,7 @@ export default function SignUpPage() {
   const [displayName, setDisplayName]     = useState('')
   const [firmName, setFirmName]           = useState('')
   const [joinCode, setJoinCode]           = useState('')
+  const [selectedPlan, setSelectedPlan]   = useState<string | null>(null)
   const [email, setEmail]                 = useState('')
   const [password, setPassword]           = useState('')
   const [confirm, setConfirm]             = useState('')
@@ -54,14 +55,18 @@ export default function SignUpPage() {
   const [resendNotice, setResendNotice]   = useState('')
   const [resendLoading, setResendLoading] = useState(false)
 
-  // Check URL parameters for join code
+  // Check URL parameters for join code and selected plan
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const code = params.get('join')
+      const plan = params.get('plan')
       if (code) {
         setJoinCode(code.toUpperCase().trim())
         setMode('join_firm')
+      }
+      if (plan) {
+        setSelectedPlan(plan.toLowerCase().trim())
       }
     }
   }, [])
@@ -92,6 +97,8 @@ export default function SignUpPage() {
             legal_name: firmName.trim(),
             registration_no: 'Class-A Govt Contractor, PWD / PMGSY',
             email: email.trim().toLowerCase(),
+            plan_tier: selectedPlan || 'growth',
+            subscription_status: 'trialing',
           })
           .select('id')
           .single()
@@ -175,6 +182,7 @@ export default function SignUpPage() {
             firm_name: mode === 'new_firm' ? firmName.trim() : undefined,
             join_code: mode === 'join_firm' ? joinCode.trim().toUpperCase() : undefined,
             seed_starter: seedStarter,
+            preferred_plan: selectedPlan || 'growth',
           },
         },
       })
@@ -273,75 +281,126 @@ export default function SignUpPage() {
     }
   }
 
+  const planLabel = selectedPlan === 'enterprise'
+    ? 'Enterprise Infra (₹3,999/mo)'
+    : selectedPlan === 'bootstrap'
+    ? 'Bootstrap (₹999/mo)'
+    : selectedPlan === 'growth'
+    ? 'Growth Contractor (₹1,999/mo)'
+    : null
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-5xl mx-auto">
-        <div className="relative rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[660px]">
+        <div className="relative rounded-3xl bg-white shadow-2xl border border-slate-800/20 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[680px]">
           
-          {/* Left Brand Showcase Column */}
-          <div className="order-2 lg:order-1 lg:col-span-5 bg-slate-50/70 p-6 sm:p-8 lg:p-10 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-slate-200 relative z-10">
-            <div>
-              <div className="hidden lg:flex items-center gap-3 mb-7">
-                <Logo theme="light" size="md" subtitle="Civil Contractor OS" href="/" />
+          {/* ── Left Brand Showcase Column (Deep Slate Executive Command Theme) ── */}
+          <div className="order-2 lg:order-1 lg:col-span-5 bg-gradient-to-br from-slate-950 via-slate-900 to-[#0A1124] p-7 sm:p-9 lg:p-10 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-slate-800 text-white relative overflow-hidden">
+            {/* Subtle background ambient glow */}
+            <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10">
+              <div className="hidden lg:flex items-center gap-3 mb-8">
+                <Logo theme="dark" size="md" subtitle="Civil Contractor OS" href="/" />
               </div>
 
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-semibold mb-4">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-                Built for Civil & Highway Infrastructure
+              {/* Free Trial Pill */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-4 shadow-2xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                14-Day Free Trial • No Credit Card Required
               </div>
 
-              <h1 className="text-xl sm:text-2xl lg:text-2xl font-bold text-slate-900 tracking-tight leading-snug">
-                The Financial & Operations OS for Government Contractors
+              {planLabel && (
+                <div className="mb-3 text-[11px] font-bold tracking-wide uppercase text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-500/20 inline-block">
+                  Configuring Plan: {planLabel}
+                </div>
+              )}
+
+              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white leading-tight">
+                The Statutory &amp; Financial OS for Indian Civil Contractors
               </h1>
+              
+              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                Protect contract margins, stop unfair liquidated damages, and reconcile multi-agency Running Account bills down to the exact rupee.
+              </p>
 
-              <div className="mt-6 space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
-                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
-                    ✓
+              {/* Live Contract Audit Preview Card */}
+              <div className="mt-6 rounded-2xl bg-slate-900/90 border border-slate-800 p-4 shadow-xl space-y-3 backdrop-blur-sm">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                    <span className="text-[11px] font-mono text-slate-300 font-semibold truncate max-w-[180px]">
+                      NH-44 Bypass Package
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    RA-04 Certified
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Gross Work Passed</span>
+                    <span className="font-bold text-white font-mono text-xs">₹54,00,000</span>
                   </div>
                   <div>
-                    <strong className="text-slate-900 font-semibold block mb-0.5">Multi-Agency RA Bill Audit</strong>
-                    <span>Reconcile government bill sanctions vs statutory deductions (Sec 194C TDS, GST TDS, Cess, Retention) and net bank credits across PFMS, State Treasuries, and PSU Corporate Finance.</span>
+                    <span className="text-slate-400 block text-[10px]">Net Bank Disbursed</span>
+                    <span className="font-bold text-emerald-400 font-mono text-xs">₹48,60,000</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
-                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
-                    ✓
-                  </div>
-                  <div>
-                    <strong className="text-slate-900 font-semibold block mb-0.5">Site-to-Office Control</strong>
-                    <span>Log field expenses with mobile AI receipt scanning, muster daily-wage labor, and manage supplier khata ledgers without messy spreadsheets.</span>
-                  </div>
+                <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
+                  <span>Clause 5 LD Protected: <b className="text-white font-mono">₹50,00,000</b></span>
+                  <span className="text-emerald-400 font-semibold">TDS / Cess Reconciled ✓</span>
                 </div>
+              </div>
 
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
-                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
-                    ✓
-                  </div>
-                  <div>
-                    <strong className="text-slate-900 font-semibold block mb-0.5">Capital & BG Protection</strong>
-                    <span>Automated 30-day Bank Guarantee expiry warnings, partner equity parity ledgers, and BOQ work-done tracking.</span>
-                  </div>
+              {/* Replaces 4 Disconnected Apps Ticker */}
+              <div className="mt-6">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                  All-in-One: Replaces 4 Disconnected Apps &amp; Spreadsheets
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'Multi-Agency RA Bills',
+                    'Clause 5 Delay Defense',
+                    'Form 26 e-MB',
+                    'PillarVision™ Slip Scanner',
+                    'Labor Muster Roll',
+                    'Machinery & Diesel HSD',
+                    'Supplier Khatas',
+                    'Partner Capital Parity',
+                  ].map((feat, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800/90 text-slate-300 border border-slate-700/60"
+                    >
+                      {feat}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
 
-            <div className="mt-8 pt-5 border-t border-slate-200 text-xs text-slate-500">
-              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                <span className="font-semibold text-slate-700">Supported authorities:</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">PWD</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">CPWD</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">PMGSY</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">NHAI</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">NHPC</span>
+            {/* Trust Authorities Footer */}
+            <div className="mt-8 pt-4 border-t border-slate-800/80 text-[11px] text-slate-400 relative z-10">
+              <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                <span className="font-semibold text-slate-300">Engineered for:</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">CPWD</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">State PWD</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">PMGSY</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">NHAI</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">NHPC</span>
               </div>
-              <span>Airtight multi-tenant isolation. Each contracting firm operates in its own encrypted workspace.</span>
+              <span className="text-[10px] text-slate-400">
+                Airtight multi-tenant isolation. Your tender rates and margins remain 100% confidential.
+              </span>
             </div>
           </div>
 
-          {/* Right Column */}
-          <div className="order-1 lg:order-2 lg:col-span-7 bg-white p-6 sm:p-8 lg:p-10 flex flex-col justify-center relative z-10 text-slate-900">
+          {/* ── Right Column: Clean, Frictionless Onboarding Form ── */}
+          <div className="order-1 lg:order-2 lg:col-span-7 bg-white p-7 sm:p-9 lg:p-12 flex flex-col justify-center relative z-10 text-slate-900">
             <div className="max-w-md w-full mx-auto">
               
               <div className="lg:hidden flex items-center justify-between pb-5 mb-5 border-b border-slate-100">
@@ -350,48 +409,51 @@ export default function SignUpPage() {
 
               {step === 'form' ? (
                 <>
-                  <div className="flex rounded-xl bg-slate-100 p-1 mb-6 text-xs font-semibold border border-slate-200 shadow-2xs">
+                  {/* Mode Selector Tab */}
+                  <div className="grid grid-cols-2 rounded-2xl bg-slate-100 p-1 mb-6 text-xs font-semibold border border-slate-200/80 shadow-2xs">
                     <button
                       type="button"
                       onClick={() => setMode('new_firm')}
-                      className={`flex-1 py-2 rounded-lg transition-all text-center ${
+                      className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition-all text-center ${
                         mode === 'new_firm'
-                          ? 'bg-white text-slate-900 shadow-xs font-bold'
+                          ? 'bg-white text-slate-900 shadow-sm font-bold'
                           : 'text-slate-600 hover:text-slate-900 font-medium'
                       }`}
                     >
-                      Register New Firm
+                      <span>🏢</span>
+                      <span>Register New Firm</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setMode('join_firm')}
-                      className={`flex-1 py-2 rounded-lg transition-all text-center ${
+                      className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition-all text-center ${
                         mode === 'join_firm'
-                          ? 'bg-white text-slate-900 shadow-xs font-bold'
+                          ? 'bg-white text-slate-900 shadow-sm font-bold'
                           : 'text-slate-600 hover:text-slate-900 font-medium'
                       }`}
                     >
-                      Join Existing Firm
+                      <span>👥</span>
+                      <span>Join Existing Firm</span>
                     </button>
                   </div>
 
                   <div className="mb-5">
-                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                    <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
                       {mode === 'new_firm' ? 'Create your contractor workspace' : 'Join your firm’s workspace'}
                     </h2>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500 leading-relaxed">
+                    <p className="mt-1 text-xs text-slate-500 leading-relaxed">
                       {mode === 'new_firm'
-                        ? 'Set up your firm in 30 seconds. Start managing RA bills and site finances.'
-                        : 'Enter your firm’s invite code provided by your contractor owner.'}
+                        ? 'Instant access to all modules during your 14-day free trial. Setup takes under 30 seconds.'
+                        : 'Enter your firm’s invite code provided by your contractor administrator.'}
                     </p>
                   </div>
 
                   {error && (
-                    <div className="mb-5 rounded-xl bg-red-50 border border-red-200 p-3.5 text-xs text-red-700 flex items-start gap-2.5 shadow-2xs">
-                      <svg className="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="mb-5 rounded-2xl bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-700 flex items-start gap-2.5 shadow-2xs">
+                      <svg className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="font-medium">{error}</span>
+                      <span className="font-medium leading-relaxed">{error}</span>
                     </div>
                   )}
 
@@ -408,7 +470,7 @@ export default function SignUpPage() {
                           value={firmName}
                           onChange={e => setFirmName(e.target.value)}
                           className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
-                          placeholder="e.g. Apex Infratech Pvt. Ltd. or Bhat Constructions"
+                          placeholder="e.g. Apex Infratech Pvt. Ltd. or Lone Constructions"
                         />
                       </div>
                     ) : (
@@ -502,7 +564,7 @@ export default function SignUpPage() {
 
                     {mode === 'new_firm' && (
                       <div className="pt-1">
-                        <label className="relative flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/60 shadow-2xs transition-colors cursor-pointer">
+                        <label className="relative flex items-start gap-3 p-3.5 rounded-2xl border border-blue-100 bg-blue-50/40 hover:bg-blue-50/80 shadow-2xs transition-colors cursor-pointer">
                           <input
                             type="checkbox"
                             checked={seedStarter}
@@ -510,11 +572,11 @@ export default function SignUpPage() {
                             className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600/20"
                           />
                           <div className="text-xs">
-                            <span className="font-semibold text-slate-800 block">
-                              Include sample Highway Project & RA bill template (Recommended)
+                            <span className="font-bold text-slate-900 block">
+                              Pre-load Sample Highway Project &amp; RA Bill (Recommended)
                             </span>
-                            <span className="text-slate-500 block mt-0.5 leading-normal">
-                              Populates your workspace with a realistic PWD project, sample RA bill, supplier ledger & muster roll so your dashboard is instantly interactive.
+                            <span className="text-slate-600 block mt-0.5 leading-normal">
+                              Populates realistic PWD measurement books, statutory deductions, supplier ledgers, and muster rolls so you can test features immediately.
                             </span>
                           </div>
                         </label>
@@ -524,7 +586,7 @@ export default function SignUpPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full mt-2 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? (
                         <>
@@ -536,7 +598,7 @@ export default function SignUpPage() {
                         </>
                       ) : (
                         <>
-                          {mode === 'new_firm' ? 'Launch Contractor Workspace' : 'Join Firm Workspace'}
+                          {mode === 'new_firm' ? 'Start 14-Day Free Trial' : 'Join Firm Workspace'}
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                           </svg>
@@ -557,7 +619,7 @@ export default function SignUpPage() {
                   </form>
                 </>
               ) : (
-                /* Verification Step */
+                /* ── Verification Step ── */
                 <div className="space-y-5">
                   <div className="text-center">
                     <div className="mx-auto mb-4 h-12 w-12 flex items-center justify-center rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 shadow-xs">
@@ -577,8 +639,8 @@ export default function SignUpPage() {
                   </div>
 
                   {verifyError && (
-                    <div className="rounded-xl bg-red-50 border border-red-200 p-3.5 text-xs text-red-700 flex items-start gap-2.5 shadow-2xs">
-                      <svg className="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="rounded-xl bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-700 flex items-start gap-2.5 shadow-2xs">
+                      <svg className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span className="font-medium">{verifyError}</span>
@@ -595,7 +657,7 @@ export default function SignUpPage() {
                   )}
 
                   {/* Form 1: Enter 6-digit OTP code */}
-                  <form onSubmit={handleVerifyOtp} className="space-y-3.5 bg-slate-50/80 rounded-xl p-4 border border-slate-200">
+                  <form onSubmit={handleVerifyOtp} className="space-y-3.5 bg-slate-50/80 rounded-2xl p-4 border border-slate-200">
                     <div>
                       <label htmlFor="otpCode" className="block text-xs font-semibold text-slate-700 mb-1.5 text-center">
                         Enter 6-Digit Code (from confirmation email)
@@ -615,7 +677,7 @@ export default function SignUpPage() {
                     <button
                       type="submit"
                       disabled={verifyLoading || !otpCode.trim()}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {verifyLoading ? (
                         <>
@@ -669,7 +731,7 @@ export default function SignUpPage() {
                   </div>
 
                   {/* Troubleshooting Guidance Card */}
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-[11px] text-slate-500 space-y-1 leading-relaxed">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 text-[11px] text-slate-500 space-y-1 leading-relaxed">
                     <p className="font-semibold text-slate-700">Check these common points:</p>
                     <ul className="list-disc pl-4 space-y-0.5">
                       <li>Check your <strong>Spam / Junk</strong> folder in case your mail provider flagged it.</li>
@@ -702,9 +764,9 @@ export default function SignUpPage() {
 
               <div className="mt-5 pt-4 border-t border-slate-100 text-center space-y-2.5">
                 <p className="text-xs text-slate-600">
-                  Already registered?{' '}
-                  <Link href="/sign-in" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
-                    Sign in to your account →
+                  Already have an account?{' '}
+                  <Link href="/sign-in" className="font-bold text-slate-900 hover:underline transition-colors">
+                    Sign in to your workspace →
                   </Link>
                 </p>
                 <div className="flex items-center justify-center gap-3 text-[11px] text-slate-400">
@@ -721,3 +783,4 @@ export default function SignUpPage() {
     </div>
   )
 }
+

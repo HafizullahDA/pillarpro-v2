@@ -233,70 +233,73 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-5xl mx-auto">
-        <div className="relative rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
+        <div className="relative rounded-3xl bg-white shadow-2xl border border-slate-800/20 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
           
-          {/* Left Brand Showcase Column — Order-2 on mobile so form appears first without scrolling */}
-          <div className="order-2 lg:order-1 lg:col-span-5 bg-slate-50/70 p-6 sm:p-8 lg:p-10 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-slate-200 relative z-10">
-            <div>
-              <div className="hidden lg:flex items-center gap-3 mb-7">
-                <Logo theme="light" size="md" subtitle="Civil Contractor OS" href="/" />
+          {/* Left Brand Showcase Column (Deep Slate Executive Command Theme) */}
+          <div className="order-2 lg:order-1 lg:col-span-5 bg-gradient-to-br from-slate-950 via-slate-900 to-[#0A1124] p-7 sm:p-9 lg:p-10 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-slate-800 text-white relative overflow-hidden">
+            {/* Ambient glows */}
+            <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10">
+              <div className="hidden lg:flex items-center gap-3 mb-8">
+                <Logo theme="dark" size="md" subtitle="Civil Contractor OS" href="/" />
               </div>
 
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-semibold mb-4">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-                Civil & Infrastructure Enterprise Suite
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-4 shadow-2xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                Civil &amp; Infrastructure Enterprise Suite
               </div>
 
-              <h1 className="text-xl sm:text-2xl lg:text-2xl font-bold text-slate-900 tracking-tight leading-snug">
-                Contractor Financials, Multi-Agency RA Bills & Site Controls
+              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white leading-tight">
+                Contractor Financials, Multi-Agency RA Bills &amp; Site Controls
               </h1>
 
-              {/* 3 Value Proposition Bullets */}
-              <div className="mt-6 space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
-                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+              <div className="mt-6 space-y-3 text-xs text-slate-300 leading-relaxed">
+                <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl backdrop-blur-sm">
+                  <div className="h-5 w-5 rounded-md bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                     ✓
                   </div>
                   <div>
-                    <strong className="text-slate-900 font-semibold block mb-0.5">Multi-Agency RA Bill Audit</strong>
-                    <span>Reconcile gross certified bills vs statutory deductions (Sec 194C TDS, GST TDS, Cess, Retention) and credits via PFMS, State Treasuries, or PSU Corporate Finance.</span>
+                    <strong className="text-white font-semibold block mb-0.5">Multi-Agency RA Bill Audit</strong>
+                    <span className="text-slate-400">Reconcile gross certified bills vs statutory deductions (Sec 194C TDS, GST TDS, Cess, Retention) via PFMS, State Treasuries, or PSU Corporate Finance.</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
-                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+                <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl backdrop-blur-sm">
+                  <div className="h-5 w-5 rounded-md bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                     ✓
                   </div>
                   <div>
-                    <strong className="text-slate-900 font-semibold block mb-0.5">Site-to-Office Control</strong>
-                    <span>Daily labor muster rolls, AI receipt scanning for petty site cash, and real-time supplier khata ledgers.</span>
+                    <strong className="text-white font-semibold block mb-0.5">Clause 5 Delay Defense &amp; LD Shield</strong>
+                    <span className="text-slate-400">Contemporaneous hindrance logging under CPWD GCC Clause 5 to shield your firm from 10% liquidated damages deductions.</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
-                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+                <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl backdrop-blur-sm">
+                  <div className="h-5 w-5 rounded-md bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
                     ✓
                   </div>
                   <div>
-                    <strong className="text-slate-900 font-semibold block mb-0.5">Capital & BG Protection</strong>
-                    <span>Automated 30-day Bank Guarantee expiry warnings, partner equity parity accounts, and BOQ work-done tracking.</span>
+                    <strong className="text-white font-semibold block mb-0.5">PillarVision™ Document Scanner</strong>
+                    <span className="text-slate-400">Scan handwritten petrol slips, weighbridge tickets, and challans directly from mobile with proprietary optical intelligence.</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-8 pt-5 border-t border-slate-200 text-xs text-slate-500">
-              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                <span className="font-semibold text-slate-700">Trusted across agencies:</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">PWD</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">CPWD</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">PMGSY</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">NHAI</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-bold text-slate-700">NHPC</span>
+            <div className="mt-8 pt-4 border-t border-slate-800/80 text-[11px] text-slate-400 relative z-10">
+              <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                <span className="font-semibold text-slate-300">Trusted across:</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">CPWD</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">State PWD</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">PMGSY</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">NHAI</span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">NHPC</span>
               </div>
-              <span>Airtight multi-tenant isolation. Each contracting firm operates in its own encrypted workspace.</span>
+              <span className="text-[10px] text-slate-400">Airtight multi-tenant isolation. Each contracting firm operates in its own encrypted workspace.</span>
             </div>
           </div>
 

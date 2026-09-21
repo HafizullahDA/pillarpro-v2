@@ -61,6 +61,15 @@ function IconTruck({ className = 'w-5 h-5' }: { className?: string }) {
   )
 }
 
+function IconClock({ className = 'w-5 h-5' }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  )
+}
+
 function IconCheck({ className = 'w-4 h-4' }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.25} aria-hidden="true">
@@ -106,6 +115,7 @@ export function LandingPage({
   orgName,
 }: LandingPageProps) {
   const [activeFaq, setActiveFaq] = useState<number | null>(0)
+  const [previewTab, setPreviewTab] = useState<'ra_bills' | 'clause5' | 'ocr' | 'pbg'>('ra_bills')
   const [calcBillAmount, setCalcBillAmount] = useState<number>(5000000) // Default ₹50 Lakhs
   const [calcContractorType, setCalcContractorType] = useState<'individual_proprietor' | 'company_firm'>('company_firm')
   const [calcRetentionRate, setCalcRetentionRate] = useState<number>(5)
@@ -118,6 +128,10 @@ export function LandingPage({
   const [manualLabourCess, setManualLabourCess] = useState('')
   const [manualRoyalty, setManualRoyalty] = useState('')
   const [manualTesting, setManualTesting] = useState('')
+
+  // Clause 5 Simulator States
+  const [simContractValue, setSimContractValue] = useState<number>(25000000) // ₹2.5 Crore
+  const [simDelayDays, setSimDelayDays] = useState<number>(45) // 45 days delay
 
   const toggleFaq = (idx: number) => {
     setActiveFaq(activeFaq === idx ? null : idx)
@@ -140,6 +154,12 @@ export function LandingPage({
   const totalDeductions = retention + itTds + gstTds + labourCess + royalty + testing
   const netDisbursed = Math.max(0, calcBillAmount - totalDeductions)
   const totalDeductionsPct = calcBillAmount > 0 ? ((totalDeductions / calcBillAmount) * 100).toFixed(1) : '0.0'
+
+  // Clause 5 Liquidated Damages math
+  // CPWD GCC Clause 2/5 max LD penalty is typically 10% of tendered contract value
+  const maxLdRisk = Math.round(simContractValue * 0.10)
+  const estimatedLdPerDay = Math.round((simContractValue * 0.001) * 0.5)
+  const accruedLdExposure = Math.min(maxLdRisk, Math.round(estimatedLdPerDay * simDelayDays))
 
   const faqs = [
     {
@@ -231,34 +251,34 @@ export function LandingPage({
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             
             {/* Government Department Channels Tag */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold tracking-wide mb-6">
-              <span className="h-2 w-2 rounded-full bg-emerald-600" />
-              <span>CPWD (PFMS) • NHPC & PSUs (FINANCE) • STATE PWD & PMGSY (TREASURY)</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold tracking-wide mb-6">
+              <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
+              <span>CPWD (PFMS) • NHPC &amp; PSUs (FINANCE) • STATE PWD &amp; PMGSY (TREASURY)</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.12]">
-              The Financial Operating System for Indian Civil Contractors
+              The Financial &amp; Operational OS for Indian Civil Contractors
             </h1>
 
             <p className="mt-5 text-base sm:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed font-normal">
-              Stop leaking profits in spreadsheets. Reconcile multi-crore milestone contracts against statutory deductions (5% Retention, IT TDS, GST TDS, Labour Cess) and disbursements across <strong className="text-slate-900">PFMS</strong>, <strong className="text-slate-900">PSU Corporate Finance</strong>, and <strong className="text-slate-900">State Treasuries</strong>. Eliminate partner disputes and track site khatas with zero lost paper.
+              Built specifically for infrastructure and public works contractors. Reconcile multi-crore RA bills against statutory deductions (5% Retention, Sec 194C TDS, GST TDS, Labour Cess), shield your firm against <strong className="text-slate-900 font-semibold">10% Liquidated Damages under CPWD GCC Clause 5</strong>, scan field fuel slips with <strong className="text-slate-900 font-semibold">PillarVision™ Optical Intelligence</strong>, and run your daily muster rolls and machinery logs in one unified workspace.
             </p>
 
-            {/* Quiet, Grounded Action Buttons */}
+            {/* Action Buttons */}
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/sign-up"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm"
               >
-                <span>Launch Contractor Workspace</span>
+                <span>Launch Firm Workspace Free</span>
                 <IconArrowRight className="w-4 h-4" />
               </Link>
 
               <a
                 href="#audit-preview"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors"
               >
-                <span>View Live Contract Audit</span>
+                <span>Explore Interactive Showcase</span>
                 <IconChevronDown className="w-4 h-4 text-slate-500" />
               </a>
             </div>
@@ -267,11 +287,11 @@ export function LandingPage({
             <div className="mt-8 flex flex-wrap items-center justify-center gap-y-2 gap-x-8 text-xs text-slate-500 font-medium">
               <span className="flex items-center gap-1.5">
                 <IconCheck className="w-4 h-4 text-slate-700" />
-                Built for Class-A & Prime Civil Contractors
+                Built for Class-A &amp; Prime Civil Contractors
               </span>
               <span className="flex items-center gap-1.5">
                 <IconCheck className="w-4 h-4 text-slate-700" />
-                30-Second Self-Serve Setup
+                Complete Site &amp; Office Operational Suite
               </span>
               <span className="flex items-center gap-1.5">
                 <IconCheck className="w-4 h-4 text-slate-700" />
@@ -281,122 +301,440 @@ export function LandingPage({
           </div>
         </section>
 
-        {/* ── Hero Anchor: Authentic Bill Audit Sheet Preview ─── */}
+        {/* ── High-Impact 4-Way Interactive Feature Showcase ──── */}
         <section id="audit-preview" className="py-12 md:py-16 bg-[#F8FAFC] border-b border-slate-200">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-              {/* Document Header Bar */}
-              <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="text-center max-w-2xl mx-auto mb-8">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Live Interactive System
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">
+                Inspect Real Contractor Command Screens
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 mt-1.5">
+                Toggle between the core modules that safeguard government contractor cash flow &amp; contract claims:
+              </p>
+            </div>
+
+            {/* Tab Switcher Buttons */}
+            <div className="flex overflow-x-auto no-scrollbar gap-2 p-1.5 bg-slate-200/80 rounded-2xl mb-5 text-xs font-semibold max-w-3xl mx-auto">
+              <button
+                type="button"
+                onClick={() => setPreviewTab('ra_bills')}
+                className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl transition-all text-center flex items-center justify-center gap-2 ${
+                  previewTab === 'ra_bills'
+                    ? 'bg-white text-slate-900 shadow-sm font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <IconFileText className="w-4 h-4 text-blue-600" />
+                <span>RA Bill Audit</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewTab('clause5')}
+                className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl transition-all text-center flex items-center justify-center gap-2 ${
+                  previewTab === 'clause5'
+                    ? 'bg-white text-slate-900 shadow-sm font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <IconShieldAlert className="w-4 h-4 text-amber-600" />
+                <span>Clause 5 LD Shield</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewTab('ocr')}
+                className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl transition-all text-center flex items-center justify-center gap-2 ${
+                  previewTab === 'ocr'
+                    ? 'bg-white text-slate-900 shadow-sm font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <IconCamera className="w-4 h-4 text-emerald-600" />
+                <span>PillarVision™ Scanner</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewTab('pbg')}
+                className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl transition-all text-center flex items-center justify-center gap-2 ${
+                  previewTab === 'pbg'
+                    ? 'bg-white text-slate-900 shadow-sm font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <IconClock className="w-4 h-4 text-rose-600" />
+                <span>PBG &amp; EMD Radar</span>
+              </button>
+            </div>
+
+            {/* Showcase Viewport */}
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300">
+              
+              {/* TAB 1: RA BILL AUDIT */}
+              {previewTab === 'ra_bills' && (
                 <div>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    Government Milestone Contract Audit Voucher
-                  </span>
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900 mt-0.5">
-                    NH-44 Bypass 4-Lane Widening & Culvert Package (Pkg-02)
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Agency: PWD (R&B) Division / CPWD (PFMS) / NHPC • Agreement Value: ₹18.50 Cr
-                  </p>
+                  <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 uppercase tracking-wider">
+                          Module 01 • Government RA Bill Audit
+                        </span>
+                        <span className="text-[11px] text-slate-400">MB-142 e-Record</span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
+                        NH-44 Bypass 4-Lane Widening &amp; Culvert Package (Pkg-02)
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Agency: PWD (R&amp;B) Division / CPWD (PFMS) / NHPC • Agreement Value: ₹18.50 Cr
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        ✓ RA Bill 01 Reconciled
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+                    <div className="p-5">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Gross Work Certified</p>
+                      <p className="text-2xl font-black text-slate-900 mt-1 tabular-nums">₹42,00,000</p>
+                      <p className="text-xs text-slate-500 mt-1">Abstract of Measurements (MB 142)</p>
+                      <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-1">
+                        <div className="flex justify-between">
+                          <span>Earthwork Excavation:</span>
+                          <span className="font-semibold text-slate-900">₹18,50,000</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Sub-Base &amp; RCC Culverts:</span>
+                          <span className="font-semibold text-slate-900">₹23,50,000</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-5 bg-slate-50/50">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-rose-700 uppercase tracking-wider">Statutory Deductions (10%)</p>
+                        <span className="text-xs font-bold text-rose-700">-₹4,20,000</span>
+                      </div>
+                      <div className="mt-3 space-y-1.5 text-xs">
+                        <div className="flex justify-between text-slate-700">
+                          <span>Security Deposit (5% Retention):</span>
+                          <span className="font-mono font-medium text-slate-900">₹2,10,000</span>
+                        </div>
+                        <div className="flex justify-between text-slate-700">
+                          <span>Income Tax TDS (2% u/s 194C):</span>
+                          <span className="font-mono font-medium text-slate-900">₹84,000</span>
+                        </div>
+                        <div className="flex justify-between text-slate-700">
+                          <span>GST TDS (2% u/s 51):</span>
+                          <span className="font-mono font-medium text-slate-900">₹84,000</span>
+                        </div>
+                        <div className="flex justify-between text-slate-700">
+                          <span>BOCW Labour Cess (1%):</span>
+                          <span className="font-mono font-medium text-slate-900">₹42,000</span>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-3 pt-2 border-t border-slate-200">
+                        Retention tracked for Defect Liability Period (DLP) release.
+                      </p>
+                    </div>
+
+                    <div className="p-5">
+                      <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Net Bank Credits Received</p>
+                      <p className="text-2xl font-black text-emerald-700 mt-1 tabular-nums">₹37,80,000</p>
+                      <p className="text-xs text-slate-500 mt-1">Multi-Tranche Agency Disbursement</p>
+                      <div className="mt-3 space-y-1.5 text-xs text-slate-700">
+                        <div className="flex justify-between">
+                          <span>Tranche #1 (PFMS / RTGS):</span>
+                          <span className="font-semibold text-slate-900">₹20,00,000</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Tranche #2 (Treasury Vchr):</span>
+                          <span className="font-semibold text-slate-900">₹17,80,000</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-slate-100 font-bold text-slate-900">
+                          <span>Net Audit Variance:</span>
+                          <span className="text-emerald-700">₹0 (Matched Rupee-for-Rupee)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    Status: RA Bill 01 Certified & Reconciled
-                  </span>
+              )}
+
+              {/* TAB 2: CLAUSE 5 DELAY DEFENSE */}
+              {previewTab === 'clause5' && (
+                <div>
+                  <div className="px-5 py-4 border-b border-slate-200 bg-amber-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 uppercase tracking-wider">
+                          Module 02 • CPWD GCC Clause 5 Delay Defense
+                        </span>
+                        <span className="text-[11px] text-amber-700 font-medium">Liquidated Damages Shield</span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
+                        Contemporaneous Site Hindrance Register &amp; Extension of Time (EoT)
+                      </h3>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        Contract LD Ceiling: 10% (₹1,85,00,000) • Active Hindrance Days Shielded: 48 Days
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                        Shield Active • 0 LD Deductions
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-5 space-y-3">
+                    <div className="rounded-xl border border-slate-200 overflow-hidden text-xs">
+                      <div className="bg-slate-100 px-4 py-2.5 font-bold text-slate-700 grid grid-cols-12 gap-2 uppercase tracking-wider text-[11px]">
+                        <span className="col-span-3 sm:col-span-2">Hindrance Date</span>
+                        <span className="col-span-5 sm:col-span-6">Departmental Cause &amp; Description</span>
+                        <span className="col-span-2 sm:col-span-2 text-center">Delay Impact</span>
+                        <span className="col-span-2 sm:col-span-2 text-right">Notice Status</span>
+                      </div>
+                      <div className="divide-y divide-slate-100 text-slate-700 bg-white">
+                        <div className="px-4 py-3 grid grid-cols-12 gap-2 items-center">
+                          <span className="col-span-3 sm:col-span-2 font-mono text-slate-500">12 Feb 2026</span>
+                          <span className="col-span-5 sm:col-span-6">
+                            <strong className="text-slate-900 block font-semibold">Delayed Site Handover (Km 14+200 to 16+000)</strong>
+                            <span className="text-slate-500 text-[11px]">Forest clearance and tree cutting pending by Departmental Forest Division.</span>
+                          </span>
+                          <span className="col-span-2 sm:col-span-2 text-center font-bold text-amber-700">22 Days</span>
+                          <span className="col-span-2 sm:col-span-2 text-right">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              Served to EE
+                            </span>
+                          </span>
+                        </div>
+
+                        <div className="px-4 py-3 grid grid-cols-12 gap-2 items-center">
+                          <span className="col-span-3 sm:col-span-2 font-mono text-slate-500">04 Mar 2026</span>
+                          <span className="col-span-5 sm:col-span-6">
+                            <strong className="text-slate-900 block font-semibold">Delayed GAD Drawing for Box Culvert</strong>
+                            <span className="text-slate-500 text-[11px]">Revision of structural foundation drawing awaiting Superintending Engineer sign-off.</span>
+                          </span>
+                          <span className="col-span-2 sm:col-span-2 text-center font-bold text-amber-700">14 Days</span>
+                          <span className="col-span-2 sm:col-span-2 text-right">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              Served to EE
+                            </span>
+                          </span>
+                        </div>
+
+                        <div className="px-4 py-3 grid grid-cols-12 gap-2 items-center">
+                          <span className="col-span-3 sm:col-span-2 font-mono text-slate-500">28 Mar 2026</span>
+                          <span className="col-span-5 sm:col-span-6">
+                            <strong className="text-slate-900 block font-semibold">33kV Electric Transmission Line Shifting</strong>
+                            <span className="text-slate-500 text-[11px]">Power Development Department (PDD) shutdown not sanctioned on work corridor.</span>
+                          </span>
+                          <span className="col-span-2 sm:col-span-2 text-center font-bold text-amber-700">12 Days</span>
+                          <span className="col-span-2 sm:col-span-2 text-right">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                              Auto-Drafted
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between text-xs">
+                      <span className="text-amber-900 font-medium">
+                        🛡️ <strong>Airtight Defense:</strong> When the Executive Engineer assesses final milestone deadlines, contemporaneous Clause 5 notices prevent arbitrary 10% LD cuts in dispute arbitration.
+                      </span>
+                      <span className="font-bold text-amber-950 shrink-0 ml-2">₹18.5L+ Saved</span>
+                    </div>
+                  </div>
                 </div>
+              )}
+
+              {/* TAB 3: PILLARVISION OCR */}
+              {previewTab === 'ocr' && (
+                <div>
+                  <div className="px-5 py-4 border-b border-slate-200 bg-emerald-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 uppercase tracking-wider">
+                          Module 03 • PillarVision™ Document Intelligence
+                        </span>
+                        <span className="text-[11px] text-emerald-700 font-medium">Mobile Optical Extraction</span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
+                        Instant Extraction for Handwritten Petrol Slips, Quarry Weighment &amp; Challans
+                      </h3>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        Site Munshi snaps a photo on WhatsApp or mobile web • Auto-allocates to vehicle khata in seconds
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                        Proprietary Optical Compute
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-5 grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                    {/* Simulated mobile scan card */}
+                    <div className="md:col-span-5 bg-slate-900 text-white p-4 rounded-xl border border-slate-800 shadow-md">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3 text-[11px] text-slate-400 font-mono">
+                        <span>PILLARVISION™ CAM CAPTURE</span>
+                        <span className="text-emerald-400">99.4% CONFIDENCE</span>
+                      </div>
+                      <div className="bg-slate-800/80 p-3 rounded-lg border border-slate-700 space-y-1 font-mono text-xs text-slate-300">
+                        <p className="text-white font-bold">BHARAT PETROLEUM DEALER #2841</p>
+                        <p className="text-[11px] text-slate-400">Highway Pump, Bypass Junction</p>
+                        <div className="border-t border-slate-700 pt-1.5 mt-1.5 space-y-1 text-xs">
+                          <div className="flex justify-between"><span>Product:</span><span className="text-white">High Speed Diesel (HSD)</span></div>
+                          <div className="flex justify-between"><span>Volume:</span><span className="text-white font-bold">140.00 Litres</span></div>
+                          <div className="flex justify-between"><span>Rate:</span><span>₹89.50 / Ltr</span></div>
+                          <div className="flex justify-between border-t border-slate-700/80 pt-1 font-bold text-emerald-400">
+                            <span>Total Amount:</span><span>₹12,530.00</span>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-slate-400">
+                            <span>Vehicle Slip Ref:</span><span className="text-slate-200">JK02-CH-8821 (JCB-03)</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Extracted Ledger Mapping */}
+                    <div className="md:col-span-7 space-y-3">
+                      <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Automated Ledger Routing &amp; Audit Trail
+                      </p>
+                      
+                      <div className="space-y-2 text-xs">
+                        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                          <div>
+                            <span className="font-semibold text-slate-900 block">🚜 Machine Logbook Entry</span>
+                            <span className="text-slate-500 text-[11px]">JCB-03 Excavator • +140L logged to hourly consumption</span>
+                          </div>
+                          <span className="text-emerald-700 font-bold">Auto-Routed</span>
+                        </div>
+
+                        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                          <div>
+                            <span className="font-semibold text-slate-900 block">📦 Supplier Khata Ledger</span>
+                            <span className="text-slate-500 text-[11px]">Credit to &quot;Highway Fuel Station&quot; Khata Ledger</span>
+                          </div>
+                          <span className="text-emerald-700 font-bold">₹12,530 Logged</span>
+                        </div>
+
+                        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                          <div>
+                            <span className="font-semibold text-slate-900 block">📱 Munshi WhatsApp Verification</span>
+                            <span className="text-slate-500 text-[11px]">Driver signed digitally on mobile receipt upload</span>
+                          </div>
+                          <span className="text-blue-700 font-bold">Verified</span>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-slate-500">
+                        Zero lost fuel slips at the end of the month. Never pay for phantom diesel again.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: PBG & EMD RADAR */}
+              {previewTab === 'pbg' && (
+                <div>
+                  <div className="px-5 py-4 border-b border-slate-200 bg-rose-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-rose-800 bg-rose-100 px-2 py-0.5 rounded border border-rose-300 uppercase tracking-wider">
+                          Module 04 • Performance BG &amp; EMD Capital Radar
+                        </span>
+                        <span className="text-[11px] text-rose-700 font-medium">Working Capital Protection</span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
+                        Proactive Expiry Radar &amp; Division Release Tracking
+                      </h3>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        Active BGs: ₹1,42,50,000 • Prevents bank quarterly renewal commission bleed &amp; invocation
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-bold bg-rose-100 text-rose-900 border border-rose-300">
+                        1 BG Critical Renewal Alert
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-5 space-y-3">
+                    <div className="rounded-xl border border-slate-200 overflow-hidden text-xs">
+                      <div className="bg-slate-100 px-4 py-2.5 font-bold text-slate-700 grid grid-cols-12 gap-2 uppercase tracking-wider text-[11px]">
+                        <span className="col-span-3 sm:col-span-2">BG No. / Bank</span>
+                        <span className="col-span-4 sm:col-span-5">Project &amp; Authority Division</span>
+                        <span className="col-span-3 sm:col-span-3 text-right">BG Value (₹)</span>
+                        <span className="col-span-2 sm:col-span-2 text-right">Expiry Radar</span>
+                      </div>
+                      <div className="divide-y divide-slate-100 text-slate-700 bg-white">
+                        <div className="px-4 py-3 grid grid-cols-12 gap-2 items-center bg-rose-50/30">
+                          <span className="col-span-3 sm:col-span-2">
+                            <strong className="text-slate-900 block font-semibold">PBG/8912</strong>
+                            <span className="text-slate-400 text-[10px]">SBI Main Branch</span>
+                          </span>
+                          <span className="col-span-4 sm:col-span-5">
+                            <strong className="text-slate-900 block font-semibold">NH-44 Bypass Culvert Pkg-02</strong>
+                            <span className="text-slate-500 text-[11px]">Executive Engineer, PWD (R&amp;B) Div-1</span>
+                          </span>
+                          <span className="col-span-3 sm:col-span-3 text-right font-mono font-bold text-slate-900">
+                            ₹92,50,000
+                          </span>
+                          <span className="col-span-2 sm:col-span-2 text-right">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-900 border border-rose-200">
+                              24 Days Left
+                            </span>
+                          </span>
+                        </div>
+
+                        <div className="px-4 py-3 grid grid-cols-12 gap-2 items-center">
+                          <span className="col-span-3 sm:col-span-2">
+                            <strong className="text-slate-900 block font-semibold">EMD/4410</strong>
+                            <span className="text-slate-400 text-[10px]">J&amp;K Bank Residency</span>
+                          </span>
+                          <span className="col-span-4 sm:col-span-5">
+                            <strong className="text-slate-900 block font-semibold">PMGSY Hill Road Stage-II</strong>
+                            <span className="text-slate-500 text-[11px]">EE PMGSY Division, Udhampur</span>
+                          </span>
+                          <span className="col-span-3 sm:col-span-3 text-right font-mono font-bold text-slate-900">
+                            ₹18,00,000
+                          </span>
+                          <span className="col-span-2 sm:col-span-2 text-right">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              Surrender Due
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600">
+                      💡 <strong>Surrender Reminder:</strong> Once a completion certificate is signed, PillarPro prompts your liaison officer to collect the original physical BG letter from the EE division so you can surrender it to the bank immediately, eliminating unnecessary margin lockups.
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Bottom Multi-Tenant isolation notice */}
+              <div className="px-5 py-3 bg-slate-100/80 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                <span>Enterprise multi-tenant isolation • AES-256 encrypted ledger records</span>
+                <Link href="/sign-up" className="text-blue-600 font-semibold hover:underline flex items-center gap-1">
+                  <span>Open Your Firm Workspace</span>
+                  <IconArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
 
-              {/* 3-Column Financial Audit Breakdown */}
-              <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200">
-                {/* Column 1: Gross Certified */}
-                <div className="p-5">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Gross Work Certified</p>
-                  <p className="text-2xl font-black text-slate-900 mt-1 tabular-nums">₹42,00,000</p>
-                  <p className="text-xs text-slate-500 mt-1">Abstract of Measurements (MB 142)</p>
-                  <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-600 space-y-1">
-                    <div className="flex justify-between">
-                      <span>Earthwork Excavation:</span>
-                      <span className="font-semibold text-slate-900">₹18,50,000</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Sub-Base & RCC Culverts:</span>
-                      <span className="font-semibold text-slate-900">₹23,50,000</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Column 2: Statutory Deductions */}
-                <div className="p-5 bg-slate-50/50">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-rose-700 uppercase tracking-wider">Statutory Deductions (10%)</p>
-                    <span className="text-xs font-bold text-rose-700">-₹4,20,000</span>
-                  </div>
-                  <div className="mt-3 space-y-1.5 text-xs">
-                    <div className="flex justify-between text-slate-700">
-                      <span>Security Deposit (5% Retention):</span>
-                      <span className="font-mono font-medium text-slate-900">₹2,10,000</span>
-                    </div>
-                    <div className="flex justify-between text-slate-700">
-                      <span>Income Tax TDS (2% u/s 194C):</span>
-                      <span className="font-mono font-medium text-slate-900">₹84,000</span>
-                    </div>
-                    <div className="flex justify-between text-slate-700">
-                      <span>GST TDS (2% u/s 51):</span>
-                      <span className="font-mono font-medium text-slate-900">₹84,000</span>
-                    </div>
-                    <div className="flex justify-between text-slate-700">
-                      <span>BOCW Labour Cess (1%):</span>
-                      <span className="font-mono font-medium text-slate-900">₹42,00,0</span>
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-3 pt-2 border-t border-slate-200">
-                    Retention tracked for Defect Liability Period (DLP) release.
-                  </p>
-                </div>
-
-                {/* Column 3: Multi-Tranche Disbursements */}
-                <div className="p-5">
-                  <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Net Bank Credits Received</p>
-                  <p className="text-2xl font-black text-emerald-700 mt-1 tabular-nums">₹37,80,000</p>
-                  <p className="text-xs text-slate-500 mt-1">Multi-Tranche Agency Disbursement</p>
-                  <div className="mt-3 space-y-1.5 text-xs text-slate-700">
-                    <div className="flex justify-between">
-                      <span>Tranche #1 (PFMS / RTGS):</span>
-                      <span className="font-semibold text-slate-900">₹20,00,000</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Tranche #2 (Balance Credit):</span>
-                      <span className="font-semibold text-slate-900">₹17,80,000</span>
-                    </div>
-                    <div className="flex justify-between pt-2 border-t border-slate-100 font-bold text-slate-900">
-                      <span>Net Audit Variance:</span>
-                      <span className="text-emerald-700">₹0 (Matched)</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Real-world Operational Radar Footer */}
-              <div className="px-5 py-3.5 bg-slate-100/70 border-t border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
-                  <span className="text-slate-700">
-                    <strong className="text-slate-900">BG Radar:</strong> PBG/8912 expires in 24 days (Executive Engineer extension alert active)
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-blue-600 shrink-0" />
-                  <span className="text-slate-700">
-                    <strong className="text-slate-900">Site Munshi:</strong> 16 workers on site, muster roll verified
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-600 shrink-0" />
-                  <span className="text-slate-700">
-                    <strong className="text-slate-900">Supplier Khata:</strong> Cement challan + carriage charges logged
-                  </span>
-                </div>
-              </div>
             </div>
 
           </div>
@@ -694,71 +1032,311 @@ export function LandingPage({
           </div>
         </section>
 
-        {/* ── The 3 Real Moats (Replacing Generic AI Cards) ───── */}
+        {/* ── Interactive Clause 5 Delay Defense & LD Simulator ─── */}
+        <section id="clause5-sim" className="py-14 bg-slate-900 text-white border-b border-slate-800 relative overflow-hidden">
+          {/* Ambient glow */}
+          <div className="absolute -top-24 right-0 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="text-center max-w-2xl mx-auto mb-8">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold mb-3">
+                <IconShieldAlert className="w-3.5 h-3.5" />
+                CPWD GCC Clause 5 Defense Calculator
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                Simulate Your Firm’s Exposure to Liquidated Damages (LD)
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-400 mt-2">
+                Under standard government contracts, the department can penalize your firm up to 10% of the entire tender value for milestone delays. See how contemporaneous evidence shields you:
+              </p>
+            </div>
+
+            <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-6 backdrop-blur-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-xs font-semibold text-slate-300">Total Tender Agreement Value (₹)</label>
+                    <span className="text-sm font-bold text-amber-400">₹{(simContractValue / 10000000).toFixed(2)} Cr</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="5000000"
+                    max="100000000"
+                    step="2500000"
+                    value={simContractValue}
+                    onChange={e => setSimContractValue(Number(e.target.value))}
+                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                    <span>₹50 Lakhs</span>
+                    <span>₹5 Crore</span>
+                    <span>₹10 Crore</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-xs font-semibold text-slate-300">Project Delay / Hindrance Duration</label>
+                    <span className="text-sm font-bold text-amber-400">{simDelayDays} Days</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="10"
+                    max="180"
+                    step="5"
+                    value={simDelayDays}
+                    onChange={e => setSimDelayDays(Number(e.target.value))}
+                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                    <span>10 Days</span>
+                    <span>90 Days</span>
+                    <span>180 Days</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Exposure vs Defense Comparison Box */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Without Contemporaneous Logs</span>
+                    <span className="text-xs font-bold text-red-400">Departmental Risk</span>
+                  </div>
+                  <p className="text-2xl font-black text-red-300 mt-2 tabular-nums">
+                    -₹{accruedLdExposure.toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                    Arbitrary Liquidated Damages deducted from your final bill or security deposit under Clause 2/5 due to lack of contemporaneous proof.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-800/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">With PillarPro Clause 5 Defense</span>
+                    <span className="text-xs font-bold text-emerald-400">Airtight Shield</span>
+                  </div>
+                  <p className="text-2xl font-black text-emerald-300 mt-2 tabular-nums">
+                    ₹0 Deducted (Protected)
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                    Timestamped hindrance notices served to Executive Engineer establishing client-side delay (utility shifting, drawing revisions, site access).
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <span className="text-slate-400">
+                  Generates ready-to-print Section 5 extension letters formatted for Executive Engineers.
+                </span>
+                <Link
+                  href="/sign-up"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-colors shrink-0"
+                >
+                  <span>Shield Your Contracts</span>
+                  <IconArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── The 5 Core Pillars (High-Stakes Moats) ───────────── */}
         <section id="capabilities" className="py-16 md:py-20 bg-[#F8FAFC] border-b border-slate-200">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-12">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Purpose-Built for Infrastructure
+                Built For High-Stakes Contracts
               </span>
               <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 mt-1 tracking-tight">
-                Three Capabilities That Separate Us From Generic Software
+                The 5 Proprietary Pillars Protecting Your Bottom Line
               </h2>
               <p className="text-sm text-slate-600 mt-3 leading-relaxed">
-                Generic apps treat civil contracting like retail inventory or office task boards. PillarPro solves the four brutal financial bottlenecks that cause contractors to bleed money.
+                Standard apps manage simple office tasks. PillarPro solves the 5 brutal financial, contractual, and operational vulnerabilities where civil contractors lose lakhs of rupees.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Moat 1: Multi-Agency RA Bill Audit */}
-              <div className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
+              {/* Pillar 1: Multi-Agency RA Bill Audit */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
                 <div>
-                  <div className="h-10 w-10 rounded-lg bg-slate-100 border border-slate-200 text-slate-900 flex items-center justify-center mb-4">
+                  <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center mb-4">
                     <IconFileText className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Pillar 01</span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-1">Multi-Agency RA Bill Audit & Deductions</h3>
+                  <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider block">Pillar 01</span>
+                  <h3 className="text-lg font-bold text-slate-900 mt-1">Multi-Agency RA Bill Audit &amp; Deductions</h3>
                   <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
-                    Built for <strong className="text-slate-900">CPWD</strong> (audited by Accounts Branch & credited via PFMS), <strong className="text-slate-900">NHPC & PSUs</strong> (disbursed through corporate finance RTGS), and <strong className="text-slate-900">State PWD & PMGSY</strong> (disbursed through State Treasuries). Reconciles statutory deductions and split bank credit tranches down to the exact rupee.
+                    Built for <strong className="text-slate-900">CPWD</strong> (audited by Accounts Branch &amp; credited via PFMS), <strong className="text-slate-900">NHPC &amp; PSUs</strong> (disbursed through corporate finance RTGS), and <strong className="text-slate-900">State PWD &amp; PMGSY</strong> (disbursed through State Treasuries). Reconciles statutory deductions and split bank credit tranches down to the exact rupee.
                   </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
-                  ✓ Retention, IT TDS, GST TDS & Labour Cess
+                  ✓ Retention, IT TDS, GST TDS &amp; Labour Cess
                 </div>
               </div>
 
-              {/* Moat 2: Bank Guarantee & EMD Radar */}
-              <div className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
+              {/* Pillar 2: Clause 5 Delay Defense */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
                 <div>
-                  <div className="h-10 w-10 rounded-lg bg-slate-100 border border-slate-200 text-slate-900 flex items-center justify-center mb-4">
+                  <div className="h-10 w-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mb-4">
                     <IconShieldAlert className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Pillar 02</span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-1">Bank Guarantee (PBG) & EMD Radar</h3>
+                  <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider block">Pillar 02</span>
+                  <h3 className="text-lg font-bold text-slate-900 mt-1">Clause 5 Delay Defense &amp; LD Shield</h3>
+                  <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
+                    Protect your firm from devastating 10% Liquidated Damages penalty deductions under CPWD GCC Clause 5. Contemporaneous field hindrance logging with auto-drafted Extension of Time (EoT) notices to the Executive Engineer creates an unassailable evidentiary trail.
+                  </p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
+                  ✓ Protects against arbitrary 10% contract cuts
+                </div>
+              </div>
+
+              {/* Pillar 3: PillarVision OCR */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
+                <div>
+                  <div className="h-10 w-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mb-4">
+                    <IconCamera className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">Pillar 03</span>
+                  <h3 className="text-lg font-bold text-slate-900 mt-1">PillarVision™ Document Intelligence</h3>
+                  <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
+                    Mobile optical scanning purpose-built for harsh site conditions. Snap crumpled petrol pump slips, weighbridge receipts, and supplier challans from any smartphone camera. Instantly extracts items, quantity, vehicle numbers, and allocates to ledgers with zero manual typing.
+                  </p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
+                  ✓ High-speed mobile optical scanning
+                </div>
+              </div>
+
+              {/* Pillar 4: Bank Guarantee & EMD Radar */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
+                <div>
+                  <div className="h-10 w-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mb-4">
+                    <IconClock className="w-5 h-5" />
+                  </div>
+                  <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">Pillar 04</span>
+                  <h3 className="text-lg font-bold text-slate-900 mt-1">Bank Guarantee (PBG) &amp; EMD Radar</h3>
                   <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
                     Never lose track of a Performance BG, Mobilization Advance BG, or Earnest Money Deposit. Proactive 30-day alerts notify you before renewal deadlines, preventing departmental invocation and stopping banks from quietly deducting quarterly commission charges on completed projects.
                   </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
-                  ✓ Protects working capital & bank credit limits
+                  ✓ Stops recurring bank commission bleed
                 </div>
               </div>
 
-              {/* Moat 3: Partner Capital Parity & Field Khata */}
-              <div className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
+              {/* Pillar 5: Partner Capital Parity & Khata */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm md:col-span-2">
                 <div>
-                  <div className="h-10 w-10 rounded-lg bg-slate-100 border border-slate-200 text-slate-900 flex items-center justify-center mb-4">
+                  <div className="h-10 w-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center mb-4">
                     <IconScale className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Pillar 03</span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-1">Partner Parity & Field Site Khata</h3>
+                  <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider block">Pillar 05</span>
+                  <h3 className="text-lg font-bold text-slate-900 mt-1">Partner Capital Parity &amp; Joint Venture Ledger</h3>
                   <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
-                    Civil tenders run as multi-partner joint ventures. PillarPro tracks out-of-pocket partner payments (SBI personal, cash drawers) and capital infusions. Field supervisors log supplier deliveries with itemized <strong className="text-slate-900">carriage/transport charges</strong> and send 1-click WhatsApp Khatas.
+                    Civil tenders frequently run as multi-partner joint ventures where partners pay for diesel or material out of personal bank accounts or cash drawers. PillarPro logs every out-of-pocket contribution and partner drawing, automatically reconciling equity balances and net profit distributions to prevent painful year-end disputes.
                   </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
-                  ✓ Zero partner disputes & carriage cost tracking
+                  ✓ Full partnership financial transparency &amp; profit sharing clarity
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── The Complete Operational Floor Suite Grid ────────── */}
+        <section id="suite" className="py-16 bg-white border-b border-slate-200">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-3xl mx-auto mb-12">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                All-In-One Operations
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">
+                The Complete Site Suite You Expect — Plus What Others Can&apos;t Offer
+              </h2>
+              <p className="text-sm text-slate-600 mt-2">
+                PillarPro handles all the everyday site operations you need without needing five different disconnected apps:
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {/* Feature 1: Labor Muster Roll */}
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-9 w-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                    👷
+                  </div>
+                  <h3 className="font-bold text-slate-900 text-sm">Daily Labor Muster Rolls</h3>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Log mason, beldar, and carpenter attendance, daily wage rates, overtime hours, and cash advance khatas directly from the site supervisor&apos;s phone.
+                </p>
+              </div>
+
+              {/* Feature 2: Machinery & Diesel Logs */}
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-9 w-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm">
+                    🚜
+                  </div>
+                  <h3 className="font-bold text-slate-900 text-sm">Machinery &amp; Diesel Logbooks</h3>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Track excavator, tipper, roller, and batching plant run-hours, fuel issue slips, breakdown downtime, and consumption per hour (ltr/hr) to halt fuel theft.
+                </p>
+              </div>
+
+              {/* Feature 3: Supplier Khata & Carriage */}
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-9 w-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+                    📦
+                  </div>
+                  <h3 className="font-bold text-slate-900 text-sm">Supplier Khata &amp; Carriage</h3>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Procurement ledgers for cement, TMT steel, and aggregate with itemized freight &amp; transport carriage charges. Send 1-click WhatsApp payment khatas.
+                </p>
+              </div>
+
+              {/* Feature 4: Godown Inventory */}
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-9 w-9 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">
+                    🏢
+                  </div>
+                  <h3 className="font-bold text-slate-900 text-sm">Godown &amp; Material Stock</h3>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Track material inflows and site issues, gate passes, minimum threshold stock warnings, and prevent cement bag expiry or unlogged shrinkage.
+                </p>
+              </div>
+
+              {/* Feature 5: Petty Cash & Munshi Vouchers */}
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-9 w-9 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm">
+                    💵
+                  </div>
+                  <h3 className="font-bold text-slate-900 text-sm">Site Petty Cash &amp; Vouchers</h3>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Munshi daily cash reconciliation, hardware shop slips, tea and refreshments, with digital receipt attachments and contractor approval controls.
+                </p>
+              </div>
+
+              {/* Feature 6: Form 26 e-MB Ready */}
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-9 w-9 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center font-bold text-sm">
+                    📑
+                  </div>
+                  <h3 className="font-bold text-slate-900 text-sm">BOQ &amp; Form 26 Measurement</h3>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Maintain item-rate BOQ quantities, track previous bill vs cumulative up-to-date execution, and export clean measurement abstracts ready for Junior Engineers.
+                </p>
               </div>
             </div>
           </div>

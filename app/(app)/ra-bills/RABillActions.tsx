@@ -181,6 +181,7 @@ export function RABillActions({
       setScannedBillData(json.data)
       setScanModalOpen(true)
       toast.success('RA Bill analyzed with Gemini 3.6 Flash! Please review.')
+      toast.success('RA Bill analyzed by PillarVision™ Intelligence! Please review.')
     } catch (err: any) {
       setScanning(false)
       toast.error(err.message || 'Failed to scan RA Bill.')

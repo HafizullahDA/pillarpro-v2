@@ -154,7 +154,7 @@ export default function PrivacyPolicyPage() {
             <ul className="list-disc pl-6 space-y-2 text-slate-300">
               <li><strong className="text-white">Database & Authentication:</strong> Supabase Inc. (PostgreSQL database with automated point-in-time recovery and SSL encryption).</li>
               <li><strong className="text-white">Hosting & Edge CDN:</strong> Vercel Inc. (TLS 1.3 encrypted web delivery, edge DDoS protection, and privacy-first cookie-less analytics).</li>
-              <li><strong className="text-white">Receipt OCR:</strong> Google Cloud Platform / Gemini Vision API (Document transcription processing).</li>
+              <li><strong className="text-white">Document & Challan Processing:</strong> Secure cloud optical compute infrastructure (ephemeral document transcription processing, zero data retention).</li>
             </ul>
           </section>
 

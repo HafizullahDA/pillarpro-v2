@@ -9,7 +9,7 @@
 
 export const FEATURES = {
   /**
-   * Multimodal receipt scanning via Google Gemini Flash API.
+   * Multimodal receipt scanning via PillarVision™ Document Intelligence.
    * Toggle with NEXT_PUBLIC_ENABLE_OCR="false"
    */
   aiReceiptScanner: process.env.NEXT_PUBLIC_ENABLE_OCR !== 'false',

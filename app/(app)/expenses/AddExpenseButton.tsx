@@ -107,7 +107,7 @@ export function AddExpenseButton({
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
-  // Scan receipt with Gemini Vision API
+  // Scan receipt with PillarVision™ Document Intelligence
   const handleFileScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -174,7 +174,7 @@ export function AddExpenseButton({
       }
     } catch (err: any) {
       setScanning(false)
-      const userMsg = await captureFormError('ScanReceiptGemini', err, {
+      const userMsg = await captureFormError('ScanReceiptPillarVision', err, {
         fileName: file.name,
       })
       setError(userMsg)
