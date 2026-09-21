@@ -21,7 +21,6 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
   if (!project) notFound()
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <ProjectDetailHeader
         project={project}
@@ -47,7 +46,6 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {/* Bill of Quantities (BOQ) & e-MB */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between shadow-xs">
@@ -65,13 +63,11 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
           <div className="pt-4">
             <a
               href={`/projects/${project.id}/boq`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
               </svg>
-              Open BOQ & Measurement Book
               Open BOQ & e-MB
             </a>
           </div>
@@ -93,13 +89,11 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
           <div className="pt-4">
             <a
               href={`/projects/${project.id}/dpr`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Open DPR & Photo Diary
               Open DPR & Diary
             </a>
           </div>
