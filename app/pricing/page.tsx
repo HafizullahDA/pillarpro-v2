@@ -4,7 +4,7 @@ import { PricingClient } from '@/components/pricing/PricingClient'
 export const metadata: Metadata = {
   title: 'Pricing & Plans — Transparent Active-Site Subscriptions',
   description:
-    'PillarPro pricing for Indian civil contractors: Active Sites + Unlimited Users. No per-seat penalties for site supervisors or munshis. Compare Bootstrap (₹1,999/mo), Growth Contractor (₹4,999/mo), and Enterprise Infra (₹9,999/mo).',
+    'PillarPro pricing for Indian civil contractors: Active Sites + Unlimited Users. No per-seat penalties. 14-day free trial. Bootstrap (₹999/mo), Growth Contractor (₹1,999/mo), and Enterprise Infra (₹3,999/mo).',
   keywords: [
     'pillarpro pricing',
     'civil contractor software pricing',
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'PillarPro Pricing — Active Sites + Unlimited Users',
     description:
-      'Fair, predictable civil contractor ERP pricing. Unlimited site supervisors and munshis with zero per-seat fees. Starting at ₹1,999/mo with 14-day free trial.',
+      'Fair, predictable civil contractor ERP pricing. Unlimited site supervisors and munshis with zero per-seat fees. Starting at ₹999/mo with 14-day free trial.',
     url: 'https://pillarprojk.com/pricing',
     type: 'website',
   },
@@ -40,7 +40,7 @@ export default function PricingPage() {
       {
         '@type': 'Offer',
         name: 'Bootstrap Plan',
-        price: '19999',
+        price: '9999',
         priceCurrency: 'INR',
         billingDuration: 'P1Y',
         description: 'Up to 2 Active Sites, Unlimited Users, RA Bills & Statutory Deductions',
@@ -49,7 +49,7 @@ export default function PricingPage() {
       {
         '@type': 'Offer',
         name: 'Growth Contractor Plan',
-        price: '49999',
+        price: '19999',
         priceCurrency: 'INR',
         billingDuration: 'P1Y',
         description:
@@ -59,7 +59,7 @@ export default function PricingPage() {
       {
         '@type': 'Offer',
         name: 'Enterprise Infra Plan',
-        price: '99999',
+        price: '39999',
         priceCurrency: 'INR',
         billingDuration: 'P1Y',
         description:
@@ -79,4 +79,3 @@ export default function PricingPage() {
     </>
   )
 }
-

@@ -46,7 +46,8 @@ function IconChevronDown({ className = 'w-4 h-4' }: { className?: string }) {
 }
 
 export function PricingClient() {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual')
+  // Default to Monthly as requested
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
   const [activeFaq, setActiveFaq] = useState<number | null>(0)
 
   // Interactive Calculator State
@@ -57,24 +58,40 @@ export function PricingClient() {
   const competitorMonthlyPerUser = 700
   const competitorAnnualCost = calcTeamMembers * competitorMonthlyPerUser * 12
 
-  // PillarPro tier recommendation & cost
-  const pillarProAnnualCost = calcSites <= 2 ? 19999 : calcSites <= 6 ? 49999 : 99999 + Math.max(0, calcSites - 15) * 600 * 12
-  const pillarProTierName = calcSites <= 2 ? 'Bootstrap Plan' : calcSites <= 6 ? 'Growth Contractor' : 'Enterprise Infra'
+  // PillarPro Option B Pricing:
+  // Bootstrap: ₹999/mo or ₹9,999/yr
+  // Growth: ₹1,999/mo or ₹19,999/yr
+  // Enterprise: ₹3,999/mo or ₹39,999/yr (+₹300/site/mo for sites beyond 15)
+  const pillarProAnnualCost =
+    calcSites <= 2
+      ? (billingCycle === 'annual' ? 9999 : 999 * 12)
+      : calcSites <= 6
+      ? (billingCycle === 'annual' ? 19999 : 1999 * 12)
+      : (billingCycle === 'annual'
+          ? 39999 + Math.max(0, calcSites - 15) * 300 * 12
+          : (3999 + Math.max(0, calcSites - 15) * 300) * 12)
+
+  const pillarProTierName =
+    calcSites <= 2 ? 'Bootstrap Plan' : calcSites <= 6 ? 'Growth Contractor' : 'Enterprise Infra'
   const annualSavings = Math.max(0, competitorAnnualCost - pillarProAnnualCost)
   const savingsPercent = Math.round((annualSavings / Math.max(1, competitorAnnualCost)) * 100)
 
   const faqs = [
+    {
+      q: 'Is there a free trial before paying?',
+      a: 'Yes, every contractor gets a 14-day full-featured free trial with zero credit card required. You can set up your active project, invite your site engineers, take measurements, and generate actual CPWD/PWD RA bills immediately.',
+    },
     {
       q: 'What counts as an "Active Site"? How does archiving work?',
       a: 'An Active Site is any contract package actively incurring ongoing material purchases, site muster roll logs, or milestone RA billing. When a project reaches physical completion and enters the Defect Liability Period (DLP), you can archive it with 1 click. Archived sites do not count toward your active site quota, yet all historical measurement sheets, RA bills, and statutory records remain 100% permanently searchable and exportable.',
     },
     {
       q: 'Why does PillarPro provide Unlimited Users instead of charging per seat?',
-      a: 'Indian civil contracting operations fail when software charges per user. When software costs ₹700 to ₹1,000 per seat per month, contractors avoid giving accounts to site munshis, junior supervisors, storekeepers, or subcontractors—leading to shared passwords, inaccurate muster rolls, and lost paper bills. With PillarPro, you pay strictly for your active packages and invite as many field and office staff as you need with zero incremental fee.',
+      a: 'Indian civil contracting operations fail when software charges per user. When competitors charge ₹700 to ₹1,000 per seat per month, contractors avoid giving accounts to site munshis, junior supervisors, storekeepers, or subcontractors—leading to shared passwords, inaccurate muster rolls, and lost paper bills. With PillarPro, you pay strictly for your active packages and invite as many field and office staff as you need with zero incremental fee.',
     },
     {
-      q: 'Can we pay via NEFT, RTGS, Corporate Net Banking, or UPI?',
-      a: 'Yes. We accept all standard corporate payment methods including NEFT/RTGS bank transfers, Corporate Net Banking, UPI (Google Pay, PhonePe, Paytm, BHIM), and all major Credit & Debit cards. For annual plans, we can also provide proforma invoices for official account department clearance.',
+      q: 'Can we pay via UPI, NEFT, RTGS, or Net Banking?',
+      a: 'Yes. We accept all standard payment methods including UPI (Google Pay, PhonePe, Paytm, BHIM), Corporate Net Banking, NEFT/RTGS bank transfers, and all major Credit & Debit cards.',
     },
     {
       q: 'Do you provide an official B2B GST Tax Invoice with Input Tax Credit (ITC)?',
@@ -87,10 +104,6 @@ export function PricingClient() {
     {
       q: 'Can site engineers and munshis use the app on mobile with poor internet?',
       a: 'Yes. PillarPro is built as a progressive web application (PWA) with high-contrast architectural UI designed specifically for bright sunlight on site. Muster rolls, material delivery slips, and daily site logs can be entered offline and sync automatically once a 3G/4G connection resumes.',
-    },
-    {
-      q: 'What happens after the 14-day free trial?',
-      a: 'During your 14-day trial, you have complete access to all features of your chosen tier with no credit card required. At the end of the trial, you can choose to activate an annual or monthly subscription. Your entered sites, bills, and data remain completely intact.',
     },
   ]
 
@@ -131,7 +144,7 @@ export function PricingClient() {
               href="/sign-up"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
             >
-              <span>Start Free Trial</span>
+              <span>Start 14-Day Free Trial</span>
               <IconArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -144,9 +157,11 @@ export function PricingClient() {
         {/* ── Hero Header ──────────────────────────────────────── */}
         <section className="pt-14 pb-12 sm:pt-20 sm:pb-16 bg-white border-b border-slate-200">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 text-xs font-semibold tracking-wide mb-6 shadow-2xs">
+            
+            {/* 14-Day Free Trial Tag */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold tracking-wide mb-6 shadow-2xs">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>ACTIVE SITES + UNLIMITED USERS • NO PER-SEAT PENALTIES</span>
+              <span>14-DAY FREE TRIAL ON ALL PLANS • NO CREDIT CARD REQUIRED</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.15]">
@@ -162,24 +177,24 @@ export function PricingClient() {
               <button
                 type="button"
                 onClick={() => setBillingCycle('monthly')}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${
                   billingCycle === 'monthly'
-                    ? 'bg-white text-slate-900 shadow-sm'
+                    ? 'bg-slate-900 text-white shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Billed Monthly
+                Monthly Billing
               </button>
               <button
                 type="button"
                 onClick={() => setBillingCycle('annual')}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                className={`inline-flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-bold transition-all ${
                   billingCycle === 'annual'
                     ? 'bg-slate-900 text-white shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <span>Billed Annually</span>
+                <span>Annual Billing</span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-emerald-500 text-white">
                   Save ~17% (2 Mo Free)
                 </span>
@@ -207,20 +222,19 @@ export function PricingClient() {
               <div className="mb-6 pb-6 border-b border-slate-100">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl sm:text-4xl font-extrabold text-slate-900">
-                    {billingCycle === 'annual' ? '₹19,999' : '₹1,999'}
+                    {billingCycle === 'annual' ? '₹9,999' : '₹999'}
                   </span>
                   <span className="text-xs font-semibold text-slate-500">
                     {billingCycle === 'annual' ? '/ year' : '/ month'}
                   </span>
                 </div>
-                {billingCycle === 'annual' && (
+                {billingCycle === 'annual' ? (
                   <p className="mt-1 text-[11px] text-emerald-700 font-medium">
-                    Equivalent to ₹1,666 / month (excl. GST)
+                    Equivalent to ₹833 / month (excl. GST)
                   </p>
-                )}
-                {billingCycle === 'monthly' && (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Billed monthly. Cancel or upgrade anytime.
+                ) : (
+                  <p className="mt-1 text-[11px] text-slate-500 font-medium">
+                    or ₹9,999 / year billed annually (Save ~17%)
                   </p>
                 )}
               </div>
@@ -308,20 +322,19 @@ export function PricingClient() {
               <div className="mb-6 pb-6 border-b border-slate-800">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl sm:text-4xl font-extrabold text-white">
-                    {billingCycle === 'annual' ? '₹49,999' : '₹4,999'}
+                    {billingCycle === 'annual' ? '₹19,999' : '₹1,999'}
                   </span>
                   <span className="text-xs font-semibold text-slate-400">
                     {billingCycle === 'annual' ? '/ year' : '/ month'}
                   </span>
                 </div>
-                {billingCycle === 'annual' && (
+                {billingCycle === 'annual' ? (
                   <p className="mt-1 text-[11px] text-emerald-400 font-medium">
-                    Equivalent to ₹4,166 / month (excl. GST)
+                    Equivalent to ₹1,666 / month (excl. GST)
                   </p>
-                )}
-                {billingCycle === 'monthly' && (
-                  <p className="mt-1 text-[11px] text-slate-400">
-                    Billed monthly. Cancel or upgrade anytime.
+                ) : (
+                  <p className="mt-1 text-[11px] text-emerald-400 font-medium">
+                    or ₹19,999 / year billed annually (Save ~17%)
                   </p>
                 )}
               </div>
@@ -405,20 +418,19 @@ export function PricingClient() {
               <div className="mb-6 pb-6 border-b border-slate-100">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl sm:text-4xl font-extrabold text-slate-900">
-                    {billingCycle === 'annual' ? '₹99,999' : '₹9,999'}
+                    {billingCycle === 'annual' ? '₹39,999' : '₹3,999'}
                   </span>
                   <span className="text-xs font-semibold text-slate-500">
                     {billingCycle === 'annual' ? '/ year' : '/ month'}
                   </span>
                 </div>
-                {billingCycle === 'annual' && (
+                {billingCycle === 'annual' ? (
                   <p className="mt-1 text-[11px] text-emerald-700 font-medium">
-                    Equivalent to ₹8,333 / month (excl. GST)
+                    Equivalent to ₹3,333 / month (excl. GST)
                   </p>
-                )}
-                {billingCycle === 'monthly' && (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Billed monthly. Additional sites at ₹600/mo.
+                ) : (
+                  <p className="mt-1 text-[11px] text-slate-500 font-medium">
+                    or ₹39,999 / year billed annually (Save ~17%)
                   </p>
                 )}
               </div>
@@ -427,7 +439,7 @@ export function PricingClient() {
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 mb-6 space-y-2">
                 <div className="flex items-center justify-between text-xs font-semibold text-slate-900">
                   <span>Active Project Sites</span>
-                  <span className="px-2 py-0.5 rounded bg-white border border-slate-200 font-bold">15 Sites (+₹600/site/mo)</span>
+                  <span className="px-2 py-0.5 rounded bg-white border border-slate-200 font-bold">15 Sites (+₹300/site/mo)</span>
                 </div>
                 <div className="flex items-center justify-between text-xs font-semibold text-slate-900">
                   <span>Site Munshis & Staff</span>
@@ -687,11 +699,11 @@ export function PricingClient() {
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/80">
                   <th className="py-4 px-6 font-bold text-slate-900 w-2/5">Capabilities & Specifications</th>
-                  <th className="py-4 px-4 font-bold text-slate-900 text-center w-1/5">Bootstrap</th>
+                  <th className="py-4 px-4 font-bold text-slate-900 text-center w-1/5">Bootstrap (₹999/mo)</th>
                   <th className="py-4 px-4 font-bold text-emerald-700 text-center w-1/5 bg-emerald-50/40 border-x border-emerald-100">
-                    Growth (Recommended)
+                    Growth (₹1,999/mo)
                   </th>
-                  <th className="py-4 px-4 font-bold text-slate-900 text-center w-1/5">Enterprise Infra</th>
+                  <th className="py-4 px-4 font-bold text-slate-900 text-center w-1/5">Enterprise (₹3,999/mo)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -706,7 +718,7 @@ export function PricingClient() {
                   <td className="py-3 px-6 font-medium">Active Project Sites</td>
                   <td className="py-3 px-4 text-center font-semibold text-slate-900">Up to 2 Sites</td>
                   <td className="py-3 px-4 text-center font-bold text-emerald-700 bg-emerald-50/20 border-x border-emerald-100">Up to 6 Sites</td>
-                  <td className="py-3 px-4 text-center font-semibold text-slate-900">Up to 15 Sites (+₹600/site)</td>
+                  <td className="py-3 px-4 text-center font-semibold text-slate-900">Up to 15 Sites (+₹300/site)</td>
                 </tr>
                 <tr>
                   <td className="py-3 px-6 font-medium">Archived Projects (Historical Records)</td>
@@ -953,4 +965,3 @@ export function PricingClient() {
     </div>
   )
 }
-
