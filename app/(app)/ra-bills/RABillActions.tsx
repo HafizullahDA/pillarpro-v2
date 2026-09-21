@@ -33,6 +33,19 @@ export type RABillOption = {
   previous_received_amount?: number
   net_payable_this_bill?: number
   this_bill_work_certified?: number
+  bill_type?: 'running' | 'first_and_final' | 'final'
+  mb_number?: string | null
+  mb_page_start?: number | null
+  mb_page_end?: number | null
+  measurement_date?: string | null
+  measuring_officer_name?: string | null
+  measuring_officer_designation?: string | null
+  advance_payments_unmeasured?: number
+  cement_recovery?: number
+  steel_recovery?: number
+  other_material_recovery?: number
+  actual_completion_date?: string | null
+  dlp_months?: number
   projects?: { name: string } | null
 }
 

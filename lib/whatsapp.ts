@@ -119,6 +119,9 @@ export function generateSupplierKhataWhatsAppText(
 export function formatRABillWhatsAppMessage(params: {
   projectName: string
   billNumber: string
+  billType?: string
+  mbNumber?: string | null
+  mbPageRange?: string | null
   submissionDate: string
   workCertified: number
   statutoryDeductions: number
@@ -126,20 +129,37 @@ export function formatRABillWhatsAppMessage(params: {
   receivedAmount: number
   balanceReceivable: number
 }): string {
-  return [
-    `*RUNNING ACCOUNT (RA) BILL UPDATE*`,
+  const isFinal = params.billType === 'final'
+  const isFirstAndFinal = params.billType === 'first_and_final'
+  const billTitle = isFinal
+    ? '*FINAL BILL (FORM CPWA 27-B)*'
+    : isFirstAndFinal
+    ? '*FIRST & FINAL BILL (FORM CPWA 24)*'
+    : '*RUNNING ACCOUNT (RA) BILL UPDATE*'
+
+  const lines = [
+    billTitle,
     `*Project:* ${params.projectName}`,
     `*Bill No:* ${params.billNumber}`,
+  ]
+
+  if (params.mbNumber) {
+    lines.push(`*e-MB Ref:* MB #${params.mbNumber}${params.mbPageRange ? ` (${params.mbPageRange})` : ''}`)
+  }
+
+  lines.push(
     `*Submission Date:* ${params.submissionDate}`,
     `--------------------------------`,
     `• Gross Work Certified: ${formatINR(params.workCertified)}`,
-    `• Statutory Deductions (TDS/Retention): ${formatINR(params.statutoryDeductions)}`,
+    `• Statutory Deductions & Recoveries: ${formatINR(params.statutoryDeductions)}`,
     `• Net Sanctioned Payable: ${formatINR(params.netPassed)}`,
     `• Realized Bank Receipts: ${formatINR(params.receivedAmount)}`,
     `• *Pending Balance Receivable: ${formatINR(params.balanceReceivable)}*`,
     `--------------------------------`,
-    `_PillarPro Treasury & RA Billing Engine_`,
-  ].join('\n')
+    `_PillarPro Treasury & RA Billing Engine_`
+  )
+
+  return lines.join('\n')
 }
 
 // Backward-compatible helper for RABillsClient
@@ -153,16 +173,26 @@ export function generateRABillWhatsAppText(bill: any, org?: any): string {
   const gstTds = Number(bill.gst_tds_deducted) || 0
   const cess = Number(bill.labour_cess_deducted) || 0
   const other = Number(bill.other_deductions) || 0
-  const totalDeductions = Number(bill.total_deductions) || (retention + tds + gstTds + cess + other)
+  const cement = Number(bill.cement_recovery) || 0
+  const steel = Number(bill.steel_recovery) || 0
+  const otherMat = Number(bill.other_material_recovery) || 0
+  const totalDeductions = Number(bill.total_deductions) || (retention + tds + gstTds + cess + other + cement + steel + otherMat)
   const netPassed = bill.net_payable_this_bill != null
     ? Number(bill.net_payable_this_bill)
-    : (Number(bill.net_payable_amount) || (workCertified - retention))
+    : (Number(bill.net_payable_amount) || (workCertified - retention - cement - steel - otherMat))
   const received = Number(bill.amount_received) || 0
   const balance = Math.max(0, netPassed - received)
+
+  const mbPageRange = bill.mb_page_start
+    ? `Pages ${bill.mb_page_start} to ${bill.mb_page_end || bill.mb_page_start}`
+    : null
 
   return formatRABillWhatsAppMessage({
     projectName: bill.projects?.name || 'Civil Project',
     billNumber: bill.bill_number,
+    billType: bill.bill_type,
+    mbNumber: bill.mb_number,
+    mbPageRange,
     submissionDate: bill.submission_date,
     workCertified,
     statutoryDeductions: totalDeductions,

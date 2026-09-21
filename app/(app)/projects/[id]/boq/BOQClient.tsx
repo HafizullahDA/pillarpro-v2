@@ -122,6 +122,11 @@ export function BOQClient({
     setDrawerOpen(true)
   }
 
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false)
+    setEditingItem(null)
+  }
+
   const handleExportCSV = () => {
     exportBOQScheduleCSV(items, project.name)
   }
@@ -473,7 +478,7 @@ export function BOQClient({
       {/* Drawers & Modals */}
       <NewBOQItemDrawer
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={handleCloseDrawer}
         projectId={project.id}
         itemToEdit={editingItem}
         onSaved={handleRefresh}

@@ -64,8 +64,9 @@ export function RecordPaymentDrawer({
       let initialGross = ''
       if (bObj) {
         const netPayable =
-          Number(bObj.net_payable_amount) ||
-          Number(bObj.work_certified_amount) - (Number(bObj.retention_amount) || 0)
+          bObj.net_payable_this_bill != null
+            ? Number(bObj.net_payable_this_bill)
+            : (Number(bObj.net_payable_amount) || Number(bObj.work_certified_amount) - (Number(bObj.retention_amount) || 0))
         const remaining = Math.max(0, netPayable - (Number(bObj.amount_received) || 0))
         initialGross = remaining > 0 ? String(remaining) : ''
       }
@@ -271,8 +272,9 @@ export function RecordPaymentDrawer({
               let initialGross = ''
               if (targetBill) {
                 const netPayable =
-                  Number(targetBill.net_payable_amount) ||
-                  Number(targetBill.work_certified_amount) - (Number(targetBill.retention_amount) || 0)
+                  targetBill.net_payable_this_bill != null
+                    ? Number(targetBill.net_payable_this_bill)
+                    : (Number(targetBill.net_payable_amount) || Number(targetBill.work_certified_amount) - (Number(targetBill.retention_amount) || 0))
                 const remaining = Math.max(0, netPayable - (Number(targetBill.amount_received) || 0))
                 initialGross = remaining > 0 ? String(remaining) : ''
               }
@@ -290,8 +292,9 @@ export function RecordPaymentDrawer({
             <option value="">Select an RA Bill...</option>
             {raBills.map(b => {
               const netPayable =
-                Number(b.net_payable_amount) ||
-                Number(b.work_certified_amount) - (Number(b.retention_amount) || 0)
+                b.net_payable_this_bill != null
+                  ? Number(b.net_payable_this_bill)
+                  : (Number(b.net_payable_amount) || Number(b.work_certified_amount) - (Number(b.retention_amount) || 0))
               const outstanding = Math.max(0, netPayable - (Number(b.amount_received) || 0))
               return (
                 <option key={b.id} value={b.id}>
@@ -303,12 +306,17 @@ export function RecordPaymentDrawer({
         </FieldWrapper>
 
         {activeBill && (() => {
+          const isCum = activeBill.billing_mode === 'cumulative'
+          const workVal = isCum && activeBill.this_bill_work_certified != null
+            ? Number(activeBill.this_bill_work_certified)
+            : Number(activeBill.work_certified_amount)
           const netPayable =
-            Number(activeBill.net_payable_amount) ||
-            Number(activeBill.work_certified_amount) - (Number(activeBill.retention_amount) || 0)
+            activeBill.net_payable_this_bill != null
+              ? Number(activeBill.net_payable_this_bill)
+              : (Number(activeBill.net_payable_amount) || Number(activeBill.work_certified_amount) - (Number(activeBill.retention_amount) || 0))
           const retention =
             Number(activeBill.retention_amount) ||
-            Number(activeBill.work_certified_amount) * (Number(activeBill.retention_percentage || 5) / 100)
+            Number(workVal) * (Number(activeBill.retention_percentage || 5) / 100)
           const outstanding = Math.max(0, netPayable - (Number(activeBill.amount_received) || 0))
 
           return (

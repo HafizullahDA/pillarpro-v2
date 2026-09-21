@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
@@ -80,7 +80,7 @@ export function NewRABillDrawer({
   })
 
   // Load BOQ items whenever project_id changes and item_wise is active
-  const loadBoqItems = async (projectId: string) => {
+  const loadBoqItems = useCallback(async (projectId: string) => {
     if (!projectId) {
       setBoqItems([])
       return
@@ -123,7 +123,21 @@ export function NewRABillDrawer({
     } finally {
       setLoadingBoq(false)
     }
-  }
+  }, [supabase])
+
+  // Synchronize defaultProjectId when drawer opens
+  useEffect(() => {
+    if (open && defaultProjectId && !billForm.project_id) {
+      setBillForm(f => ({ ...f, project_id: defaultProjectId }))
+    }
+  }, [open, defaultProjectId, billForm.project_id])
+
+  // Automatically load BOQ items when item_wise mode is active and project is selected
+  useEffect(() => {
+    if (open && entryMode === 'item_wise' && billForm.project_id) {
+      loadBoqItems(billForm.project_id)
+    }
+  }, [open, entryMode, billForm.project_id, loadBoqItems])
 
   // Handle measurement input changes
   const handleMeasurementChange = (
@@ -340,7 +354,7 @@ export function NewRABillDrawer({
               remarks: entered?.remarks?.trim() || null,
             }
           })
-          .filter((item) => item.current_quantity > 0)
+          .filter((item) => item.current_quantity > 0 || item.previous_quantity > 0)
 
         if (itemsToInsert.length > 0) {
           const { error: itemsErr } = await supabase

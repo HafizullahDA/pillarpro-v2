@@ -758,22 +758,46 @@ export function RABillsClient({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1">
-                      <button
-                        onClick={() => setCertBill(b)}
-                        className="inline-flex items-center gap-1 text-xs py-1 px-2.5 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 font-semibold"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                        </svg>
-                        Certificate PDF
-                      </button>
+                    <div className="flex items-center justify-between gap-1.5 pt-1 flex-wrap">
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <button
+                          onClick={() => setCertBill(b)}
+                          className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 font-semibold"
+                          title="View / Print Billing Certificate"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                          </svg>
+                          PDF
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEmbSheet(b)}
+                          disabled={loadingEmbId === b.id}
+                          className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 font-semibold"
+                          title="View / Print CPWD Form 26 Measurement Sheet"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                          </svg>
+                          {loadingEmbId === b.id ? '...' : 'e-MB'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openWhatsApp(generateRABillWhatsAppText(b, org))}
+                          className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-semibold"
+                          title="Share via WhatsApp"
+                        >
+                          <span className="text-xs">💬</span>
+                          Share
+                        </button>
+                      </div>
 
                       {canCreate && derivedStatus !== 'fully_paid' ? (
                         <Button
                           size="sm"
                           variant="secondary"
-                          className="text-xs py-1 px-3 h-auto text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                          className="text-xs py-1 px-2.5 h-auto text-emerald-700 border-emerald-200 hover:bg-emerald-50"
                           onClick={() => setPayBillId(b.id)}
                         >
                           + Record Pay

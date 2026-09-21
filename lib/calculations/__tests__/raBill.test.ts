@@ -134,5 +134,30 @@ describe('RA Bill Statutory Deductions & Net Payable Calculations', () => {
     expect(calculateDLPReleaseDate('2026-01-15', 6)).toBe('2026-07-15')
     expect(calculateDLPReleaseDate('', 12)).toBe('')
   })
+
+  it('formats WhatsApp messages with CPWA Final Bill and MB citation details', async () => {
+    const { formatRABillWhatsAppMessage } = await import('../../whatsapp')
+
+    const message = formatRABillWhatsAppMessage({
+      projectName: 'Highway Widening Package-4',
+      billNumber: 'FINAL-05',
+      billType: 'final',
+      mbNumber: 'MB-412',
+      mbPageRange: 'Pages 24 to 48',
+      submissionDate: '2026-03-31',
+      workCertified: 15000000,
+      statutoryDeductions: 1200000,
+      netPassed: 13800000,
+      receivedAmount: 10000000,
+      balanceReceivable: 3800000,
+    })
+
+    expect(message).toContain('*FINAL BILL (FORM CPWA 27-B)*')
+    expect(message).toContain('*Project:* Highway Widening Package-4')
+    expect(message).toContain('*Bill No:* FINAL-05')
+    expect(message).toContain('*e-MB Ref:* MB #MB-412 (Pages 24 to 48)')
+    expect(message).toContain('₹1,50,00,000')
+    expect(message).toContain('₹38,00,000')
+  })
 })
 
