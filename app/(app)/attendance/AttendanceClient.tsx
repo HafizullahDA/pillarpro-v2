@@ -160,14 +160,15 @@ export function AttendanceClient({
 
     for (const r of monthAttendance) {
       if (r.date === dateStr) {
-        map[r.worker_id] = r.status
         let ot = Number(r.overtime_hours) || 0
         if (!ot && r.notes) {
           const match = r.notes.match(/OT:\s*([0-9.]+)\s*h?/i)
           if (match && match[1]) ot = parseFloat(match[1]) || 0
         }
-        if (!ot && r.status === 'overtime') ot = 4
+        if (!ot && r.status === 'overtime') ot = 3.5
         if (ot > 0) otMap[r.worker_id] = ot
+        // In UI, if worker has overtime logged, display OT button as active
+        map[r.worker_id] = (r.status === 'overtime' || (r.status === 'present' && ot > 0)) ? 'overtime' : r.status
       }
     }
     setAttendance(map)
@@ -231,12 +232,15 @@ export function AttendanceClient({
         const s = attendance[w.id] || (overtimeMap[w.id] ? 'present' : 'absent')
         const ot = overtimeMap[w.id] || 0
         const noteText = ot > 0 ? `OT:${ot}h` : null
+        // Ensure status in database satisfies constraint: CHECK (status IN ('present', 'absent', 'half_day'))
+        // An overtime worker is present on site with overtime_hours logged.
+        const dbStatus = (s === 'overtime' || s === 'present') ? 'present' : (s === 'half_day' ? 'half_day' : 'absent')
         return {
           project_id: projectId,
           worker_id: w.id,
           date: dateStr,
-          status: s,
-          present: s !== 'absent',
+          status: dbStatus,
+          present: dbStatus !== 'absent',
           overtime_hours: ot,
           notes: noteText,
         }
@@ -267,14 +271,23 @@ export function AttendanceClient({
       .from('attendance')
       .upsert(rows, { onConflict: 'project_id,worker_id,date' })
 
-    if (upsertErr && (upsertErr.message?.includes('overtime_hours') || upsertErr.code === '42703')) {
-      const fallbackRows = rows.map(({ overtime_hours, ...rest }) => rest)
-      const { error: fbErr } = await supabase
-        .from('attendance')
-        .upsert(fallbackRows, { onConflict: 'project_id,worker_id,date' })
-      saveError = fbErr
-    } else {
-      saveError = upsertErr
+    if (upsertErr) {
+      if (
+        upsertErr.message?.includes('overtime_hours') ||
+        upsertErr.code === '42703' ||
+        upsertErr.message?.includes('attendance_status_check')
+      ) {
+        const fallbackRows = rows.map(({ overtime_hours, ...rest }) => ({
+          ...rest,
+          status: rest.status === 'overtime' ? 'present' : rest.status,
+        }))
+        const { error: fbErr } = await supabase
+          .from('attendance')
+          .upsert(fallbackRows, { onConflict: 'project_id,worker_id,date' })
+        saveError = fbErr
+      } else {
+        saveError = upsertErr
+      }
     }
 
     setSaving(false)
