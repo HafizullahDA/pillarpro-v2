@@ -15,6 +15,8 @@ type MonthAttendanceRow = {
   worker_id: string
   date: string
   status: string
+  overtime_hours?: number | null
+  notes?: string | null
 }
 
 interface AttendanceMusterRollPDFProps {
@@ -44,22 +46,35 @@ export function AttendanceMusterRollPDF({
   // Calculate worker totals
   let grandTotalDays = 0
   let grandTotalWages = 0
+  let grandTotalOTHours = 0
 
   const workerStats = workers.map(w => {
     const records = monthAttendance.filter(r => r.worker_id === w.id)
     const fullDays = records.filter(r => r.status === 'present').length
     const halfDays = records.filter(r => r.status === 'half_day').length
-    const totalDays = fullDays + halfDays * 0.5
+    const otHours = records.reduce((sum, r) => {
+      let h = Number(r.overtime_hours) || 0
+      if (!h && r.notes) {
+        const match = r.notes.match(/OT:\s*([0-9.]+)\s*h?/i)
+        if (match && match[1]) h = parseFloat(match[1]) || 0
+      }
+      if (!h && r.status === 'overtime') h = 4
+      return sum + h
+    }, 0)
+    const otDays = otHours / 8
+    const totalDays = fullDays + halfDays * 0.5 + otDays
     const rate = w.daily_wage_rate ?? 0
     const totalWage = totalDays * rate
 
     grandTotalDays += totalDays
     grandTotalWages += totalWage
+    grandTotalOTHours += otHours
 
     return {
       ...w,
       fullDays,
       halfDays,
+      otHours,
       totalDays,
       totalWage,
     }
@@ -117,14 +132,18 @@ export function AttendanceMusterRollPDF({
       </div>
 
       {/* KPI Summary Tiles */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
           <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Total Workforce</p>
           <p className="text-lg font-black text-slate-900 mt-0.5">{workers.length} Workers</p>
         </div>
         <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
           <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Total Work Days</p>
-          <p className="text-lg font-black text-emerald-700 mt-0.5">{grandTotalDays} Days</p>
+          <p className="text-lg font-black text-emerald-700 mt-0.5">{grandTotalDays.toFixed(1)} Days</p>
+        </div>
+        <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
+          <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Total Overtime</p>
+          <p className="text-lg font-black text-amber-700 mt-0.5">{grandTotalOTHours} hrs</p>
         </div>
         <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
           <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Gross Wages Payable</p>
@@ -143,6 +162,7 @@ export function AttendanceMusterRollPDF({
               <th className="py-2.5 px-3 text-right">Daily Rate</th>
               <th className="py-2.5 px-2 text-center w-14">Full (P)</th>
               <th className="py-2.5 px-2 text-center w-14">Half (H)</th>
+              <th className="py-2.5 px-2 text-center w-16">OT (Hrs)</th>
               <th className="py-2.5 px-3 text-center w-20">Days</th>
               <th className="py-2.5 px-3 text-right">Payable</th>
               <th className="py-2.5 px-3 text-center w-36">Signature / Thumb</th>
@@ -157,8 +177,11 @@ export function AttendanceMusterRollPDF({
                 <td className="py-2 px-3 text-right tabular-nums text-slate-700">{formatINR(w.daily_wage_rate)}</td>
                 <td className="py-2 px-2 text-center tabular-nums text-slate-700">{w.fullDays}</td>
                 <td className="py-2 px-2 text-center tabular-nums text-slate-700">{w.halfDays}</td>
+                <td className="py-2 px-2 text-center tabular-nums font-semibold text-amber-700">
+                  {w.otHours > 0 ? `${w.otHours}h` : '—'}
+                </td>
                 <td className="py-2 px-3 text-center font-bold text-slate-900 tabular-nums">
-                  {w.totalDays}
+                  {w.totalDays % 1 === 0 ? w.totalDays : w.totalDays.toFixed(1)}
                 </td>
                 <td className="py-2 px-3 text-right font-bold text-slate-900 tabular-nums">
                   {formatINR(w.totalWage)}
@@ -174,8 +197,11 @@ export function AttendanceMusterRollPDF({
               <td colSpan={6} className="py-2.5 px-3 text-right uppercase text-[11px] tracking-wider">
                 Consolidated Totals:
               </td>
+              <td className="py-2.5 px-2 text-center font-black tabular-nums text-amber-800">
+                {grandTotalOTHours > 0 ? `${grandTotalOTHours}h` : '—'}
+              </td>
               <td className="py-2.5 px-3 text-center font-black tabular-nums text-emerald-800">
-                {grandTotalDays}
+                {grandTotalDays % 1 === 0 ? grandTotalDays : grandTotalDays.toFixed(1)}
               </td>
               <td className="py-2.5 px-3 text-right font-black tabular-nums text-blue-800">
                 {formatINR(grandTotalWages)}

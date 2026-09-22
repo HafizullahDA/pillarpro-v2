@@ -578,3 +578,16 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.get_effective_subscription_status(UUID) TO authenticated;
 
+-- ============================================================
+-- 10. ATTENDANCE OVERTIME (OT) SCHEMA (Migration 042)
+-- ============================================================
+ALTER TABLE public.attendance
+  ADD COLUMN IF NOT EXISTS overtime_hours NUMERIC(5,2) NOT NULL DEFAULT 0;
+
+ALTER TABLE public.attendance
+  DROP CONSTRAINT IF EXISTS attendance_status_check;
+
+ALTER TABLE public.attendance
+  ADD CONSTRAINT attendance_status_check
+  CHECK (status IN ('present', 'absent', 'half_day', 'overtime'));
+

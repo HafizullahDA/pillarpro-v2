@@ -21,7 +21,13 @@ import { saveOfflineSnapshot } from '@/lib/offline/db'
 
 type Project = { id: string; name: string }
 type Worker = { id: string; name: string; trade: string | null; daily_wage_rate: number | null }
-type MonthAttendanceRow = { worker_id: string; date: string; status: string }
+type MonthAttendanceRow = {
+  worker_id: string
+  date: string
+  status: string
+  overtime_hours?: number | null
+  notes?: string | null
+}
 
 const TRADES = ['Mason', 'Helper', 'Carpenter', 'Plumber', 'Electrician', 'Welder', 'Painter', 'Driver', 'Operator', 'Supervisor', 'Other']
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -50,6 +56,8 @@ export function AttendanceClient({
 
   const [workers, setWorkers]                 = useState<Worker[]>([])
   const [attendance, setAttendance]           = useState<Record<string, string>>({})
+  const [overtimeMap, setOvertimeMap]         = useState<Record<string, number>>({})
+  const [expandedOTWorkerId, setExpandedOTWorkerId] = useState<string | null>(null)
   const [monthAttendance, setMonthAttendance] = useState<MonthAttendanceRow[]>([])
   const [saving, setSaving]                   = useState(false)
   const [saveStatus, setSaveStatus]           = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null)
@@ -106,18 +114,34 @@ export function AttendanceClient({
     const startDate = `${year}-${String(month).padStart(2,'0')}-01`
     const endDate   = `${year}-${String(month).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`
 
+    let attData: MonthAttendanceRow[] = []
     const { data, error } = await supabase
       .from('attendance')
-      .select('worker_id, date, status')
+      .select('worker_id, date, status, notes, overtime_hours')
       .eq('project_id', projectId)
       .gte('date', startDate)
       .lte('date', endDate)
 
-    if (error) {
+    if (error && (error.message?.includes('overtime_hours') || error.code === '42703')) {
+      const { data: fbData, error: fbErr } = await supabase
+        .from('attendance')
+        .select('worker_id, date, status, notes')
+        .eq('project_id', projectId)
+        .gte('date', startDate)
+        .lte('date', endDate)
+      if (fbErr) {
+        setFetchError(`Failed to load monthly attendance: ${fbErr.message}`)
+        return
+      }
+      attData = fbData ?? []
+    } else if (error) {
       setFetchError(`Failed to load monthly attendance: ${error.message}`)
       return
+    } else {
+      attData = data ?? []
     }
-    setMonthAttendance(data ?? [])
+
+    setMonthAttendance(attData)
   }, [projectId, year, month, daysInMonth, supabase])
 
   // Load workers and monthly attendance records
@@ -131,17 +155,68 @@ export function AttendanceClient({
   // Map active day's attendance whenever day, dateStr, or monthAttendance changes
   useEffect(() => {
     const map: Record<string, string> = {}
+    const otMap: Record<string, number> = {}
+
     for (const r of monthAttendance) {
       if (r.date === dateStr) {
         map[r.worker_id] = r.status
+        let ot = Number(r.overtime_hours) || 0
+        if (!ot && r.notes) {
+          const match = r.notes.match(/OT:\s*([0-9.]+)\s*h?/i)
+          if (match && match[1]) ot = parseFloat(match[1]) || 0
+        }
+        if (!ot && r.status === 'overtime') ot = 4
+        if (ot > 0) otMap[r.worker_id] = ot
       }
     }
     setAttendance(map)
+    setOvertimeMap(otMap)
   }, [dateStr, monthAttendance])
 
   const setStatus = (workerId: string, status: string) => {
-    setAttendance(a => ({ ...a, [workerId]: a[workerId] === status ? '' : status }))
+    setAttendance(a => {
+      const next = a[workerId] === status ? '' : status
+      // If setting to absent, clear overtime for this worker
+      if (next === 'absent' || next === '') {
+        setOvertimeMap(prev => {
+          const c = { ...prev }
+          delete c[workerId]
+          return c
+        })
+      } else if (next === 'overtime') {
+        // If clicking OT button, default to 2.0 hrs OT if none set
+        setOvertimeMap(prev => ({
+          ...prev,
+          [workerId]: prev[workerId] && prev[workerId] > 0 ? prev[workerId] : 2.0,
+        }))
+        setExpandedOTWorkerId(workerId)
+      }
+      return { ...a, [workerId]: next }
+    })
     // Clear any previous save notifications on modification
+    if (saveStatus) setSaveStatus(null)
+  }
+
+  const setWorkerOvertime = (workerId: string, hours: number) => {
+    const cleanHours = Math.max(0, Math.min(24, Number(hours) || 0))
+    setOvertimeMap(prev => {
+      const c = { ...prev }
+      if (cleanHours <= 0) {
+        delete c[workerId]
+      } else {
+        c[workerId] = cleanHours
+      }
+      return c
+    })
+    // If worker doesn't have a status marked yet or was absent, mark them as 'present' when OT is added
+    if (cleanHours > 0) {
+      setAttendance(a => {
+        if (!a[workerId] || a[workerId] === 'absent') {
+          return { ...a, [workerId]: 'present' }
+        }
+        return a
+      })
+    }
     if (saveStatus) setSaveStatus(null)
   }
 
@@ -150,14 +225,21 @@ export function AttendanceClient({
     setSaveStatus(null)
 
     const rows = workers
-      .filter(w => attendance[w.id])
-      .map(w => ({
-        project_id: projectId,
-        worker_id: w.id,
-        date: dateStr,
-        status: attendance[w.id],
-        present: attendance[w.id] !== 'absent',
-      }))
+      .filter(w => attendance[w.id] || (overtimeMap[w.id] && overtimeMap[w.id] > 0))
+      .map(w => {
+        const s = attendance[w.id] || (overtimeMap[w.id] ? 'present' : 'absent')
+        const ot = overtimeMap[w.id] || 0
+        const noteText = ot > 0 ? `OT:${ot}h` : null
+        return {
+          project_id: projectId,
+          worker_id: w.id,
+          date: dateStr,
+          status: s,
+          present: s !== 'absent',
+          overtime_hours: ot,
+          notes: noteText,
+        }
+      })
 
     if (!rows.length) {
       setSaving(false)
@@ -179,14 +261,25 @@ export function AttendanceClient({
       }
     }
 
-    const { error } = await supabase
+    let saveError = null
+    const { error: upsertErr } = await supabase
       .from('attendance')
       .upsert(rows, { onConflict: 'project_id,worker_id,date' })
 
+    if (upsertErr && (upsertErr.message?.includes('overtime_hours') || upsertErr.code === '42703')) {
+      const fallbackRows = rows.map(({ overtime_hours, ...rest }) => rest)
+      const { error: fbErr } = await supabase
+        .from('attendance')
+        .upsert(fallbackRows, { onConflict: 'project_id,worker_id,date' })
+      saveError = fbErr
+    } else {
+      saveError = upsertErr
+    }
+
     setSaving(false)
 
-    if (error) {
-      setSaveStatus({ type: 'error', message: `Failed to save attendance: ${error.message}` })
+    if (saveError) {
+      setSaveStatus({ type: 'error', message: `Failed to save attendance: ${saveError.message}` })
       return
     }
 
@@ -277,42 +370,62 @@ export function AttendanceClient({
   }
 
   // Summary calculations for the active day
-  const onSite    = workers.filter(w => attendance[w.id] === 'present').length
+  const onSite    = workers.filter(w => attendance[w.id] === 'present' || attendance[w.id] === 'overtime').length
   const halfDay   = workers.filter(w => attendance[w.id] === 'half_day').length
   const unmarked  = workers.filter(w => !attendance[w.id]).length
+  const totalDayOT = workers.reduce((sum, w) => sum + (overtimeMap[w.id] || (attendance[w.id] === 'overtime' ? 4 : 0)), 0)
+
   const dayCost   = workers.reduce((sum, w) => {
     const s = attendance[w.id]
-    if (s === 'present')  return sum + (w.daily_wage_rate ?? 0)
-    if (s === 'half_day') return sum + (w.daily_wage_rate ?? 0) / 2
-    return sum
+    const rate = w.daily_wage_rate ?? 0
+    let base = 0
+    if (s === 'present' || s === 'overtime') base = rate
+    else if (s === 'half_day') base = rate / 2
+
+    const ot = overtimeMap[w.id] || (s === 'overtime' ? 4 : 0)
+    const otCost = (ot / 8) * rate
+    return sum + base + otCost
   }, 0)
 
   // Memoized worker totals and breakdown for the entire month (used for Muster Roll PDF & WhatsApp export)
   const monthlyStats = useMemo(() => {
     let totalDays = 0
     let totalWages = 0
+    let totalOTHours = 0
 
     const workerStats = workers.map(w => {
       const records = monthAttendance.filter(r => r.worker_id === w.id)
       const fullDays = records.filter(r => r.status === 'present').length
       const halfDays = records.filter(r => r.status === 'half_day').length
-      const totalDaysWorker = fullDays + halfDays * 0.5
+      const otHours = records.reduce((sum, r) => {
+        let h = Number(r.overtime_hours) || 0
+        if (!h && r.notes) {
+          const match = r.notes.match(/OT:\s*([0-9.]+)\s*h?/i)
+          if (match && match[1]) h = parseFloat(match[1]) || 0
+        }
+        if (!h && r.status === 'overtime') h = 4
+        return sum + h
+      }, 0)
+      const otDays = otHours / 8
+      const totalDaysWorker = fullDays + halfDays * 0.5 + otDays
       const rate = w.daily_wage_rate ?? 0
       const totalWage = totalDaysWorker * rate
 
       totalDays += totalDaysWorker
       totalWages += totalWage
+      totalOTHours += otHours
 
       return {
         ...w,
         fullDays,
         halfDays,
+        overtimeHours: otHours,
         totalDays: totalDaysWorker,
         totalWage,
       }
     })
 
-    return { workerStats, totalDays, totalWages }
+    return { workerStats, totalDays, totalWages, totalOTHours }
   }, [workers, monthAttendance])
 
   // Day strip
@@ -446,12 +559,13 @@ export function AttendanceClient({
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`
             const projName = projects.find(p => p.id === projectId)?.name || 'Project Site'
             const activeWorkers = workers
-              .filter(w => attendance[w.id] === 'present' || attendance[w.id] === 'half_day')
+              .filter(w => attendance[w.id] === 'present' || attendance[w.id] === 'half_day' || attendance[w.id] === 'overtime' || (overtimeMap[w.id] && overtimeMap[w.id] > 0))
               .map(w => ({
                 name: w.name,
                 trade: w.trade,
-                status: attendance[w.id],
+                status: attendance[w.id] || 'present',
                 daily_wage_rate: w.daily_wage_rate,
+                overtimeHours: overtimeMap[w.id] || (attendance[w.id] === 'overtime' ? 4 : 0),
               }))
             openWhatsApp(generateMusterRollWhatsAppText(dateStr, projName, onSite, dayCost, org, activeWorkers))
           }}
@@ -466,11 +580,12 @@ export function AttendanceClient({
       </div>
 
       {/* Summary tiles */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <SummaryTile label="Workers"  value={String(workers.length)} accent="slate"   />
-        <SummaryTile label="On Site"  value={String(onSite)}         accent="emerald" />
-        <SummaryTile label="Unmarked" value={String(unmarked)}       accent="amber"   />
-        <SummaryTile label="Day Cost" value={formatINR(dayCost)}     accent="blue"    />
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+        <SummaryTile label="Workers"   value={String(workers.length)} accent="slate"   />
+        <SummaryTile label="On Site"   value={String(onSite)}         accent="emerald" />
+        <SummaryTile label="Half Day"  value={String(halfDay)}        accent="amber"   />
+        <SummaryTile label="Overtime"  value={`${totalDayOT} hrs`}    accent="blue"    />
+        <SummaryTile label="Day Cost"  value={formatINR(dayCost)}     accent="blue"    />
       </div>
 
       {/* Day strip */}
@@ -544,57 +659,180 @@ export function AttendanceClient({
               const otherDaysWorked = monthAttendance
                 .filter(r => r.worker_id === w.id && r.date !== dateStr)
                 .reduce((sum, r) => {
-                  if (r.status === 'present')  return sum + 1
-                  if (r.status === 'half_day') return sum + 0.5
-                  return sum
+                  let ot = Number(r.overtime_hours) || 0
+                  if (!ot && r.notes) {
+                    const match = r.notes.match(/OT:\s*([0-9.]+)\s*h?/i)
+                    if (match && match[1]) ot = parseFloat(match[1]) || 0
+                  }
+                  if (!ot && r.status === 'overtime') ot = 4
+                  const base = r.status === 'present' || r.status === 'overtime' ? 1 : r.status === 'half_day' ? 0.5 : 0
+                  return sum + base + (ot / 8)
                 }, 0)
 
-              const activeDayWorked = s === 'present' ? 1 : s === 'half_day' ? 0.5 : 0
-              const totalDaysWorked = otherDaysWorked + activeDayWorked
+              const activeBaseWorked = s === 'present' || s === 'overtime' ? 1 : s === 'half_day' ? 0.5 : 0
+              const activeOT = overtimeMap[w.id] || (s === 'overtime' ? 4 : 0)
+              const activeOTWorked = activeOT / 8
+              const totalDaysWorked = otherDaysWorked + activeBaseWorked + activeOTWorked
+
+              const isExpandedOT = expandedOTWorkerId === w.id
+              const currentOT = overtimeMap[w.id] || (s === 'overtime' ? 4 : 0)
+              const hourlyWage = Math.round((w.daily_wage_rate ?? 0) / 8)
+              const currentOTWage = Math.round((currentOT / 8) * (w.daily_wage_rate ?? 0))
 
               return (
-                <div key={w.id} className="flex items-center justify-between px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
-                  <div className="flex-1 min-w-0 pr-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-slate-900">{w.name}</p>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
-                        {totalDaysWorked} {totalDaysWorked === 1 ? 'day' : 'days'} worked
-                      </span>
-                      {canDelete && (
+                <div key={w.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/40 transition-colors px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-slate-900">{w.name}</p>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                          {totalDaysWorked % 1 === 0 ? totalDaysWorked : totalDaysWorked.toFixed(1)} {totalDaysWorked === 1 ? 'day' : 'days'} worked
+                        </span>
+                        {currentOT > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedOTWorkerId(isExpandedOT ? null : w.id)}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition-colors cursor-pointer"
+                            title="Click to edit manual overtime hours"
+                          >
+                            <span>⚡</span>
+                            <span>{currentOT}h OT</span>
+                            {w.daily_wage_rate ? <span className="opacity-80">(+₹{currentOTWage})</span> : null}
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            type="button"
+                            onClick={() => setWorkerToDelete(w)}
+                            className="p-1 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            title={`Delete ${w.name}`}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-slate-500">{w.trade ?? 'Worker'} · {formatINR(w.daily_wage_rate)}/day</p>
+                        {canMark && s && s !== 'absent' && currentOT === 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedOTWorkerId(isExpandedOT ? null : w.id)}
+                            className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <span>+ Add OT</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Attendance Status Buttons: P, H, OT, A */}
+                    <div className="flex gap-1.5 flex-none items-center">
+                      {(['present', 'half_day', 'overtime', 'absent'] as const).map(status => (
+                        <button
+                          key={status}
+                          disabled={!canMark}
+                          onClick={() => canMark && setStatus(w.id, status)}
+                          className={`min-w-[34px] h-8 px-2 rounded-lg text-xs font-semibold border transition-all ${
+                            !canMark ? 'cursor-default opacity-80 ' : 'cursor-pointer'
+                          }${
+                            s === status
+                              ? status === 'present'  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                              : status === 'half_day' ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                              : status === 'overtime' ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                              :                         'bg-red-500 text-white border-red-500 shadow-sm'
+                              : (status === 'overtime' && currentOT > 0)
+                              ? 'bg-blue-50 text-blue-700 border-blue-300 font-bold'
+                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                          title={
+                            status === 'present'
+                              ? 'Present (1.0 Full Day)'
+                              : status === 'half_day'
+                              ? 'Half Day (0.5 Day)'
+                              : status === 'overtime'
+                              ? 'Overtime Shift / Toggle OT'
+                              : 'Absent (0 Days)'
+                          }
+                        >
+                          {status === 'present' ? 'P' : status === 'half_day' ? 'H' : status === 'overtime' ? 'OT' : 'A'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Manual Overtime Editor Dropdown Panel */}
+                  {isExpandedOT && canMark && (
+                    <div className="mt-3 pt-3 border-t border-slate-100 bg-slate-50/90 rounded-xl p-3 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <span>⏱️</span>
+                          <span>Manual Overtime (OT) — {w.name}</span>
+                        </span>
                         <button
                           type="button"
-                          onClick={() => setWorkerToDelete(w)}
-                          className="p-1 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                          title={`Delete ${w.name}`}
+                          onClick={() => setExpandedOTWorkerId(null)}
+                          className="text-xs font-semibold text-slate-400 hover:text-slate-600 px-1 cursor-pointer"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          ✕ Done
                         </button>
-                      )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative flex items-center">
+                          <input
+                            type="number"
+                            min="0"
+                            max="24"
+                            step="0.5"
+                            value={currentOT > 0 ? currentOT : ''}
+                            placeholder="0"
+                            onChange={e => setWorkerOvertime(w.id, parseFloat(e.target.value) || 0)}
+                            className="w-20 px-2.5 py-1.5 rounded-lg border border-slate-300 text-sm font-bold text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-blue-500/20 tabular-nums bg-white"
+                          />
+                          <span className="ml-1.5 text-xs font-semibold text-slate-500">hrs</span>
+                        </div>
+
+                        {/* Quick preset chips */}
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {[1, 2, 4, 8].map(h => (
+                            <button
+                              key={h}
+                              type="button"
+                              onClick={() => setWorkerOvertime(w.id, h)}
+                              className={`px-2 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                                currentOT === h
+                                  ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              +{h}h {h === 4 ? '(½ Shift)' : h === 8 ? '(Full Shift)' : ''}
+                            </button>
+                          ))}
+                          {currentOT > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setWorkerOvertime(w.id, 0)}
+                              className="px-2 py-1 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Realtime Rate Breakdown */}
+                      <div className="text-[11px] text-slate-600 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 flex items-center justify-between flex-wrap gap-2">
+                        <span>
+                          Hourly Rate: <strong>₹{hourlyWage}/hr</strong>
+                        </span>
+                        <span>
+                          OT Accrual: <strong className="text-blue-700 font-bold">+{formatINR(currentOTWage)}</strong> ({(currentOT / 8).toFixed(2)}d)
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5">{w.trade ?? 'Worker'} · {formatINR(w.daily_wage_rate)}/day</p>
-                  </div>
-                  <div className="flex gap-1.5 flex-none">
-                    {(['present','half_day','absent'] as const).map(status => (
-                      <button
-                        key={status}
-                        disabled={!canMark}
-                        onClick={() => canMark && setStatus(w.id, status)}
-                        className={`w-9 h-8 rounded-lg text-xs font-semibold border transition-all ${
-                          !canMark ? 'cursor-default opacity-80 ' : ''
-                        }${
-                          s === status
-                            ? status === 'present'  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                            : status === 'half_day' ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-                            :                         'bg-red-500 text-white border-red-500 shadow-sm'
-                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {status === 'present' ? 'P' : status === 'half_day' ? 'H' : 'A'}
-                      </button>
-                    ))}
-                  </div>
+                  )}
                 </div>
               )
             })}

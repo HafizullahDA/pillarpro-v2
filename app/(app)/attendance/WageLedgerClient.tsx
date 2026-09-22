@@ -12,7 +12,13 @@ import { getTodayIST } from '@/lib/date'
 
 type Project = { id: string; name: string }
 type Worker = { id: string; name: string; trade: string | null; daily_wage_rate: number | null }
-type AttendanceRecord = { worker_id: string; date: string; status: string }
+type AttendanceRecord = {
+  worker_id: string
+  date: string
+  status: string
+  overtime_hours?: number | null
+  notes?: string | null
+}
 
 export interface WagePaymentRecord {
   id: string
@@ -37,6 +43,7 @@ interface WorkerWageSummary {
   worker: Worker
   fullDays: number
   halfDays: number
+  otHours: number
   daysWorked: number
   dailyRate: number
   amountOwed: number
@@ -193,10 +200,11 @@ export function WageLedgerClient({
     setFetchError('')
 
     try {
+      let attRecords: AttendanceRecord[] = []
       const [{ data: attData, error: attErr }, { data: payData, error: payErr }] = await Promise.all([
         supabase
           .from('attendance')
-          .select('worker_id, date, status')
+          .select('worker_id, date, status, notes, overtime_hours')
           .eq('project_id', selectedProjectId)
           .gte('date', periodStart)
           .lte('date', periodEnd),
@@ -209,10 +217,24 @@ export function WageLedgerClient({
           .order('payment_date', { ascending: false }),
       ])
 
-      if (attErr) throw new Error(attErr.message)
+      if (attErr && (attErr.message?.includes('overtime_hours') || attErr.code === '42703')) {
+        const { data: fbData, error: fbErr } = await supabase
+          .from('attendance')
+          .select('worker_id, date, status, notes')
+          .eq('project_id', selectedProjectId)
+          .gte('date', periodStart)
+          .lte('date', periodEnd)
+        if (fbErr) throw new Error(fbErr.message)
+        attRecords = (fbData as AttendanceRecord[]) ?? []
+      } else if (attErr) {
+        throw new Error(attErr.message)
+      } else {
+        attRecords = (attData as AttendanceRecord[]) ?? []
+      }
+
       if (payErr) throw new Error(payErr.message)
 
-      setAttendance(attData ?? [])
+      setAttendance(attRecords)
       setPayments((payData as WagePaymentRecord[]) ?? [])
     } catch (err: any) {
       setFetchError(err?.message || 'Failed to load wage ledger data.')
@@ -234,7 +256,17 @@ export function WageLedgerClient({
     const attList = attendance.filter(a => a.worker_id === w.id)
     const fullDays = attList.filter(a => a.status === 'present').length
     const halfDays = attList.filter(a => a.status === 'half_day').length
-    const daysWorked = fullDays * 1.0 + halfDays * 0.5
+    const otHours = attList.reduce((sum, a) => {
+      let h = Number(a.overtime_hours) || 0
+      if (!h && a.notes) {
+        const match = a.notes.match(/OT:\s*([0-9.]+)\s*h?/i)
+        if (match && match[1]) h = parseFloat(match[1]) || 0
+      }
+      if (!h && a.status === 'overtime') h = 4
+      return sum + h
+    }, 0)
+    const otDays = otHours / 8
+    const daysWorked = fullDays * 1.0 + halfDays * 0.5 + otDays
     const dailyRate = Number(w.daily_wage_rate) || 0
     const amountOwed = daysWorked * dailyRate
 
@@ -257,6 +289,7 @@ export function WageLedgerClient({
       worker: w,
       fullDays,
       halfDays,
+      otHours,
       daysWorked,
       dailyRate,
       amountOwed,
@@ -558,12 +591,19 @@ export function WageLedgerClient({
 
                       {/* Days Worked */}
                       <td className="px-4 py-3.5 text-center">
-                        <span
-                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 tabular-nums cursor-help"
-                          title={`${s.fullDays} full days (1.0) + ${s.halfDays} half days (0.5)`}
-                        >
-                          {s.daysWorked.toFixed(1)} d
-                        </span>
+                        <div className="inline-flex flex-col items-center">
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 tabular-nums cursor-help"
+                            title={`${s.fullDays} full days (1.0) + ${s.halfDays} half days (0.5)${s.otHours > 0 ? ` + ${s.otHours}h OT (${(s.otHours/8).toFixed(2)}d)` : ''}`}
+                          >
+                            {s.daysWorked % 1 === 0 ? s.daysWorked : s.daysWorked.toFixed(1)} d
+                          </span>
+                          {s.otHours > 0 && (
+                            <span className="text-[10px] font-semibold text-amber-700 mt-0.5">
+                              ⚡ +{s.otHours}h OT
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Amount Owed */}

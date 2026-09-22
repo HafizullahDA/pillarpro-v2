@@ -55,11 +55,11 @@ describe('WhatsApp Formatter Utilities', () => {
       expect(text).toContain('*Total Work Days:* 13 Days')
       expect(text).toContain('₹12,200')
       expect(text).toContain('1. *Aijaz ahmad* (Mason)')
-      expect(text).toContain('Days: 4 (4P, 0H) | Rate: ₹1,150 | Payable: ₹4,600')
+      expect(text).toContain('Days: 4 (4P) | Rate: ₹1,150 | Payable: ₹4,600')
       expect(text).toContain('2. *Gh Mohiudin* (Mason)')
       expect(text).toContain('Days: 4 (3P, 2H) | Rate: ₹1,150 | Payable: ₹4,600')
       expect(text).toContain('3. *Raju Helper* (Helper)')
-      expect(text).toContain('Days: 5 (5P, 0H) | Rate: ₹600 | Payable: ₹3,000')
+      expect(text).toContain('Days: 5 (5P) | Rate: ₹600 | Payable: ₹3,000')
       expect(text).toContain('*CONSOLIDATED TOTAL:* 13 Days | ₹12,200')
     })
 

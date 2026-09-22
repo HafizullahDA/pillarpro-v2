@@ -208,6 +208,7 @@ export interface MonthlyMusterRollWorkerEntry {
   daily_wage_rate?: number | null
   fullDays?: number
   halfDays?: number
+  overtimeHours?: number
   totalDays: number
   totalWage: number
 }
@@ -243,10 +244,12 @@ export function generateMonthlyMusterRollWhatsAppText(params: {
   } else {
     params.workers.forEach((w, idx) => {
       const trade = w.trade ? ` (${w.trade})` : ''
-      const daysDesc =
-        w.fullDays != null && w.halfDays != null && (w.fullDays > 0 || w.halfDays > 0)
-          ? `Days: ${w.totalDays} (${w.fullDays}P, ${w.halfDays}H)`
-          : `Days: ${w.totalDays}`
+      const parts: string[] = []
+      if (w.fullDays != null && w.fullDays > 0) parts.push(`${w.fullDays}P`)
+      if (w.halfDays != null && w.halfDays > 0) parts.push(`${w.halfDays}H`)
+      if (w.overtimeHours != null && w.overtimeHours > 0) parts.push(`${w.overtimeHours}h OT`)
+      const breakdownStr = parts.length > 0 ? ` (${parts.join(', ')})` : ''
+      const daysDesc = `Days: ${w.totalDays}${breakdownStr}`
       const rate = formatINR(w.daily_wage_rate ?? 0)
       const payable = formatINR(w.totalWage)
       lines.push(`${idx + 1}. *${w.name}*${trade}`)
@@ -268,7 +271,7 @@ export function generateMusterRollWhatsAppText(
   onSiteCount: number,
   dayCost: number,
   org?: { name?: string | null; legal_name?: string | null } | null,
-  activeWorkers?: Array<{ name: string; trade?: string | null; status: string; daily_wage_rate?: number | null }>
+  activeWorkers?: Array<{ name: string; trade?: string | null; status: string; daily_wage_rate?: number | null; overtimeHours?: number }>
 ): string {
   const firm = org?.name || org?.legal_name || 'Our Firm'
   const lines = [
@@ -285,8 +288,9 @@ export function generateMusterRollWhatsAppText(
     lines.push(`--------------------------------`)
     lines.push(`*ON-SITE WORKERS:*`)
     activeWorkers.forEach((w, i) => {
-      const tag = w.status === 'half_day' ? 'Half Day' : 'Present'
-      lines.push(`${i + 1}. *${w.name}* (${w.trade || 'Worker'}) — ${tag}`)
+      const tag = w.status === 'half_day' ? 'Half Day' : w.status === 'overtime' ? 'Overtime' : 'Present'
+      const otTag = w.overtimeHours && w.overtimeHours > 0 ? ` (+${w.overtimeHours}h OT)` : ''
+      lines.push(`${i + 1}. *${w.name}* (${w.trade || 'Worker'}) — ${tag}${otTag}`)
     })
   }
 
