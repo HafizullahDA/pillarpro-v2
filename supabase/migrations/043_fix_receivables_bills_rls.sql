@@ -34,7 +34,7 @@ CREATE POLICY "bills_select_org" ON public.bills
       WHERE p.id = bills.project_id
         AND (
           p.organization_id = public.get_user_organization_id()
-          OR p.organization_id IN (SELECT organization_id FROM public.users WHERE id = auth.uid())
+          OR p.organization_id IN (SELECT organization_id FROM public.user_profiles WHERE id = auth.uid())
           OR p.created_by = auth.uid()
         )
     )
@@ -50,7 +50,7 @@ CREATE POLICY "bills_insert_org" ON public.bills
       WHERE p.id = bills.project_id
         AND (
           p.organization_id = public.get_user_organization_id()
-          OR p.organization_id IN (SELECT organization_id FROM public.users WHERE id = auth.uid())
+          OR p.organization_id IN (SELECT organization_id FROM public.user_profiles WHERE id = auth.uid())
           OR p.created_by = auth.uid()
         )
     )
@@ -66,7 +66,7 @@ CREATE POLICY "bills_update_org" ON public.bills
       WHERE p.id = bills.project_id
         AND (
           p.organization_id = public.get_user_organization_id()
-          OR p.organization_id IN (SELECT organization_id FROM public.users WHERE id = auth.uid())
+          OR p.organization_id IN (SELECT organization_id FROM public.user_profiles WHERE id = auth.uid())
           OR p.created_by = auth.uid()
         )
     )
@@ -82,7 +82,7 @@ CREATE POLICY "bills_delete_org" ON public.bills
       WHERE p.id = bills.project_id
         AND (
           p.organization_id = public.get_user_organization_id()
-          OR p.organization_id IN (SELECT organization_id FROM public.users WHERE id = auth.uid())
+          OR p.organization_id IN (SELECT organization_id FROM public.user_profiles WHERE id = auth.uid())
           OR p.created_by = auth.uid()
         )
     )
@@ -106,7 +106,7 @@ CREATE POLICY "receivable_payments_select_org" ON public.receivable_payments
       WHERE p.id = receivable_payments.project_id
         AND (
           p.organization_id = public.get_user_organization_id()
-          OR p.organization_id IN (SELECT organization_id FROM public.users WHERE id = auth.uid())
+          OR p.organization_id IN (SELECT organization_id FROM public.user_profiles WHERE id = auth.uid())
           OR p.created_by = auth.uid()
         )
     )
@@ -122,7 +122,7 @@ CREATE POLICY "receivable_payments_insert_org" ON public.receivable_payments
       WHERE p.id = receivable_payments.project_id
         AND (
           p.organization_id = public.get_user_organization_id()
-          OR p.organization_id IN (SELECT organization_id FROM public.users WHERE id = auth.uid())
+          OR p.organization_id IN (SELECT organization_id FROM public.user_profiles WHERE id = auth.uid())
           OR p.created_by = auth.uid()
         )
     )
@@ -138,7 +138,7 @@ CREATE POLICY "receivable_payments_update_org" ON public.receivable_payments
       WHERE p.id = receivable_payments.project_id
         AND (
           p.organization_id = public.get_user_organization_id()
-          OR p.organization_id IN (SELECT organization_id FROM public.users WHERE id = auth.uid())
+          OR p.organization_id IN (SELECT organization_id FROM public.user_profiles WHERE id = auth.uid())
           OR p.created_by = auth.uid()
         )
     )
@@ -154,10 +154,9 @@ CREATE POLICY "receivable_payments_delete_org" ON public.receivable_payments
       WHERE p.id = receivable_payments.project_id
         AND (
           p.organization_id = public.get_user_organization_id()
-          OR p.organization_id IN (SELECT organization_id FROM public.users WHERE id = auth.uid())
+          OR p.organization_id IN (SELECT organization_id FROM public.user_profiles WHERE id = auth.uid())
           OR p.created_by = auth.uid()
         )
     )
     OR auth.role() = 'authenticated'
   );
-
