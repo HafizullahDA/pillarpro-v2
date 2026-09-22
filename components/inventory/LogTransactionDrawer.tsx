@@ -135,6 +135,17 @@ export function LogTransactionDrawer({
 
     if (insertErr) {
       setError(insertErr.message)
+      if (
+        insertErr.message?.includes('schema cache') ||
+        insertErr.message?.includes('inventory_transactions') ||
+        (insertErr as any).code === 'PGRST205'
+      ) {
+        setError(
+          "Database table 'public.inventory_transactions' has not been created in Supabase yet. Please run migration 033_store_inventory.sql in your Supabase Dashboard SQL Editor."
+        )
+      } else {
+        setError(insertErr.message)
+      }
       return
     }
 

@@ -47,6 +47,7 @@ interface InventoryClientProps {
   projects: { id: string; name: string }[]
   suppliers: { id: string; name: string }[]
   userRole: string
+  isTableMissing?: boolean
 }
 
 export function InventoryClient({
@@ -55,6 +56,7 @@ export function InventoryClient({
   projects,
   suppliers,
   userRole,
+  isTableMissing = false,
 }: InventoryClientProps) {
   const [activeTab, setActiveTab] = useState<'stock' | 'ledger'>('stock')
   const [newItemOpen, setNewItemOpen] = useState(false)
@@ -163,6 +165,37 @@ export function InventoryClient({
           </div>
         )}
       </div>
+
+      {/* Missing Table Setup Alert */}
+      {isTableMissing && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent border border-amber-500/30 rounded-2xl p-4 sm:p-5 text-slate-800 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="h-10 w-10 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0 text-xl font-bold">
+                ⚠️
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">
+                  Store Inventory Database Migration Required
+                </h4>
+                <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                  The Store Register table (<code className="font-mono text-amber-800 bg-amber-100/80 px-1.5 py-0.5 rounded font-semibold">public.inventory_items</code>) has not been initialized in your Supabase database. Please execute migration <strong className="text-slate-800">033_store_inventory.sql</strong> in your Supabase SQL Editor to enable cement, steel, and GRN stock tracking.
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0 flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setNewItemOpen(true)}
+                className="border-amber-400/50 hover:bg-amber-100 text-amber-900 font-semibold"
+              >
+                Try Adding Material
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">

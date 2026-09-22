@@ -70,6 +70,7 @@ export interface SubscriptionOrgData {
   trial_ends_at?: string | null
   current_period_end?: string | null
   max_active_sites?: number | null
+  created_at?: string | null
 }
 
 export interface EffectiveSubscription {
@@ -97,6 +98,14 @@ export function isSubscriptionActive(
   if (status === 'trialing') {
     if (!org.trial_ends_at) return true // Legacy fallback
     return new Date(org.trial_ends_at).getTime() > referenceDate.getTime()
+    if (org.trial_ends_at) {
+      return new Date(org.trial_ends_at).getTime() > referenceDate.getTime()
+    }
+    if (org.created_at) {
+      const trialEndTime = new Date(org.created_at).getTime() + 14 * 24 * 60 * 60 * 1000
+      return trialEndTime > referenceDate.getTime()
+    }
+    return true // Fallback to active 14-day trial for new workspaces
   }
 
   if (status === 'active') {
@@ -114,11 +123,26 @@ export function isSubscriptionActive(
 export function getRemainingTrialDays(
   trialEndsAt?: string | null,
   referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  createdAt?: string | null
 ): number {
   if (!trialEndsAt) return 0
   const diffMs = new Date(trialEndsAt).getTime() - referenceDate.getTime()
   if (diffMs <= 0) return 0
   return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  if (trialEndsAt) {
+    const diffMs = new Date(trialEndsAt).getTime() - referenceDate.getTime()
+    if (diffMs <= 0) return 0
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  }
+  if (createdAt) {
+    const trialEndTime = new Date(createdAt).getTime() + 14 * 24 * 60 * 60 * 1000
+    const diffMs = trialEndTime - referenceDate.getTime()
+    if (diffMs <= 0) return 0
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  }
+  // Default fallback for fresh workspaces without explicit DB timestamps
+  return 14
 }
 
 /**
@@ -135,6 +159,19 @@ export function getEffectiveSubscription(
   const rawStatus = (org?.subscription_status || 'trialing').toLowerCase() as SubscriptionStatus
   const isActive = isSubscriptionActive(org, referenceDate)
   const isTrialing = rawStatus === 'trialing' && isActive
+  let isActive = isSubscriptionActive(org, referenceDate)
+  let isTrialing = rawStatus === 'trialing' && isActive
+
+  const trialDaysRemaining = isTrialing
+    ? getRemainingTrialDays(org?.trial_ends_at, referenceDate, org?.created_at)
+    : 0
+
+  // If trialing state has 0 days remaining, subscription is expired
+  if (isTrialing && trialDaysRemaining <= 0) {
+    isActive = false
+    isTrialing = false
+  }
+
   const isExpired = !isActive
 
   const effectiveStatus: SubscriptionStatus = isTrialing

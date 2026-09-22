@@ -56,6 +56,17 @@ describe('Subscription & Entitlement Engine', () => {
       expect(getRemainingTrialDays('2026-09-21T12:00:00Z', referenceNow)).toBe(0)
       expect(getRemainingTrialDays('2026-09-15T12:00:00Z', referenceNow)).toBe(0)
     })
+
+    it('falls back to 14 days when no timestamp is set', () => {
+      expect(getRemainingTrialDays(null, referenceNow)).toBe(14)
+      expect(getRemainingTrialDays(undefined, referenceNow)).toBe(14)
+    })
+
+    it('computes 14 days from created_at if trial_ends_at is missing', () => {
+      // 4 days after creation = 10 days remaining
+      const createdAt = '2026-09-17T12:00:00Z'
+      expect(getRemainingTrialDays(null, referenceNow, createdAt)).toBe(10)
+    })
   })
 
   describe('getEffectiveSubscription', () => {

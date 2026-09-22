@@ -18,6 +18,7 @@ export interface OrganizationProfile {
   current_period_end?: string | null
   max_active_sites?: number | null
   billing_cycle?: string | null
+  created_at?: string | null
 }
 
 export const DEFAULT_ORGANIZATION: OrganizationProfile = {

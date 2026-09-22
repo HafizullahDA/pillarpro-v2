@@ -92,6 +92,17 @@ export function NewItemDrawer({ open, onClose, projects }: NewItemDrawerProps) {
 
     if (insertErr) {
       setError(insertErr.message)
+      if (
+        insertErr.message?.includes('schema cache') ||
+        insertErr.message?.includes('inventory_items') ||
+        (insertErr as any).code === 'PGRST205'
+      ) {
+        setError(
+          "Database table 'public.inventory_items' has not been created in Supabase yet. Please run migration 033_store_inventory.sql in your Supabase Dashboard SQL Editor to initialize the store register."
+        )
+      } else {
+        setError(insertErr.message)
+      }
       return
     }
 

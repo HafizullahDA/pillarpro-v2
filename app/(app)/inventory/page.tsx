@@ -17,6 +17,7 @@ export default async function InventoryPage() {
     { data: projects },
     { data: suppliers },
     { data: items },
+    { data: items, error: itemsError },
     { data: transactions },
   ] = await Promise.all([
     supabase.rpc('get_user_role'),
@@ -33,6 +34,13 @@ export default async function InventoryPage() {
       .limit(150),
   ])
 
+  const isTableMissing = !!(
+    itemsError &&
+    (itemsError.message?.includes('schema cache') ||
+      itemsError.message?.includes('inventory_items') ||
+      (itemsError as any).code === 'PGRST205')
+  )
+
   return (
     <InventoryClient
       initialItems={(items as unknown as InventoryItemRow[]) ?? []}
@@ -40,6 +48,7 @@ export default async function InventoryPage() {
       projects={projects ?? []}
       suppliers={suppliers ?? []}
       userRole={(userRole as string) ?? ''}
+      isTableMissing={isTableMissing}
     />
   )
 }
