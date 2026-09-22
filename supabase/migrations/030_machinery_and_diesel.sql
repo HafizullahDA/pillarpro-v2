@@ -101,6 +101,7 @@ ALTER TABLE public.machinery_assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.machinery_logs ENABLE ROW LEVEL SECURITY;
 
 -- 8. RLS Policies for machinery_assets
+DROP POLICY IF EXISTS "machinery_assets_org_select" ON public.machinery_assets;
 CREATE POLICY "machinery_assets_org_select"
 ON public.machinery_assets FOR SELECT
 TO authenticated
@@ -108,6 +109,7 @@ USING (
   organization_id = public.get_user_organization_id()
 );
 
+DROP POLICY IF EXISTS "machinery_assets_org_insert" ON public.machinery_assets;
 CREATE POLICY "machinery_assets_org_insert"
 ON public.machinery_assets FOR INSERT
 TO authenticated
@@ -116,6 +118,7 @@ WITH CHECK (
   AND public.get_user_role() IN ('owner', 'partner', 'managing_partner', 'accountant', 'site_supervisor')
 );
 
+DROP POLICY IF EXISTS "machinery_assets_org_update" ON public.machinery_assets;
 CREATE POLICY "machinery_assets_org_update"
 ON public.machinery_assets FOR UPDATE
 TO authenticated
@@ -127,6 +130,7 @@ WITH CHECK (
   organization_id = public.get_user_organization_id()
 );
 
+DROP POLICY IF EXISTS "machinery_assets_org_delete" ON public.machinery_assets;
 CREATE POLICY "machinery_assets_org_delete"
 ON public.machinery_assets FOR DELETE
 TO authenticated
@@ -136,6 +140,7 @@ USING (
 );
 
 -- 9. RLS Policies for machinery_logs
+DROP POLICY IF EXISTS "machinery_logs_org_select" ON public.machinery_logs;
 CREATE POLICY "machinery_logs_org_select"
 ON public.machinery_logs FOR SELECT
 TO authenticated
@@ -143,6 +148,7 @@ USING (
   organization_id = public.get_user_organization_id()
 );
 
+DROP POLICY IF EXISTS "machinery_logs_org_insert" ON public.machinery_logs;
 CREATE POLICY "machinery_logs_org_insert"
 ON public.machinery_logs FOR INSERT
 TO authenticated
@@ -151,6 +157,7 @@ WITH CHECK (
   AND public.get_user_role() IN ('owner', 'partner', 'managing_partner', 'accountant', 'site_supervisor')
 );
 
+DROP POLICY IF EXISTS "machinery_logs_org_update" ON public.machinery_logs;
 CREATE POLICY "machinery_logs_org_update"
 ON public.machinery_logs FOR UPDATE
 TO authenticated
@@ -162,6 +169,7 @@ WITH CHECK (
   organization_id = public.get_user_organization_id()
 );
 
+DROP POLICY IF EXISTS "machinery_logs_org_delete" ON public.machinery_logs;
 CREATE POLICY "machinery_logs_org_delete"
 ON public.machinery_logs FOR DELETE
 TO authenticated
