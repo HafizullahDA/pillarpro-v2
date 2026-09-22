@@ -9,6 +9,7 @@ import { formatINR, formatDate } from '@/lib/format'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { canManageWages } from '@/lib/permissions'
 import { getTodayIST } from '@/lib/date'
+import { calculateOTDays } from '@/lib/calculations/attendance'
 
 type Project = { id: string; name: string }
 type Worker = { id: string; name: string; trade: string | null; daily_wage_rate: number | null }
@@ -262,10 +263,10 @@ export function WageLedgerClient({
         const match = a.notes.match(/OT:\s*([0-9.]+)\s*h?/i)
         if (match && match[1]) h = parseFloat(match[1]) || 0
       }
-      if (!h && a.status === 'overtime') h = 4
+      if (!h && a.status === 'overtime') h = 3.5
       return sum + h
     }, 0)
-    const otDays = otHours / 8
+    const otDays = calculateOTDays(otHours)
     const daysWorked = fullDays * 1.0 + halfDays * 0.5 + otDays
     const dailyRate = Number(w.daily_wage_rate) || 0
     const amountOwed = daysWorked * dailyRate
@@ -594,7 +595,7 @@ export function WageLedgerClient({
                         <div className="inline-flex flex-col items-center">
                           <span
                             className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 tabular-nums cursor-help"
-                            title={`${s.fullDays} full days (1.0) + ${s.halfDays} half days (0.5)${s.otHours > 0 ? ` + ${s.otHours}h OT (${(s.otHours/8).toFixed(2)}d)` : ''}`}
+                            title={`${s.fullDays} full days (1.0) + ${s.halfDays} half days (0.5)${s.otHours > 0 ? ` + ${s.otHours}h OT (${calculateOTDays(s.otHours).toFixed(2)}d)` : ''}`}
                           >
                             {s.daysWorked % 1 === 0 ? s.daysWorked : s.daysWorked.toFixed(1)} d
                           </span>

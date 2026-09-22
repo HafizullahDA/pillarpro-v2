@@ -16,5 +16,5 @@ ALTER TABLE public.attendance
   CHECK (status IN ('present', 'absent', 'half_day', 'overtime'));
 
 -- 3. Comment explaining calculation convention
-COMMENT ON COLUMN public.attendance.overtime_hours IS 'Overtime logged in hours. 8 hours = 1.0 day shift equivalent. Hourly rate = daily_wage_rate / 8.';
+COMMENT ON COLUMN public.attendance.overtime_hours IS 'Overtime logged in hours. 7 net working hours = 1.0 day shift equivalent (1 hour break). Hourly rate = daily_wage_rate / 7.';
 

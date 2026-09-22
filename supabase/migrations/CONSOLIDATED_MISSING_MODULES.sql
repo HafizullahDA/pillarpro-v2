@@ -591,3 +591,5 @@ ALTER TABLE public.attendance
   ADD CONSTRAINT attendance_status_check
   CHECK (status IN ('present', 'absent', 'half_day', 'overtime'));
 
+COMMENT ON COLUMN public.attendance.overtime_hours IS 'Overtime logged in hours. 7 net working hours = 1.0 day shift equivalent (1 hour break). Hourly rate = daily_wage_rate / 7.';
+

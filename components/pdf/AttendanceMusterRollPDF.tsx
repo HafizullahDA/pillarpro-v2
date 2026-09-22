@@ -3,6 +3,7 @@
 
 import { formatINR } from '@/lib/format'
 import { OrganizationProfile } from '@/lib/organization'
+import { calculateOTDays } from '@/lib/calculations/attendance'
 
 type Worker = {
   id: string
@@ -58,10 +59,10 @@ export function AttendanceMusterRollPDF({
         const match = r.notes.match(/OT:\s*([0-9.]+)\s*h?/i)
         if (match && match[1]) h = parseFloat(match[1]) || 0
       }
-      if (!h && r.status === 'overtime') h = 4
+      if (!h && r.status === 'overtime') h = 3.5
       return sum + h
     }, 0)
-    const otDays = otHours / 8
+    const otDays = calculateOTDays(otHours)
     const totalDays = fullDays + halfDays * 0.5 + otDays
     const rate = w.daily_wage_rate ?? 0
     const totalWage = totalDays * rate

@@ -18,6 +18,7 @@ import { AttendanceScanConfirmModal } from '@/components/attendance/AttendanceSc
 import { DeleteWorkerModal } from '@/components/attendance/DeleteWorkerModal'
 import { WageLedgerClient } from './WageLedgerClient'
 import { saveOfflineSnapshot } from '@/lib/offline/db'
+import { STANDARD_SHIFT_WORKING_HOURS, calculateHourlyWage, calculateOTDays, calculateOTWage } from '@/lib/calculations/attendance'
 
 type Project = { id: string; name: string }
 type Worker = { id: string; name: string; trade: string | null; daily_wage_rate: number | null }
@@ -369,11 +370,11 @@ export function AttendanceClient({
     loadWorkers()
   }
 
-  // Summary calculations for the active day
+  // Summary calculations for the active day (7 net working hours + 1 hr break standard)
   const onSite    = workers.filter(w => attendance[w.id] === 'present' || attendance[w.id] === 'overtime').length
   const halfDay   = workers.filter(w => attendance[w.id] === 'half_day').length
   const unmarked  = workers.filter(w => !attendance[w.id]).length
-  const totalDayOT = workers.reduce((sum, w) => sum + (overtimeMap[w.id] || (attendance[w.id] === 'overtime' ? 4 : 0)), 0)
+  const totalDayOT = workers.reduce((sum, w) => sum + (overtimeMap[w.id] || (attendance[w.id] === 'overtime' ? 3.5 : 0)), 0)
 
   const dayCost   = workers.reduce((sum, w) => {
     const s = attendance[w.id]
@@ -382,8 +383,8 @@ export function AttendanceClient({
     if (s === 'present' || s === 'overtime') base = rate
     else if (s === 'half_day') base = rate / 2
 
-    const ot = overtimeMap[w.id] || (s === 'overtime' ? 4 : 0)
-    const otCost = (ot / 8) * rate
+    const ot = overtimeMap[w.id] || (s === 'overtime' ? 3.5 : 0)
+    const otCost = calculateOTWage(ot, rate)
     return sum + base + otCost
   }, 0)
 
@@ -403,10 +404,10 @@ export function AttendanceClient({
           const match = r.notes.match(/OT:\s*([0-9.]+)\s*h?/i)
           if (match && match[1]) h = parseFloat(match[1]) || 0
         }
-        if (!h && r.status === 'overtime') h = 4
+        if (!h && r.status === 'overtime') h = 3.5
         return sum + h
       }, 0)
-      const otDays = otHours / 8
+      const otDays = calculateOTDays(otHours)
       const totalDaysWorker = fullDays + halfDays * 0.5 + otDays
       const rate = w.daily_wage_rate ?? 0
       const totalWage = totalDaysWorker * rate
@@ -664,20 +665,20 @@ export function AttendanceClient({
                     const match = r.notes.match(/OT:\s*([0-9.]+)\s*h?/i)
                     if (match && match[1]) ot = parseFloat(match[1]) || 0
                   }
-                  if (!ot && r.status === 'overtime') ot = 4
+                  if (!ot && r.status === 'overtime') ot = 3.5
                   const base = r.status === 'present' || r.status === 'overtime' ? 1 : r.status === 'half_day' ? 0.5 : 0
-                  return sum + base + (ot / 8)
+                  return sum + base + calculateOTDays(ot)
                 }, 0)
 
               const activeBaseWorked = s === 'present' || s === 'overtime' ? 1 : s === 'half_day' ? 0.5 : 0
-              const activeOT = overtimeMap[w.id] || (s === 'overtime' ? 4 : 0)
-              const activeOTWorked = activeOT / 8
+              const activeOT = overtimeMap[w.id] || (s === 'overtime' ? 3.5 : 0)
+              const activeOTWorked = calculateOTDays(activeOT)
               const totalDaysWorked = otherDaysWorked + activeBaseWorked + activeOTWorked
 
               const isExpandedOT = expandedOTWorkerId === w.id
-              const currentOT = overtimeMap[w.id] || (s === 'overtime' ? 4 : 0)
-              const hourlyWage = Math.round((w.daily_wage_rate ?? 0) / 8)
-              const currentOTWage = Math.round((currentOT / 8) * (w.daily_wage_rate ?? 0))
+              const currentOT = overtimeMap[w.id] || (s === 'overtime' ? 3.5 : 0)
+              const hourlyWage = Math.round(calculateHourlyWage(w.daily_wage_rate))
+              const currentOTWage = Math.round(calculateOTWage(currentOT, w.daily_wage_rate))
 
               return (
                 <div key={w.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/40 transition-colors px-4 py-3">
@@ -796,7 +797,7 @@ export function AttendanceClient({
 
                         {/* Quick preset chips */}
                         <div className="flex items-center gap-1 flex-wrap">
-                          {[1, 2, 4, 8].map(h => (
+                          {[1, 2, 3.5, 7].map(h => (
                             <button
                               key={h}
                               type="button"
@@ -807,7 +808,7 @@ export function AttendanceClient({
                                   : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                               }`}
                             >
-                              +{h}h {h === 4 ? '(½ Shift)' : h === 8 ? '(Full Shift)' : ''}
+                              +{h}h {h === 3.5 ? '(½ Shift)' : h === 7 ? '(Full Shift)' : ''}
                             </button>
                           ))}
                           {currentOT > 0 && (
@@ -825,10 +826,10 @@ export function AttendanceClient({
                       {/* Realtime Rate Breakdown */}
                       <div className="text-[11px] text-slate-600 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 flex items-center justify-between flex-wrap gap-2">
                         <span>
-                          Hourly Rate: <strong>₹{hourlyWage}/hr</strong>
+                          Hourly Rate: <strong>₹{hourlyWage}/hr</strong> <span className="text-slate-400 font-normal">(Rate ÷ 7h net work · 9am–5pm minus 1–2pm break)</span>
                         </span>
                         <span>
-                          OT Accrual: <strong className="text-blue-700 font-bold">+{formatINR(currentOTWage)}</strong> ({(currentOT / 8).toFixed(2)}d)
+                          OT Accrual: <strong className="text-blue-700 font-bold">+{formatINR(currentOTWage)}</strong> ({calculateOTDays(currentOT).toFixed(2)}d)
                         </span>
                       </div>
                     </div>
