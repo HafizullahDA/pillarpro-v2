@@ -31,12 +31,25 @@ export function ReceivablesActions({ projects, bills }: { projects: Project[]; b
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const [bForm, setBForm] = useState({ project_id: '', bill_number: '', bill_type: 'RA Bill', bill_date: '', gross_amount: '', deductions: '0' })
-  const [pForm, setPForm] = useState({ project_id: '', bill_id: '', amount_received: '', date: '', mode: 'NEFT/RTGS', reference: '' })
+  const [bForm, setBForm] = useState({
+    project_id: '',
+    bill_number: '',
+    bill_type: 'RA Bill',
+    bill_date: '',
+    gross_amount: '',
+    deductions: '0',
+  })
+
+  const [pForm, setPForm] = useState({
+    project_id: '',
+    bill_id: '',
+    amount_received: '',
+    date: '',
+    mode: 'NEFT/RTGS',
+    reference: '',
+  })
 
   const saveBill = async () => {
-    if (!bForm.project_id || !bForm.bill_number || !bForm.gross_amount || !bForm.bill_date) { setError('All required fields must be filled.'); return }
-    setSaving(true); setError('')
     if (!bForm.project_id || !bForm.bill_number || !bForm.gross_amount || !bForm.bill_date) {
       setError('All required fields must be filled.')
       return
@@ -57,8 +70,6 @@ export function ReceivablesActions({ projects, bills }: { projects: Project[]; b
     })
 
     setSaving(false)
-    if (err) { setError(err.message); return }
-    setWhich(null); router.refresh()
     if (err) {
       setError(err.message)
       showToast(err.message, 'error')
@@ -72,8 +83,6 @@ export function ReceivablesActions({ projects, bills }: { projects: Project[]; b
   }
 
   const savePayment = async () => {
-    if (!pForm.project_id || !pForm.bill_id || !pForm.amount_received || !pForm.date) { setError('All required fields must be filled.'); return }
-    setSaving(true); setError('')
     if (!pForm.project_id || !pForm.bill_id || !pForm.amount_received || !pForm.date) {
       setError('All required fields must be filled.')
       return
@@ -88,15 +97,12 @@ export function ReceivablesActions({ projects, bills }: { projects: Project[]; b
       bill_id: pForm.bill_id,
       amount_received: parseFloat(pForm.amount_received),
       date: pForm.date,
-      mode: pForm.mode.toLowerCase().replace('/', '_').replace(' ', '_') as 'cash' | 'bank_transfer' | 'cheque' | 'upi' | 'other',
       mode: mapPaymentMode(pForm.mode),
       reference: pForm.reference.trim() || null,
       created_by: userData?.user?.id || null,
     })
 
     setSaving(false)
-    if (err) { setError(err.message); return }
-    setWhich(null); router.refresh()
     if (err) {
       setError(err.message)
       showToast(err.message, 'error')
