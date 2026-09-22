@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast'
 import { getTodayIST } from '@/lib/date'
 import { createMachineryLogSchema } from '@/lib/validations/machinery'
 import { formatINR } from '@/lib/format'
+import { getUserOrganizationId } from '@/lib/organization'
 
 interface AssetOption {
   id: string
@@ -26,6 +27,7 @@ interface LogDieselDrawerProps {
   assets: AssetOption[]
   projects: { id: string; name: string }[]
   preselectedAssetId?: string
+  onSuccess?: (newLog: any) => void
 }
 
 export function LogDieselDrawer({
@@ -34,6 +36,7 @@ export function LogDieselDrawer({
   assets,
   projects,
   preselectedAssetId,
+  onSuccess,
 }: LogDieselDrawerProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -94,23 +97,25 @@ export function LogDieselDrawer({
     })
 
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message || 'Please check the form readings.')
+      const msg = parsed.error.issues[0]?.message || 'Please check the form readings.'
+      setError(msg)
+      showToast(msg, 'error')
       return
     }
 
     setSaving(true)
 
-    // Fetch caller's organization_id
-    const { data: orgProfile, error: orgErr } = await supabase.rpc('get_organization_profile')
-    if (orgErr || !orgProfile || !(orgProfile as any).id) {
+    // Resiliently resolve organization ID
+    const orgId = await getUserOrganizationId(form.project_id || undefined)
+    if (!orgId) {
       setSaving(false)
-      setError('Could not verify organization context.')
+      const msg = 'Could not verify organization context.'
+      setError(msg)
+      showToast(msg, 'error')
       return
     }
 
-    const orgId = (orgProfile as any).id
-
-    const { error: insertErr } = await supabase.from('machinery_logs').insert({
+    const { data: insertedLog, error: insertErr } = await supabase.from('machinery_logs').insert({
       organization_id: orgId,
       asset_id: form.asset_id,
       project_id: form.project_id || null,
@@ -123,15 +128,21 @@ export function LogDieselDrawer({
       diesel_rate_per_liter: Number(form.diesel_rate_per_liter) || 0,
       fuel_vendor: form.fuel_vendor.trim() || null,
     })
+    .select('id, asset_id, project_id, log_date, operator_name, start_meter, end_meter, total_run, work_description, diesel_liters, diesel_rate_per_liter, diesel_cost, fuel_vendor, machinery_assets(asset_name, registration_number, meter_tracking), projects(name)')
+    .single()
 
     setSaving(false)
 
     if (insertErr) {
       setError(insertErr.message)
+      showToast(`Save failed: ${insertErr.message}`, 'error')
       return
     }
 
     showToast(`Logged ${totalRun} ${unit} & ${dieselLiters}L diesel successfully!`, 'success')
+    if (insertedLog && onSuccess) {
+      onSuccess(insertedLog)
+    }
     onClose()
     router.refresh()
   }
@@ -265,6 +276,16 @@ export function LogDieselDrawer({
             placeholder="Specific site location or task accomplished..."
           />
         </FieldWrapper>
+
+        {error && (
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium flex items-start gap-2">
+            <span className="text-sm">⚠️</span>
+            <div className="flex-1">
+              <p className="font-bold">Cannot Save Daily Log</p>
+              <p className="mt-0.5">{error}</p>
+            </div>
+          </div>
+        )}
 
         <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-2.5">
           <Button variant="secondary" onClick={onClose} disabled={saving}>

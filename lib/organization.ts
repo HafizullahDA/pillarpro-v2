@@ -103,21 +103,75 @@ export async function updateClientOrganization(
 let cachedOrgId: string | null = null
 
 /**
- * Retrieves the current user's organization ID client-side with short-term caching.
+ * Retrieves the current user's organization ID client-side with short-term caching and resilient fallbacks.
  */
-export async function getUserOrganizationId(): Promise<string | null> {
-  if (cachedOrgId) return cachedOrgId
+export async function getUserOrganizationId(projectId?: string): Promise<string | null> {
+  if (cachedOrgId && !projectId) return cachedOrgId
 
   const supabase = createClient()
+
+  // 1. Try get_user_organization_id RPC
   try {
     const { data, error } = await supabase.rpc('get_user_organization_id')
     if (!error && data) {
       cachedOrgId = data
       return data
     }
-  } catch {
-    // Return null on failure
+  } catch {}
+
+  // 2. Try get_organization_profile RPC
+  try {
+    const { data: profile, error } = await supabase.rpc('get_organization_profile')
+    if (!error && profile && (profile as any).id && (profile as any).id !== 'default-org') {
+      cachedOrgId = (profile as any).id
+      return (profile as any).id
+    }
+  } catch {}
+
+  // 3. Try user_profiles for current authenticated user
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.id) {
+      const { data: up } = await supabase
+        .from('user_profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .maybeSingle()
+      if (up?.organization_id) {
+        cachedOrgId = up.organization_id
+        return up.organization_id
+      }
+    }
+  } catch {}
+
+  // 4. Try from selected project if available
+  if (projectId) {
+    try {
+      const { data: proj } = await supabase
+        .from('projects')
+        .select('organization_id')
+        .eq('id', projectId)
+        .maybeSingle()
+      if (proj?.organization_id) {
+        return proj.organization_id
+      }
+    } catch {}
   }
+
+  // 5. Try first organization in organizations table
+  try {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (org?.id) {
+      cachedOrgId = org.id
+      return org.id
+    }
+  } catch {}
+
   return null
 }
 

@@ -62,6 +62,8 @@ export function MachineryClient({
   userRole,
 }: MachineryClientProps) {
   const [activeTab, setActiveTab] = useState<'logbook' | 'assets' | 'analytics'>('logbook')
+  const [assets, setAssets] = useState<MachineryAsset[]>(initialAssets)
+  const [logs, setLogs] = useState<MachineryLog[]>(initialLogs)
   const [newAssetOpen, setNewAssetOpen] = useState(false)
   const [logDieselOpen, setLogDieselOpen] = useState(false)
   const [selectedAssetForLog, setSelectedAssetForLog] = useState<string | undefined>()
@@ -72,10 +74,18 @@ export function MachineryClient({
   const canManage = canManageMachinery(userRole)
 
   useEffect(() => {
-    if (initialAssets && initialAssets.length > 0) {
-      void saveOfflineSnapshot('/machinery', { assets: initialAssets, projects })
+    setAssets(initialAssets)
+  }, [initialAssets])
+
+  useEffect(() => {
+    setLogs(initialLogs)
+  }, [initialLogs])
+
+  useEffect(() => {
+    if (assets && assets.length > 0) {
+      void saveOfflineSnapshot('/machinery', { assets, projects })
     }
-  }, [initialAssets, projects])
+  }, [assets, projects])
 
   // Metrics calculation
   const metrics = useMemo(() => {
@@ -84,7 +94,7 @@ export function MachineryClient({
     let totalHoursRun = 0
     let totalKmRun = 0
 
-    initialLogs.forEach(log => {
+    logs.forEach(log => {
       totalDieselLiters += Number(log.diesel_liters) || 0
       totalDieselCost += Number(log.diesel_cost) || 0
       const tracking = log.machinery_assets?.meter_tracking || 'hours'
@@ -95,8 +105,8 @@ export function MachineryClient({
       }
     })
 
-    const activeAssetsCount = initialAssets.filter(a => a.status === 'active').length
-    const hiredAssetsCount = initialAssets.filter(a => a.ownership === 'hired').length
+    const activeAssetsCount = assets.filter(a => a.status === 'active').length
+    const hiredAssetsCount = assets.filter(a => a.ownership === 'hired').length
 
     return {
       totalDieselLiters,
@@ -106,16 +116,16 @@ export function MachineryClient({
       activeAssetsCount,
       hiredAssetsCount,
     }
-  }, [initialAssets, initialLogs])
+  }, [assets, logs])
 
   // Filtered logs
   const filteredLogs = useMemo(() => {
-    return initialLogs.filter(log => {
+    return logs.filter(log => {
       if (filterProject !== 'all' && log.project_id !== filterProject) return false
       if (filterAsset !== 'all' && log.asset_id !== filterAsset) return false
       return true
     })
-  }, [initialLogs, filterProject, filterAsset])
+  }, [logs, filterProject, filterAsset])
 
   const openLogForSpecificAsset = (assetId: string) => {
     setSelectedAssetForLog(assetId)
@@ -150,7 +160,7 @@ export function MachineryClient({
             </Button>
             <Button
               size="sm"
-              disabled={initialAssets.length === 0}
+              disabled={assets.length === 0}
               onClick={() => {
                 setSelectedAssetForLog(undefined)
                 setLogDieselOpen(true)
@@ -209,7 +219,7 @@ export function MachineryClient({
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          Daily Logbook ({initialLogs.length})
+          Daily Logbook ({logs.length})
         </button>
         <button
           onClick={() => setActiveTab('assets')}
@@ -219,7 +229,7 @@ export function MachineryClient({
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          Fleet Register ({initialAssets.length})
+          Fleet Register ({assets.length})
         </button>
       </div>
 
@@ -339,7 +349,7 @@ export function MachineryClient({
       {/* Tab Content: Fleet Register */}
       {activeTab === 'assets' && (
         <div className="space-y-4">
-          {initialAssets.length === 0 ? (
+          {assets.length === 0 ? (
             <EmptyState
               title="No Fleet Equipment Registered"
               description="Add company-owned or hired JCBs, tippers, rollers, and generators."
@@ -353,7 +363,7 @@ export function MachineryClient({
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {initialAssets.map(asset => (
+              {assets.map(asset => (
                 <div
                   key={asset.id}
                   className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between hover:border-slate-300 transition-all"
@@ -425,12 +435,16 @@ export function MachineryClient({
         open={newAssetOpen}
         onClose={() => setNewAssetOpen(false)}
         projects={projects}
+        onSuccess={(newAsset) => {
+          setAssets(prev => [newAsset, ...prev.filter(a => a.id !== newAsset.id)])
+          setActiveTab('assets')
+        }}
       />
 
       <LogDieselDrawer
         open={logDieselOpen}
         onClose={() => setLogDieselOpen(false)}
-        assets={initialAssets.map(a => ({
+        assets={assets.map(a => ({
           id: a.id,
           asset_name: a.asset_name,
           asset_type: a.asset_type,
@@ -440,6 +454,13 @@ export function MachineryClient({
         }))}
         projects={projects}
         preselectedAssetId={selectedAssetForLog}
+        onSuccess={(newLog) => {
+          setLogs(prev => [newLog, ...prev.filter(l => l.id !== newLog.id)])
+          if (newLog.asset_id && newLog.end_meter) {
+            setAssets(prev => prev.map(a => a.id === newLog.asset_id ? { ...a, current_meter: Math.max(Number(a.current_meter) || 0, Number(newLog.end_meter) || 0) } : a))
+          }
+          setActiveTab('logbook')
+        }}
       />
     </div>
   )

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { FieldWrapper, Input, Select, CurrencyInput, Textarea } from '@/components/ui/FormField'
 import { useToast } from '@/components/ui/Toast'
+import { getUserOrganizationId } from '@/lib/organization'
 import { createMachineryAssetSchema } from '@/lib/validations/machinery'
 
 const ASSET_TYPES = [
@@ -25,9 +26,10 @@ interface NewAssetDrawerProps {
   open: boolean
   onClose: () => void
   projects: { id: string; name: string }[]
+  onSuccess?: (newAsset: any) => void
 }
 
-export function NewAssetDrawer({ open, onClose, projects }: NewAssetDrawerProps) {
+export function NewAssetDrawer({ open, onClose, projects, onSuccess }: NewAssetDrawerProps) {
   const router = useRouter()
   const supabase = createClient()
   const { showToast } = useToast()
@@ -47,59 +49,79 @@ export function NewAssetDrawer({ open, onClose, projects }: NewAssetDrawerProps)
     notes: '',
   })
 
+  const currentTypeLabel = ASSET_TYPES.find(t => t.value === form.asset_type)?.label.split(' ')[0] || 'Machine'
+  const autoSuggestedName = form.registration_number.trim()
+    ? `${currentTypeLabel} (${form.registration_number.trim().toUpperCase()})`
+    : `${currentTypeLabel} Unit`
+
   const setField = (key: string, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }))
+    if (error) setError('')
   }
 
   const handleSave = async () => {
     setError('')
+    const finalAssetName = form.asset_name.trim() || autoSuggestedName
+
     const parsed = createMachineryAssetSchema.safeParse({
       ...form,
+      asset_name: finalAssetName,
       hourly_rate: form.hourly_rate ? Number(form.hourly_rate) : 0,
       current_meter: form.current_meter ? Number(form.current_meter) : 0,
       project_id: form.project_id || undefined,
     })
 
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message || 'Please check the form inputs.')
+      const msg = parsed.error.issues[0]?.message || 'Please check the form inputs.'
+      setError(msg)
+      showToast(msg, 'error')
       return
     }
 
     setSaving(true)
 
-    // Fetch caller's organization_id
-    const { data: orgProfile, error: orgErr } = await supabase.rpc('get_organization_profile')
-    if (orgErr || !orgProfile || !(orgProfile as any).id) {
+    // Resiliently resolve organization ID
+    const orgId = await getUserOrganizationId(form.project_id || undefined)
+    if (!orgId) {
       setSaving(false)
-      setError('Could not verify firm organization ID.')
+      const msg = 'Could not verify firm organization ID. Please check your account organization.'
+      setError(msg)
+      showToast(msg, 'error')
       return
     }
 
-    const orgId = (orgProfile as any).id
-
-    const { error: insertErr } = await supabase.from('machinery_assets').insert({
-      organization_id: orgId,
-      asset_name: form.asset_name.trim(),
-      asset_type: form.asset_type as any,
-      registration_number: form.registration_number.trim().toUpperCase() || null,
-      model_year: form.model_year.trim() || null,
-      ownership: form.ownership as any,
-      meter_tracking: form.meter_tracking as any,
-      hourly_rate: Number(form.hourly_rate) || 0,
-      current_meter: Number(form.current_meter) || 0,
-      project_id: form.project_id || null,
-      notes: form.notes.trim() || null,
-      status: 'active',
-    })
+    const { data: insertedAsset, error: insertErr } = await supabase
+      .from('machinery_assets')
+      .insert({
+        organization_id: orgId,
+        asset_name: finalAssetName,
+        asset_type: form.asset_type as any,
+        registration_number: form.registration_number.trim().toUpperCase() || null,
+        model_year: form.model_year.trim() || null,
+        ownership: form.ownership as any,
+        meter_tracking: form.meter_tracking as any,
+        hourly_rate: Number(form.hourly_rate) || 0,
+        current_meter: Number(form.current_meter) || 0,
+        project_id: form.project_id || null,
+        notes: form.notes.trim() || null,
+        status: 'active',
+      })
+      .select('id, asset_name, asset_type, registration_number, model_year, ownership, meter_tracking, hourly_rate, current_meter, status, notes, project_id, projects(name)')
+      .single()
 
     setSaving(false)
 
     if (insertErr) {
       setError(insertErr.message)
+      showToast(`Save failed: ${insertErr.message}`, 'error')
       return
     }
 
-    showToast('Machine/Vehicle asset registered successfully!', 'success')
+    showToast(`Machine "${finalAssetName}" registered successfully!`, 'success')
+    if (insertedAsset && onSuccess) {
+      onSuccess(insertedAsset)
+    }
+
     setForm({
       asset_name: '',
       asset_type: 'excavator',
@@ -124,16 +146,23 @@ export function NewAssetDrawer({ open, onClose, projects }: NewAssetDrawerProps)
     >
       <div className="space-y-4 text-left">
         {error && (
-          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium">
-            {error}
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium flex items-start gap-2">
+            <span className="text-sm">⚠️</span>
+            <div className="flex-1">
+              <p className="font-bold">Cannot Register Asset</p>
+              <p className="mt-0.5">{error}</p>
+            </div>
           </div>
         )}
 
-        <FieldWrapper label="Machine / Vehicle Name *" hint="e.g. JCB 3DX Eco, Tata 1618 Tipper">
+        <FieldWrapper
+          label="Machine / Vehicle Name"
+          hint={`Optional — defaults to "${autoSuggestedName}"`}
+        >
           <Input
             value={form.asset_name}
             onChange={e => setField('asset_name', e.target.value)}
-            placeholder="e.g. JCB 3DX #1"
+            placeholder={`e.g. ${autoSuggestedName}`}
           />
         </FieldWrapper>
 
@@ -214,16 +243,25 @@ export function NewAssetDrawer({ open, onClose, projects }: NewAssetDrawerProps)
           />
         </FieldWrapper>
 
+        {error && (
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium flex items-start gap-2">
+            <span className="text-sm">⚠️</span>
+            <div className="flex-1">
+              <p className="font-bold">Cannot Register Asset</p>
+              <p className="mt-0.5">{error}</p>
+            </div>
+          </div>
+        )}
+
         <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-2.5">
           <Button variant="secondary" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving...' : 'Register Asset'}
+            {saving ? 'Registering...' : 'Register Asset'}
           </Button>
         </div>
       </div>
     </Drawer>
   )
 }
-
