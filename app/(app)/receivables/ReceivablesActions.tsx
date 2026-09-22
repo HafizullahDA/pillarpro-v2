@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { FieldWrapper, Input, Select, CurrencyInput } from '@/components/ui/FormField'
+import { useToast } from '@/components/ui/Toast'
 
 type Project = { id: string; name: string }
 type Bill    = { id: string; label: string }
@@ -13,9 +14,19 @@ type Bill    = { id: string; label: string }
 const BILL_TYPES = ['RA Bill', 'Final Bill', 'Advance', 'Mobilization Bill']
 const PAYMENT_MODES = ['Cash', 'NEFT/RTGS', 'Cheque', 'UPI', 'Other']
 
+const mapPaymentMode = (mode: string): 'cash' | 'bank_transfer' | 'cheque' | 'upi' | 'other' => {
+  const m = mode.toLowerCase()
+  if (m.includes('cash')) return 'cash'
+  if (m.includes('cheque') || m.includes('check')) return 'cheque'
+  if (m.includes('upi')) return 'upi'
+  if (m.includes('other')) return 'other'
+  return 'bank_transfer' // Handles 'NEFT/RTGS', 'bank_transfer', etc.
+}
+
 export function ReceivablesActions({ projects, bills }: { projects: Project[]; bills: Bill[] }) {
   const router = useRouter()
   const supabase = createClient()
+  const { showToast } = useToast()
   const [which, setWhich] = useState<'bill' | 'payment' | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -26,6 +37,15 @@ export function ReceivablesActions({ projects, bills }: { projects: Project[]; b
   const saveBill = async () => {
     if (!bForm.project_id || !bForm.bill_number || !bForm.gross_amount || !bForm.bill_date) { setError('All required fields must be filled.'); return }
     setSaving(true); setError('')
+    if (!bForm.project_id || !bForm.bill_number || !bForm.gross_amount || !bForm.bill_date) {
+      setError('All required fields must be filled.')
+      return
+    }
+    setSaving(true)
+    setError('')
+
+    const { data: userData } = await supabase.auth.getUser()
+
     const { error: err } = await supabase.from('bills').insert({
       project_id: bForm.project_id,
       bill_number: bForm.bill_number.trim(),
@@ -33,26 +53,60 @@ export function ReceivablesActions({ projects, bills }: { projects: Project[]; b
       bill_date: bForm.bill_date,
       gross_amount: parseFloat(bForm.gross_amount),
       deductions: parseFloat(bForm.deductions) || 0,
+      created_by: userData?.user?.id || null,
     })
+
     setSaving(false)
     if (err) { setError(err.message); return }
     setWhich(null); router.refresh()
+    if (err) {
+      setError(err.message)
+      showToast(err.message, 'error')
+      return
+    }
+
+    showToast(`Bill ${bForm.bill_number} added successfully!`, 'success')
+    setWhich(null)
+    setBForm({ project_id: '', bill_number: '', bill_type: 'RA Bill', bill_date: '', gross_amount: '', deductions: '0' })
+    router.refresh()
   }
 
   const savePayment = async () => {
     if (!pForm.project_id || !pForm.bill_id || !pForm.amount_received || !pForm.date) { setError('All required fields must be filled.'); return }
     setSaving(true); setError('')
+    if (!pForm.project_id || !pForm.bill_id || !pForm.amount_received || !pForm.date) {
+      setError('All required fields must be filled.')
+      return
+    }
+    setSaving(true)
+    setError('')
+
+    const { data: userData } = await supabase.auth.getUser()
+
     const { error: err } = await supabase.from('receivable_payments').insert({
       project_id: pForm.project_id,
       bill_id: pForm.bill_id,
       amount_received: parseFloat(pForm.amount_received),
       date: pForm.date,
       mode: pForm.mode.toLowerCase().replace('/', '_').replace(' ', '_') as 'cash' | 'bank_transfer' | 'cheque' | 'upi' | 'other',
+      mode: mapPaymentMode(pForm.mode),
       reference: pForm.reference.trim() || null,
+      created_by: userData?.user?.id || null,
     })
+
     setSaving(false)
     if (err) { setError(err.message); return }
     setWhich(null); router.refresh()
+    if (err) {
+      setError(err.message)
+      showToast(err.message, 'error')
+      return
+    }
+
+    showToast(`Payment of ₹${parseFloat(pForm.amount_received).toLocaleString('en-IN')} recorded successfully!`, 'success')
+    setWhich(null)
+    setPForm({ project_id: '', bill_id: '', amount_received: '', date: '', mode: 'NEFT/RTGS', reference: '' })
+    router.refresh()
   }
 
   const net = bForm.gross_amount && bForm.deductions
