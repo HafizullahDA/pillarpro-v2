@@ -202,16 +202,76 @@ export function generateRABillWhatsAppText(bill: any, org?: any): string {
   })
 }
 
+export interface MonthlyMusterRollWorkerEntry {
+  name: string
+  trade?: string | null
+  daily_wage_rate?: number | null
+  fullDays?: number
+  halfDays?: number
+  totalDays: number
+  totalWage: number
+}
+
+/**
+ * Format Monthly Labor Muster Roll & Wage Sheet for WhatsApp
+ */
+export function generateMonthlyMusterRollWhatsAppText(params: {
+  monthName: string
+  year: number
+  projectName: string
+  org?: { name?: string | null; legal_name?: string | null } | null
+  workers: MonthlyMusterRollWorkerEntry[]
+  totalDays: number
+  totalWages: number
+}): string {
+  const firm = params.org?.name || params.org?.legal_name || 'Our Firm'
+  const lines = [
+    `*MONTHLY LABOR MUSTER ROLL & WAGE SHEET*`,
+    `*Firm:* ${firm}`,
+    `*Project:* ${params.projectName}`,
+    `*Period:* ${params.monthName} ${params.year}`,
+    `--------------------------------`,
+    `*Total Workforce:* ${params.workers.length} Workers`,
+    `*Total Work Days:* ${params.totalDays} Days`,
+    `*Gross Wages Payable:* ${formatINR(params.totalWages)}`,
+    `--------------------------------`,
+    `*WORKER BREAKDOWN:*`,
+  ]
+
+  if (params.workers.length === 0) {
+    lines.push(`(No worker records recorded for this period)`)
+  } else {
+    params.workers.forEach((w, idx) => {
+      const trade = w.trade ? ` (${w.trade})` : ''
+      const daysDesc =
+        w.fullDays != null && w.halfDays != null && (w.fullDays > 0 || w.halfDays > 0)
+          ? `Days: ${w.totalDays} (${w.fullDays}P, ${w.halfDays}H)`
+          : `Days: ${w.totalDays}`
+      const rate = formatINR(w.daily_wage_rate ?? 0)
+      const payable = formatINR(w.totalWage)
+      lines.push(`${idx + 1}. *${w.name}*${trade}`)
+      lines.push(`   • ${daysDesc} | Rate: ${rate} | Payable: ${payable}`)
+    })
+  }
+
+  lines.push(`--------------------------------`)
+  lines.push(`*CONSOLIDATED TOTAL:* ${params.totalDays} Days | ${formatINR(params.totalWages)}`)
+  lines.push(`_PillarPro Civil Contractor Operating System_`)
+
+  return lines.join('\n')
+}
+
 // Backward-compatible helper for AttendanceClient
 export function generateMusterRollWhatsAppText(
   dateStr: string,
   projectName: string,
   onSiteCount: number,
   dayCost: number,
-  org?: { name?: string }
+  org?: { name?: string | null; legal_name?: string | null } | null,
+  activeWorkers?: Array<{ name: string; trade?: string | null; status: string; daily_wage_rate?: number | null }>
 ): string {
-  const firm = org?.name || 'Our Firm'
-  return [
+  const firm = org?.name || org?.legal_name || 'Our Firm'
+  const lines = [
     `*DAILY MUSTER ROLL & LABOR DEPLOYMENT*`,
     `*Firm:* ${firm}`,
     `*Project:* ${projectName}`,
@@ -219,7 +279,20 @@ export function generateMusterRollWhatsAppText(
     `--------------------------------`,
     `• Workers on Site: ${onSiteCount}`,
     `• Estimated Daily Wage Accrual: ${formatINR(dayCost)}`,
-    `--------------------------------`,
-    `_PillarPro Civil Contractor Operating System_`,
-  ].join('\n')
+  ]
+
+  if (activeWorkers && activeWorkers.length > 0) {
+    lines.push(`--------------------------------`)
+    lines.push(`*ON-SITE WORKERS:*`)
+    activeWorkers.forEach((w, i) => {
+      const tag = w.status === 'half_day' ? 'Half Day' : 'Present'
+      lines.push(`${i + 1}. *${w.name}* (${w.trade || 'Worker'}) — ${tag}`)
+    })
+  }
+
+  lines.push(`--------------------------------`)
+  lines.push(`_PillarPro Civil Contractor Operating System_`)
+
+  return lines.join('\n')
 }
+

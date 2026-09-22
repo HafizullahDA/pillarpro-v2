@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
@@ -12,7 +12,7 @@ import { canCreateAttendance, canDeleteWorker } from '@/lib/permissions'
 import { PrintPreviewModal } from '@/components/pdf/PrintPreviewModal'
 import { AttendanceMusterRollPDF } from '@/components/pdf/AttendanceMusterRollPDF'
 import { getClientOrganization, OrganizationProfile, DEFAULT_ORGANIZATION } from '@/lib/organization'
-import { generateMusterRollWhatsAppText, openWhatsApp } from '@/lib/whatsapp'
+import { generateMusterRollWhatsAppText, generateMonthlyMusterRollWhatsAppText, openWhatsApp } from '@/lib/whatsapp'
 import { compressImage } from '@/lib/imageCompress'
 import { AttendanceScanConfirmModal } from '@/components/attendance/AttendanceScanConfirmModal'
 import { DeleteWorkerModal } from '@/components/attendance/DeleteWorkerModal'
@@ -287,6 +287,34 @@ export function AttendanceClient({
     return sum
   }, 0)
 
+  // Memoized worker totals and breakdown for the entire month (used for Muster Roll PDF & WhatsApp export)
+  const monthlyStats = useMemo(() => {
+    let totalDays = 0
+    let totalWages = 0
+
+    const workerStats = workers.map(w => {
+      const records = monthAttendance.filter(r => r.worker_id === w.id)
+      const fullDays = records.filter(r => r.status === 'present').length
+      const halfDays = records.filter(r => r.status === 'half_day').length
+      const totalDaysWorker = fullDays + halfDays * 0.5
+      const rate = w.daily_wage_rate ?? 0
+      const totalWage = totalDaysWorker * rate
+
+      totalDays += totalDaysWorker
+      totalWages += totalWage
+
+      return {
+        ...w,
+        fullDays,
+        halfDays,
+        totalDays: totalDaysWorker,
+        totalWage,
+      }
+    })
+
+    return { workerStats, totalDays, totalWages }
+  }, [workers, monthAttendance])
+
   // Day strip
   const dayList = Array.from({ length: daysInMonth }, (_, i) => {
     const d = i + 1
@@ -417,7 +445,15 @@ export function AttendanceClient({
           onClick={() => {
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`
             const projName = projects.find(p => p.id === projectId)?.name || 'Project Site'
-            openWhatsApp(generateMusterRollWhatsAppText(dateStr, projName, onSite, dayCost, org))
+            const activeWorkers = workers
+              .filter(w => attendance[w.id] === 'present' || attendance[w.id] === 'half_day')
+              .map(w => ({
+                name: w.name,
+                trade: w.trade,
+                status: attendance[w.id],
+                daily_wage_rate: w.daily_wage_rate,
+              }))
+            openWhatsApp(generateMusterRollWhatsAppText(dateStr, projName, onSite, dayCost, org, activeWorkers))
           }}
           className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
           title="Share daily attendance report via WhatsApp"
@@ -689,13 +725,15 @@ export function AttendanceClient({
         onClose={() => setPdfOpen(false)}
         title={`Labor Muster Roll — ${MONTH_NAMES[month - 1]} ${year}`}
         subtitle={projects.find(p => p.id === projectId)?.name || 'Project Attendance'}
-        whatsappText={generateMusterRollWhatsAppText(
-          `${year}-${String(month).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`,
-          projects.find(p => p.id === projectId)?.name || 'Project Site',
-          onSite,
-          dayCost,
-          org
-        )}
+        whatsappText={generateMonthlyMusterRollWhatsAppText({
+          monthName: MONTH_NAMES[month - 1],
+          year,
+          projectName: projects.find(p => p.id === projectId)?.name || 'Project Site',
+          org,
+          workers: monthlyStats.workerStats,
+          totalDays: monthlyStats.totalDays,
+          totalWages: monthlyStats.totalWages,
+        })}
       >
         <AttendanceMusterRollPDF
           projectName={projects.find(p => p.id === projectId)?.name || 'Project Site'}
