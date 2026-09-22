@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
@@ -43,6 +43,7 @@ export function LogDieselDrawer({
   const { showToast } = useToast()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [runDelta, setRunDelta] = useState('0')
 
   const initialAsset = assets.find(a => a.id === preselectedAssetId) || assets[0]
 
@@ -59,7 +60,29 @@ export function LogDieselDrawer({
     fuel_vendor: '',
   })
 
-  const selectedAsset = assets.find(a => a.id === form.asset_id)
+  // Synchronize asset selection and meter readings whenever drawer opens or assets list updates
+  useEffect(() => {
+    if (!open) return
+    const targetAsset =
+      assets.find(a => a.id === preselectedAssetId) ||
+      (form.asset_id ? assets.find(a => a.id === form.asset_id) : null) ||
+      assets[0]
+
+    if (targetAsset) {
+      setForm(prev => ({
+        ...prev,
+        asset_id: targetAsset.id,
+        start_meter: String(targetAsset.current_meter ?? 0),
+        end_meter: String(targetAsset.current_meter ?? 0),
+      }))
+      setRunDelta('0')
+    }
+    setError('')
+  }, [open, preselectedAssetId, assets])
+
+  // Resolve active asset safely
+  const activeAssetId = form.asset_id || preselectedAssetId || (assets.length > 0 ? assets[0].id : '')
+  const selectedAsset = assets.find(a => a.id === activeAssetId)
   const isKm = selectedAsset?.meter_tracking === 'km'
   const unit = isKm ? 'Km' : 'Hours'
 
@@ -79,6 +102,7 @@ export function LogDieselDrawer({
         if (found) {
           next.start_meter = String(found.current_meter || 0)
           next.end_meter = String(found.current_meter || 0)
+          setRunDelta('0')
         }
       }
       return next
@@ -87,8 +111,18 @@ export function LogDieselDrawer({
 
   const handleSave = async () => {
     setError('')
+
+    const resolvedAssetId = form.asset_id || preselectedAssetId || (assets.length > 0 ? assets[0].id : '')
+    if (!resolvedAssetId) {
+      const msg = 'Please register or select a machine/vehicle before logging.'
+      setError(msg)
+      showToast(msg, 'error')
+      return
+    }
+
     const parsed = createMachineryLogSchema.safeParse({
       ...form,
+      asset_id: resolvedAssetId,
       start_meter: Number(form.start_meter),
       end_meter: Number(form.end_meter),
       diesel_liters: Number(form.diesel_liters),
@@ -117,7 +151,7 @@ export function LogDieselDrawer({
 
     const { data: insertedLog, error: insertErr } = await supabase.from('machinery_logs').insert({
       organization_id: orgId,
-      asset_id: form.asset_id,
+      asset_id: resolvedAssetId,
       project_id: form.project_id || null,
       log_date: form.log_date,
       operator_name: form.operator_name.trim() || null,
@@ -162,9 +196,12 @@ export function LogDieselDrawer({
 
         <FieldWrapper label="Select Machine / Vehicle *">
           <Select
-            value={form.asset_id}
+            value={activeAssetId}
             onChange={e => setField('asset_id', e.target.value)}
           >
+            {assets.length === 0 && (
+              <option value="">-- No machines registered in fleet --</option>
+            )}
             {assets.map(a => (
               <option key={a.id} value={a.id}>
                 {a.asset_name} {a.registration_number ? `(${a.registration_number})` : ''} — Current: {a.current_meter} {a.meter_tracking}
@@ -203,31 +240,95 @@ export function LogDieselDrawer({
         {/* Meter Readings Card */}
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-            <span>{unit} Meter Log</span>
+            <div className="flex items-center gap-1.5">
+              <span>{unit} Meter Log</span>
+              <span className="text-[10px] font-normal text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                Odometer / Hour Meter
+              </span>
+            </div>
             <span className="text-blue-600 font-bold">
               Total Run: {totalRun.toFixed(1)} {unit}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <FieldWrapper label={`Start ${unit}`}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <FieldWrapper label={`Start ${unit}`} hint="Opening meter">
               <Input
                 type="number"
                 step="any"
                 value={form.start_meter}
-                onChange={e => setField('start_meter', e.target.value)}
+                onChange={e => {
+                  const val = e.target.value
+                  setForm(prev => {
+                    const sVal = parseFloat(val) || 0
+                    const delta = parseFloat(runDelta) || 0
+                    const nextEnd = delta > 0 ? String(Number((sVal + delta).toFixed(2))) : prev.end_meter
+                    return { ...prev, start_meter: val, end_meter: nextEnd }
+                  })
+                }}
               />
             </FieldWrapper>
 
-            <FieldWrapper label={`End ${unit}`}>
+            <FieldWrapper label={`${unit} Run Today`} hint="Hours worked today">
+              <Input
+                type="number"
+                step="any"
+                value={runDelta}
+                onChange={e => {
+                  const delta = e.target.value
+                  setRunDelta(delta)
+                  const numDelta = parseFloat(delta)
+                  if (!isNaN(numDelta) && numDelta >= 0) {
+                    const calculatedEnd = (parseFloat(form.start_meter) || 0) + numDelta
+                    setForm(prev => ({ ...prev, end_meter: String(Number(calculatedEnd.toFixed(2))) }))
+                  }
+                }}
+                placeholder="e.g. 5.4"
+              />
+            </FieldWrapper>
+
+            <FieldWrapper label={`End ${unit}`} hint="Closing meter">
               <Input
                 type="number"
                 step="any"
                 value={form.end_meter}
-                onChange={e => setField('end_meter', e.target.value)}
+                onChange={e => {
+                  const val = e.target.value
+                  setForm(prev => ({ ...prev, end_meter: val }))
+                  const endNum = parseFloat(val)
+                  const startNum = parseFloat(form.start_meter) || 0
+                  if (!isNaN(endNum) && endNum >= startNum) {
+                    setRunDelta(String(Number((endNum - startNum).toFixed(2))))
+                  } else {
+                    setRunDelta('')
+                  }
+                }}
               />
             </FieldWrapper>
           </div>
+
+          {/* Smart Correction Helper if End < Start */}
+          {endVal < startVal && endVal > 0 && (
+            <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div>
+                <span className="font-semibold">⚠️ Closing reading ({endVal}) is less than opening ({startVal}).</span>
+                <span className="block text-[11px] text-amber-700">Did you mean machine ran <strong>+{endVal} {unit}</strong> today?</span>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="text-xs shrink-0 bg-white border-amber-300 text-amber-900 hover:bg-amber-100"
+                onClick={() => {
+                  const corrected = Number((startVal + endVal).toFixed(2))
+                  setForm(prev => ({ ...prev, end_meter: String(corrected) }))
+                  setRunDelta(String(endVal))
+                }}
+              >
+                Set End to {(startVal + endVal).toFixed(1)}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Diesel Fuel Card */}
@@ -291,7 +392,7 @@ export function LogDieselDrawer({
           <Button variant="secondary" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving || assets.length === 0}>
             {saving ? 'Saving...' : 'Save Daily Log'}
           </Button>
         </div>
@@ -299,4 +400,3 @@ export function LogDieselDrawer({
     </Drawer>
   )
 }
-
