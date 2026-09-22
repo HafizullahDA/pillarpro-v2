@@ -191,6 +191,7 @@ export const canDeleteSupplier = (role: string | null | undefined) => can(role, 
 export const canCreateSupplier = (role: string | null | undefined) => can(role, 'suppliers', 'create')
 
 export const canCreateRaBill   = (role: string | null | undefined) => can(role, 'ra_bills', 'create')
+export const canEditRaBill     = (role: string | null | undefined) => can(role, 'ra_bills', 'edit')
 export const canCreateAttendance = (role: string | null | undefined) => can(role, 'attendance', 'create')
 export const canDeleteWorker     = (role: string | null | undefined) => can(role, 'attendance', 'delete')
 

@@ -17,13 +17,51 @@ import { ProjectOption, RABillOption } from '@/app/(app)/ra-bills/RABillActions'
 
 import { BOQSummaryItem } from '@/lib/types/boq'
 
-interface NewRABillDrawerProps {
+export interface EditRABillData {
+  id: string
+  project_id: string
+  bill_number: string
+  bill_type?: 'running' | 'first_and_final' | 'final'
+  submission_date: string
+  billing_mode?: 'standalone' | 'cumulative'
+  billing_entry_mode?: 'lump_sum' | 'item_wise'
+  previous_bill_id?: string | null
+  work_certified_amount: number
+  retention_percentage?: number
+  retention_amount?: number
+  net_payable_amount?: number
+  amount_received?: number
+  cumulative_certified_amount?: number | null
+  previous_certified_amount?: number
+  previous_received_amount?: number
+  net_payable_this_bill?: number
+  this_bill_work_certified?: number
+  mb_number?: string | null
+  mb_page_start?: number | null
+  mb_page_end?: number | null
+  measurement_date?: string | null
+  measuring_officer_name?: string | null
+  measuring_officer_designation?: string | null
+  advance_payments_unmeasured?: number
+  cement_recovery?: number
+  steel_recovery?: number
+  other_material_recovery?: number
+  actual_completion_date?: string | null
+  dlp_months?: number
+  document_url?: string | null
+  remarks?: string | null
+  status?: string
+}
+
+export interface NewRABillDrawerProps {
   open: boolean
   onClose: () => void
   projects: ProjectOption[]
   raBills: RABillOption[]
   defaultProjectId?: string
   onTriggerScan?: () => void
+  editBill?: EditRABillData | null
+  onSuccess?: (savedBill: any) => void
 }
 
 export function NewRABillDrawer({
@@ -33,6 +71,8 @@ export function NewRABillDrawer({
   raBills,
   defaultProjectId,
   onTriggerScan,
+  editBill,
+  onSuccess,
 }: NewRABillDrawerProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -125,12 +165,87 @@ export function NewRABillDrawer({
     }
   }, [supabase])
 
-  // Synchronize defaultProjectId when drawer opens
+  // Synchronize form when drawer opens (edit mode or new submission)
   useEffect(() => {
-    if (open && defaultProjectId && !billForm.project_id) {
-      setBillForm(f => ({ ...f, project_id: defaultProjectId }))
+    if (!open) return
+
+    if (editBill) {
+      setBillForm({
+        project_id: editBill.project_id || defaultProjectId || '',
+        bill_number: editBill.bill_number || '',
+        bill_type: (editBill.bill_type as any) || 'running',
+        submission_date: editBill.submission_date || getTodayIST(),
+        billing_mode: (editBill.billing_mode as any) || 'standalone',
+        previous_bill_id: editBill.previous_bill_id || '',
+        work_certified_amount: editBill.work_certified_amount != null ? String(editBill.work_certified_amount) : '',
+        retention_percentage: editBill.retention_percentage != null ? String(editBill.retention_percentage) : '5.00',
+        mb_number: editBill.mb_number || '',
+        mb_page_start: editBill.mb_page_start != null ? String(editBill.mb_page_start) : '',
+        mb_page_end: editBill.mb_page_end != null ? String(editBill.mb_page_end) : '',
+        measurement_date: editBill.measurement_date || getTodayIST(),
+        measuring_officer_name: editBill.measuring_officer_name || '',
+        measuring_officer_designation: editBill.measuring_officer_designation || 'Junior Engineer',
+        advance_payments_unmeasured: editBill.advance_payments_unmeasured != null && editBill.advance_payments_unmeasured !== 0 ? String(editBill.advance_payments_unmeasured) : '',
+        cement_recovery: editBill.cement_recovery != null && editBill.cement_recovery !== 0 ? String(editBill.cement_recovery) : '',
+        steel_recovery: editBill.steel_recovery != null && editBill.steel_recovery !== 0 ? String(editBill.steel_recovery) : '',
+        other_material_recovery: editBill.other_material_recovery != null && editBill.other_material_recovery !== 0 ? String(editBill.other_material_recovery) : '',
+        actual_completion_date: editBill.actual_completion_date || '',
+        dlp_months: editBill.dlp_months != null ? String(editBill.dlp_months) : '12',
+        remarks: editBill.remarks || '',
+      })
+      const isItemWise = editBill.billing_entry_mode === 'item_wise'
+      setEntryMode(isItemWise ? 'item_wise' : 'lump_sum')
+      setSelectedFile(null)
+      setError('')
+
+      if (isItemWise && editBill.id) {
+        supabase
+          .from('ra_bill_items')
+          .select('*')
+          .eq('ra_bill_id', editBill.id)
+          .then(({ data, error: itemErr }) => {
+            if (!itemErr && data && data.length > 0) {
+              const measurements: Record<string, { currentQty: string; remarks: string }> = {}
+              data.forEach((item: any) => {
+                measurements[item.boq_item_id] = {
+                  currentQty: item.current_quantity != null ? String(item.current_quantity) : '',
+                  remarks: item.remarks || '',
+                }
+              })
+              setItemMeasurements(measurements)
+            }
+          })
+      }
+    } else {
+      setBillForm({
+        project_id: defaultProjectId || '',
+        bill_number: '',
+        bill_type: 'running',
+        submission_date: getTodayIST(),
+        billing_mode: 'standalone',
+        previous_bill_id: '',
+        work_certified_amount: '',
+        retention_percentage: '5.00',
+        mb_number: '',
+        mb_page_start: '',
+        mb_page_end: '',
+        measurement_date: getTodayIST(),
+        measuring_officer_name: '',
+        measuring_officer_designation: 'Junior Engineer',
+        advance_payments_unmeasured: '',
+        cement_recovery: '',
+        steel_recovery: '',
+        other_material_recovery: '',
+        actual_completion_date: '',
+        dlp_months: '12',
+        remarks: '',
+      })
+      setEntryMode('lump_sum')
+      setItemMeasurements({})
+      setSelectedFile(null)
+      setError('')
     }
-  }, [open, defaultProjectId, billForm.project_id])
+  }, [open, editBill, defaultProjectId, supabase])
 
   // Automatically load BOQ items when item_wise mode is active and project is selected
   useEffect(() => {
@@ -293,6 +408,94 @@ export function NewRABillDrawer({
         documentUrl = await uploadDocument(selectedFile)
       }
 
+      if (editBill) {
+        const updatePayload: Record<string, any> = {
+          project_id: billForm.project_id,
+          bill_number: billForm.bill_number.trim(),
+          bill_type: billForm.bill_type,
+          submission_date: billForm.submission_date || getTodayIST(),
+          billing_mode: billForm.billing_mode,
+          previous_bill_id: isCumulative && billForm.previous_bill_id ? billForm.previous_bill_id : null,
+          cumulative_certified_amount: isCumulative ? certifiedNum : null,
+          previous_certified_amount: isCumulative ? prevCertified : 0,
+          previous_received_amount: isCumulative ? prevReceived : 0,
+          this_bill_work_certified: isCumulative ? thisBillCertified : certifiedNum,
+          net_payable_this_bill: liveNetPayable,
+          work_certified_amount: certifiedNum,
+          retention_percentage: retentionPctNum,
+          remarks: billForm.remarks.trim() || null,
+          billing_entry_mode: entryMode,
+          // CPWA Code Citations & Recoveries
+          mb_number: billForm.mb_number.trim() || null,
+          mb_page_start: billForm.mb_page_start ? parseInt(billForm.mb_page_start, 10) : null,
+          mb_page_end: billForm.mb_page_end ? parseInt(billForm.mb_page_end, 10) : null,
+          measurement_date: billForm.measurement_date || null,
+          measuring_officer_name: billForm.measuring_officer_name.trim() || null,
+          measuring_officer_designation: billForm.measuring_officer_designation.trim() || 'Junior Engineer',
+          advance_payments_unmeasured: unmeasuredAdvNum,
+          cement_recovery: cementRecNum,
+          steel_recovery: steelRecNum,
+          other_material_recovery: otherMatRecNum,
+          actual_completion_date: billForm.bill_type === 'final' ? (billForm.actual_completion_date || null) : null,
+          dlp_months: billForm.bill_type === 'final' ? (parseInt(billForm.dlp_months, 10) || 12) : 12,
+        }
+
+        if (documentUrl) {
+          updatePayload.document_url = documentUrl
+        }
+
+        const { error: err } = await supabase
+          .from('ra_bills')
+          .update(updatePayload)
+          .eq('id', editBill.id)
+
+        if (err) {
+          const { userMessage } = translateError(err)
+          setError(userMessage)
+          setSaving(false)
+          return
+        }
+
+        // If Item-Wise mode, sync ra_bill_items
+        if (entryMode === 'item_wise' && editBill.id) {
+          await supabase.from('ra_bill_items').delete().eq('ra_bill_id', editBill.id)
+
+          const itemsToInsert = boqItems
+            .map((b) => {
+              const entered = itemMeasurements[b.boq_item_id]
+              const currQty = parseFloat(entered?.currentQty || '0') || 0
+              const prevQty = Number(b.cumulative_executed_qty) || 0
+              return {
+                ra_bill_id: editBill.id,
+                boq_item_id: b.boq_item_id,
+                previous_quantity: prevQty,
+                current_quantity: currQty,
+                rate: b.awarded_rate,
+                remarks: entered?.remarks?.trim() || null,
+              }
+            })
+            .filter((item) => item.current_quantity > 0 || item.previous_quantity > 0)
+
+          if (itemsToInsert.length > 0) {
+            const { error: itemsErr } = await supabase
+              .from('ra_bill_items')
+              .insert(itemsToInsert)
+
+            if (itemsErr) {
+              console.warn('Failed to update e-MB ra_bill_items:', itemsErr.message)
+            }
+          }
+        }
+
+        const savedBillNumber = billForm.bill_number.trim()
+        setSaving(false)
+        onClose()
+        toast.success(`RA Bill "${savedBillNumber}" updated successfully`)
+        if (onSuccess) onSuccess({ id: editBill.id, ...updatePayload })
+        router.refresh()
+        return
+      }
+
       const { data: createdBill, error: err } = await supabase
         .from('ra_bills')
         .insert({
@@ -396,10 +599,11 @@ export function NewRABillDrawer({
       setItemMeasurements({})
       setSelectedFile(null)
       toast.success(`RA Bill "${savedBillNumber}" submitted successfully`)
+      if (onSuccess) onSuccess(createdBill)
       router.refresh()
     } catch (err: any) {
       setSaving(false)
-      const { userMessage } = translateError(err, 'Failed to submit RA bill.')
+      const { userMessage } = translateError(err, editBill ? 'Failed to update RA bill.' : 'Failed to submit RA bill.')
       setError(userMessage)
     }
   }
@@ -408,14 +612,18 @@ export function NewRABillDrawer({
     <Drawer
       open={open}
       onClose={onClose}
-      title="Submit Government RA Bill"
+      title={editBill ? `Edit RA Bill — ${editBill.bill_number}` : 'Submit Government RA Bill'}
       footer={
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
           <Button className="flex-1" loading={saving || uploading} onClick={handleSave}>
-            {uploading ? 'Uploading Attachment...' : 'Submit RA Bill'}
+            {uploading
+              ? 'Uploading Attachment...'
+              : editBill
+              ? (saving ? 'Saving Changes...' : 'Save Changes')
+              : (saving ? 'Submitting...' : 'Submit RA Bill')}
           </Button>
         </div>
       }
@@ -423,7 +631,7 @@ export function NewRABillDrawer({
       <div className="space-y-4">
         {error && <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>}
 
-        {onTriggerScan && (
+        {!editBill && onTriggerScan && (
           <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
             <div className="flex items-center gap-2.5">
               <div className="h-8 w-8 rounded-lg bg-blue-600 text-white flex items-center justify-center text-sm shadow-sm">
@@ -762,7 +970,7 @@ export function NewRABillDrawer({
             >
               <option value="">— No Previous Bill (First Cumulative Bill) —</option>
               {raBills
-                .filter(b => b.project_id === billForm.project_id)
+                .filter(b => b.project_id === billForm.project_id && (!editBill || b.id !== editBill.id))
                 .map(b => (
                   <option key={b.id} value={b.id}>
                     {b.bill_number} (Certified: {formatINR(b.cumulative_certified_amount || b.work_certified_amount)})

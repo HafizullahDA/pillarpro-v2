@@ -6,8 +6,9 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { formatINR, formatDate } from '@/lib/format'
 import { RABillActions, ProjectOption, RABillOption } from './RABillActions'
-import { canCreateRaBill } from '@/lib/permissions'
+import { canCreateRaBill, canEditRaBill } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/client'
+import { NewRABillDrawer } from '@/components/ra-bills/NewRABillDrawer'
 import { PrintPreviewModal } from '@/components/pdf/PrintPreviewModal'
 import { RABillCertificatePDF } from '@/components/pdf/RABillCertificatePDF'
 import { MeasurementSheetPDF } from '@/components/pdf/MeasurementSheetPDF'
@@ -108,6 +109,8 @@ export function RABillsClient({
   const supabase = createClient()
   const toast = useToast()
   const canCreate = canCreateRaBill(userRole)
+  const canEdit = canEditRaBill(userRole) || canCreate
+  const [editingBill, setEditingBill] = useState<RABillRow | null>(null)
   // Filters
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
@@ -806,6 +809,19 @@ export function RABillsClient({
                           <span className="text-xs">💬</span>
                           Share
                         </button>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => setEditingBill(b)}
+                            className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 font-semibold"
+                            title="Edit RA Bill Details & Retention"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit
+                          </button>
+                        )}
                       </div>
 
                       {canCreate && derivedStatus !== 'fully_paid' ? (
@@ -1025,6 +1041,19 @@ export function RABillsClient({
                             </svg>
                             WA
                           </button>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => setEditingBill(b)}
+                              title="Edit RA Bill Details & Retention"
+                              className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors font-semibold"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                              Edit
+                            </button>
+                          )}
                           {canCreate && derivedStatus !== 'fully_paid' ? (
                             <Button
                               size="sm"
@@ -1076,6 +1105,20 @@ export function RABillsClient({
             organization={org}
           />
         </PrintPreviewModal>
+      )}
+
+      {/* Edit RA Bill Drawer */}
+      {editingBill && (
+        <NewRABillDrawer
+          open={!!editingBill}
+          onClose={() => setEditingBill(null)}
+          projects={projects}
+          raBills={billOptions}
+          editBill={editingBill}
+          onSuccess={() => {
+            setEditingBill(null)
+          }}
+        />
       )}
     </div>
   )
