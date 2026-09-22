@@ -96,8 +96,6 @@ export function isSubscriptionActive(
   const status = (org.subscription_status || 'trialing').toLowerCase() as SubscriptionStatus
 
   if (status === 'trialing') {
-    if (!org.trial_ends_at) return true // Legacy fallback
-    return new Date(org.trial_ends_at).getTime() > referenceDate.getTime()
     if (org.trial_ends_at) {
       return new Date(org.trial_ends_at).getTime() > referenceDate.getTime()
     }
@@ -122,14 +120,9 @@ export function isSubscriptionActive(
  */
 export function getRemainingTrialDays(
   trialEndsAt?: string | null,
-  referenceDate: Date = new Date()
   referenceDate: Date = new Date(),
   createdAt?: string | null
 ): number {
-  if (!trialEndsAt) return 0
-  const diffMs = new Date(trialEndsAt).getTime() - referenceDate.getTime()
-  if (diffMs <= 0) return 0
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
   if (trialEndsAt) {
     const diffMs = new Date(trialEndsAt).getTime() - referenceDate.getTime()
     if (diffMs <= 0) return 0
@@ -157,8 +150,6 @@ export function getEffectiveSubscription(
   const planConfig = PLAN_CONFIGS[planTier]
 
   const rawStatus = (org?.subscription_status || 'trialing').toLowerCase() as SubscriptionStatus
-  const isActive = isSubscriptionActive(org, referenceDate)
-  const isTrialing = rawStatus === 'trialing' && isActive
   let isActive = isSubscriptionActive(org, referenceDate)
   let isTrialing = rawStatus === 'trialing' && isActive
 
@@ -180,7 +171,6 @@ export function getEffectiveSubscription(
     ? 'active'
     : 'expired'
 
-  const trialDaysRemaining = isTrialing ? getRemainingTrialDays(org?.trial_ends_at, referenceDate) : 0
   const maxActiveSites = org?.max_active_sites || planConfig.maxActiveSites
 
   return {

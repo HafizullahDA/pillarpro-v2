@@ -16,7 +16,6 @@ export default async function InventoryPage() {
     { data: userRole },
     { data: projects },
     { data: suppliers },
-    { data: items },
     { data: items, error: itemsError },
     { data: transactions },
   ] = await Promise.all([

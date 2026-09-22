@@ -11,13 +11,6 @@ export function SubscriptionStatusBanner() {
 
   useEffect(() => {
     let mounted = true
-    getClientOrganization().then((org: OrganizationProfile) => {
-      if (mounted) {
-        setSub(getEffectiveSubscription(org))
-      }
-    }).catch(() => {
-      // Graceful silence if organization loading fails
-    })
     getClientOrganization()
       .then((org: OrganizationProfile) => {
         if (mounted) {
@@ -37,12 +30,6 @@ export function SubscriptionStatusBanner() {
   // 1. Expired / Lapsed Subscription (Highest Priority Warning)
   if (sub.isExpired) {
     return (
-      <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs font-semibold shadow-xs flex flex-wrap items-center justify-between gap-2 border-b border-amber-600/30">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm">⚠️</span>
-          <span className="truncate">
-            <strong>Workspace in Read-Only Mode:</strong> Your subscription has ended. Past bills and reports remain safe, but new creations are paused.
-          </span>
       <div className="relative overflow-hidden bg-gradient-to-r from-slate-950 via-rose-950/40 to-slate-950 text-rose-100 border-b border-rose-500/30 px-4 py-2 text-xs shadow-xs">
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-rose-500/40 to-transparent" />
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 min-w-0">
@@ -67,58 +54,22 @@ export function SubscriptionStatusBanner() {
             </Link>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href="/pricing"
-            className="px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-2xs"
-          >
-            Reactivate Plan &rarr;
-          </Link>
-        </div>
       </div>
     )
   }
 
-  // 2. Active Trialing (Friendly Countdown)
   // 2. Active Trialing (Executive Ambient Bar)
   if (sub.isTrialing) {
     const isUrgent = sub.trialDaysRemaining <= 3
 
     return (
       <div
-        className={`px-4 py-1.5 text-xs font-medium flex flex-wrap items-center justify-between gap-2 border-b ${
         className={`relative overflow-hidden px-4 py-2 text-xs font-medium border-b shadow-xs transition-colors ${
           isUrgent
-            ? 'bg-amber-50 text-amber-900 border-amber-200'
-            : 'bg-slate-900 text-slate-100 border-slate-800'
             ? 'bg-gradient-to-r from-slate-950 via-amber-950/40 to-slate-950 text-amber-100 border-amber-500/30'
             : 'bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-slate-100 border-slate-800/80'
         }`}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-          <span className="truncate text-[11px] sm:text-xs">
-            <strong>14-Day Free Trial:</strong> {sub.trialDaysRemaining}{' '}
-            {sub.trialDaysRemaining === 1 ? 'day' : 'days'} remaining on {sub.planConfig.name}.
-          </span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href="/pricing"
-            className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-colors ${
-              isUrgent
-                ? 'bg-amber-600 text-white hover:bg-amber-700'
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            Choose Plan
-          </Link>
-          {!isUrgent && (
-            <button
-              type="button"
-              onClick={() => setDismissed(true)}
-              className="text-slate-400 hover:text-white text-xs p-0.5"
-              aria-label="Dismiss banner"
         <div
           className={`absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent ${
             isUrgent ? 'via-amber-400/50' : 'via-emerald-500/30'
@@ -133,9 +84,6 @@ export function SubscriptionStatusBanner() {
                   : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
               }`}
             >
-              &times;
-            </button>
-          )}
               <span className="relative flex h-2 w-2 shrink-0">
                 <span
                   className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
@@ -167,11 +115,7 @@ export function SubscriptionStatusBanner() {
           <div className="flex items-center gap-2 shrink-0">
             <Link
               href="/pricing"
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-all transform hover:scale-[1.02] shadow-xs ${
-                isUrgent
-                  ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold'
-                  : 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold'
-              }`}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-xs transition-all transform hover:scale-[1.02]"
             >
               <span>Choose Plan</span>
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -204,4 +148,3 @@ export function SubscriptionStatusBanner() {
   // Active paid subscription without issues: Zero visual clutter
   return null
 }
-
