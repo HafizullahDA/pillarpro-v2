@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
@@ -11,6 +11,7 @@ import { getTodayIST } from '@/lib/date'
 import { createMachineryLogSchema } from '@/lib/validations/machinery'
 import { formatINR } from '@/lib/format'
 import { getUserOrganizationId } from '@/lib/organization'
+import { calculateShiftWorkingHours } from '@/lib/calculations/machinery'
 
 interface AssetOption {
   id: string
@@ -43,6 +44,12 @@ export function LogDieselDrawer({
   const { showToast } = useToast()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  // Logging mode: 'time' (Clock shift time, e.g. 11:00 AM - 5:40 PM) vs 'meter' (HMR/Odometer)
+  const [logMode, setLogMode] = useState<'time' | 'meter'>('time')
+  const [startTime, setStartTime] = useState('11:00')
+  const [endTime, setEndTime] = useState('17:40')
+  const [breakMinutes, setBreakMinutes] = useState('60')
   const [runDelta, setRunDelta] = useState('0')
 
   const initialAsset = assets.find(a => a.id === preselectedAssetId) || assets[0]
@@ -63,20 +70,22 @@ export function LogDieselDrawer({
   // Synchronize asset selection and meter readings whenever drawer opens or assets list updates
   useEffect(() => {
     if (!open) return
-    const targetAsset =
-      assets.find(a => a.id === preselectedAssetId) ||
-      (form.asset_id ? assets.find(a => a.id === form.asset_id) : null) ||
-      assets[0]
+    setForm(prev => {
+      const targetAsset =
+        assets.find(a => a.id === preselectedAssetId) ||
+        (prev.asset_id ? assets.find(a => a.id === prev.asset_id) : null) ||
+        assets[0]
 
-    if (targetAsset) {
-      setForm(prev => ({
-        ...prev,
-        asset_id: targetAsset.id,
-        start_meter: String(targetAsset.current_meter ?? 0),
-        end_meter: String(targetAsset.current_meter ?? 0),
-      }))
-      setRunDelta('0')
-    }
+      if (targetAsset) {
+        return {
+          ...prev,
+          asset_id: targetAsset.id,
+          start_meter: String(targetAsset.current_meter ?? 0),
+          end_meter: String(targetAsset.current_meter ?? 0),
+        }
+      }
+      return prev
+    })
     setError('')
   }, [open, preselectedAssetId, assets])
 
@@ -86,9 +95,16 @@ export function LogDieselDrawer({
   const isKm = selectedAsset?.meter_tracking === 'km'
   const unit = isKm ? 'Km' : 'Hours'
 
+  // Shift working hours computation from clock time
+  const shiftCalc = useMemo(() => {
+    return calculateShiftWorkingHours(startTime, endTime, Number(breakMinutes) || 0)
+  }, [startTime, endTime, breakMinutes])
+
   const startVal = Number(form.start_meter) || 0
   const endVal = Number(form.end_meter) || 0
-  const totalRun = Math.max(0, endVal - startVal)
+  const totalRun = logMode === 'time'
+    ? shiftCalc.netHours
+    : Math.max(0, endVal - startVal)
 
   const dieselLiters = Number(form.diesel_liters) || 0
   const dieselRate = Number(form.diesel_rate_per_liter) || 0
@@ -120,11 +136,23 @@ export function LogDieselDrawer({
       return
     }
 
+    const finalStartMeter = Number(form.start_meter) || 0
+    const finalEndMeter = logMode === 'time'
+      ? Number((finalStartMeter + shiftCalc.netHours).toFixed(2))
+      : Number(form.end_meter)
+
+    const shiftTag = logMode === 'time'
+      ? `[${shiftCalc.shiftSpanDescription}${shiftCalc.breakMinutes > 0 ? `, Break: ${shiftCalc.breakMinutes}m` : ''} = ${shiftCalc.formattedTime}]`
+      : ''
+
+    const workDesc = [shiftTag, form.work_description.trim()].filter(Boolean).join(' • ')
+
     const parsed = createMachineryLogSchema.safeParse({
       ...form,
       asset_id: resolvedAssetId,
-      start_meter: Number(form.start_meter),
-      end_meter: Number(form.end_meter),
+      start_meter: finalStartMeter,
+      end_meter: finalEndMeter,
+      work_description: workDesc || undefined,
       diesel_liters: Number(form.diesel_liters),
       diesel_rate_per_liter: Number(form.diesel_rate_per_liter),
       project_id: form.project_id || undefined,
@@ -155,9 +183,9 @@ export function LogDieselDrawer({
       project_id: form.project_id || null,
       log_date: form.log_date,
       operator_name: form.operator_name.trim() || null,
-      start_meter: Number(form.start_meter),
-      end_meter: Number(form.end_meter),
-      work_description: form.work_description.trim() || null,
+      start_meter: finalStartMeter,
+      end_meter: finalEndMeter,
+      work_description: workDesc || null,
       diesel_liters: Number(form.diesel_liters) || 0,
       diesel_rate_per_liter: Number(form.diesel_rate_per_liter) || 0,
       fuel_vendor: form.fuel_vendor.trim() || null,
@@ -237,99 +265,197 @@ export function LogDieselDrawer({
           />
         </FieldWrapper>
 
-        {/* Meter Readings Card */}
-        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-            <div className="flex items-center gap-1.5">
-              <span>{unit} Meter Log</span>
-              <span className="text-[10px] font-normal text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                Odometer / Hour Meter
+        {/* Mode Selector Toggle */}
+        <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => setLogMode('time')}
+            className={`flex-1 py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              logMode === 'time'
+                ? 'bg-white text-blue-600 shadow-sm font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Clock Time (e.g. 11 AM – 5:40 PM)
+          </button>
+          <button
+            type="button"
+            onClick={() => setLogMode('meter')}
+            className={`flex-1 py-2 px-3 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              logMode === 'meter'
+                ? 'bg-white text-blue-600 shadow-sm font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Meter / Odometer ({unit})
+          </button>
+        </div>
+
+        {/* Clock Time Mode Card */}
+        {logMode === 'time' && (
+          <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl space-y-3">
+            <div className="flex items-center justify-between text-xs font-semibold text-blue-900">
+              <span>Working Hours by Clock Time</span>
+              <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full font-bold text-xs shadow-xs">
+                Run: {shiftCalc.formattedTime} ({shiftCalc.netHours} {unit})
               </span>
             </div>
-            <span className="text-blue-600 font-bold">
-              Total Run: {totalRun.toFixed(1)} {unit}
-            </span>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <FieldWrapper label={`Start ${unit}`} hint="Opening meter">
-              <Input
-                type="number"
-                step="any"
-                value={form.start_meter}
-                onChange={e => {
-                  const val = e.target.value
-                  setForm(prev => {
-                    const sVal = parseFloat(val) || 0
-                    const delta = parseFloat(runDelta) || 0
-                    const nextEnd = delta > 0 ? String(Number((sVal + delta).toFixed(2))) : prev.end_meter
-                    return { ...prev, start_meter: val, end_meter: nextEnd }
-                  })
-                }}
-              />
-            </FieldWrapper>
+            <div className="grid grid-cols-2 gap-3">
+              <FieldWrapper label="Start Time *">
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={e => setStartTime(e.target.value)}
+                />
+              </FieldWrapper>
 
-            <FieldWrapper label={`${unit} Run Today`} hint="Hours worked today">
-              <Input
-                type="number"
-                step="any"
-                value={runDelta}
-                onChange={e => {
-                  const delta = e.target.value
-                  setRunDelta(delta)
-                  const numDelta = parseFloat(delta)
-                  if (!isNaN(numDelta) && numDelta >= 0) {
-                    const calculatedEnd = (parseFloat(form.start_meter) || 0) + numDelta
-                    setForm(prev => ({ ...prev, end_meter: String(Number(calculatedEnd.toFixed(2))) }))
-                  }
-                }}
-                placeholder="e.g. 5.4"
-              />
-            </FieldWrapper>
-
-            <FieldWrapper label={`End ${unit}`} hint="Closing meter">
-              <Input
-                type="number"
-                step="any"
-                value={form.end_meter}
-                onChange={e => {
-                  const val = e.target.value
-                  setForm(prev => ({ ...prev, end_meter: val }))
-                  const endNum = parseFloat(val)
-                  const startNum = parseFloat(form.start_meter) || 0
-                  if (!isNaN(endNum) && endNum >= startNum) {
-                    setRunDelta(String(Number((endNum - startNum).toFixed(2))))
-                  } else {
-                    setRunDelta('')
-                  }
-                }}
-              />
-            </FieldWrapper>
-          </div>
-
-          {/* Smart Correction Helper if End < Start */}
-          {endVal < startVal && endVal > 0 && (
-            <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-              <div>
-                <span className="font-semibold">⚠️ Closing reading ({endVal}) is less than opening ({startVal}).</span>
-                <span className="block text-[11px] text-amber-700">Did you mean machine ran <strong>+{endVal} {unit}</strong> today?</span>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                className="text-xs shrink-0 bg-white border-amber-300 text-amber-900 hover:bg-amber-100"
-                onClick={() => {
-                  const corrected = Number((startVal + endVal).toFixed(2))
-                  setForm(prev => ({ ...prev, end_meter: String(corrected) }))
-                  setRunDelta(String(endVal))
-                }}
-              >
-                Set End to {(startVal + endVal).toFixed(1)}
-              </Button>
+              <FieldWrapper label="End Time *">
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={e => setEndTime(e.target.value)}
+                />
+              </FieldWrapper>
             </div>
-          )}
-        </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+              <FieldWrapper label="Lunch / Rest Break" hint="Site standard 1-2 PM">
+                <Select
+                  value={breakMinutes}
+                  onChange={e => setBreakMinutes(e.target.value)}
+                >
+                  <option value="60">1 Hour Lunch Break (1:00 PM – 2:00 PM)</option>
+                  <option value="0">No Break (Continuous Machine Work)</option>
+                  <option value="30">30 Minutes Break</option>
+                  <option value="45">45 Minutes Break</option>
+                  <option value="90">1.5 Hours Break</option>
+                </Select>
+              </FieldWrapper>
+
+              <div className="bg-white/80 p-2.5 rounded-lg border border-blue-100 text-xs space-y-1">
+                <div className="flex justify-between text-slate-600">
+                  <span>Gross Elapsed:</span>
+                  <span className="font-semibold text-slate-800">
+                    {Math.floor(shiftCalc.grossMinutes / 60)}h {shiftCalc.grossMinutes % 60}m
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Break Deducted:</span>
+                  <span className="font-semibold text-amber-700">
+                    {shiftCalc.breakMinutes > 0 ? `-${shiftCalc.breakMinutes}m` : 'None (0m)'}
+                  </span>
+                </div>
+                <div className="pt-1 border-t border-blue-100 flex justify-between font-bold text-blue-900">
+                  <span>Net Run Logged:</span>
+                  <span>{shiftCalc.formattedTime} ({shiftCalc.netHours} {unit})</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Meter Readings Card */}
+        {logMode === 'meter' && (
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+              <div className="flex items-center gap-1.5">
+                <span>{unit} Meter Log</span>
+                <span className="text-[10px] font-normal text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                  Odometer / Hour Meter
+                </span>
+              </div>
+              <span className="text-blue-600 font-bold">
+                Total Run: {totalRun.toFixed(1)} {unit}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <FieldWrapper label={`Start ${unit}`} hint="Opening meter">
+                <Input
+                  type="number"
+                  step="any"
+                  value={form.start_meter}
+                  onChange={e => {
+                    const val = e.target.value
+                    setForm(prev => {
+                      const sVal = parseFloat(val) || 0
+                      const delta = parseFloat(runDelta) || 0
+                      const nextEnd = delta > 0 ? String(Number((sVal + delta).toFixed(2))) : prev.end_meter
+                      return { ...prev, start_meter: val, end_meter: nextEnd }
+                    })
+                  }}
+                />
+              </FieldWrapper>
+
+              <FieldWrapper label={`${unit} Run Today`} hint="Hours worked today">
+                <Input
+                  type="number"
+                  step="any"
+                  value={runDelta}
+                  onChange={e => {
+                    const delta = e.target.value
+                    setRunDelta(delta)
+                    const numDelta = parseFloat(delta)
+                    if (!isNaN(numDelta) && numDelta >= 0) {
+                      const calculatedEnd = (parseFloat(form.start_meter) || 0) + numDelta
+                      setForm(prev => ({ ...prev, end_meter: String(Number(calculatedEnd.toFixed(2))) }))
+                    }
+                  }}
+                  placeholder="e.g. 5.4"
+                />
+              </FieldWrapper>
+
+              <FieldWrapper label={`End ${unit}`} hint="Closing meter">
+                <Input
+                  type="number"
+                  step="any"
+                  value={form.end_meter}
+                  onChange={e => {
+                    const val = e.target.value
+                    setForm(prev => ({ ...prev, end_meter: val }))
+                    const endNum = parseFloat(val)
+                    const startNum = parseFloat(form.start_meter) || 0
+                    if (!isNaN(endNum) && endNum >= startNum) {
+                      setRunDelta(String(Number((endNum - startNum).toFixed(2))))
+                    } else {
+                      setRunDelta('')
+                    }
+                  }}
+                />
+              </FieldWrapper>
+            </div>
+
+            {/* Smart Correction Helper if End < Start */}
+            {endVal < startVal && endVal > 0 && (
+              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div>
+                  <span className="font-semibold">⚠️ Closing reading ({endVal}) is less than opening ({startVal}).</span>
+                  <span className="block text-[11px] text-amber-700">Did you mean machine ran <strong>+{endVal} {unit}</strong> today?</span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="text-xs shrink-0 bg-white border-amber-300 text-amber-900 hover:bg-amber-100"
+                  onClick={() => {
+                    const corrected = Number((startVal + endVal).toFixed(2))
+                    setForm(prev => ({ ...prev, end_meter: String(corrected) }))
+                    setRunDelta(String(endVal))
+                  }}
+                >
+                  Set End to {(startVal + endVal).toFixed(1)}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Diesel Fuel Card */}
         <div className="p-3.5 bg-amber-50/60 border border-amber-200/80 rounded-xl space-y-3">

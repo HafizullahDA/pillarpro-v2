@@ -3,6 +3,7 @@ import {
   createMachineryAssetSchema,
   createMachineryLogSchema,
 } from '../../validations/machinery'
+import { calculateShiftWorkingHours, formatTime12Hour } from '../machinery'
 
 describe('Machinery Asset Validation', () => {
   it('validates a correct machinery asset', () => {
@@ -68,4 +69,42 @@ describe('Machinery & Diesel Log Validation', () => {
     expect(result.success).toBe(false)
   })
 })
+
+describe('Machinery Shift Working Hours (Clock Time Engine)', () => {
+  it('calculates 11:00 AM to 5:40 PM with 1 hour lunch break as 5.67 hours (5h 40m)', () => {
+    const result = calculateShiftWorkingHours('11:00', '17:40', 60)
+    expect(result.grossMinutes).toBe(400) // 6h 40m
+    expect(result.breakMinutes).toBe(60) // 1h lunch
+    expect(result.netMinutes).toBe(340) // 5h 40m
+    expect(result.netHours).toBe(5.67)
+    expect(result.formattedTime).toBe('5h 40m')
+    expect(result.shiftSpanDescription).toBe('11:00 AM – 5:40 PM')
+  })
+
+  it('calculates 11:00 AM to 5:40 PM without break as 6.67 hours (6h 40m)', () => {
+    const result = calculateShiftWorkingHours('11:00', '17:40', 0)
+    expect(result.grossMinutes).toBe(400)
+    expect(result.breakMinutes).toBe(0)
+    expect(result.netMinutes).toBe(400)
+    expect(result.netHours).toBe(6.67)
+    expect(result.formattedTime).toBe('6h 40m')
+  })
+
+  it('calculates standard 9:00 AM to 5:00 PM shift with 1 hour lunch as 7.0 hours', () => {
+    const result = calculateShiftWorkingHours('09:00', '17:00', 60)
+    expect(result.grossMinutes).toBe(480)
+    expect(result.breakMinutes).toBe(60)
+    expect(result.netMinutes).toBe(420)
+    expect(result.netHours).toBe(7)
+    expect(result.formattedTime).toBe('7h')
+  })
+
+  it('formats 24h times to 12h nicely', () => {
+    expect(formatTime12Hour('11:00')).toBe('11:00 AM')
+    expect(formatTime12Hour('17:40')).toBe('5:40 PM')
+    expect(formatTime12Hour('00:00')).toBe('12:00 AM')
+    expect(formatTime12Hour('12:30')).toBe('12:30 PM')
+  })
+})
+
 
