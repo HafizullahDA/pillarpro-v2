@@ -563,20 +563,82 @@ export default function SignUpPage() {
 
                     {mode === 'new_firm' && (
                       <div className="pt-1">
-                        <label className="relative flex items-start gap-3 p-3.5 rounded-2xl border border-blue-100 bg-blue-50/40 hover:bg-blue-50/80 shadow-2xs transition-colors cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={seedStarter}
-                            onChange={e => setSeedStarter(e.target.checked)}
-                            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600/20"
-                          />
-                          <div className="text-xs">
-                            <span className="font-bold text-slate-900 block">
-                              Pre-load Sample Highway Project &amp; RA Bill (Recommended)
-                            </span>
-                            <span className="text-slate-600 block mt-0.5 leading-normal">
-                              Populates realistic PWD measurement books, statutory deductions, supplier ledgers, and muster rolls so you can test features immediately.
-                            </span>
+                        <label
+                          className={`group relative flex flex-col p-4 rounded-2xl border transition-all duration-300 ease-out cursor-pointer select-none ${
+                            seedStarter
+                              ? 'border-blue-400 bg-gradient-to-br from-blue-50/90 via-white to-blue-50/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-blue-500'
+                              : 'border-slate-200 bg-slate-50/60 hover:bg-white hover:border-slate-300 hover:shadow-2xs hover:-translate-y-0.5'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={seedStarter}
+                              onChange={e => setSeedStarter(e.target.checked)}
+                              className="sr-only"
+                            />
+                            
+                            {/* Animated Custom Checkbox */}
+                            <div
+                              className={`mt-0.5 h-5 w-5 rounded-lg border flex items-center justify-center shrink-0 transition-all duration-200 ${
+                                seedStarter
+                                  ? 'bg-blue-600 border-blue-600 text-white shadow-xs scale-105 group-hover:scale-110'
+                                  : 'border-slate-300 bg-white text-transparent group-hover:border-slate-400'
+                              }`}
+                            >
+                              <svg
+                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                                  seedStarter ? 'scale-100' : 'scale-0'
+                                }`}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={3}
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+
+                            <div className="flex-1 min-w-0 text-xs">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <span className="font-bold text-slate-900 group-hover:text-blue-900 transition-colors text-xs sm:text-sm">
+                                  Pre-load Sample Highway Project &amp; RA Bill
+                                </span>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                                  Recommended
+                                </span>
+                              </div>
+                              <p className="text-slate-600 leading-relaxed text-[11px] sm:text-xs">
+                                Populates a full-scale 10-module PMGSY civil package (₹1.78 Cr) with Form 26 Measurement Book, Clause 5 Delay Defense claim, 60/40 Partner Equity, JCB POL diesel log, and Store inventory so you can test all features immediately.
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Interactive Animated Feature Showcase Chips */}
+                          <div
+                            className={`mt-3 pt-3 border-t border-blue-100/80 grid grid-cols-2 sm:grid-cols-3 gap-1.5 transition-all duration-300 ${
+                              seedStarter ? 'opacity-100 max-h-40' : 'opacity-60 max-h-40'
+                            }`}
+                          >
+                            {[
+                              { icon: '🛣️', text: 'PMGSY Highway (₹1.78 Cr)' },
+                              { icon: '📑', text: 'RA Bill 01 & Form 26 e-MB' },
+                              { icon: '🛡️', text: 'Clause 5 Delay Defense' },
+                              { icon: '🤝', text: '60/40 Partner Equity' },
+                              { icon: '🚜', text: 'JCB & Excavator POL Log' },
+                              { icon: '📦', text: 'OPC Cement & Steel Stock' },
+                              { icon: '👷‍♂️', text: 'Daily Muster Roll & OT' },
+                              { icon: '🏛️', text: '₹8.9L PBG Deposit Radar' },
+                              { icon: '🏢', text: 'Supplier Khata & GST TDS' },
+                            ].map((chip, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium bg-white/90 text-slate-700 border border-slate-200/80 shadow-2xs hover:border-blue-300 hover:text-blue-700 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-150 cursor-pointer"
+                              >
+                                <span className="text-xs shrink-0">{chip.icon}</span>
+                                <span className="truncate">{chip.text}</span>
+                              </div>
+                            ))}
                           </div>
                         </label>
                       </div>
