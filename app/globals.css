@@ -16,10 +16,37 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Subtle enterprise SaaS micro-grid background */
+/* Subtle enterprise SaaS micro-grid background with vibrant blue tint */
 .bg-enterprise-grid {
-  background-image: radial-gradient(rgba(100, 116, 139, 0.15) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(59, 130, 246, 0.12) 1px, transparent 1px);
   background-size: 24px 24px;
+}
+
+/* Subtle Apple & Atlassian atmospheric animation keyframes */
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.02);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 5s ease-in-out infinite;
 }
 
 /* ══════════════════════════════════════════
