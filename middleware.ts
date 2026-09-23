@@ -44,7 +44,7 @@ export async function middleware(request: NextRequest) {
   const CALLBACK_ROUTES = ['/auth/callback']
   const PENDING_ROUTES  = ['/pending']
   const PUBLIC_PAGES    = ['/pricing', '/terms', '/privacy', '/robots.txt', '/sitemap.xml']
-  const PWA_ROUTES      = ['/sw.js', '/manifest.json', '/offline']
+  const PWA_ROUTES      = ['/sw.js', '/manifest.json', '/offline', '/.well-known']
   const PUBLIC_ROUTES   = [...AUTH_ROUTES, ...CALLBACK_ROUTES, ...PENDING_ROUTES, ...PUBLIC_PAGES, ...PWA_ROUTES]
 
   // Public API routes with explicit justifications:
@@ -117,6 +117,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html|txt)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html|txt|json)$).*)',
   ],
 }
