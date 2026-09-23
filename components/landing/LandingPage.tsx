@@ -32,29 +32,11 @@ function IconShieldAlert({ className = 'w-5 h-5' }: { className?: string }) {
   )
 }
 
-function IconUsers({ className = 'w-5 h-5' }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-    </svg>
-  )
-}
-
-function IconScale({ className = 'w-5 h-5' }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16 16l3-8 3 8a4.2 4.2 0 01-6 0zM2 16l3-8 3 8a4.2 4.2 0 01-6 0zM7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
-    </svg>
-  )
-}
-
 function IconTruck({ className = 'w-5 h-5' }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
       <rect x="1" y="3" width="15" height="13" rx="1" />
-      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+      <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
       <circle cx="5.5" cy="18.5" r="2.5" />
       <circle cx="18.5" cy="18.5" r="2.5" />
     </svg>
@@ -129,10 +111,6 @@ export function LandingPage({
   const [manualRoyalty, setManualRoyalty] = useState('')
   const [manualTesting, setManualTesting] = useState('')
 
-  // Clause 5 Simulator States
-  const [simContractValue, setSimContractValue] = useState<number>(25000000) // ₹2.5 Crore
-  const [simDelayDays, setSimDelayDays] = useState<number>(45) // 45 days delay
-
   const toggleFaq = (idx: number) => {
     setActiveFaq(activeFaq === idx ? null : idx)
   }
@@ -154,12 +132,6 @@ export function LandingPage({
   const totalDeductions = retention + itTds + gstTds + labourCess + royalty + testing
   const netDisbursed = Math.max(0, calcBillAmount - totalDeductions)
   const totalDeductionsPct = calcBillAmount > 0 ? ((totalDeductions / calcBillAmount) * 100).toFixed(1) : '0.0'
-
-  // Clause 5 Liquidated Damages math
-  // CPWD GCC Clause 2/5 max LD penalty is typically 10% of tendered contract value
-  const maxLdRisk = Math.round(simContractValue * 0.10)
-  const estimatedLdPerDay = Math.round((simContractValue * 0.001) * 0.5)
-  const accruedLdExposure = Math.min(maxLdRisk, Math.round(estimatedLdPerDay * simDelayDays))
 
   const faqs = [
     {
@@ -189,7 +161,7 @@ export function LandingPage({
   ]
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans antialiased selection:bg-slate-900 selection:text-white">
+    <div className="min-h-screen bg-[#F8F9FA] text-slate-900 font-sans antialiased selection:bg-slate-900 selection:text-white">
       {/* ── Skip to Main Content Link ───────────────────────── */}
       <a
         href="#main-content"
@@ -199,7 +171,7 @@ export function LandingPage({
       </a>
 
       {/* ── Top Architectural Navbar ────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-200">
+      <header className="sticky top-0 z-50 bg-[#F8F9FA]/90 backdrop-blur-md border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Logo theme="light" href="/" size="md" subtitle="Civil Contractor OS" />
@@ -208,7 +180,7 @@ export function LandingPage({
           <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-7 text-xs font-semibold text-slate-600">
             <a href="#audit-preview" className="hover:text-slate-900 transition-colors">Bill Audit Preview</a>
             <a href="#calculator" className="hover:text-slate-900 transition-colors">Deduction Calculator</a>
-            <a href="#capabilities" className="hover:text-slate-900 transition-colors">System Capabilities</a>
+            <a href="#suite" className="hover:text-slate-900 transition-colors">Contractor Suite</a>
             <a href="#specification" className="hover:text-slate-900 transition-colors">Audit Comparison</a>
             <Link href="/pricing" className="text-slate-900 font-bold hover:text-blue-600 transition-colors">Pricing</Link>
             <a href="#faq" className="hover:text-slate-900 transition-colors">FAQ</a>
@@ -218,7 +190,7 @@ export function LandingPage({
             {isLoggedIn ? (
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-xs"
               >
                 <span>Dashboard ({userName || orgName || 'Firm'})</span>
                 <IconArrowRight className="w-3.5 h-3.5" />
@@ -233,7 +205,7 @@ export function LandingPage({
                 </Link>
                 <Link
                   href="/sign-up"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-xs"
                 >
                   <span>Start Free Trial</span>
                   <IconArrowRight className="w-3.5 h-3.5" />
@@ -246,13 +218,17 @@ export function LandingPage({
 
       {/* ── Main Content ─────────────────────────────────────── */}
       <main id="main-content">
-        {/* ── Hero Section (Architectural Studio Field Slate) ─── */}
-        <section className="pt-12 pb-14 md:pt-18 md:pb-20 bg-white border-b border-slate-200">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        {/* ── Hero Section (Unified Architectural Canvas) ─────── */}
+        <section className="relative overflow-hidden pt-12 pb-14 md:pt-18 md:pb-20 border-b border-slate-200/80">
+          {/* Subtle tactile micro-grid texture & atmospheric lighting */}
+          <div className="absolute inset-0 bg-enterprise-grid [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-70 pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[280px] bg-gradient-to-b from-blue-100/40 via-slate-100/20 to-transparent blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             
             {/* Government Department Channels Tag */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold tracking-wide mb-6">
-              <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200/90 text-slate-700 text-xs font-semibold tracking-wide mb-6 shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
               <span>CPWD (PFMS) • NHPC &amp; PSUs (FINANCE) • STATE PWD &amp; PMGSY (TREASURY)</span>
             </div>
 
@@ -268,7 +244,7 @@ export function LandingPage({
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/sign-up"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 transition-colors shadow-xs"
               >
                 <span>Launch Firm Workspace Free</span>
                 <IconArrowRight className="w-4 h-4" />
@@ -276,7 +252,7 @@ export function LandingPage({
 
               <a
                 href="#audit-preview"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors shadow-2xs"
               >
                 <span>Explore Interactive Showcase</span>
                 <IconChevronDown className="w-4 h-4 text-slate-500" />
@@ -291,7 +267,7 @@ export function LandingPage({
               </span>
               <span className="flex items-center gap-1.5">
                 <IconCheck className="w-4 h-4 text-slate-700" />
-                Complete Site &amp; Office Operational Suite
+                All 6 Primary Site &amp; Office Books
               </span>
               <span className="flex items-center gap-1.5">
                 <IconCheck className="w-4 h-4 text-slate-700" />
@@ -302,7 +278,7 @@ export function LandingPage({
         </section>
 
         {/* ── High-Impact 4-Way Interactive Feature Showcase ──── */}
-        <section id="audit-preview" className="py-12 md:py-16 bg-[#F8FAFC] border-b border-slate-200">
+        <section id="audit-preview" className="py-14 md:py-18 border-b border-slate-200/80">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <div className="text-center max-w-2xl mx-auto mb-8">
@@ -318,13 +294,13 @@ export function LandingPage({
             </div>
 
             {/* Tab Switcher Buttons */}
-            <div className="flex overflow-x-auto no-scrollbar gap-2 p-1.5 bg-slate-200/80 rounded-2xl mb-5 text-xs font-semibold max-w-3xl mx-auto">
+            <div className="flex overflow-x-auto no-scrollbar gap-2 p-1.5 bg-slate-200/70 rounded-2xl mb-5 text-xs font-semibold max-w-3xl mx-auto">
               <button
                 type="button"
                 onClick={() => setPreviewTab('ra_bills')}
                 className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl transition-all text-center flex items-center justify-center gap-2 ${
                   previewTab === 'ra_bills'
-                    ? 'bg-white text-slate-900 shadow-sm font-bold'
+                    ? 'bg-white text-slate-900 shadow-xs font-bold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -337,7 +313,7 @@ export function LandingPage({
                 onClick={() => setPreviewTab('clause5')}
                 className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl transition-all text-center flex items-center justify-center gap-2 ${
                   previewTab === 'clause5'
-                    ? 'bg-white text-slate-900 shadow-sm font-bold'
+                    ? 'bg-white text-slate-900 shadow-xs font-bold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -350,7 +326,7 @@ export function LandingPage({
                 onClick={() => setPreviewTab('ocr')}
                 className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl transition-all text-center flex items-center justify-center gap-2 ${
                   previewTab === 'ocr'
-                    ? 'bg-white text-slate-900 shadow-sm font-bold'
+                    ? 'bg-white text-slate-900 shadow-xs font-bold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -363,7 +339,7 @@ export function LandingPage({
                 onClick={() => setPreviewTab('pbg')}
                 className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl transition-all text-center flex items-center justify-center gap-2 ${
                   previewTab === 'pbg'
-                    ? 'bg-white text-slate-900 shadow-sm font-bold'
+                    ? 'bg-white text-slate-900 shadow-xs font-bold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -373,12 +349,12 @@ export function LandingPage({
             </div>
 
             {/* Showcase Viewport */}
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300">
+            <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden transition-all duration-300">
               
               {/* TAB 1: RA BILL AUDIT */}
               {previewTab === 'ra_bills' && (
                 <div>
-                  <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="px-5 py-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 uppercase tracking-wider">
@@ -417,7 +393,7 @@ export function LandingPage({
                       </div>
                     </div>
 
-                    <div className="p-5 bg-slate-50/50">
+                    <div className="p-5 bg-slate-50/40">
                       <div className="flex items-center justify-between">
                         <p className="text-xs font-semibold text-rose-700 uppercase tracking-wider">Statutory Deductions (10%)</p>
                         <span className="text-xs font-bold text-rose-700">-₹4,20,000</span>
@@ -471,7 +447,7 @@ export function LandingPage({
               {/* TAB 2: CLAUSE 5 DELAY DEFENSE */}
               {previewTab === 'clause5' && (
                 <div>
-                  <div className="px-5 py-4 border-b border-slate-200 bg-amber-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="px-5 py-4 border-b border-slate-200 bg-amber-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 uppercase tracking-wider">
@@ -546,7 +522,7 @@ export function LandingPage({
                       </div>
                     </div>
 
-                    <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between text-xs">
+                    <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl flex items-center justify-between text-xs">
                       <span className="text-amber-900 font-medium">
                         🛡️ <strong>Airtight Defense:</strong> When the Executive Engineer assesses final milestone deadlines, contemporaneous Clause 5 notices prevent arbitrary 10% LD cuts in dispute arbitration.
                       </span>
@@ -582,7 +558,6 @@ export function LandingPage({
                   </div>
 
                   <div className="p-5 grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
-                    {/* Simulated mobile scan card */}
                     <div className="md:col-span-5 bg-slate-900 text-white p-4 rounded-xl border border-slate-800 shadow-md">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3 text-[11px] text-slate-400 font-mono">
                         <span>PILLARVISION™ CAM CAPTURE</span>
@@ -599,47 +574,25 @@ export function LandingPage({
                             <span>Total Amount:</span><span>₹12,530.00</span>
                           </div>
                           <div className="flex justify-between text-[11px] text-slate-400">
-                            <span>Vehicle Slip Ref:</span><span className="text-slate-200">JK02-CH-8821 (JCB-03)</span>
+                            <span>Vehicle Reg:</span><span className="text-amber-300 font-mono">JK02-CH-8812 (JCB 3DX)</span>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Extracted Ledger Mapping */}
                     <div className="md:col-span-7 space-y-3">
-                      <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                        Automated Ledger Routing &amp; Audit Trail
-                      </p>
-                      
-                      <div className="space-y-2 text-xs">
-                        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
-                          <div>
-                            <span className="font-semibold text-slate-900 block">🚜 Machine Logbook Entry</span>
-                            <span className="text-slate-500 text-[11px]">JCB-03 Excavator • +140L logged to hourly consumption</span>
-                          </div>
-                          <span className="text-emerald-700 font-bold">Auto-Routed</span>
-                        </div>
-
-                        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
-                          <div>
-                            <span className="font-semibold text-slate-900 block">📦 Supplier Khata Ledger</span>
-                            <span className="text-slate-500 text-[11px]">Credit to &quot;Highway Fuel Station&quot; Khata Ledger</span>
-                          </div>
-                          <span className="text-emerald-700 font-bold">₹12,530 Logged</span>
-                        </div>
-
-                        <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
-                          <div>
-                            <span className="font-semibold text-slate-900 block">📱 Munshi WhatsApp Verification</span>
-                            <span className="text-slate-500 text-[11px]">Driver signed digitally on mobile receipt upload</span>
-                          </div>
-                          <span className="text-blue-700 font-bold">Verified</span>
-                        </div>
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                        <span className="text-xs font-bold text-slate-900 block mb-1">Direct Auto-Posting to Machinery Khata</span>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          PillarVision extracts fuel volume, odometer hours, and dealer GSTIN. It automatically debit-allocates fuel expenditure to JCB-02 and credits the pump station account balance.
+                        </p>
                       </div>
-
-                      <p className="text-[11px] text-slate-500">
-                        Zero lost fuel slips at the end of the month. Never pay for phantom diesel again.
-                      </p>
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                        <span className="text-xs font-bold text-slate-900 block mb-1">Weighbridge &amp; Quarry Slips</span>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          Captures gross/tare weights and deduction for moisture, updating site crushed aggregate inventory in real-time.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -727,7 +680,7 @@ export function LandingPage({
               )}
 
               {/* Bottom Multi-Tenant isolation notice */}
-              <div className="px-5 py-3 bg-slate-100/80 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+              <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
                 <span>Enterprise multi-tenant isolation • AES-256 encrypted ledger records</span>
                 <Link href="/sign-up" className="text-blue-600 font-semibold hover:underline flex items-center gap-1">
                   <span>Open Your Firm Workspace</span>
@@ -741,7 +694,7 @@ export function LandingPage({
         </section>
 
         {/* ── Interactive Statutory Deduction Calculator ──────── */}
-        <section id="calculator" className="py-14 bg-white border-b border-slate-200">
+        <section id="calculator" className="py-14 md:py-18 border-b border-slate-200/80">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-8">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -755,14 +708,14 @@ export function LandingPage({
               </p>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xs">
               {/* Bill Amount Slider & Input */}
               <div className="mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                   <label htmlFor="bill-slider" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Gross Certified RA Bill Amount (₹)
                   </label>
-                  <span className="text-xl font-black text-slate-900 tabular-nums">
+                  <span className="text-2xl font-black text-slate-900 tabular-nums">
                     ₹{calcBillAmount.toLocaleString('en-IN')}
                   </span>
                 </div>
@@ -774,9 +727,9 @@ export function LandingPage({
                   step="500000"
                   value={calcBillAmount}
                   onChange={e => setCalcBillAmount(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-900"
+                  className="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-900"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-medium">
+                <div className="flex justify-between text-[10px] text-slate-400 mt-1.5 font-medium">
                   <span>₹5 Lakhs</span>
                   <span>₹1 Crore</span>
                   <span>₹2.5 Crore</span>
@@ -785,23 +738,23 @@ export function LandingPage({
               </div>
 
               {/* Calculator Settings Bar (Entity & Retention & Mode) */}
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 mb-5 space-y-3">
+              <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-200 mb-6 space-y-3.5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <span className="text-xs font-bold text-slate-800">Contractor Legal Entity</span>
                     <p className="text-[11px] text-slate-500">Determines Income Tax TDS rate under Section 194C</p>
                   </div>
-                  <div className="inline-flex rounded-lg bg-slate-100 p-1 text-xs font-semibold">
+                  <div className="inline-flex rounded-lg bg-slate-200/70 p-1 text-xs font-semibold">
                     <button
                       type="button"
                       onClick={() => setCalcContractorType('individual_proprietor')}
                       className={`px-3 py-1 rounded-md transition-all ${
                         calcContractorType === 'individual_proprietor'
                           ? 'bg-white text-slate-900 shadow-2xs'
-                          : 'text-slate-500 hover:text-slate-900'
+                          : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      Proprietorship / Individual (1% TDS)
+                      Proprietorship (1% TDS)
                     </button>
                     <button
                       type="button"
@@ -809,20 +762,20 @@ export function LandingPage({
                       className={`px-3 py-1 rounded-md transition-all ${
                         calcContractorType === 'company_firm'
                           ? 'bg-white text-slate-900 shadow-2xs'
-                          : 'text-slate-500 hover:text-slate-900'
+                          : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      Company / Partnership Firm (2% TDS)
+                      Company / Firm (2% TDS)
                     </button>
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2.5 border-t border-slate-200/80">
                   <div>
                     <span className="text-xs font-bold text-slate-800">Contractual Security Deposit (Retention)</span>
                     <p className="text-[11px] text-slate-500">Based on tender agreement or PBG exemption</p>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     {[
                       { label: '0% (Full PBG)', val: 0 },
                       { label: '2.5% (CPWD)', val: 2.5 },
@@ -835,8 +788,8 @@ export function LandingPage({
                         onClick={() => setCalcRetentionRate(p.val)}
                         className={`text-xs px-2.5 py-1 rounded-md border font-semibold transition-colors ${
                           calcRetentionRate === p.val
-                            ? 'bg-slate-900 text-white border-slate-900'
-                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-2xs'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
                         }`}
                       >
                         {p.label}
@@ -846,496 +799,180 @@ export function LandingPage({
                 </div>
 
                 {/* Mode Selector: Auto vs Manual Overrides */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between pt-2.5 border-t border-slate-200/80">
                   <span className="text-xs font-bold text-slate-800">Calculation Method</span>
-                  <div className="inline-flex rounded-lg bg-slate-100 p-0.5 text-xs font-semibold">
+                  <div className="inline-flex rounded-lg bg-slate-200/70 p-0.5 text-xs font-semibold">
                     <button
                       type="button"
                       onClick={() => setCalcMode('auto')}
-                      className={`px-2.5 py-1 rounded transition-all ${
-                        calcMode === 'auto' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                      className={`px-2.5 py-0.5 rounded-md transition-all ${
+                        calcMode === 'auto'
+                          ? 'bg-white text-slate-900 shadow-2xs'
+                          : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      ⚡ Standard Rates
+                      Standard Statutory Rules
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        setCalcMode('manual')
-                        if (!manualRetention) setManualRetention(String(autoRetention))
-                        if (!manualItTds) setManualItTds(String(autoItTds))
-                        if (!manualGstTds) setManualGstTds(String(autoGstTds))
-                        if (!manualLabourCess) setManualLabourCess(String(autoLabourCess))
-                      }}
-                      className={`px-2.5 py-1 rounded transition-all ${
-                        calcMode === 'manual' ? 'bg-slate-900 text-white shadow-2xs' : 'text-slate-500'
+                      onClick={() => setCalcMode('manual')}
+                      className={`px-2.5 py-0.5 rounded-md transition-all ${
+                        calcMode === 'manual'
+                          ? 'bg-white text-slate-900 shadow-2xs'
+                          : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      ✏️ Manual Input & Overrides
+                      Manual Exact Voucher Figures
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Deductions Breakdown Grid */}
-              {calcMode === 'auto' ? (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                  <div className="p-3 bg-white rounded-lg border border-slate-200">
-                    <p className="text-[11px] font-semibold text-slate-500">
-                      {calcRetentionRate}% Retention (SD)
-                    </p>
-                    <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
-                      -₹{retention.toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Held till DLP expiry</p>
-                  </div>
-
-                  <div className="p-3 bg-white rounded-lg border border-slate-200">
-                    <p className="text-[11px] font-semibold text-slate-500">
-                      {itTdsRate * 100}% IT TDS (Sec 194C)
-                    </p>
-                    <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
-                      -₹{itTds.toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      {calcContractorType === 'individual_proprietor' ? '1% Individual/Prop' : '2% Company/Firm'}
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-white rounded-lg border border-slate-200">
-                    <p className="text-[11px] font-semibold text-slate-500">2% GST TDS (Sec 51)</p>
-                    <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
-                      -₹{gstTds.toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">1% CGST + 1% SGST</p>
-                  </div>
-
-                  <div className="p-3 bg-white rounded-lg border border-slate-200">
-                    <p className="text-[11px] font-semibold text-slate-500">1% BOCW Cess</p>
-                    <p className="text-base font-bold text-slate-900 mt-0.5 tabular-nums">
-                      -₹{labourCess.toLocaleString('en-IN')}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Labour Welfare Board</p>
-                  </div>
-                </div>
-              ) : (
-                /* Manual Custom Entry Grid */
-                <div className="space-y-3 mb-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="p-3 bg-white rounded-lg border border-slate-200">
-                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
-                        Security Deposit / Retention (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={manualRetention}
-                        onChange={e => setManualRetention(e.target.value)}
-                        placeholder="0"
-                        className="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
-                      />
-                    </div>
-
-                    <div className="p-3 bg-white rounded-lg border border-slate-200">
-                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
-                        IT TDS (Sec 194C) (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={manualItTds}
-                        onChange={e => setManualItTds(e.target.value)}
-                        placeholder="0"
-                        className="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
-                      />
-                    </div>
-
-                    <div className="p-3 bg-white rounded-lg border border-slate-200">
-                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
-                        GST TDS (Sec 51) (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={manualGstTds}
-                        onChange={e => setManualGstTds(e.target.value)}
-                        placeholder="0"
-                        className="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
-                      />
-                    </div>
-
-                    <div className="p-3 bg-white rounded-lg border border-slate-200">
-                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
-                        BOCW Labour Cess (1%) (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={manualLabourCess}
-                        onChange={e => setManualLabourCess(e.target.value)}
-                        placeholder="0"
-                        className="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-3 bg-white rounded-lg border border-slate-200">
-                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
-                        Mineral Royalty / Transit Pass (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={manualRoyalty}
-                        onChange={e => setManualRoyalty(e.target.value)}
-                        placeholder="e.g. 25000"
-                        className="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
-                      />
-                    </div>
-
-                    <div className="p-3 bg-white rounded-lg border border-slate-200">
-                      <label className="text-[11px] font-semibold text-slate-700 block mb-1">
-                        QC Testing & Inspection Charges (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={manualTesting}
-                        onChange={e => setManualTesting(e.target.value)}
-                        placeholder="e.g. 15000"
-                        className="w-full text-xs p-1.5 border border-slate-300 rounded font-semibold focus:outline-none focus:ring-1 focus:ring-slate-900"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Net Disbursed Result */}
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* Deductions Breakdown Output */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-xs font-bold text-emerald-900 uppercase tracking-wider">
-                    Expected Net Bank Disbursement
-                  </p>
-                  <p className="text-xs text-emerald-700 mt-0.5">
-                    Total Deductions: ₹{totalDeductions.toLocaleString('en-IN')} ({totalDeductionsPct}% of Gross Bill)
-                  </p>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
+                    Statutory Deductions Breakdown
+                  </h4>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                      <div>
+                        <span className="font-semibold text-slate-800">Retention / Security Deposit</span>
+                        <span className="text-[10px] text-slate-500 block">DLP Release</span>
+                      </div>
+                      <span className="font-mono font-bold text-slate-900">₹{retention.toLocaleString('en-IN')}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                      <div>
+                        <span className="font-semibold text-slate-800">IT TDS (u/s 194C)</span>
+                        <span className="text-[10px] text-slate-500 block">{(itTdsRate * 100).toFixed(0)}% Tax Deduction</span>
+                      </div>
+                      <span className="font-mono font-bold text-slate-900">₹{itTds.toLocaleString('en-IN')}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                      <div>
+                        <span className="font-semibold text-slate-800">GST TDS (u/s 51)</span>
+                        <span className="text-[10px] text-slate-500 block">2% (1% CGST + 1% SGST)</span>
+                      </div>
+                      <span className="font-mono font-bold text-slate-900">₹{gstTds.toLocaleString('en-IN')}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                      <div>
+                        <span className="font-semibold text-slate-800">BOCW Labour Welfare Cess</span>
+                        <span className="text-[10px] text-slate-500 block">1% Cess</span>
+                      </div>
+                      <span className="font-mono font-bold text-slate-900">₹{labourCess.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-left sm:text-right">
-                  <span className="text-2xl font-black text-emerald-900 tabular-nums">
-                    ₹{netDisbursed.toLocaleString('en-IN')}
-                  </span>
-                  <span className="block text-[11px] text-emerald-700 font-medium">
-                    Reconciles across PFMS / Finance / State Treasury
-                  </span>
+
+                <div className="flex flex-col justify-between p-5 rounded-2xl bg-slate-50 border border-slate-200">
+                  <div>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                      Net Expected Bank Disbursal
+                    </span>
+                    <p className="text-3xl sm:text-4xl font-black text-emerald-700 mt-2 tabular-nums">
+                      ₹{netDisbursed.toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-xs text-slate-600 mt-1">
+                      Total Statutory Squeeze: <span className="font-bold text-rose-700">₹{totalDeductions.toLocaleString('en-IN')}</span> ({totalDeductionsPct}%)
+                    </p>
+                  </div>
+
+                  <div className="mt-5 pt-4 border-t border-slate-200/90 text-xs text-slate-500 space-y-1.5">
+                    <p>✓ Automated Form 43 bill reconciliation</p>
+                    <p>✓ Multi-tranche credit tracking (PFMS / State Treasury)</p>
+                    <p>✓ Defect Liability Period retention release reminders</p>
+                  </div>
                 </div>
               </div>
 
-              <p className="text-[11px] text-slate-400 mt-3 text-center">
-                Statutory Note: IT TDS is 1% for individuals/proprietorships and 2% for companies/LLPs under Sec 194C. GST TDS applies at 2% on taxable contracts &gt; ₹2.5L under Sec 51. Security deposit varies by agreement (0%–10%). All figures can be auto-applied or manually entered in PillarPro.
-              </p>
             </div>
           </div>
         </section>
 
-        {/* ── Interactive Clause 5 Delay Defense & LD Simulator ─── */}
-        <section id="clause5-sim" className="py-14 bg-slate-900 text-white border-b border-slate-800 relative overflow-hidden">
-          {/* Ambient glow */}
-          <div className="absolute -top-24 right-0 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="text-center max-w-2xl mx-auto mb-8">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold mb-3">
-                <IconShieldAlert className="w-3.5 h-3.5" />
-                CPWD GCC Clause 5 Defense Calculator
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                Simulate Your Firm’s Exposure to Liquidated Damages (LD)
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-400 mt-2">
-                Under standard government contracts, the department can penalize your firm up to 10% of the entire tender value for milestone delays. See how contemporaneous evidence shields you:
-              </p>
-            </div>
-
-            <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-6 backdrop-blur-sm">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="text-xs font-semibold text-slate-300">Total Tender Agreement Value (₹)</label>
-                    <span className="text-sm font-bold text-amber-400">₹{(simContractValue / 10000000).toFixed(2)} Cr</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="5000000"
-                    max="100000000"
-                    step="2500000"
-                    value={simContractValue}
-                    onChange={e => setSimContractValue(Number(e.target.value))}
-                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                    <span>₹50 Lakhs</span>
-                    <span>₹5 Crore</span>
-                    <span>₹10 Crore</span>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="text-xs font-semibold text-slate-300">Project Delay / Hindrance Duration</label>
-                    <span className="text-sm font-bold text-amber-400">{simDelayDays} Days</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="10"
-                    max="180"
-                    step="5"
-                    value={simDelayDays}
-                    onChange={e => setSimDelayDays(Number(e.target.value))}
-                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                    <span>10 Days</span>
-                    <span>90 Days</span>
-                    <span>180 Days</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Exposure vs Defense Comparison Box */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-red-950/40 border border-red-800/60">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Without Contemporaneous Logs</span>
-                    <span className="text-xs font-bold text-red-400">Departmental Risk</span>
-                  </div>
-                  <p className="text-2xl font-black text-red-300 mt-2 tabular-nums">
-                    -₹{accruedLdExposure.toLocaleString('en-IN')}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                    Arbitrary Liquidated Damages deducted from your final bill or security deposit under Clause 2/5 due to lack of contemporaneous proof.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-800/60">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">With PillarPro Clause 5 Defense</span>
-                    <span className="text-xs font-bold text-emerald-400">Airtight Shield</span>
-                  </div>
-                  <p className="text-2xl font-black text-emerald-300 mt-2 tabular-nums">
-                    ₹0 Deducted (Protected)
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                    Timestamped hindrance notices served to Executive Engineer establishing client-side delay (utility shifting, drawing revisions, site access).
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 pt-4 border-t border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                <span className="text-slate-400">
-                  Generates ready-to-print Section 5 extension letters formatted for Executive Engineers.
-                </span>
-                <Link
-                  href="/sign-up"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-colors shrink-0"
-                >
-                  <span>Shield Your Contracts</span>
-                  <IconArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── The 5 Core Pillars (High-Stakes Moats) ───────────── */}
-        <section id="capabilities" className="py-16 md:py-20 bg-[#F8FAFC] border-b border-slate-200">
+        {/* ── Unified 6-in-1 Contractor Operating Suite ───────── */}
+        <section id="suite" className="py-14 md:py-20 border-b border-slate-200/80">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-12">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                Built For High-Stakes Contracts
-              </span>
-              <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 mt-1 tracking-tight">
-                The 5 Proprietary Pillars Protecting Your Bottom Line
-              </h2>
-              <p className="text-sm text-slate-600 mt-3 leading-relaxed">
-                Standard apps manage simple office tasks. PillarPro solves the 5 brutal financial, contractual, and operational vulnerabilities where civil contractors lose lakhs of rupees.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Pillar 1: Multi-Agency RA Bill Audit */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
-                <div>
-                  <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center mb-4">
-                    <IconFileText className="w-5 h-5" />
-                  </div>
-                  <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider block">Pillar 01</span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-1">Multi-Agency RA Bill Audit &amp; Deductions</h3>
-                  <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
-                    Built for <strong className="text-slate-900">CPWD</strong> (audited by Accounts Branch &amp; credited via PFMS), <strong className="text-slate-900">NHPC &amp; PSUs</strong> (disbursed through corporate finance RTGS), and <strong className="text-slate-900">State PWD &amp; PMGSY</strong> (disbursed through State Treasuries). Reconciles statutory deductions and split bank credit tranches down to the exact rupee.
-                  </p>
-                </div>
-                <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
-                  ✓ Retention, IT TDS, GST TDS &amp; Labour Cess
-                </div>
-              </div>
-
-              {/* Pillar 2: Clause 5 Delay Defense */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
-                <div>
-                  <div className="h-10 w-10 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mb-4">
-                    <IconShieldAlert className="w-5 h-5" />
-                  </div>
-                  <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider block">Pillar 02</span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-1">Clause 5 Delay Defense &amp; LD Shield</h3>
-                  <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
-                    Protect your firm from devastating 10% Liquidated Damages penalty deductions under CPWD GCC Clause 5. Contemporaneous field hindrance logging with auto-drafted Extension of Time (EoT) notices to the Executive Engineer creates an unassailable evidentiary trail.
-                  </p>
-                </div>
-                <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
-                  ✓ Protects against arbitrary 10% contract cuts
-                </div>
-              </div>
-
-              {/* Pillar 3: PillarVision OCR */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
-                <div>
-                  <div className="h-10 w-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mb-4">
-                    <IconCamera className="w-5 h-5" />
-                  </div>
-                  <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">Pillar 03</span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-1">PillarVision™ Document Intelligence</h3>
-                  <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
-                    Mobile optical scanning purpose-built for harsh site conditions. Snap crumpled petrol pump slips, weighbridge receipts, and supplier challans from any smartphone camera. Instantly extracts items, quantity, vehicle numbers, and allocates to ledgers with zero manual typing.
-                  </p>
-                </div>
-                <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
-                  ✓ High-speed mobile optical scanning
-                </div>
-              </div>
-
-              {/* Pillar 4: Bank Guarantee & EMD Radar */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm">
-                <div>
-                  <div className="h-10 w-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mb-4">
-                    <IconClock className="w-5 h-5" />
-                  </div>
-                  <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">Pillar 04</span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-1">Bank Guarantee (PBG) &amp; EMD Radar</h3>
-                  <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
-                    Never lose track of a Performance BG, Mobilization Advance BG, or Earnest Money Deposit. Proactive 30-day alerts notify you before renewal deadlines, preventing departmental invocation and stopping banks from quietly deducting quarterly commission charges on completed projects.
-                  </p>
-                </div>
-                <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
-                  ✓ Stops recurring bank commission bleed
-                </div>
-              </div>
-
-              {/* Pillar 5: Partner Capital Parity & Khata */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-sm md:col-span-2">
-                <div>
-                  <div className="h-10 w-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center mb-4">
-                    <IconScale className="w-5 h-5" />
-                  </div>
-                  <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider block">Pillar 05</span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-1">Partner Capital Parity &amp; Joint Venture Ledger</h3>
-                  <p className="text-xs text-slate-600 mt-2.5 leading-relaxed">
-                    Civil tenders frequently run as multi-partner joint ventures where partners pay for diesel or material out of personal bank accounts or cash drawers. PillarPro logs every out-of-pocket contribution and partner drawing, automatically reconciling equity balances and net profit distributions to prevent painful year-end disputes.
-                  </p>
-                </div>
-                <div className="mt-6 pt-4 border-t border-slate-100 text-xs font-medium text-slate-500">
-                  ✓ Full partnership financial transparency &amp; profit sharing clarity
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── The Complete Operational Floor Suite Grid ────────── */}
-        <section id="suite" className="py-16 bg-white border-b border-slate-200">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-12">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                All-In-One Operations
+                Full Operational Command
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">
-                The Complete Site Suite You Expect — Plus What Others Can&apos;t Offer
+                All 6 Critical Site &amp; Office Books in One Architecture
               </h2>
               <p className="text-sm text-slate-600 mt-2">
-                PillarPro handles all the everyday site operations you need without needing five different disconnected apps:
+                Eliminate spreadsheet fragmentation. Run your entire government contracting firm through unified project ledgers.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {/* Feature 1: Labor Muster Roll */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-9 w-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
-                    👷
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-sm">Daily Labor Muster Rolls</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {/* Module 1: RA Bills */}
+              <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow">
+                <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/80 flex items-center justify-center text-lg mb-4">
+                  🏛️
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Log mason, beldar, and carpenter attendance, daily wage rates, overtime hours, and cash advance khatas directly from the site supervisor&apos;s phone.
+                <h3 className="font-bold text-slate-900 text-base">Client &amp; RA Bills Engine</h3>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  Reconcile gross certified abstracts against statutory deductions (Retention, TDS, Cess). Track multi-tranche agency credits from PFMS, PSU finance, and State Treasuries until zero balance variance.
                 </p>
               </div>
 
-              {/* Feature 2: Machinery & Diesel Logs */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-9 w-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm">
-                    🚜
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-sm">Machinery &amp; Diesel Logbooks</h3>
+              {/* Module 2: Clause 5 Delay Defense */}
+              <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow">
+                <div className="h-10 w-10 rounded-xl bg-amber-50 text-amber-800 border border-amber-200/80 flex items-center justify-center text-lg mb-4">
+                  🛡️
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Track excavator, tipper, roller, and batching plant run-hours, fuel issue slips, breakdown downtime, and consumption per hour (ltr/hr) to halt fuel theft.
+                <h3 className="font-bold text-slate-900 text-base">CPWD Clause 5 Delay Defense</h3>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  Log contemporaneous client-side hindrances (delayed drawing approvals, land handover, utility shifting) with timestamped notices to Executive Engineers, shielding your firm from 10% Liquidated Damages.
                 </p>
               </div>
 
-              {/* Feature 3: Supplier Khata & Carriage */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-9 w-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
-                    📦
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-sm">Supplier Khata &amp; Carriage</h3>
+              {/* Module 3: Muster Roll */}
+              <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow">
+                <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/80 flex items-center justify-center text-lg mb-4">
+                  👷‍♂️
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Procurement ledgers for cement, TMT steel, and aggregate with itemized freight &amp; transport carriage charges. Send 1-click WhatsApp payment khatas.
+                <h3 className="font-bold text-slate-900 text-base">Daily Muster &amp; Wages</h3>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  Mobile-optimized for site munshis under direct sunlight. Record mason/labour attendance, daily wage rates, cash advances, and overtime shifts with full offline sync.
                 </p>
               </div>
 
-              {/* Feature 4: Godown Inventory */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-9 w-9 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">
-                    🏢
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-sm">Godown &amp; Material Stock</h3>
+              {/* Module 4: Store & Materials */}
+              <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow">
+                <div className="h-10 w-10 rounded-xl bg-cyan-50 text-cyan-700 border border-cyan-200/80 flex items-center justify-center text-lg mb-4">
+                  📦
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Track material inflows and site issues, gate passes, minimum threshold stock warnings, and prevent cement bag expiry or unlogged shrinkage.
+                <h3 className="font-bold text-slate-900 text-base">Store &amp; Stock Inventory</h3>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  Goods Receipt Notes (GRN), gate passes, cement expiry warnings, and physical MAS reconciliation to eliminate unlogged site shrinkage and wastage.
                 </p>
               </div>
 
-              {/* Feature 5: Petty Cash & Munshi Vouchers */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-9 w-9 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm">
-                    💵
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-sm">Site Petty Cash &amp; Vouchers</h3>
+              {/* Module 5: Supplier Khata */}
+              <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow">
+                <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200/80 flex items-center justify-center text-lg mb-4">
+                  🏢
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Munshi daily cash reconciliation, hardware shop slips, tea and refreshments, with digital receipt attachments and contractor approval controls.
+                <h3 className="font-bold text-slate-900 text-base">Supplier Khata &amp; Payables</h3>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  Itemize material purchase invoices, track transport/carriage deductions, verify weighbridge receipts, and share PDF statements directly via WhatsApp.
                 </p>
               </div>
 
-              {/* Feature 6: Form 26 e-MB Ready */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-9 w-9 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center font-bold text-sm">
-                    📑
-                  </div>
-                  <h3 className="font-bold text-slate-900 text-sm">BOQ &amp; Form 26 Measurement</h3>
+              {/* Module 6: Petty Cash & Vouchers */}
+              <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow">
+                <div className="h-10 w-10 rounded-xl bg-rose-50 text-rose-700 border border-rose-200/80 flex items-center justify-center text-lg mb-4">
+                  🧾
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Maintain item-rate BOQ quantities, track previous bill vs cumulative up-to-date execution, and export clean measurement abstracts ready for Junior Engineers.
+                <h3 className="font-bold text-slate-900 text-base">Site Petty Cash &amp; Expenses</h3>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                  Daily imprest cash reconciliation, fuel slips, hardware store receipts, and repair vouchers with mobile photo attachments and contractor sign-off.
                 </p>
               </div>
             </div>
@@ -1343,23 +980,23 @@ export function LandingPage({
         </section>
 
         {/* ── Audit Comparison Specification Table ───────────── */}
-        <section id="specification" className="py-16 bg-white border-b border-slate-200">
+        <section id="specification" className="py-14 md:py-20 border-b border-slate-200/80">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-10">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Feature Specification
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1 tracking-tight">
-                PillarPro vs Generic Spreadsheets & Standard Accounting
+                PillarPro vs Generic Spreadsheets &amp; Standard Accounting
               </h2>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200/90 shadow-xs bg-white">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
+                  <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
                     <th scope="col" className="p-4">Capability</th>
-                    <th scope="col" className="p-4 text-slate-900 bg-slate-100/80 border-x border-slate-200 font-black">PillarPro OS</th>
+                    <th scope="col" className="p-4 text-slate-900 bg-slate-100/90 border-x border-slate-200 font-black">PillarPro OS</th>
                     <th scope="col" className="p-4">Excel Spreadsheets</th>
                     <th scope="col" className="p-4">Tally / Standard ERP</th>
                   </tr>
@@ -1369,9 +1006,9 @@ export function LandingPage({
                     <th scope="row" className="p-4 font-semibold text-slate-900 font-sans">
                       Government RA Bill Statutory Deductions (Retention, TDS, Cess)
                     </th>
-                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/50 border-x border-slate-200 flex items-center gap-1.5">
+                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/40 border-x border-slate-200 flex items-center gap-1.5">
                       <IconCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                      Automated & Reconciled
+                      Automated &amp; Reconciled
                     </td>
                     <td className="p-4 text-slate-500">Manual formula error risk</td>
                     <td className="p-4 text-slate-500">Requires complex journal adjustments</td>
@@ -1380,7 +1017,7 @@ export function LandingPage({
                     <th scope="row" className="p-4 font-semibold text-slate-900 font-sans">
                       Multi-Agency Disbursement Tracking (PFMS, PSU Finance, State Treasuries)
                     </th>
-                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/50 border-x border-slate-200 flex items-center gap-1.5">
+                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/40 border-x border-slate-200 flex items-center gap-1.5">
                       <IconCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                       Tranche-by-Tranche Audit
                     </td>
@@ -1395,9 +1032,9 @@ export function LandingPage({
                   </tr>
                   <tr>
                     <th scope="row" className="p-4 font-semibold text-slate-900 font-sans">
-                      Bank Guarantee & EMD Expiry Radar
+                      Bank Guarantee &amp; EMD Expiry Radar
                     </th>
-                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/50 border-x border-slate-200 flex items-center gap-1.5">
+                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/40 border-x border-slate-200 flex items-center gap-1.5">
                       <IconCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                       30-Day Automated Alert
                     </td>
@@ -1414,7 +1051,7 @@ export function LandingPage({
                     <th scope="row" className="p-4 font-semibold text-slate-900 font-sans">
                       Supplier Procurement with Carriage / Freight Charges
                     </th>
-                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/50 border-x border-slate-200 flex items-center gap-1.5">
+                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/40 border-x border-slate-200 flex items-center gap-1.5">
                       <IconCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                       Itemized Transport Cost
                     </td>
@@ -1423,9 +1060,9 @@ export function LandingPage({
                   </tr>
                   <tr>
                     <th scope="row" className="p-4 font-semibold text-slate-900 font-sans">
-                      Partner Capital Parity & Out-of-Pocket Ledger
+                      Partner Capital Parity &amp; Out-of-Pocket Ledger
                     </th>
-                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/50 border-x border-slate-200 flex items-center gap-1.5">
+                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/40 border-x border-slate-200 flex items-center gap-1.5">
                       <IconCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                       Real-time Equity Reconciliation
                     </td>
@@ -1436,7 +1073,7 @@ export function LandingPage({
                     <th scope="row" className="p-4 font-semibold text-slate-900 font-sans">
                       Mobile Field Usability Under Direct Sunlight
                     </th>
-                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/50 border-x border-slate-200 flex items-center gap-1.5">
+                    <td className="p-4 text-emerald-800 font-semibold bg-emerald-50/40 border-x border-slate-200 flex items-center gap-1.5">
                       <IconCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                       High-Contrast Glare-Free UI
                     </td>
@@ -1456,7 +1093,7 @@ export function LandingPage({
         </section>
 
         {/* ── FAQ Section (Clean Accordion) ───────────────────── */}
-        <section id="faq" className="py-16 bg-[#F8FAFC] border-b border-slate-200">
+        <section id="faq" className="py-14 md:py-20 border-b border-slate-200/80">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -1473,7 +1110,7 @@ export function LandingPage({
                 return (
                   <div
                     key={idx}
-                    className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm"
+                    className="rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-2xs"
                   >
                     <button
                       type="button"
@@ -1509,7 +1146,7 @@ export function LandingPage({
         </section>
 
         {/* ── Final Call To Action ────────────────────────────── */}
-        <section className="py-16 md:py-20 bg-white">
+        <section className="py-16 md:py-24">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
               Take Command of Your Contracting Finances Today
@@ -1521,7 +1158,7 @@ export function LandingPage({
             <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/sign-up"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-xs"
               >
                 <span>Launch Contractor Workspace Free</span>
                 <IconArrowRight className="w-4 h-4" />
@@ -1557,17 +1194,17 @@ export function LandingPage({
       />
 
       {/* ── Minimal Architectural Footer ─────────────────────── */}
-      <footer className="py-8 pb-24 md:pb-8 border-t border-slate-200 bg-white text-slate-500 text-xs">
+      <footer className="py-8 pb-24 md:pb-8 border-t border-slate-200/80 bg-[#F8F9FA] text-slate-500 text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Logo theme="light" size="sm" href="/" />
             <span className="text-slate-500 text-[11px]">
-              — Financial & Operations OS for Infrastructure Contractors
+              — Financial &amp; Operations OS for Infrastructure Contractors
             </span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[11px] text-slate-600 font-medium">
-            <Link href="/pricing" className="hover:text-slate-900 transition-colors">Plans & Pricing</Link>
+            <Link href="/pricing" className="hover:text-slate-900 transition-colors">Plans &amp; Pricing</Link>
             <Link href="/sign-in" className="hover:text-slate-900 transition-colors">Sign In</Link>
             <Link href="/sign-up" className="hover:text-slate-900 transition-colors">Create Firm Workspace</Link>
             <a href="mailto:contact@pillarprojk.com" className="hover:text-slate-900 transition-colors">Contact Us</a>
@@ -1579,7 +1216,7 @@ export function LandingPage({
       </footer>
 
       {/* ── Sticky Mobile Action Bar (Clean High-Contrast) ──── */}
-      <div className="fixed bottom-0 inset-x-0 z-40 md:hidden p-3 bg-white/95 backdrop-blur-sm border-t border-slate-200 shadow-lg">
+      <div className="fixed bottom-0 inset-x-0 z-40 md:hidden p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-lg">
         <div className="flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-slate-900 truncate">PillarPro OS</p>
@@ -1587,7 +1224,7 @@ export function LandingPage({
           </div>
           <Link
             href={isLoggedIn ? '/dashboard' : '/sign-up'}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm shrink-0"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-xs shrink-0"
           >
             <span>{isLoggedIn ? 'Dashboard' : 'Start Trial'}</span>
             <IconArrowRight className="w-3.5 h-3.5" />

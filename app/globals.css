@@ -16,6 +16,12 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Subtle enterprise SaaS micro-grid background */
+.bg-enterprise-grid {
+  background-image: radial-gradient(rgba(100, 116, 139, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
 /* ══════════════════════════════════════════
    PWA & MOBILE SAFE AREA INSETS
    ══════════════════════════════════════════ */

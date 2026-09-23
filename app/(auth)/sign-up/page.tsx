@@ -290,76 +290,75 @@ export default function SignUpPage() {
     : null
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F8F9FA] bg-enterprise-grid flex flex-col justify-center py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-5xl mx-auto">
-        <div className="relative rounded-3xl bg-white shadow-2xl border border-slate-800/20 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[680px]">
+        <div className="relative rounded-2xl bg-white shadow-xl border border-slate-200/90 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[680px]">
           
-          {/* ── Left Brand Showcase Column (Deep Slate Executive Command Theme) ── */}
-          <div className="order-2 lg:order-1 lg:col-span-5 bg-gradient-to-br from-slate-950 via-slate-900 to-[#0A1124] p-7 sm:p-9 lg:p-10 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-slate-800 text-white relative overflow-hidden">
-            {/* Subtle background ambient glow */}
-            <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+          {/* ── Left Brand Showcase Column (Refined Executive Slate Theme) ── */}
+          <div className="order-2 lg:order-1 lg:col-span-5 bg-slate-50/90 p-7 sm:p-9 lg:p-10 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-slate-200/80 text-slate-900 relative overflow-hidden">
+            {/* Subtle background ambient wash */}
+            <div className="absolute top-0 left-0 w-72 h-72 bg-blue-100/30 rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative z-10">
               <div className="hidden lg:flex items-center gap-3 mb-8">
-                <Logo theme="dark" size="md" subtitle="Civil Contractor OS" href="/" />
+                <Logo theme="light" size="md" subtitle="Civil Contractor OS" href="/" />
               </div>
 
               {/* Free Trial Pill */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-4 shadow-2xs">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-semibold mb-4 shadow-2xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
                 14-Day Free Trial • No Credit Card Required
               </div>
 
               {planLabel && (
-                <div className="mb-3 text-[11px] font-bold tracking-wide uppercase text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-500/20 inline-block">
+                <div className="mb-3 text-[11px] font-bold tracking-wide uppercase text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 inline-block">
                   Configuring Plan: {planLabel}
                 </div>
               )}
 
-              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white leading-tight">
+              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 leading-tight">
                 The Statutory &amp; Financial OS for Indian Civil Contractors
               </h1>
               
-              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+              <p className="text-xs text-slate-500 mt-2 leading-relaxed">
                 Protect contract margins, stop unfair liquidated damages, and reconcile multi-agency Running Account bills down to the exact rupee.
               </p>
 
               {/* Live Contract Audit Preview Card */}
-              <div className="mt-6 rounded-2xl bg-slate-900/90 border border-slate-800 p-4 shadow-xl space-y-3 backdrop-blur-sm">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+              <div className="mt-6 rounded-2xl bg-white border border-slate-200/90 p-4 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                   <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                    <span className="text-[11px] font-mono text-slate-300 font-semibold truncate max-w-[180px]">
+                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                    <span className="text-[11px] font-mono text-slate-700 font-semibold truncate max-w-[180px]">
                       NH-44 Bypass Package
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
                     RA-04 Certified
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-[11px]">
                   <div>
-                    <span className="text-slate-400 block text-[10px]">Gross Work Passed</span>
-                    <span className="font-bold text-white font-mono text-xs">₹54,00,000</span>
+                    <span className="text-slate-500 block text-[10px]">Gross Work Passed</span>
+                    <span className="font-bold text-slate-900 font-mono text-xs">₹54,00,000</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[10px]">Net Bank Disbursed</span>
-                    <span className="font-bold text-emerald-400 font-mono text-xs">₹48,60,000</span>
+                    <span className="text-slate-500 block text-[10px]">Net Bank Disbursed</span>
+                    <span className="font-bold text-emerald-700 font-mono text-xs">₹48,60,000</span>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400">
-                  <span>Clause 5 LD Protected: <b className="text-white font-mono">₹50,00,000</b></span>
-                  <span className="text-emerald-400 font-semibold">TDS / Cess Reconciled ✓</span>
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
+                  <span>Clause 5 LD Protected: <b className="text-slate-900 font-mono">₹50,00,000</b></span>
+                  <span className="text-emerald-700 font-semibold">TDS / Cess Reconciled ✓</span>
                 </div>
               </div>
 
               {/* Replaces 4 Disconnected Apps Ticker */}
               <div className="mt-6">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                  All-in-One: Replaces 4 Disconnected Apps &amp; Spreadsheets
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  All-in-One: Replaces Disconnected Apps &amp; Spreadsheets
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {[
@@ -374,7 +373,7 @@ export default function SignUpPage() {
                   ].map((feat, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-800/90 text-slate-300 border border-slate-700/60"
+                      className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white text-slate-700 border border-slate-200/80 shadow-2xs"
                     >
                       {feat}
                     </span>
@@ -384,14 +383,14 @@ export default function SignUpPage() {
             </div>
 
             {/* Trust Authorities Footer */}
-            <div className="mt-8 pt-4 border-t border-slate-800/80 text-[11px] text-slate-400 relative z-10">
+            <div className="mt-8 pt-4 border-t border-slate-200/80 text-[11px] text-slate-500 relative z-10">
               <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                <span className="font-semibold text-slate-300">Engineered for:</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">CPWD</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">State PWD</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">PMGSY</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">NHAI</span>
-                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-bold text-slate-200">NHPC</span>
+                <span className="font-semibold text-slate-700">Engineered for:</span>
+                <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-700">CPWD</span>
+                <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-700">State PWD</span>
+                <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-700">PMGSY</span>
+                <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-700">NHAI</span>
+                <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-700">NHPC</span>
               </div>
               <span className="text-[10px] text-slate-400">
                 Airtight multi-tenant isolation. Your tender rates and margins remain 100% confidential.
