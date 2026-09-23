@@ -50,7 +50,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
         {/* Bill of Quantities (BOQ) & e-MB */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between shadow-xs">
           <div>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-slate-900">Bill of Quantities (BOQ) & e-MB</h3>
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
                 Measurement Book
@@ -76,7 +76,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
         {/* Daily Progress Reports (DPR) */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between shadow-xs">
           <div>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-slate-900">Daily Progress Reports (DPR)</h3>
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
                 Site Diary
@@ -102,7 +102,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
         {/* Contractor's Ledger (Form 43) & DLP */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between shadow-xs">
           <div>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-slate-900">Contractor&apos;s Ledger</h3>
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
                 Form 43 & DLP
@@ -128,7 +128,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
         {/* Delay Defense & EOT Engine (Hindrance Register) */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between shadow-xs border-l-4 border-l-blue-600">
           <div>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-slate-900">Delay Defense &amp; EOT Engine</h3>
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
                 Clause 5 &bull; Form 27

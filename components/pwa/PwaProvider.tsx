@@ -36,8 +36,6 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     // 2. Detect iOS / iPadOS
     const ua = window.navigator.userAgent.toLowerCase()
     const isAppleDevice = /iphone|ipad|ipod/.test(ua)
-    // Avoid marking Chrome or other browsers on iOS as Safari if custom handling is needed
-    const isIosSafari = isAppleDevice && /safari/.test(ua) && !/crios|fxios|opios/.test(ua)
     setIsIOS(isAppleDevice)
 
     // 3. Register Service Worker in production or supported browsers
@@ -120,4 +118,3 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     </PwaContext.Provider>
   )
 }
-

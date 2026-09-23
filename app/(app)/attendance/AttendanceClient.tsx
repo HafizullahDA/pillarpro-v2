@@ -452,11 +452,11 @@ export function AttendanceClient({
   return (
     <div>
       {/* Module Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 mb-6 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 mb-6 pb-2 overflow-x-auto no-scrollbar max-w-full touch-pan-x">
         <button
           type="button"
           onClick={() => setActiveTab('attendance')}
-          className={`group flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ease-out select-none cursor-pointer ${
+          className={`group shrink-0 whitespace-nowrap flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ease-out select-none cursor-pointer ${
             activeTab === 'attendance'
               ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs hover:-translate-y-0.5 hover:shadow-sm hover:bg-blue-100/70 active:translate-y-0 active:scale-[0.98]'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white hover:-translate-y-0.5 hover:shadow-xs hover:border-slate-200/90 border border-transparent active:translate-y-0 active:scale-[0.98]'
@@ -471,7 +471,7 @@ export function AttendanceClient({
         <button
           type="button"
           onClick={() => setActiveTab('wages')}
-          className={`group flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ease-out select-none cursor-pointer ${
+          className={`group shrink-0 whitespace-nowrap flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ease-out select-none cursor-pointer ${
             activeTab === 'wages'
               ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs hover:-translate-y-0.5 hover:shadow-sm hover:bg-blue-100/70 active:translate-y-0 active:scale-[0.98]'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white hover:-translate-y-0.5 hover:shadow-xs hover:border-slate-200/90 border border-transparent active:translate-y-0 active:scale-[0.98]'

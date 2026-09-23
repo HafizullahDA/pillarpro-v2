@@ -74,6 +74,17 @@ html {
 }
 
 /* ══════════════════════════════════════════
+   NO SCROLLBAR UTILITY
+   ══════════════════════════════════════════ */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ══════════════════════════════════════════
    PRINT & PDF EXPORT STYLES
    ══════════════════════════════════════════ */
 

@@ -101,7 +101,7 @@ export function LedgerTabsHeader({ userRole = 'owner' }: LedgerTabsHeaderProps) 
         </div>
 
         {/* Unified Single-Themed Segmented Tabs (Matches PillarPro Blue/Slate Design System) */}
-        <div className="p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full">
+        <div className="p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full touch-pan-x overscroll-contain">
           {visibleTabs.map(tab => {
             const isActive = pathname.startsWith(tab.href)
             return (

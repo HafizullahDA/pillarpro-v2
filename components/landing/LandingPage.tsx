@@ -1118,9 +1118,11 @@ export function LandingPage({
                       onClick={() => toggleFaq(idx)}
                       aria-expanded={isOpen}
                       aria-controls={`faq-answer-${idx}`}
-                      className="w-full p-4.5 sm:p-5 text-left font-semibold text-slate-900 flex items-center justify-between gap-4 hover:bg-slate-50/80 transition-colors focus:outline-none"
+                      className="w-full px-4 py-3.5 sm:px-5 sm:py-4 text-left font-semibold text-slate-900 flex items-center justify-between gap-3 sm:gap-4 hover:bg-slate-50/80 transition-colors focus:outline-none cursor-pointer"
                     >
-                      <span className="text-sm font-bold">{faq.q}</span>
+                      <span className="text-xs sm:text-sm font-bold text-slate-900 leading-snug break-words flex-1 min-w-0 pr-2">
+                        {faq.q}
+                      </span>
                       <span
                         aria-hidden="true"
                         className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-blue-600' : ''}`}
@@ -1133,7 +1135,7 @@ export function LandingPage({
                         id={`faq-answer-${idx}`}
                         role="region"
                         aria-labelledby={`faq-btn-${idx}`}
-                        className="px-4.5 pb-5 sm:px-5 sm:pb-6 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3.5 bg-slate-50/40"
+                        className="px-4 pb-4 sm:px-5 sm:pb-5 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3.5 bg-slate-50/40 break-words"
                       >
                         {faq.a}
                       </div>

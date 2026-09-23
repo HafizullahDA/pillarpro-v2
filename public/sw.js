@@ -28,12 +28,20 @@ self.addEventListener('install', (event) => {
     caches
       .open(CACHE_NAME)
       .then(async (cache) => {
+        await cache.addAll(PRECACHE_ASSETS)
         try {
           await cache.addAll(PRECACHE_ASSETS)
         } catch (err) {
           console.warn('Some precache assets failed:', err)
         }
 
+        // `/offline` is a Next.js page. Cache its generated JS/CSS as well so
+        // the read-only local snapshot viewer can hydrate without a network.
+        const offlinePage = await fetch('/offline', { cache: 'reload' })
+        const html = await offlinePage.clone().text()
+        const assets = [...html.matchAll(/(?:src|href)="([^"?]+(?:\?[^\"]*)?)"/g)]
+          .map((match) => match[1])
+          .filter((asset) => asset.startsWith('/_next/'))
         try {
           // `/offline` is a Next.js page. Cache its generated JS/CSS as well so
           // the read-only local snapshot viewer can hydrate without a network.
@@ -44,6 +52,7 @@ self.addEventListener('install', (event) => {
               .map((match) => match[1])
               .filter((asset) => asset.startsWith('/_next/'))
 
+        await Promise.all(assets.map((asset) => cache.add(asset).catch(() => undefined)))
             await Promise.all(assets.map((asset) => cache.add(asset).catch(() => undefined)))
           }
         } catch (e) {

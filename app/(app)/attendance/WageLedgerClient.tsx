@@ -382,11 +382,11 @@ export function WageLedgerClient({
       )}
 
       {/* Period & Project Navigation Controls */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         {/* Left: Project Selector & Period Switcher */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           <select
-            className="rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-900 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="w-full sm:w-auto rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-900 bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             value={selectedProjectId}
             onChange={e => onSelectProject(e.target.value)}
           >
@@ -397,11 +397,11 @@ export function WageLedgerClient({
             ))}
           </select>
 
-          <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+          <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 max-w-full overflow-x-auto no-scrollbar">
             <button
               type="button"
               onClick={() => setPeriodType('weekly')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                 periodType === 'weekly'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -412,7 +412,7 @@ export function WageLedgerClient({
             <button
               type="button"
               onClick={() => setPeriodType('monthly')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                 periodType === 'monthly'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -424,7 +424,7 @@ export function WageLedgerClient({
         </div>
 
         {/* Right: Date Range Stepper */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="secondary"
             size="sm"
@@ -455,7 +455,7 @@ export function WageLedgerClient({
               variant="secondary"
               size="sm"
               onClick={currentWeek}
-              className="text-xs py-1 px-2.5 ml-1 text-slate-600"
+              className="text-xs py-1 px-2.5 text-slate-600"
             >
               This Week
             </Button>
