@@ -48,6 +48,10 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'PillarPro',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'application-name': 'PillarPro',
+  },
   openGraph: {
     type: 'website',
     locale: 'en_IN',
