@@ -1,0 +1,49 @@
+{
+  "packageId": "com.pillarprojk.app",
+  "host": "pillarprojk.com",
+  "name": "PillarPro",
+  "launcherName": "PillarPro",
+  "themeColor": "#2563eb",
+  "navigationColor": "#0f172a",
+  "backgroundColor": "#07090e",
+  "enableNotifications": true,
+  "startUrl": "/dashboard?utm_source=pwa&mode=standalone",
+  "iconUrl": "https://pillarprojk.com/icon-512.png",
+  "maskableIconUrl": "https://pillarprojk.com/icon-maskable.png",
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "shortName": "Dashboard",
+      "url": "https://pillarprojk.com/dashboard",
+      "chosenIconUrl": "https://pillarprojk.com/icon-192.png"
+    },
+    {
+      "name": "Projects",
+      "shortName": "Projects",
+      "url": "https://pillarprojk.com/projects",
+      "chosenIconUrl": "https://pillarprojk.com/icon-192.png"
+    },
+    {
+      "name": "Project Ledgers",
+      "shortName": "Ledgers",
+      "url": "https://pillarprojk.com/ledgers",
+      "chosenIconUrl": "https://pillarprojk.com/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://pillarprojk.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  }
+}

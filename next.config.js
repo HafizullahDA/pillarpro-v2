@@ -26,6 +26,13 @@ const nextConfig = {
 
     return [
       {
+        source: '/.well-known/assetlinks.json',
+        headers: [
+          { key: 'Content-Type', value: 'application/json' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+        ],
+      },
+      {
         source: '/sw.js',
         headers: [
           { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },

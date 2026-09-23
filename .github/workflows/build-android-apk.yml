@@ -1,0 +1,61 @@
+name: Build Android APK (TWA)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'public/manifest.json'
+      - 'twa-manifest.json'
+      - '.github/workflows/build-android-apk.yml'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli
+
+      - name: Initialize Android Project
+        run: |
+          mkdir -p android-build
+          cd android-build
+          cp ../twa-manifest.json .
+          bubblewrap init --manifest=https://pillarprojk.com/manifest.json --skip-signing
+
+      - name: Build Android APK
+        run: |
+          cd android-build
+          bubblewrap build --skip-signing || true
+
+      - name: Check Built APK Files
+        run: |
+          find . -name "*.apk" -o -name "*.aab"
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pillarpro-android-app
+          path: |
+            android-build/**/*.apk
+            android-build/**/*.aab
+          if-no-files-found: warn
