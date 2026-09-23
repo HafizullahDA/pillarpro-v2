@@ -1,20 +1,19 @@
 {
-  "name": "PillarPro",
-  "id": "/",
   "name": "PillarPro — Civil Contractor OS",
   "short_name": "PillarPro",
-  "description": "Financial & Operations Operating System for Civil & Infrastructure Contractors. Running Account (RA) bills, supplier khatas, site expenses, and muster rolls.",
-  "start_url": "/dashboard",
   "description": "Financial & Operations Operating System for Civil & Infrastructure Contractors. Running Account (RA) bills, statutory deductions, supplier khatas, and muster rolls.",
+  "id": "/",
   "start_url": "/dashboard?utm_source=pwa&mode=standalone",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
   "display_override": ["standalone", "window-controls-overlay", "fullscreen"],
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "background_color": "#07090e",
   "theme_color": "#2563eb",
+  "lang": "en",
+  "dir": "ltr",
   "categories": ["business", "finance", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.png",
@@ -23,8 +22,6 @@
       "purpose": "any"
     },
     {
-      "src": "/icon-maskable.png",
-      "sizes": "512x512",
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
@@ -55,6 +52,22 @@
       "purpose": "any"
     }
   ],
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot-desktop.png",
+      "sizes": "1024x653",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "PillarPro Desktop Command Center"
+    },
+    {
+      "src": "/screenshots/screenshot-mobile.png",
+      "sizes": "545x862",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "PillarPro Mobile Field Dashboard"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Dashboard",
@@ -75,6 +88,21 @@
       "name": "Delay Defense",
       "url": "/hindrances",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "share_target": {
+    "action": "/dashboard",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+pillarpro",
+      "url": "/dashboard?action=%s"
     }
   ]
 }

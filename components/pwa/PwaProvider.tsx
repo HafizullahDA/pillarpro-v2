@@ -41,30 +41,36 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     setIsIOS(isAppleDevice)
 
     // 3. Register Service Worker in production or supported browsers
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker
-          .register('/sw.js', { scope: '/' })
-          .then((registration) => {
-            // Check for service worker updates
-            registration.onupdatefound = () => {
-              const installingWorker = registration.installing
-              if (installingWorker) {
-                installingWorker.onstatechange = () => {
-                  if (
-                    installingWorker.state === 'installed' &&
-                    navigator.serviceWorker.controller
-                  ) {
-                    console.log('PillarPro updated in background. Ready for use.')
-                  }
+    const registerServiceWorker = () => {
+      navigator.serviceWorker
+        .register('/sw.js', { scope: '/' })
+        .then((registration) => {
+          // Check for service worker updates
+          registration.onupdatefound = () => {
+            const installingWorker = registration.installing
+            if (installingWorker) {
+              installingWorker.onstatechange = () => {
+                if (
+                  installingWorker.state === 'installed' &&
+                  navigator.serviceWorker.controller
+                ) {
+                  console.log('PillarPro updated in background. Ready for use.')
                 }
               }
             }
-          })
-          .catch((error) => {
-            console.warn('Service Worker registration failed:', error)
-          })
-      })
+          }
+        })
+        .catch((error) => {
+          console.warn('Service Worker registration failed:', error)
+        })
+    }
+
+    if ('serviceWorker' in navigator) {
+      if (document.readyState === 'complete') {
+        registerServiceWorker()
+      } else {
+        window.addEventListener('load', registerServiceWorker)
+      }
     }
 
     // 4. Listen for Chrome / Android beforeinstallprompt event
