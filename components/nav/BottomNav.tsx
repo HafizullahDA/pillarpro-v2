@@ -168,14 +168,16 @@ export function BottomNav({
               key={tab.href}
               href={tab.href}
               className={cn(
-                'flex-1 flex flex-col items-center gap-0.5 pt-2 pb-3 text-xs font-medium transition-colors',
+                'flex-1 flex flex-col items-center justify-center gap-0.5 pt-2 pb-3 text-xs font-medium transition-colors min-w-0',
                 active ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-700',
               )}
             >
-              <span className={active ? 'text-blue-600' : 'text-slate-400'}>
+              <span className={cn('shrink-0', active ? 'text-blue-600' : 'text-slate-400')}>
                 {Icons[tab.icon as keyof typeof Icons]}
               </span>
-              {tabLabel}
+              <span className="truncate max-w-full text-center px-0.5 whitespace-nowrap text-[11px] leading-tight">
+                {tabLabel}
+              </span>
             </Link>
           )
         })}
@@ -184,15 +186,17 @@ export function BottomNav({
         <button
           onClick={() => setMoreOpen(v => !v)}
           className={cn(
-            'flex-1 flex flex-col items-center gap-0.5 pt-2 pb-3 text-xs font-medium transition-colors',
+            'flex-1 flex flex-col items-center justify-center gap-0.5 pt-2 pb-3 text-xs font-medium transition-colors min-w-0',
             moreOpen || isMoreActive ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-700',
           )}
           aria-label="More navigation options"
         >
-          <span className={moreOpen || isMoreActive ? 'text-blue-600' : 'text-slate-400'}>
+          <span className={cn('shrink-0', moreOpen || isMoreActive ? 'text-blue-600' : 'text-slate-400')}>
             {Icons.more}
           </span>
-          {t('nav.more', 'More')}
+          <span className="truncate max-w-full text-center px-0.5 whitespace-nowrap text-[11px] leading-tight">
+            {t('nav.more', 'More')}
+          </span>
         </button>
       </nav>
 

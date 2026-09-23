@@ -76,23 +76,23 @@ export function LedgerTabsHeader({ userRole = 'owner' }: LedgerTabsHeaderProps) 
   )
 
   return (
-    <div className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-2xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3.5 pb-2.5 space-y-2.5">
+    <div className="bg-white border-b border-slate-200 md:sticky md:top-0 z-20 shadow-2xs">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-2 sm:pt-3.5 sm:pb-2.5 space-y-2 sm:space-y-2.5">
         {/* Hub Header Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-xs">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-xs shrink-0">
                 📚
               </span>
               <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                 {locale === 'hi' ? 'प्रोजेक्ट लेजर व खाते' : 'Project Ledgers'}
               </h1>
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
                 6-in-1 Books
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5 hidden sm:block">
               {locale === 'hi'
                 ? 'साइट खाते: मजदूरी, माल स्टॉक, मशीनरी व ईंधन, सप्लायर बिल, क्लाइंट क्लेम एवं छिटपुट खर्चा'
                 : 'Primary site registers: Labour, Store inventory, Machinery & diesel, Supplier khata, RA bills, and Petty cash.'}
