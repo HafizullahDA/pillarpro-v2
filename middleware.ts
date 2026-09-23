@@ -55,6 +55,7 @@ export async function middleware(request: NextRequest) {
     '/api/health',
     '/api/auth/rate-limit',
     '/api/log-error',
+    '/api/assetlinks',
   ]
 
   const isApiRoute = pathname.startsWith('/api/')

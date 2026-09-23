@@ -11,6 +11,14 @@ const nextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/.well-known/assetlinks.json',
+        destination: '/api/assetlinks',
+      },
+    ]
+  },
   async headers() {
     const cspDirectives = [
       "default-src 'self'",
