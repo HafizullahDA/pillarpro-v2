@@ -1,25 +1,60 @@
 {
-  "name": "PillarPro",
-  "id": "/",
   "name": "PillarPro — Civil Contractor OS",
   "short_name": "PillarPro",
-  "description": "Financial & Operations Operating System for Civil & Infrastructure Contractors. Running Account (RA) bills, supplier khatas, site expenses, and muster rolls.",
-  "start_url": "/dashboard",
   "description": "Financial & Operations Operating System for Civil & Infrastructure Contractors. Running Account (RA) bills, statutory deductions, supplier khatas, and muster rolls.",
   "id": "/",
   "start_url": "/dashboard?utm_source=pwa&mode=standalone",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "display_override": ["standalone", "window-controls-overlay", "fullscreen"],
-  "orientation": "portrait-primary",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui",
+    "fullscreen"
+  ],
   "orientation": "any",
   "background_color": "#07090e",
   "theme_color": "#2563eb",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["business", "finance", "productivity"],
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.pillarprojk.app",
+      "id": "com.pillarprojk.app"
+    }
+  ],
   "prefer_related_applications": false,
+  "scope_extensions": [
+    {
+      "origin": "https://pillarprojk.com"
+    },
+    {
+      "origin": "https://*.pillarprojk.com"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "auto"
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "file_handlers": [
+    {
+      "action": "/dashboard",
+      "name": "CSV Spreadsheet",
+      "accept": {
+        "text/csv": [".csv"],
+        "application/vnd.ms-excel": [".csv"]
+      }
+    }
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -28,8 +63,6 @@
       "purpose": "any"
     },
     {
-      "src": "/icon-maskable.png",
-      "sizes": "512x512",
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",

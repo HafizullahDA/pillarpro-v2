@@ -86,6 +86,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                  navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function(){});
+                } else {
+                  window.addEventListener('DOMContentLoaded', function() {
+                    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function(){});
+                  });
+                }
+              }
+            `,
+          }}
+        />
         <PwaProvider>
           {children}
         </PwaProvider>
