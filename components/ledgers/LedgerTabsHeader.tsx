@@ -152,9 +152,12 @@ export function LedgerTabsHeader({ userRole = 'owner' }: LedgerTabsHeaderProps) 
                   'flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0',
                   isActive ? tab.activeClass : tab.inactiveClass
                   'flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0',
+                  'flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all shrink-0',
                   isActive
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                    ? 'bg-blue-600 text-white shadow-xs font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/80 font-medium'
                 )}
               >
                 <span
@@ -170,6 +173,7 @@ export function LedgerTabsHeader({ userRole = 'owner' }: LedgerTabsHeaderProps) 
                 <div className="flex flex-col items-start leading-tight">
                   <span className="text-xs tracking-tight">
                   <span className={cn('text-xs font-semibold tracking-tight', isActive ? 'text-white' : 'text-slate-800')}>
+                  <span className={cn('text-xs tracking-tight', isActive ? 'text-white font-semibold' : 'text-slate-800')}>
                     {locale === 'hi' ? tab.labelHi : tab.labelEn}
                   </span>
                   <span
