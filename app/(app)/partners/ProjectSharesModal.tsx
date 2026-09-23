@@ -89,18 +89,47 @@ export function ProjectSharesModal({
     setError('')
 
     try {
+      // Resolve organization_id to satisfy RLS policy
+      let orgId: string | null = null
+      try {
+        const { data: rpcOrgId } = await supabase.rpc('get_user_organization_id')
+        if (rpcOrgId) orgId = rpcOrgId
+      } catch {
+        // fallback
+      }
+      if (!orgId) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('organization_id')
+              .eq('id', user.id)
+              .maybeSingle()
+            if (profile?.organization_id) orgId = profile.organization_id
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       // Upsert shares for each partner
       for (const p of partners) {
         const pct = parseFloat(shares[p.id] || '0')
+        const shareRecord: Record<string, any> = {
+          project_id: selectedProjectId,
+          partner_id: p.id,
+          share_percentage: pct,
+          updated_at: new Date().toISOString(),
+        }
+        if (orgId) {
+          shareRecord.organization_id = orgId
+        }
+
         const { error: upsertErr } = await supabase
           .from('project_partners')
           .upsert(
-            {
-              project_id: selectedProjectId,
-              partner_id: p.id,
-              share_percentage: pct,
-              updated_at: new Date().toISOString(),
-            },
+            shareRecord,
             { onConflict: 'project_id,partner_id' }
           )
 

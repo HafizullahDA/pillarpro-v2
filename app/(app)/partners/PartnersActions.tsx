@@ -63,14 +63,68 @@ export function PartnersActions({
     setWhich('tx')
   }
 
+  const getOrgId = async (): Promise<string | null> => {
+    try {
+      const { data: rpcOrgId } = await supabase.rpc('get_user_organization_id')
+      if (rpcOrgId) return rpcOrgId
+    } catch {
+      // fallback
+    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .maybeSingle()
+        if (profile?.organization_id) return profile.organization_id
+      }
+    } catch {
+      // ignore
+    }
+    return null
+  }
+
   const savePartner = async () => {
     if (!pForm.name.trim()) { setError('Partner name is required.'); return }
     setSaving(true); setError('')
-    const { error: err } = await supabase.from('partners').insert({
-      name: pForm.name.trim(),
-      opening_balance: parseFloat(pForm.opening_balance) || 0,
-      notes: pForm.notes.trim() || null,
-    })
+
+    const trimmedName = pForm.name.trim()
+    const opBal = parseFloat(pForm.opening_balance) || 0
+    const notesVal = pForm.notes.trim() || null
+
+    // 1. Try atomic create_partner SECURITY DEFINER RPC first (100% immune to RLS race conditions)
+    try {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('create_partner', {
+        p_name: trimmedName,
+        p_opening_balance: opBal,
+        p_notes: notesVal,
+      })
+      if (!rpcErr && rpcData) {
+        setSaving(false)
+        setWhich(null)
+        setPForm({ name: '', opening_balance: '0', notes: '' })
+        router.refresh()
+        return
+      }
+    } catch {
+      // RPC fallback to direct insert
+    }
+
+    // 2. Resolve organization_id to satisfy RLS WITH CHECK policy
+    const orgId = await getOrgId()
+
+    const payload: Record<string, any> = {
+      name: trimmedName,
+      opening_balance: opBal,
+      notes: notesVal,
+    }
+    if (orgId) {
+      payload.organization_id = orgId
+    }
+
+    const { error: err } = await supabase.from('partners').insert(payload)
     setSaving(false)
     if (err) { setError(err.message); return }
     setWhich(null); setPForm({ name: '', opening_balance: '0', notes: '' }); router.refresh()
@@ -113,7 +167,9 @@ export function PartnersActions({
       ? 'bank_transfer'
       : (tForm.mode.toLowerCase().replace('/', '_').replace(' ', '_') as any)
 
-    const { error: err } = await supabase.from('partner_transactions').insert({
+    const orgId = await getOrgId()
+
+    const txPayload: Record<string, any> = {
       partner_id: tForm.partner_id,
       project_id: tForm.project_id || null,
       transaction_type,
@@ -123,7 +179,12 @@ export function PartnersActions({
       mode: modeFormatted,
       reference: tForm.reference.trim() || null,
       notes: tForm.notes.trim() || null,
-    })
+    }
+    if (orgId) {
+      txPayload.organization_id = orgId
+    }
+
+    const { error: err } = await supabase.from('partner_transactions').insert(txPayload)
 
     setSaving(false)
     if (err) { setError(err.message); return }

@@ -309,7 +309,30 @@ export function AddExpenseButton({
 
       // 4. Create partner_transactions record if paid out-of-pocket by partner
       if (form.paid_by_partner_id) {
-        const { error: pTxErr } = await supabase.from('partner_transactions').insert({
+        let orgId: string | null = null
+        try {
+          const { data: rpcOrgId } = await supabase.rpc('get_user_organization_id')
+          if (rpcOrgId) orgId = rpcOrgId
+        } catch {
+          // fallback
+        }
+        if (!orgId) {
+          try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+              const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('organization_id')
+                .eq('id', user.id)
+                .maybeSingle()
+              if (profile?.organization_id) orgId = profile.organization_id
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        const partnerTxPayload: Record<string, any> = {
           partner_id: form.paid_by_partner_id,
           project_id: payload.project_id || null,
           transaction_type: 'paid_by_partner',
@@ -320,7 +343,12 @@ export function AddExpenseButton({
           reference: payload.reference,
           notes: `Out-of-pocket: ${payload.description || form.category}`,
           expense_id: expData?.id || null,
-        })
+        }
+        if (orgId) {
+          partnerTxPayload.organization_id = orgId
+        }
+
+        const { error: pTxErr } = await supabase.from('partner_transactions').insert(partnerTxPayload)
 
         if (pTxErr) {
           console.error('Failed to link partner transaction:', pTxErr)
