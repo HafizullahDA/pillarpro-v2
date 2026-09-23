@@ -113,6 +113,7 @@ export function LedgerTabsHeader({ userRole = 'owner' }: LedgerTabsHeaderProps) 
 
   return (
     <div className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-xs">
+    <div className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3.5 pb-2.5 space-y-2.5">
         {/* Hub Header Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -125,6 +126,7 @@ export function LedgerTabsHeader({ userRole = 'owner' }: LedgerTabsHeaderProps) 
                 {locale === 'hi' ? 'प्रोजेक्ट लेजर व खाते' : 'Project Ledgers'}
               </h1>
               <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                 6-in-1 Books
               </span>
             </div>
@@ -138,6 +140,8 @@ export function LedgerTabsHeader({ userRole = 'owner' }: LedgerTabsHeaderProps) 
 
         {/* Horizontal Scrollable Tabs with High-Visibility Colors */}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+        {/* Unified Single-Themed Segmented Tabs (Matches PillarPro Blue/Slate Design System) */}
+        <div className="p-1 bg-slate-100 rounded-2xl border border-slate-200/80 flex items-center gap-1 overflow-x-auto no-scrollbar max-w-full">
           {visibleTabs.map(tab => {
             const isActive = pathname.startsWith(tab.href)
             return (
@@ -147,24 +151,33 @@ export function LedgerTabsHeader({ userRole = 'owner' }: LedgerTabsHeaderProps) 
                 className={cn(
                   'flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0',
                   isActive ? tab.activeClass : tab.inactiveClass
+                  'flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0',
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
                 )}
               >
                 <span
                   className={cn(
                     'h-6 w-6 flex items-center justify-center rounded-lg text-sm shrink-0 shadow-2xs transition-colors',
                     isActive ? tab.iconBgActive : tab.iconBgInactive
+                    'h-6 w-6 flex items-center justify-center rounded-lg text-sm shrink-0 transition-colors',
+                    isActive ? 'bg-blue-500/40 text-white' : 'bg-white text-slate-700 shadow-2xs border border-slate-200/60'
                   )}
                 >
                   {tab.icon}
                 </span>
                 <div className="flex flex-col items-start leading-tight">
                   <span className="text-xs tracking-tight">
+                  <span className={cn('text-xs font-semibold tracking-tight', isActive ? 'text-white' : 'text-slate-800')}>
                     {locale === 'hi' ? tab.labelHi : tab.labelEn}
                   </span>
                   <span
                     className={cn(
                       'text-[9px] tracking-tight',
                       isActive ? tab.subLabelActive : tab.subLabelInactive
+                      'text-[9px] font-normal tracking-tight',
+                      isActive ? 'text-blue-100' : 'text-slate-400'
                     )}
                   >
                     {tab.subLabel}
