@@ -1,0 +1,26 @@
+import { NextResponse } from 'next/server'
+
+export const dynamic = 'force-static'
+
+export async function GET() {
+  const assetlinks = [
+    {
+      relation: ['delegate_permission/common.handle_all_urls'],
+      target: {
+        namespace: 'android_app',
+        package_name: 'com.pillarprojk.app',
+        sha256_cert_fingerprints: [
+          '14:6D:E9:7D:0F:52:AB:E6:51:76:F8:78:A8:10:97:5B:3D:23:CE:F5:F4:02:64:1C:87:C5:1B:32:0C:5D:F2:18',
+        ],
+      },
+    },
+  ]
+
+  return NextResponse.json(assetlinks, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  })
+}
