@@ -970,6 +970,7 @@ export function NewRABillDrawer({
             >
               <option value="">— No Previous Bill (First Cumulative Bill) —</option>
               {raBills
+                .filter(b => b.project_id === billForm.project_id)
                 .filter(b => b.project_id === billForm.project_id && (!editBill || b.id !== editBill.id))
                 .map(b => (
                   <option key={b.id} value={b.id}>

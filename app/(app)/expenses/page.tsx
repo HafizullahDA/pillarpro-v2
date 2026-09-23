@@ -1,48 +1,7 @@
-import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
-import { ExpensesClient, ExpenseRow } from './ExpensesClient'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
-export const metadata: Metadata = {
-  title: 'Project Expenses',
-}
-
-export default async function ExpensesPage() {
-  const supabase = createClient()
-  const [
-    { data: userRole },
-    { data: projects },
-    { data: suppliers },
-    { data: partners },
-    { data: expenses },
-  ] = await Promise.all([
-    supabase.rpc('get_user_role'),
-    supabase.from('projects').select('id, name').eq('archived', false).order('name'),
-    supabase.from('suppliers').select('id, name').order('name'),
-    supabase.from('partners').select('id, name').order('name'),
-    supabase
-      .from('expenses')
-      .select('id, project_id, description, category, amount, date, payment_mode, receipt_url, paid_by_partner_id, projects(name), partners(name)')
-      .order('date', { ascending: false })
-      .limit(100),
-  ])
-
-  const activeProjects = projects ?? []
-  const activeProjectIds = new Set(activeProjects.map(p => p.id))
-
-  const activeExpenses = (expenses ?? []).filter(
-    e => !e.project_id || activeProjectIds.has(e.project_id)
-  )
-
-  return (
-    <ExpensesClient
-      initialExpenses={(activeExpenses as unknown as ExpenseRow[]) ?? []}
-      projects={activeProjects}
-      suppliers={suppliers ?? []}
-      partners={partners ?? []}
-      userRole={(userRole as string) ?? ''}
-    />
-  )
+export default function ExpensesRedirect() {
+  redirect('/ledgers/expenses')
 }

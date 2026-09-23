@@ -13,8 +13,8 @@ import { useLanguage } from '@/lib/i18n/LanguageContext'
 const PRIMARY_TABS = [
   { href: '/dashboard',  label: 'Home',       i18nKey: 'nav.dashboard',  icon: 'dashboard'  },
   { href: '/projects',   label: 'Projects',   i18nKey: 'nav.projects',   icon: 'projects'   },
-  { href: '/attendance', label: 'Attendance', i18nKey: 'nav.attendance', icon: 'attendance' },
-  { href: '/expenses',   label: 'Expenses',   i18nKey: 'nav.expenses',   icon: 'expenses'   },
+  { href: '/ledgers',    label: 'Ledgers',    i18nKey: 'nav.ledgers',    icon: 'ledgers'    },
+  { href: '/hindrances', label: 'Defense',    i18nKey: 'nav.hindrances', icon: 'shield'     },
 ]
 
 // All other NAV_ITEMS appear in the "More" drawer on mobile
