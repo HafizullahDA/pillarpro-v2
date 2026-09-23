@@ -96,12 +96,24 @@ export function isSubscriptionActive(
   const status = (org.subscription_status || 'trialing').toLowerCase() as SubscriptionStatus
 
   if (status === 'trialing') {
-    if (org.trial_ends_at) {
-      return new Date(org.trial_ends_at).getTime() > referenceDate.getTime()
+    const now = referenceDate.getTime()
+    if (org.created_at && org.trial_ends_at) {
+      const signupTime = new Date(org.created_at).getTime()
+      const explicitEndTime = new Date(org.trial_ends_at).getTime()
+      const effectiveEndTime = Math.max(
+        !isNaN(signupTime) ? signupTime + 14 * 24 * 60 * 60 * 1000 : 0,
+        !isNaN(explicitEndTime) ? explicitEndTime : 0
+      )
+      return effectiveEndTime > now
     }
     if (org.created_at) {
-      const trialEndTime = new Date(org.created_at).getTime() + 14 * 24 * 60 * 60 * 1000
-      return trialEndTime > referenceDate.getTime()
+      const signupTime = new Date(org.created_at).getTime()
+      if (!isNaN(signupTime)) {
+        return signupTime + 14 * 24 * 60 * 60 * 1000 > now
+      }
+    }
+    if (org.trial_ends_at) {
+      return new Date(org.trial_ends_at).getTime() > now
     }
     return true // Fallback to active 14-day trial for new workspaces
   }
@@ -117,23 +129,36 @@ export function isSubscriptionActive(
 
 /**
  * Calculates days remaining in a free trial.
+ * Real countdown from the day of signing up: deducts 1 day every 24 hours.
  */
 export function getRemainingTrialDays(
   trialEndsAt?: string | null,
   referenceDate: Date = new Date(),
   createdAt?: string | null
 ): number {
-  if (trialEndsAt) {
-    const diffMs = new Date(trialEndsAt).getTime() - referenceDate.getTime()
-    if (diffMs <= 0) return 0
-    return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-  }
+  const now = referenceDate.getTime()
+
+  // 1. If user signup timestamp (createdAt) is available, countdown strictly from signup date
   if (createdAt) {
-    const trialEndTime = new Date(createdAt).getTime() + 14 * 24 * 60 * 60 * 1000
-    const diffMs = trialEndTime - referenceDate.getTime()
-    if (diffMs <= 0) return 0
-    return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+    const signupTime = new Date(createdAt).getTime()
+    if (!isNaN(signupTime)) {
+      const trialEndTime = signupTime + 14 * 24 * 60 * 60 * 1000
+      const diffMs = trialEndTime - now
+      if (diffMs <= 0) return 0
+      return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+    }
   }
+
+  // 2. Fallback to explicit trialEndsAt if set
+  if (trialEndsAt) {
+    const trialEndTime = new Date(trialEndsAt).getTime()
+    if (!isNaN(trialEndTime)) {
+      const diffMs = trialEndTime - now
+      if (diffMs <= 0) return 0
+      return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+    }
+  }
+
   // Default fallback for fresh workspaces without explicit DB timestamps
   return 14
 }

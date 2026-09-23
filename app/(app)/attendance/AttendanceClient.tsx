@@ -456,13 +456,13 @@ export function AttendanceClient({
         <button
           type="button"
           onClick={() => setActiveTab('attendance')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+          className={`group flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ease-out select-none cursor-pointer ${
             activeTab === 'attendance'
-              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs hover:-translate-y-0.5 hover:shadow-sm hover:bg-blue-100/70 active:translate-y-0 active:scale-[0.98]'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white hover:-translate-y-0.5 hover:shadow-xs hover:border-slate-200/90 border border-transparent active:translate-y-0 active:scale-[0.98]'
           }`}
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 transition-transform duration-200 ease-out group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
           </svg>
           Daily Muster Roll
@@ -471,13 +471,13 @@ export function AttendanceClient({
         <button
           type="button"
           onClick={() => setActiveTab('wages')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+          className={`group flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ease-out select-none cursor-pointer ${
             activeTab === 'wages'
-              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-xs hover:-translate-y-0.5 hover:shadow-sm hover:bg-blue-100/70 active:translate-y-0 active:scale-[0.98]'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white hover:-translate-y-0.5 hover:shadow-xs hover:border-slate-200/90 border border-transparent active:translate-y-0 active:scale-[0.98]'
           }`}
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 transition-transform duration-200 ease-out group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
           Wage Ledger & Settlements

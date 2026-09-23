@@ -245,23 +245,23 @@ export function InventoryClient({
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-slate-200 gap-1">
         <button
           onClick={() => setActiveTab('stock')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all duration-200 ease-out select-none cursor-pointer ${
             activeTab === 'stock'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              ? 'border-blue-600 text-blue-600 hover:-translate-y-0.5'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]'
           }`}
         >
           Stock Register ({initialItems.length})
         </button>
         <button
           onClick={() => setActiveTab('ledger')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all duration-200 ease-out select-none cursor-pointer ${
             activeTab === 'ledger'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              ? 'border-blue-600 text-blue-600 hover:-translate-y-0.5'
+              : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]'
           }`}
         >
           In/Out Ledger ({initialTransactions.length})

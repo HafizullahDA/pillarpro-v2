@@ -101,7 +101,7 @@ export function LedgerTabsHeader({ userRole = 'owner' }: LedgerTabsHeaderProps) 
         </div>
 
         {/* Unified Single-Themed Segmented Tabs (Matches PillarPro Blue/Slate Design System) */}
-        <div className="p-1 bg-slate-100 rounded-2xl border border-slate-200/80 flex items-center gap-1 overflow-x-auto no-scrollbar max-w-full">
+        <div className="p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full">
           {visibleTabs.map(tab => {
             const isActive = pathname.startsWith(tab.href)
             return (
@@ -109,28 +109,35 @@ export function LedgerTabsHeader({ userRole = 'owner' }: LedgerTabsHeaderProps) 
                 key={tab.id}
                 href={tab.href}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all shrink-0',
+                  'group relative flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all duration-200 ease-out shrink-0 select-none cursor-pointer',
                   isActive
-                    ? 'bg-blue-600 text-white shadow-xs font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/80 font-medium'
+                    ? 'bg-blue-600 text-white shadow-xs font-semibold hover:-translate-y-0.5 hover:shadow-md hover:shadow-blue-600/30 hover:bg-blue-500 active:translate-y-0 active:scale-[0.98]'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white hover:-translate-y-0.5 hover:shadow-xs hover:border-slate-200/90 border border-transparent font-medium active:translate-y-0 active:scale-[0.98]'
                 )}
               >
                 <span
                   className={cn(
-                    'h-6 w-6 flex items-center justify-center rounded-lg text-sm shrink-0 transition-colors',
-                    isActive ? 'bg-blue-500/40 text-white' : 'bg-white text-slate-700 shadow-2xs border border-slate-200/60'
+                    'h-6 w-6 flex items-center justify-center rounded-lg text-sm shrink-0 transition-all duration-200 ease-out',
+                    isActive
+                      ? 'bg-blue-500/40 text-white group-hover:scale-110'
+                      : 'bg-white text-slate-700 shadow-2xs border border-slate-200/60 group-hover:scale-110 group-hover:-rotate-3 group-hover:border-blue-200 group-hover:shadow-xs'
                   )}
                 >
                   {tab.icon}
                 </span>
                 <div className="flex flex-col items-start leading-tight">
-                  <span className={cn('text-xs tracking-tight', isActive ? 'text-white font-semibold' : 'text-slate-800')}>
+                  <span
+                    className={cn(
+                      'text-xs tracking-tight transition-colors duration-150',
+                      isActive ? 'text-white font-semibold' : 'text-slate-800 group-hover:text-blue-700 font-medium'
+                    )}
+                  >
                     {locale === 'hi' ? tab.labelHi : tab.labelEn}
                   </span>
                   <span
                     className={cn(
-                      'text-[9px] font-normal tracking-tight',
-                      isActive ? 'text-blue-100' : 'text-slate-400'
+                      'text-[9px] font-normal tracking-tight transition-colors duration-150',
+                      isActive ? 'text-blue-100' : 'text-slate-400 group-hover:text-slate-600'
                     )}
                   >
                     {tab.subLabel}

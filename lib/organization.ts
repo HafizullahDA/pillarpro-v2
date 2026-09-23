@@ -19,6 +19,7 @@ export interface OrganizationProfile {
   max_active_sites?: number | null
   billing_cycle?: string | null
   created_at?: string | null
+  user_created_at?: string | null
 }
 
 export const DEFAULT_ORGANIZATION: OrganizationProfile = {
@@ -44,14 +45,30 @@ export const DEFAULT_ORGANIZATION: OrganizationProfile = {
 /**
  * Fetch the active organization profile client-side.
  * Uses get_organization_profile RPC with fallback to querying public.organizations or DEFAULT_ORGANIZATION.
+ * Accurately merges user signup timestamp (created_at) for real-time trial deduction.
  */
 export async function getClientOrganization(): Promise<OrganizationProfile> {
   const supabase = createClient()
 
+  let userCreatedAt: string | null = null
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.created_at) {
+      userCreatedAt = user.created_at
+    }
+  } catch {
+    // ignore
+  }
+
   try {
     const { data, error } = await supabase.rpc('get_organization_profile')
     if (!error && data) {
-      return data as OrganizationProfile
+      const orgData = data as OrganizationProfile
+      return {
+        ...orgData,
+        created_at: userCreatedAt || orgData.user_created_at || orgData.created_at,
+        user_created_at: userCreatedAt || orgData.user_created_at,
+      }
     }
 
     // Direct table fallback
@@ -62,13 +79,21 @@ export async function getClientOrganization(): Promise<OrganizationProfile> {
       .limit(1)
 
     if (orgs && orgs.length > 0) {
-      return orgs[0] as OrganizationProfile
+      return {
+        ...orgs[0],
+        created_at: userCreatedAt || orgs[0].created_at,
+        user_created_at: userCreatedAt,
+      } as OrganizationProfile
     }
   } catch {
     // If migration hasn't been executed in Supabase yet, use default fallback
   }
 
-  return DEFAULT_ORGANIZATION
+  return {
+    ...DEFAULT_ORGANIZATION,
+    created_at: userCreatedAt,
+    user_created_at: userCreatedAt,
+  }
 }
 
 /**

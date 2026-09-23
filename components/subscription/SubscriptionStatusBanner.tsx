@@ -2,28 +2,52 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import { getClientOrganization, OrganizationProfile } from '@/lib/organization'
 import { getEffectiveSubscription, EffectiveSubscription } from '@/lib/subscription'
 
-export function SubscriptionStatusBanner() {
+interface SubscriptionStatusBannerProps {
+  userCreatedAt?: string | null
+}
+
+export function SubscriptionStatusBanner({ userCreatedAt }: SubscriptionStatusBannerProps = {}) {
   const [sub, setSub] = useState<EffectiveSubscription | null>(null)
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
     let mounted = true
-    getClientOrganization()
-      .then((org: OrganizationProfile) => {
-        if (mounted) {
-          setSub(getEffectiveSubscription(org))
+
+    async function loadSubscription() {
+      try {
+        const supabase = createClient()
+        let signupDate = userCreatedAt
+
+        if (!signupDate) {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user?.created_at) {
+            signupDate = user.created_at
+          }
         }
-      })
-      .catch(() => {
+
+        const org = await getClientOrganization()
+        if (mounted) {
+          const orgWithSignup: OrganizationProfile = {
+            ...org,
+            created_at: signupDate || org.user_created_at || org.created_at,
+          }
+          setSub(getEffectiveSubscription(orgWithSignup))
+        }
+      } catch {
         // Graceful silence if organization loading fails
-      })
+      }
+    }
+
+    loadSubscription()
+
     return () => {
       mounted = false
     }
-  }, [])
+  }, [userCreatedAt])
 
   if (!sub || dismissed) return null
 
