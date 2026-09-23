@@ -257,7 +257,7 @@ export default function SignInPage() {
               </h1>
 
               <div className="mt-6 space-y-3 text-xs text-slate-600 leading-relaxed">
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300/80 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 cursor-default">
                   <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs border border-blue-200/80">
                     ✓
                   </div>
@@ -267,7 +267,7 @@ export default function SignInPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300/80 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 cursor-default">
                   <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs border border-blue-200/80">
                     ✓
                   </div>
@@ -277,7 +277,7 @@ export default function SignInPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300/80 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 cursor-default">
                   <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs border border-blue-200/80">
                     ✓
                   </div>
@@ -437,7 +437,7 @@ export default function SignInPage() {
                 <button
                   type="submit"
                   disabled={loading || cooldown > 0}
-                  className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 active:scale-[0.98] shadow-xs hover:shadow-md hover:shadow-blue-500/25 hover:-translate-y-0.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>

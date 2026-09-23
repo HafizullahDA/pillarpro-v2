@@ -208,7 +208,7 @@ export function PricingClient() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
             
             {/* ── CARD 1: Bootstrap / Sub-Contractor ─── */}
-            <div className="flex flex-col rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex flex-col rounded-2xl bg-white border border-slate-200/90 p-6 sm:p-8 shadow-xs hover:shadow-xl hover:shadow-blue-500/8 hover:border-blue-300/80 hover:-translate-y-1.5 transition-all duration-300 ease-out">
               <div className="mb-6">
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-[11px] font-bold uppercase tracking-wider mb-3">
                   Sub-Contractor & Starter
@@ -292,7 +292,7 @@ export function PricingClient() {
 
               <Link
                 href="/sign-up?plan=bootstrap"
-                className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-900 bg-white border border-slate-300 hover:bg-slate-50 transition-colors shadow-2xs"
+                className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-900 bg-white border border-slate-300 hover:bg-slate-50 hover:border-slate-400 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 shadow-2xs"
               >
                 <span>Start 14-Day Free Trial</span>
                 <IconArrowRight className="w-4 h-4 text-slate-600" />
@@ -300,7 +300,7 @@ export function PricingClient() {
             </div>
 
             {/* ── CARD 2: Growth Contractor (RECOMMENDED) ─── */}
-            <div className="relative flex flex-col rounded-2xl bg-slate-900 text-white border-2 border-slate-900 p-6 sm:p-8 shadow-xl">
+            <div className="relative flex flex-col rounded-2xl bg-slate-900 text-white border-2 border-slate-900 p-6 sm:p-8 shadow-xl hover:shadow-2xl hover:shadow-blue-500/20 hover:-translate-y-2 transition-all duration-300 ease-out">
               {/* Highlight Ribbon */}
               <div className="absolute -top-3.5 inset-x-0 flex justify-center">
                 <span className="px-3.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide bg-emerald-500 text-white shadow-md flex items-center gap-1.5">
@@ -396,7 +396,7 @@ export function PricingClient() {
 
               <Link
                 href="/sign-up?plan=growth"
-                className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-900 bg-white hover:bg-slate-100 transition-colors shadow-md"
+                className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-900 bg-white hover:bg-slate-100 hover:-translate-y-0.5 active:scale-[0.98] hover:shadow-lg hover:shadow-white/20 transition-all duration-200 shadow-md"
               >
                 <span>Start 14-Day Free Trial</span>
                 <IconArrowRight className="w-4 h-4 text-slate-900" />
@@ -404,7 +404,7 @@ export function PricingClient() {
             </div>
 
             {/* ── CARD 3: Enterprise Infra ─── */}
-            <div className="flex flex-col rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex flex-col rounded-2xl bg-white border border-slate-200/90 p-6 sm:p-8 shadow-xs hover:shadow-xl hover:shadow-blue-500/8 hover:border-blue-300/80 hover:-translate-y-1.5 transition-all duration-300 ease-out">
               <div className="mb-6">
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-[11px] font-bold uppercase tracking-wider mb-3">
                   Infra Conglomerates & EPC
@@ -489,7 +489,7 @@ export function PricingClient() {
               <div className="space-y-2">
                 <Link
                   href="/sign-up?plan=enterprise"
-                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 hover:-translate-y-0.5 active:scale-[0.98] hover:shadow-md transition-all duration-200 shadow-sm"
                 >
                   <span>Start 14-Day Free Trial</span>
                   <IconArrowRight className="w-4 h-4" />
@@ -520,7 +520,7 @@ export function PricingClient() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col justify-between">
+              <div className="p-4 rounded-xl bg-slate-50 hover:bg-blue-50/20 border border-slate-200/80 hover:border-blue-200/80 hover:-translate-y-0.5 hover:shadow-2xs flex flex-col justify-between transition-all duration-200">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-sm font-bold text-slate-900">Tally Prime Direct Sync Connector</h4>
@@ -536,7 +536,7 @@ export function PricingClient() {
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col justify-between">
+              <div className="p-4 rounded-xl bg-slate-50 hover:bg-blue-50/20 border border-slate-200/80 hover:border-blue-200/80 hover:-translate-y-0.5 hover:shadow-2xs flex flex-col justify-between transition-all duration-200">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-sm font-bold text-slate-900">Assisted Tender & BOQ Digitization</h4>
@@ -635,7 +635,7 @@ export function PricingClient() {
               </div>
 
               {/* Real-time Math Output (Right Column) */}
-              <div className="lg:col-span-5 flex flex-col justify-between p-6 rounded-xl bg-slate-800 border border-slate-700 space-y-5">
+              <div className="lg:col-span-5 flex flex-col justify-between p-6 rounded-xl bg-slate-800 border border-slate-700 space-y-5 hover:border-slate-600 transition-colors duration-200">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Annual Software Cost Comparison</p>
                   
@@ -660,7 +660,7 @@ export function PricingClient() {
                 </div>
 
                 {/* Net Savings Box */}
-                <div className="p-4 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-center">
+                <div className="p-4 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-center hover:border-emerald-500/60 transition-colors duration-200">
                   <p className="text-xs uppercase tracking-wider font-extrabold text-emerald-400">Your Annual Cash Savings</p>
                   <p className="text-3xl font-extrabold text-white font-mono mt-1">
                     ₹{annualSavings.toLocaleString('en-IN')}
@@ -672,7 +672,7 @@ export function PricingClient() {
 
                 <Link
                   href={`/sign-up?plan=${calcSites <= 2 ? 'bootstrap' : calcSites <= 6 ? 'growth' : 'enterprise'}`}
-                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-900 bg-white hover:bg-slate-100 transition-colors shadow-sm"
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-900 bg-white hover:bg-slate-100 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 shadow-sm"
                 >
                   <span>Start 14-Day Free Trial</span>
                   <IconArrowRight className="w-4 h-4 text-slate-900" />
@@ -884,7 +884,7 @@ export function PricingClient() {
               return (
                 <div
                   key={index}
-                  className="rounded-xl border border-slate-200 bg-white transition-colors overflow-hidden"
+                  className="rounded-xl border border-slate-200/90 bg-white hover:border-blue-300/80 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
                 >
                   <button
                     type="button"
@@ -911,9 +911,9 @@ export function PricingClient() {
 
         {/* ── Final Conversion CTA Banner ──────────────────────── */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-18">
-          <div className="rounded-2xl bg-slate-900 text-white p-8 sm:p-12 text-center shadow-xl border border-slate-800">
+          <div className="rounded-2xl bg-slate-900 text-white p-8 sm:p-12 text-center shadow-xl hover:shadow-2xl hover:shadow-blue-900/20 hover:-translate-y-1 border border-slate-800 transition-all duration-300 ease-out">
             <h3 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-              Stop Leaking RA Bill Deductions & Unclaimed Delays
+              Stop Leaking RA Bill Deductions &amp; Unclaimed Delays
             </h3>
             <p className="mt-4 text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed">
               Join leading civil contractors across CPWD, State PWD, and PMGSY. Set up your active project in under 2 minutes and defend every rupee of your contract margin.
@@ -921,20 +921,20 @@ export function PricingClient() {
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
               <Link
                 href="/sign-up"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-900 bg-white hover:bg-slate-100 transition-colors shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-900 bg-white hover:bg-slate-100 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 shadow-sm"
               >
                 <span>Launch 14-Day Free Trial</span>
                 <IconArrowRight className="w-4 h-4" />
               </Link>
               <a
                 href="mailto:contact@pillarprojk.com?subject=Contractor%20Demo%20Request"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200"
               >
                 <span>Request Assisted Demo</span>
               </a>
             </div>
             <p className="mt-5 text-[11px] text-slate-400">
-              No credit card required • Official GST B2B Invoice • CPWD Clause 5 & Form 26 Compliant
+              No credit card required • Official GST B2B Invoice • CPWD Clause 5 &amp; Form 26 Compliant
             </p>
           </div>
         </section>

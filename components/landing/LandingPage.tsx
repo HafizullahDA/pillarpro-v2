@@ -377,7 +377,7 @@ export function LandingPage({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200/80">
-                    <div className="p-6 bg-gradient-to-br from-white to-blue-50/25">
+                    <div className="p-6 bg-gradient-to-br from-white to-blue-50/25 hover:bg-blue-50/40 transition-colors duration-200">
                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Gross Work Certified</p>
                       <p className="text-2xl font-black text-slate-900 mt-1.5 tabular-nums">₹42,00,000</p>
                       <p className="text-xs text-slate-500 mt-1">Abstract of Measurements (MB 142)</p>
@@ -393,7 +393,7 @@ export function LandingPage({
                       </div>
                     </div>
 
-                    <div className="p-6 bg-gradient-to-br from-white to-rose-50/35">
+                    <div className="p-6 bg-gradient-to-br from-white to-rose-50/35 hover:bg-rose-50/50 transition-colors duration-200">
                       <div className="flex items-center justify-between">
                         <p className="text-xs font-semibold text-rose-700 uppercase tracking-wider">Statutory Deductions (10%)</p>
                         <span className="text-xs font-bold text-rose-700">-₹4,20,000</span>
@@ -421,7 +421,7 @@ export function LandingPage({
                       </p>
                     </div>
 
-                    <div className="p-6 bg-gradient-to-br from-white to-emerald-50/35">
+                    <div className="p-6 bg-gradient-to-br from-white to-emerald-50/35 hover:bg-emerald-50/50 transition-colors duration-200">
                       <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Net Bank Credits Received</p>
                       <p className="text-2xl font-black text-emerald-700 mt-1.5 tabular-nums">₹37,80,000</p>
                       <p className="text-xs text-slate-500 mt-1">Multi-Tranche Agency Disbursement</p>
@@ -478,7 +478,7 @@ export function LandingPage({
                         <span className="col-span-2 sm:col-span-2 text-right">Notice Status</span>
                       </div>
                       <div className="divide-y divide-slate-100 text-slate-700 bg-white">
-                        <div className="px-4 py-3.5 grid grid-cols-12 gap-2 items-center">
+                        <div className="px-4 py-3.5 grid grid-cols-12 gap-2 items-center hover:bg-amber-50/40 transition-colors duration-150">
                           <span className="col-span-3 sm:col-span-2 font-mono text-slate-500">12 Feb 2026</span>
                           <span className="col-span-5 sm:col-span-6">
                             <strong className="text-slate-900 block font-semibold">Delayed Site Handover (Km 14+200 to 16+000)</strong>
@@ -492,7 +492,7 @@ export function LandingPage({
                           </span>
                         </div>
 
-                        <div className="px-4 py-3.5 grid grid-cols-12 gap-2 items-center">
+                        <div className="px-4 py-3.5 grid grid-cols-12 gap-2 items-center hover:bg-amber-50/40 transition-colors duration-150">
                           <span className="col-span-3 sm:col-span-2 font-mono text-slate-500">04 Mar 2026</span>
                           <span className="col-span-5 sm:col-span-6">
                             <strong className="text-slate-900 block font-semibold">Delayed GAD Drawing for Box Culvert</strong>
@@ -506,7 +506,7 @@ export function LandingPage({
                           </span>
                         </div>
 
-                        <div className="px-4 py-3.5 grid grid-cols-12 gap-2 items-center">
+                        <div className="px-4 py-3.5 grid grid-cols-12 gap-2 items-center hover:bg-amber-50/40 transition-colors duration-150">
                           <span className="col-span-3 sm:col-span-2 font-mono text-slate-500">28 Mar 2026</span>
                           <span className="col-span-5 sm:col-span-6">
                             <strong className="text-slate-900 block font-semibold">33kV Electric Transmission Line Shifting</strong>
@@ -522,7 +522,7 @@ export function LandingPage({
                       </div>
                     </div>
 
-                    <div className="p-4 bg-amber-50/80 border border-amber-200/90 rounded-2xl flex items-center justify-between text-xs shadow-2xs">
+                    <div className="p-4 bg-amber-50/80 border border-amber-200/90 rounded-2xl flex items-center justify-between text-xs shadow-2xs hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200">
                       <span className="text-amber-950 font-medium">
                         🛡️ <strong>Airtight Defense:</strong> When the Executive Engineer assesses final milestone deadlines, contemporaneous Clause 5 notices prevent arbitrary 10% LD cuts in dispute arbitration.
                       </span>
@@ -558,7 +558,7 @@ export function LandingPage({
                   </div>
 
                   <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                    <div className="md:col-span-5 bg-slate-900 text-white p-4.5 rounded-2xl border border-slate-800 shadow-lg">
+                    <div className="md:col-span-5 bg-slate-900 text-white p-4.5 rounded-2xl border border-slate-800 shadow-lg hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 ease-out">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3 text-[11px] text-slate-400 font-mono">
                         <span>PILLARVISION™ CAM CAPTURE</span>
                         <span className="text-emerald-400 font-bold">99.4% CONFIDENCE</span>
@@ -581,13 +581,13 @@ export function LandingPage({
                     </div>
 
                     <div className="md:col-span-7 space-y-3.5">
-                      <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+                      <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-xs hover:border-emerald-300/80 transition-all duration-200">
                         <span className="text-xs font-bold text-slate-900 block mb-1">Direct Auto-Posting to Machinery Khata</span>
                         <p className="text-xs text-slate-600 leading-relaxed">
                           PillarVision extracts fuel volume, odometer hours, and dealer GSTIN. It automatically debit-allocates fuel expenditure to JCB-02 and credits the pump station account balance.
                         </p>
                       </div>
-                      <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs">
+                      <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:-translate-y-0.5 hover:shadow-xs hover:border-emerald-300/80 transition-all duration-200">
                         <span className="text-xs font-bold text-slate-900 block mb-1">Weighbridge &amp; Quarry Slips</span>
                         <p className="text-xs text-slate-600 leading-relaxed">
                           Captures gross/tare weights and deduction for moisture, updating site crushed aggregate inventory in real-time.
@@ -632,7 +632,7 @@ export function LandingPage({
                         <span className="col-span-2 sm:col-span-2 text-right">Expiry Radar</span>
                       </div>
                       <div className="divide-y divide-slate-100 text-slate-700 bg-white">
-                        <div className="px-4 py-3.5 grid grid-cols-12 gap-2 items-center bg-rose-50/30">
+                        <div className="px-4 py-3.5 grid grid-cols-12 gap-2 items-center bg-rose-50/30 hover:bg-rose-50/60 transition-colors duration-150">
                           <span className="col-span-3 sm:col-span-2">
                             <strong className="text-slate-900 block font-semibold">PBG/8912</strong>
                             <span className="text-slate-400 text-[10px]">SBI Main Branch</span>
@@ -651,7 +651,7 @@ export function LandingPage({
                           </span>
                         </div>
 
-                        <div className="px-4 py-3.5 grid grid-cols-12 gap-2 items-center">
+                        <div className="px-4 py-3.5 grid grid-cols-12 gap-2 items-center hover:bg-slate-50 transition-colors duration-150">
                           <span className="col-span-3 sm:col-span-2">
                             <strong className="text-slate-900 block font-semibold">EMD/4410</strong>
                             <span className="text-slate-400 text-[10px]">J&amp;K Bank Residency</span>
@@ -672,7 +672,7 @@ export function LandingPage({
                       </div>
                     </div>
 
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600 shadow-2xs">
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600 shadow-2xs hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200">
                       💡 <strong>Surrender Reminder:</strong> Once a completion certificate is signed, PillarPro prompts your liaison officer to collect the original physical BG letter from the EE division so you can surrender it to the bank immediately, eliminating unnecessary margin lockups.
                     </div>
                   </div>
@@ -835,7 +835,7 @@ export function LandingPage({
                     Statutory Deductions Breakdown
                   </h4>
                   <div className="space-y-2 text-xs">
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-100">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-100 hover:bg-blue-50/50 hover:border-blue-200/80 hover:-translate-y-0.5 hover:shadow-2xs transition-all duration-200 cursor-default">
                       <div>
                         <span className="font-semibold text-slate-800">Retention / Security Deposit</span>
                         <span className="text-[10px] text-slate-500 block">DLP Release</span>
@@ -843,7 +843,7 @@ export function LandingPage({
                       <span className="font-mono font-bold text-slate-900">₹{retention.toLocaleString('en-IN')}</span>
                     </div>
 
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-100">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-100 hover:bg-blue-50/50 hover:border-blue-200/80 hover:-translate-y-0.5 hover:shadow-2xs transition-all duration-200 cursor-default">
                       <div>
                         <span className="font-semibold text-slate-800">IT TDS (u/s 194C)</span>
                         <span className="text-[10px] text-slate-500 block">{(itTdsRate * 100).toFixed(0)}% Tax Deduction</span>
@@ -851,7 +851,7 @@ export function LandingPage({
                       <span className="font-mono font-bold text-slate-900">₹{itTds.toLocaleString('en-IN')}</span>
                     </div>
 
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-100">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-100 hover:bg-blue-50/50 hover:border-blue-200/80 hover:-translate-y-0.5 hover:shadow-2xs transition-all duration-200 cursor-default">
                       <div>
                         <span className="font-semibold text-slate-800">GST TDS (u/s 51)</span>
                         <span className="text-[10px] text-slate-500 block">2% (1% CGST + 1% SGST)</span>
@@ -859,7 +859,7 @@ export function LandingPage({
                       <span className="font-mono font-bold text-slate-900">₹{gstTds.toLocaleString('en-IN')}</span>
                     </div>
 
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-100">
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-100 hover:bg-blue-50/50 hover:border-blue-200/80 hover:-translate-y-0.5 hover:shadow-2xs transition-all duration-200 cursor-default">
                       <div>
                         <span className="font-semibold text-slate-800">BOCW Labour Welfare Cess</span>
                         <span className="text-[10px] text-slate-500 block">1% Cess</span>
@@ -869,7 +869,7 @@ export function LandingPage({
                   </div>
                 </div>
 
-                <div className="flex flex-col justify-between p-6 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-emerald-50/30 to-white border border-emerald-200/80 shadow-xs">
+                <div className="flex flex-col justify-between p-6 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-emerald-50/30 to-white border border-emerald-200/80 shadow-xs hover:-translate-y-1 hover:shadow-md hover:shadow-emerald-500/10 hover:border-emerald-300 transition-all duration-300 ease-out">
                   <div>
                     <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block">
                       Net Expected Bank Disbursal
@@ -991,7 +991,7 @@ export function LandingPage({
               </h2>
             </div>
 
-            <div className="overflow-x-auto rounded-3xl border border-slate-200/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white/95 backdrop-blur-md">
+            <div className="overflow-x-auto rounded-3xl border border-slate-200/90 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgb(0,0,0,0.06)] bg-white/95 backdrop-blur-md transition-shadow duration-300">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
@@ -1002,7 +1002,7 @@ export function LandingPage({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 text-slate-600">
-                  <tr>
+                  <tr className="hover:bg-blue-50/30 transition-colors duration-150">
                     <th scope="row" className="p-4 sm:p-5 font-semibold text-slate-900 font-sans">
                       Government RA Bill Statutory Deductions (Retention, TDS, Cess)
                     </th>
@@ -1013,7 +1013,7 @@ export function LandingPage({
                     <td className="p-4 sm:p-5 text-slate-500">Manual formula error risk</td>
                     <td className="p-4 sm:p-5 text-slate-500">Requires complex journal adjustments</td>
                   </tr>
-                  <tr>
+                  <tr className="hover:bg-blue-50/30 transition-colors duration-150">
                     <th scope="row" className="p-4 sm:p-5 font-semibold text-slate-900 font-sans">
                       Multi-Agency Disbursement Tracking (PFMS, PSU Finance, State Treasuries)
                     </th>
@@ -1030,7 +1030,7 @@ export function LandingPage({
                       No milestone link
                     </td>
                   </tr>
-                  <tr>
+                  <tr className="hover:bg-blue-50/30 transition-colors duration-150">
                     <th scope="row" className="p-4 sm:p-5 font-semibold text-slate-900 font-sans">
                       Bank Guarantee &amp; EMD Expiry Radar
                     </th>
@@ -1047,7 +1047,7 @@ export function LandingPage({
                       No expiry warning system
                     </td>
                   </tr>
-                  <tr>
+                  <tr className="hover:bg-blue-50/30 transition-colors duration-150">
                     <th scope="row" className="p-4 sm:p-5 font-semibold text-slate-900 font-sans">
                       Supplier Procurement with Carriage / Freight Charges
                     </th>
@@ -1058,7 +1058,7 @@ export function LandingPage({
                     <td className="p-4 sm:p-5 text-slate-500">Unclear landed cost</td>
                     <td className="p-4 sm:p-5 text-slate-500">Manual voucher split</td>
                   </tr>
-                  <tr>
+                  <tr className="hover:bg-blue-50/30 transition-colors duration-150">
                     <th scope="row" className="p-4 sm:p-5 font-semibold text-slate-900 font-sans">
                       Partner Capital Parity &amp; Out-of-Pocket Ledger
                     </th>
@@ -1069,7 +1069,7 @@ export function LandingPage({
                     <td className="p-4 sm:p-5 text-slate-500">Frequent partner disputes</td>
                     <td className="p-4 sm:p-5 text-slate-500">Requires chartered accountant</td>
                   </tr>
-                  <tr>
+                  <tr className="hover:bg-blue-50/30 transition-colors duration-150">
                     <th scope="row" className="p-4 sm:p-5 font-semibold text-slate-900 font-sans">
                       Mobile Field Usability Under Direct Sunlight
                     </th>
@@ -1110,7 +1110,7 @@ export function LandingPage({
                 return (
                   <div
                     key={idx}
-                    className="rounded-2xl border border-slate-200/90 bg-white/90 backdrop-blur-md overflow-hidden shadow-2xs hover:shadow-xs transition-all"
+                    className="rounded-2xl border border-slate-200/90 bg-white/90 backdrop-blur-md overflow-hidden shadow-2xs hover:border-blue-300/80 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200"
                   >
                     <button
                       type="button"
@@ -1148,7 +1148,7 @@ export function LandingPage({
         {/* ── Final Call To Action (Apple-Style High-Impact Card) ─ */}
         <section className="py-16 md:py-24 relative">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="relative rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white p-8 sm:p-14 shadow-2xl overflow-hidden text-center">
+            <div className="relative rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 text-white p-8 sm:p-14 shadow-2xl hover:shadow-blue-900/30 hover:-translate-y-1 transition-all duration-300 ease-out overflow-hidden text-center">
               {/* Internal subtle glow */}
               <div className="absolute -top-24 -right-24 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
@@ -1167,7 +1167,7 @@ export function LandingPage({
                 <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
                   <Link
                     href="/sign-up"
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 transition-all shadow-lg shadow-blue-600/30 hover:-translate-y-0.5"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-600/30 hover:shadow-blue-500/40 hover:-translate-y-0.5"
                   >
                     <span>Launch Contractor Workspace Free</span>
                     <IconArrowRight className="w-4 h-4" />

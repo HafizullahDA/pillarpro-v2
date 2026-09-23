@@ -325,7 +325,7 @@ export default function SignUpPage() {
               </p>
 
               {/* Live Contract Audit Preview Card */}
-              <div className="mt-6 rounded-2xl bg-white border border-slate-200/90 p-4 shadow-2xs space-y-3">
+              <div className="mt-6 rounded-2xl bg-white border border-slate-200/90 p-4 shadow-2xs hover:border-blue-300/80 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 space-y-3 cursor-default">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-emerald-600" />
@@ -373,7 +373,7 @@ export default function SignUpPage() {
                   ].map((feat, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white text-slate-700 border border-slate-200/80 shadow-2xs"
+                      className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white text-slate-700 border border-slate-200/80 shadow-2xs hover:border-blue-300 hover:text-blue-700 hover:-translate-y-0.5 transition-all duration-150 cursor-default"
                     >
                       {feat}
                     </span>
@@ -585,7 +585,7 @@ export default function SignUpPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full mt-2 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full mt-2 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 active:scale-[0.98] shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? (
                         <>
@@ -676,7 +676,7 @@ export default function SignUpPage() {
                     <button
                       type="submit"
                       disabled={verifyLoading || !otpCode.trim()}
-                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 active:scale-[0.98] shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {verifyLoading ? (
                         <>
