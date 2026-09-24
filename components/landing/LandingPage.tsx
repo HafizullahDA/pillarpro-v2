@@ -370,8 +370,11 @@ export function LandingPage({
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
-                        ✓ RA Bill 01 Reconciled
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+                        <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                        RA Bill 01 Reconciled
                       </span>
                     </div>
                   </div>
@@ -523,8 +526,11 @@ export function LandingPage({
                     </div>
 
                     <div className="p-4 bg-amber-50/80 border border-amber-200/90 rounded-2xl flex items-center justify-between text-xs shadow-2xs hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200">
-                      <span className="text-amber-950 font-medium">
-                        🛡️ <strong>Airtight Defense:</strong> When the Executive Engineer assesses final milestone deadlines, contemporaneous Clause 5 notices prevent arbitrary 10% LD cuts in dispute arbitration.
+                      <span className="text-amber-950 font-medium flex items-center gap-2">
+                        <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <span><strong>Airtight Defense:</strong> When the Executive Engineer assesses final milestone deadlines, contemporaneous Clause 5 notices prevent arbitrary 10% LD cuts in dispute arbitration.</span>
                       </span>
                       <span className="font-bold text-amber-950 shrink-0 ml-3">₹18.5L+ Saved</span>
                     </div>
@@ -672,8 +678,11 @@ export function LandingPage({
                       </div>
                     </div>
 
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600 shadow-2xs hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200">
-                      💡 <strong>Surrender Reminder:</strong> Once a completion certificate is signed, PillarPro prompts your liaison officer to collect the original physical BG letter from the EE division so you can surrender it to the bank immediately, eliminating unnecessary margin lockups.
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600 shadow-2xs hover:-translate-y-0.5 hover:shadow-xs transition-all duration-200 flex items-start gap-2">
+                      <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      <span><strong>Surrender Reminder:</strong> Once a completion certificate is signed, PillarPro prompts your liaison officer to collect the original physical BG letter from the EE division so you can surrender it to the bank immediately, eliminating unnecessary margin lockups.</span>
                     </div>
                   </div>
                 </div>
@@ -883,9 +892,24 @@ export function LandingPage({
                   </div>
 
                   <div className="mt-5 pt-4 border-t border-emerald-200/60 text-xs text-slate-600 space-y-1.5">
-                    <p>✓ Automated Form 43 bill reconciliation</p>
-                    <p>✓ Multi-tranche credit tracking (PFMS / State Treasury)</p>
-                    <p>✓ Defect Liability Period retention release reminders</p>
+                    <p className="flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Automated Form 43 bill reconciliation
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Multi-tranche credit tracking (PFMS / State Treasury)
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Defect Liability Period retention release reminders
+                    </p>
                   </div>
                 </div>
               </div>
@@ -913,7 +937,9 @@ export function LandingPage({
               {/* Module 1: RA Bills */}
               <div className="group p-6 rounded-2xl bg-white/80 hover:bg-white backdrop-blur-md border border-slate-200/80 hover:border-blue-400/60 shadow-xs hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1 transition-all duration-300">
                 <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/80 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
-                  🏛️
+                  <svg className="w-6 h-6 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                  </svg>
                 </div>
                 <h3 className="font-bold text-slate-900 text-base">Client &amp; RA Bills Engine</h3>
                 <p className="text-xs text-slate-600 mt-2 leading-relaxed">
@@ -924,7 +950,9 @@ export function LandingPage({
               {/* Module 2: Clause 5 Delay Defense */}
               <div className="group p-6 rounded-2xl bg-white/80 hover:bg-white backdrop-blur-md border border-slate-200/80 hover:border-amber-400/60 shadow-xs hover:shadow-lg hover:shadow-amber-500/5 hover:-translate-y-1 transition-all duration-300">
                 <div className="h-11 w-11 rounded-xl bg-amber-50 text-amber-800 border border-amber-200/80 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
-                  🛡️
+                  <svg className="w-6 h-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
                 </div>
                 <h3 className="font-bold text-slate-900 text-base">CPWD Clause 5 Delay Defense</h3>
                 <p className="text-xs text-slate-600 mt-2 leading-relaxed">
@@ -935,7 +963,9 @@ export function LandingPage({
               {/* Module 3: Muster Roll */}
               <div className="group p-6 rounded-2xl bg-white/80 hover:bg-white backdrop-blur-md border border-slate-200/80 hover:border-emerald-400/60 shadow-xs hover:shadow-lg hover:shadow-emerald-500/5 hover:-translate-y-1 transition-all duration-300">
                 <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/80 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
-                  👷‍♂️
+                  <svg className="w-6 h-6 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
                 </div>
                 <h3 className="font-bold text-slate-900 text-base">Daily Muster &amp; Wages</h3>
                 <p className="text-xs text-slate-600 mt-2 leading-relaxed">
@@ -946,7 +976,9 @@ export function LandingPage({
               {/* Module 4: Store & Materials */}
               <div className="group p-6 rounded-2xl bg-white/80 hover:bg-white backdrop-blur-md border border-slate-200/80 hover:border-cyan-400/60 shadow-xs hover:shadow-lg hover:shadow-cyan-500/5 hover:-translate-y-1 transition-all duration-300">
                 <div className="h-11 w-11 rounded-xl bg-cyan-50 text-cyan-700 border border-cyan-200/80 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
-                  📦
+                  <svg className="w-6 h-6 text-cyan-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
                 </div>
                 <h3 className="font-bold text-slate-900 text-base">Store &amp; Stock Inventory</h3>
                 <p className="text-xs text-slate-600 mt-2 leading-relaxed">
@@ -957,7 +989,9 @@ export function LandingPage({
               {/* Module 5: Supplier Khata */}
               <div className="group p-6 rounded-2xl bg-white/80 hover:bg-white backdrop-blur-md border border-slate-200/80 hover:border-indigo-400/60 shadow-xs hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-1 transition-all duration-300">
                 <div className="h-11 w-11 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200/80 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
-                  🏢
+                  <svg className="w-6 h-6 text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
                 </div>
                 <h3 className="font-bold text-slate-900 text-base">Supplier Khata &amp; Payables</h3>
                 <p className="text-xs text-slate-600 mt-2 leading-relaxed">
@@ -968,7 +1002,9 @@ export function LandingPage({
               {/* Module 6: Petty Cash & Vouchers */}
               <div className="group p-6 rounded-2xl bg-white/80 hover:bg-white backdrop-blur-md border border-slate-200/80 hover:border-rose-400/60 shadow-xs hover:shadow-lg hover:shadow-rose-500/5 hover:-translate-y-1 transition-all duration-300">
                 <div className="h-11 w-11 rounded-xl bg-rose-50 text-rose-700 border border-rose-200/80 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
-                  🧾
+                  <svg className="w-6 h-6 text-rose-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
                 <h3 className="font-bold text-slate-900 text-base">Site Petty Cash &amp; Vouchers</h3>
                 <p className="text-xs text-slate-600 mt-2 leading-relaxed">

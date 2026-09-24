@@ -176,7 +176,7 @@ export function LogTransactionDrawer({
               isReceipt ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            📥 Stock In (GRN)
+            Stock In (GRN)
           </button>
           <button
             type="button"
@@ -185,7 +185,7 @@ export function LogTransactionDrawer({
               !isReceipt ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            📤 Issue Out (Site Use)
+            Issue Out (Site Use)
           </button>
         </div>
 

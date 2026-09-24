@@ -60,7 +60,10 @@ export function Sidebar({
         {/* Bilingual Hindi/English Language Switcher */}
         <div className="px-4 py-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
           <span className="text-slate-400 flex items-center gap-1.5 font-medium">
-            <span>🌐</span> {locale === 'hi' ? 'भाषा' : 'Language'}
+            <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+            <span>{locale === 'hi' ? 'भाषा' : 'Language'}</span>
           </span>
           <div className="inline-flex rounded-lg bg-slate-800 p-0.5 border border-slate-700">
             <button

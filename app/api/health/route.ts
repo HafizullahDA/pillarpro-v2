@@ -25,7 +25,7 @@ export async function GET() {
     const latencyMs = Date.now() - startTime
 
     if (error) {
-      console.error('🚨 [Health Check Failed]: Database error:', error.message)
+      console.error('[Health Check Failed]: Database error:', error.message)
       const isDev = process.env.NODE_ENV === 'development'
       return NextResponse.json(
         {
@@ -59,7 +59,7 @@ export async function GET() {
     )
   } catch (err: unknown) {
     const latencyMs = Date.now() - startTime
-    console.error('🚨 [Health Check Exception]:', err)
+    console.error('[Health Check Exception]:', err)
 
     const isDev = process.env.NODE_ENV === 'development'
     const safeError = isDev && err instanceof Error ? err.message : 'Health check exception occurred'

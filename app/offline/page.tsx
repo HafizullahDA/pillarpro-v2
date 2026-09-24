@@ -44,8 +44,10 @@ export default function OfflinePage() {
       <main className="max-w-2xl mx-auto w-full py-6 space-y-5">
         {/* Header alert */}
         <div className="text-center space-y-2">
-          <div className="h-14 w-14 rounded-2xl bg-slate-900 border border-slate-800 text-2xl flex items-center justify-center mx-auto shadow-xl">
-            📡
+          <div className="h-14 w-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto shadow-xl">
+            <svg className="w-7 h-7 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+            </svg>
           </div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
             Site Mode Active (Offline)

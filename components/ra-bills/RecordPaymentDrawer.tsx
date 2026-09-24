@@ -383,7 +383,7 @@ export function RecordPaymentDrawer({
                   className="text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200 transition-colors"
                   title="Auto-applies 1% IT TDS (Proprietorship/Individual), 2% GST TDS, 1% Cess"
                 >
-                  ⚡ Auto 1% TDS (Ind/Prop)
+                  Auto 1% TDS (Ind/Prop)
                 </button>
                 <button
                   type="button"
@@ -391,7 +391,7 @@ export function RecordPaymentDrawer({
                   className="text-[11px] font-semibold text-slate-700 bg-white hover:bg-slate-100 px-2 py-1 rounded border border-slate-200 transition-colors"
                   title="Auto-applies 2% IT TDS (Company/Firm), 2% GST TDS, 1% Cess"
                 >
-                  ⚡ Auto 2% TDS (Firm/Co)
+                  Auto 2% TDS (Firm/Co)
                 </button>
                 {(tdsNum > 0 || gstTdsNum > 0 || cessNum > 0) && (
                   <button
@@ -538,7 +538,9 @@ export function RecordPaymentDrawer({
                     onClick={() => handleRemoveDeduction(item.id)}
                     className="p-1.5 text-slate-400 hover:text-red-600 rounded transition-colors"
                   >
-                    ✕
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </div>
               ))}

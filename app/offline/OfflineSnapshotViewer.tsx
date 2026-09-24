@@ -280,7 +280,7 @@ export function OfflineSnapshotViewer() {
         projects: availableProjects,
       })
 
-      setActionSuccess(`✓ Worker "${workerObj.name}" added to site muster!`)
+      setActionSuccess(`Worker "${workerObj.name}" added to site muster!`)
       setNewWorkerName('')
       setNewWorkerTrade('Helper')
       setNewWorkerRate('')
@@ -382,7 +382,7 @@ export function OfflineSnapshotViewer() {
     })
 
     await saveToOfflineQueue('attendance', rows)
-    setActionSuccess(`✓ Muster roll for ${rows.length} worker(s) queued locally! Will sync on reconnect.`)
+    setActionSuccess(`Muster roll for ${rows.length} worker(s) queued locally! Will sync on reconnect.`)
     await refreshData()
     setTimeout(() => setActionSuccess(null), 4500)
   }
@@ -413,7 +413,7 @@ export function OfflineSnapshotViewer() {
     }
 
     await saveToOfflineQueue('expense', payload)
-    setActionSuccess(`✓ Expense of ${formatINR(amountNum)} queued locally!`)
+    setActionSuccess(`Expense of ${formatINR(amountNum)} queued locally!`)
     setExpenseAmount('')
     setExpensePaidTo('')
     setExpenseNotes('')
@@ -440,7 +440,7 @@ export function OfflineSnapshotViewer() {
     }
 
     await saveToOfflineQueue('attendance', payload)
-    setActionSuccess(`✓ Aggregate attendance of ${countNum} workers queued locally!`)
+    setActionSuccess(`Aggregate attendance of ${countNum} workers queued locally!`)
     setAttendanceCount('')
     setAttendanceNotes('')
     await refreshData()
@@ -468,7 +468,7 @@ export function OfflineSnapshotViewer() {
     }
 
     await saveToOfflineQueue('diesel_log', payload)
-    setActionSuccess(`✓ Diesel log (${litersNum}L for ${dieselMachine || 'machine'}) queued locally!`)
+    setActionSuccess(`Diesel log (${litersNum}L for ${dieselMachine || 'machine'}) queued locally!`)
     setDieselMachine('')
     setDieselLiters('')
     setDieselMeter('')
@@ -496,7 +496,7 @@ export function OfflineSnapshotViewer() {
     try {
       const res = await flushOfflineQueue()
       if (res.synced > 0) {
-        setSyncResult(`✓ Successfully synced ${res.synced} offline item${res.synced === 1 ? '' : 's'} to cloud!`)
+        setSyncResult(`Successfully synced ${res.synced} offline item${res.synced === 1 ? '' : 's'} to cloud!`)
       } else if (res.errors > 0) {
         setSyncResult('Some items could not sync yet. They remain safe in local queue.')
       } else {
@@ -567,7 +567,9 @@ export function OfflineSnapshotViewer() {
       {/* Action Notification Alert */}
       {actionSuccess && (
         <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
-          <span>✓</span>
+          <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
           <span>{actionSuccess}</span>
         </div>
       )}
@@ -589,7 +591,7 @@ export function OfflineSnapshotViewer() {
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          ✍️ Quick Entry
+          Quick Entry
         </button>
 
         {hasDashboard && (
@@ -602,7 +604,7 @@ export function OfflineSnapshotViewer() {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            📊 Dashboard
+            Dashboard
           </button>
         )}
 
@@ -616,7 +618,7 @@ export function OfflineSnapshotViewer() {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            🤝 Suppliers ({suppliersList.length})
+            Suppliers ({suppliersList.length})
           </button>
         )}
 
@@ -630,7 +632,7 @@ export function OfflineSnapshotViewer() {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            📑 RA Bills ({billsList.length})
+            RA Bills ({billsList.length})
           </button>
         )}
 
@@ -644,7 +646,7 @@ export function OfflineSnapshotViewer() {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            🏗️ Projects ({projectsList.length || availableProjects.length})
+            Projects ({projectsList.length || availableProjects.length})
           </button>
         )}
 
@@ -658,7 +660,7 @@ export function OfflineSnapshotViewer() {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            👥 Workers ({workersList.length})
+            Workers ({workersList.length})
           </button>
         )}
 
@@ -672,7 +674,7 @@ export function OfflineSnapshotViewer() {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            🚜 Fleet ({machineryList.length})
+            Fleet ({machineryList.length})
           </button>
         )}
 
@@ -685,7 +687,7 @@ export function OfflineSnapshotViewer() {
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          🕒 Queue ({queue.length})
+          Queue ({queue.length})
         </button>
       </div>
 
@@ -694,7 +696,7 @@ export function OfflineSnapshotViewer() {
         <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-4">
           <div>
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <span>⚡ Site Offline Logger</span>
+              <span>Site Offline Logger</span>
             </h3>
             <p className="text-[11px] text-slate-400">
               Record expenses, attendance muster, or fuel on site without internet. Stored safely in local device storage and automatically pushed to cloud upon reconnect.
@@ -712,7 +714,7 @@ export function OfflineSnapshotViewer() {
                   : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800'
               }`}
             >
-              💰 Expense
+              Expense
             </button>
             <button
               type="button"
@@ -723,7 +725,7 @@ export function OfflineSnapshotViewer() {
                   : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800'
               }`}
             >
-              👷 Attendance
+              Attendance
             </button>
             <button
               type="button"
@@ -734,7 +736,7 @@ export function OfflineSnapshotViewer() {
                   : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800'
               }`}
             >
-              ⛽ Diesel / Fuel
+              Diesel / Fuel
             </button>
           </div>
 
@@ -890,7 +892,7 @@ export function OfflineSnapshotViewer() {
                           : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
-                      👥 Per-Worker Roll ({localWorkers.length})
+                      Per-Worker Roll ({localWorkers.length})
                     </button>
                     <button
                       type="button"
@@ -901,7 +903,7 @@ export function OfflineSnapshotViewer() {
                           : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
-                      🔢 Quick Headcount
+                      Quick Headcount
                     </button>
                   </div>
 
@@ -982,8 +984,10 @@ export function OfflineSnapshotViewer() {
                   {/* Empty state when no workers exist */}
                   {localWorkers.length === 0 ? (
                     <div className="p-6 text-center rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
-                      <div className="inline-flex p-3 rounded-full bg-blue-500/10 text-blue-400 text-2xl">
-                        👷
+                      <div className="inline-flex p-3 rounded-full bg-blue-500/10 text-blue-400">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
                       </div>
                       <div>
                         <p className="text-xs font-bold text-white">No workers found in offline storage</p>
@@ -1052,7 +1056,7 @@ export function OfflineSnapshotViewer() {
                                   <span className="text-xs font-bold text-white truncate">{w.name}</span>
                                   {w.is_offline && (
                                     <span className="px-1 py-0.2 rounded text-[9px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                      ⚡ Offline
+                                      Offline
                                     </span>
                                   )}
                                 </div>
@@ -1419,9 +1423,12 @@ export function OfflineSnapshotViewer() {
                         <a
                           href={`tel:${s.phone}`}
                           title={`Call ${s.name}`}
-                          className="p-2 rounded-lg bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 transition-colors"
+                          className="px-2.5 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 transition-colors flex items-center gap-1 text-[11px] font-semibold"
                         >
-                          📞
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                          <span>Call</span>
                         </a>
                       )}
                     </div>
@@ -1493,7 +1500,7 @@ export function OfflineSnapshotViewer() {
           <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-900/90 border border-slate-800">
             <div>
               <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                <span>👥 Site Workers Directory</span>
+                <span>Site Workers Directory</span>
                 <span className="px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-semibold">
                   {localWorkers.length}
                 </span>
@@ -1543,8 +1550,10 @@ export function OfflineSnapshotViewer() {
           {/* Workers List */}
           {localWorkers.length === 0 ? (
             <div className="p-8 text-center rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
-              <div className="inline-flex p-3 rounded-full bg-blue-500/10 text-blue-400 text-2xl">
-                👷
+              <div className="inline-flex p-3 rounded-full bg-blue-500/10 text-blue-400">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
               </div>
               <div>
                 <p className="text-xs font-bold text-white">No worker muster roll cached yet</p>
@@ -1586,7 +1595,7 @@ export function OfflineSnapshotViewer() {
                       <p className="text-xs font-bold text-white truncate">{w.name}</p>
                       {w.is_offline && (
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                          ⚡ Offline Added
+                          Offline Added
                         </span>
                       )}
                     </div>
@@ -1707,7 +1716,9 @@ export function OfflineSnapshotViewer() {
                       title="Discard entry"
                       className="p-1.5 text-xs text-rose-400 hover:bg-rose-500/20 rounded transition-colors"
                     >
-                      ✕
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     </button>
                   </div>
                 )
@@ -1724,7 +1735,7 @@ export function OfflineSnapshotViewer() {
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
-                  <span>👷 Register Worker Offline</span>
+                  <span>Register Worker Offline</span>
                 </h4>
                 <p className="text-[11px] text-slate-400 mt-0.5">
                   Available immediately for site attendance & synced on reconnect.
@@ -1735,7 +1746,9 @@ export function OfflineSnapshotViewer() {
                 onClick={() => setAddWorkerModalOpen(false)}
                 className="text-slate-400 hover:text-white p-1"
               >
-                ✕
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 

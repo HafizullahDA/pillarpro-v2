@@ -29,7 +29,7 @@ export function OfflineStatusBanner() {
     try {
       const res = await flushOfflineQueue()
       if (res.synced > 0) {
-        setSyncMessage(`✓ Reconnected: Synced ${res.synced} offline entr${res.synced === 1 ? 'y' : 'ies'} to cloud`)
+        setSyncMessage(`Reconnected: Synced ${res.synced} offline entr${res.synced === 1 ? 'y' : 'ies'} to cloud`)
         setTimeout(() => setSyncMessage(''), 5000)
       } else if (showResult && res.errors > 0) {
         setSyncMessage('Some offline entries could not sync. They will be retried automatically.')

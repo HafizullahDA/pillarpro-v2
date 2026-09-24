@@ -323,8 +323,8 @@ export function RABillScanConfirmModal({
           </div>
           <p className="text-[11px] text-slate-500 leading-relaxed px-1">
             {isCumulative
-              ? '📌 Cumulative: Certified amount reflects Measurement Book (MB) total from inception up to this bill. Previous certified amounts will be deducted.'
-              : '📌 Standalone: Certified amount reflects only the net-new work certified during this specific billing cycle.'}
+              ? 'Cumulative: Certified amount reflects Measurement Book (MB) total from inception up to this bill. Previous certified amounts will be deducted.'
+              : 'Standalone: Certified amount reflects only the net-new work certified during this specific billing cycle.'}
           </p>
         </div>
 

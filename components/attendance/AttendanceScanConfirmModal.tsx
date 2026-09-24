@@ -312,7 +312,9 @@ export function AttendanceScanConfirmModal({
         {/* Missing Project Warning Banner if unstated on sheet */}
         {projectNotDetected && (
           <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 flex items-start gap-2.5">
-            <span className="text-base leading-none">⚠️</span>
+            <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
             <div>
               <p className="font-semibold">Project Name was not detected on physical sheet</p>
               <p className="text-amber-800 text-[11px] mt-0.5">
@@ -325,7 +327,9 @@ export function AttendanceScanConfirmModal({
         {/* Missing Wage Warning if new workers detected without daily rate */}
         {stats.missingWageCount > 0 && (
           <div className="rounded-xl bg-blue-50 border border-blue-200 p-3 text-xs text-blue-900 flex items-start gap-2.5">
-            <span className="text-base leading-none">💡</span>
+            <svg className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             <div>
               <p className="font-semibold">{stats.missingWageCount} new worker(s) have missing per-day wage rates</p>
               <p className="text-blue-800 text-[11px] mt-0.5">
@@ -366,26 +370,26 @@ export function AttendanceScanConfirmModal({
             Total: {entries.length} workers
           </span>
           <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-semibold">
-            ✓ {stats.present} Present
+            {stats.present} Present
           </span>
           {stats.halfDay > 0 && (
             <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 font-semibold">
-              ½ {stats.halfDay} Half Day
+              {stats.halfDay} Half Day
             </span>
           )}
           {stats.overtime > 0 && (
             <span className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-semibold">
-              ⚡ {stats.overtime} Overtime
+              {stats.overtime} Overtime
             </span>
           )}
           {stats.absent > 0 && (
             <span className="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 font-semibold">
-              ✕ {stats.absent} Absent
+              {stats.absent} Absent
             </span>
           )}
           {stats.newWorkers > 0 && (
             <span className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-800 font-semibold">
-              ➕ {stats.newWorkers} New Workers
+              +{stats.newWorkers} New Workers
             </span>
           )}
         </div>
@@ -394,7 +398,13 @@ export function AttendanceScanConfirmModal({
         {imagePreviewUrl && (
           <details className="group border border-slate-200 rounded-xl bg-slate-50/50 p-2.5 text-xs">
             <summary className="cursor-pointer font-semibold text-slate-700 flex items-center justify-between">
-              <span>📷 View Scanned Muster Roll Photo</span>
+              <span className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                View Scanned Muster Roll Photo
+              </span>
               <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
             </summary>
             <div className="mt-2 text-center">
@@ -434,11 +444,11 @@ export function AttendanceScanConfirmModal({
                       <div className="mt-1">
                         {entry.isNew ? (
                           <span className="inline-flex items-center text-[10px] font-semibold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
-                            ➕ Will Register as New Worker
+                            + Will Register as New Worker
                           </span>
                         ) : (
                           <span className="inline-flex items-center text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                            ✓ Matches Team Member
+                            Matches Team Member
                           </span>
                         )}
                       </div>
@@ -528,10 +538,12 @@ export function AttendanceScanConfirmModal({
                       <button
                         type="button"
                         onClick={() => handleDeleteEntry(entry.id)}
-                        className="text-slate-400 hover:text-red-600 font-bold text-sm p-1 rounded transition-colors"
+                        className="text-slate-400 hover:text-red-600 p-1 rounded transition-colors"
                         title="Remove row"
                       >
-                        ✕
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                       </button>
                     </td>
                   </tr>

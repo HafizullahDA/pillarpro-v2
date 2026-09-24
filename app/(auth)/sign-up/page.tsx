@@ -351,7 +351,12 @@ export default function SignUpPage() {
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
                   <span>Clause 5 LD Protected: <b className="text-slate-900 font-mono">₹50,00,000</b></span>
-                  <span className="text-emerald-700 font-semibold">TDS / Cess Reconciled ✓</span>
+                  <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
+                    TDS / Cess Reconciled
+                    <svg className="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
                 </div>
               </div>
 
@@ -419,7 +424,9 @@ export default function SignUpPage() {
                           : 'text-slate-600 hover:text-slate-900 font-medium'
                       }`}
                     >
-                      <span>🏢</span>
+                      <svg className="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
                       <span>Register New Firm</span>
                     </button>
                     <button
@@ -431,7 +438,9 @@ export default function SignUpPage() {
                           : 'text-slate-600 hover:text-slate-900 font-medium'
                       }`}
                     >
-                      <span>👥</span>
+                      <svg className="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
                       <span>Join Existing Firm</span>
                     </button>
                   </div>
@@ -621,22 +630,22 @@ export default function SignUpPage() {
                             }`}
                           >
                             {[
-                              { icon: '🛣️', text: 'PMGSY Highway (₹1.78 Cr)' },
-                              { icon: '📑', text: 'RA Bill 01 & Form 26 e-MB' },
-                              { icon: '🛡️', text: 'Clause 5 Delay Defense' },
-                              { icon: '🤝', text: '60/40 Partner Equity' },
-                              { icon: '🚜', text: 'JCB & Excavator POL Log' },
-                              { icon: '📦', text: 'OPC Cement & Steel Stock' },
-                              { icon: '👷‍♂️', text: 'Daily Muster Roll & OT' },
-                              { icon: '🏛️', text: '₹8.9L PBG Deposit Radar' },
-                              { icon: '🏢', text: 'Supplier Khata & GST TDS' },
-                            ].map((chip, idx) => (
+                              'PMGSY Highway (₹1.78 Cr)',
+                              'RA Bill 01 & Form 26 e-MB',
+                              'Clause 5 Delay Defense',
+                              '60/40 Partner Equity',
+                              'JCB & Excavator POL Log',
+                              'OPC Cement & Steel Stock',
+                              'Daily Muster Roll & OT',
+                              '₹8.9L PBG Deposit Radar',
+                              'Supplier Khata & GST TDS',
+                            ].map((text, idx) => (
                               <div
                                 key={idx}
                                 className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium bg-white/90 text-slate-700 border border-slate-200/80 shadow-2xs hover:border-blue-300 hover:text-blue-700 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-150 cursor-pointer"
                               >
-                                <span className="text-xs shrink-0">{chip.icon}</span>
-                                <span className="truncate">{chip.text}</span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
+                                <span className="truncate">{text}</span>
                               </div>
                             ))}
                           </div>

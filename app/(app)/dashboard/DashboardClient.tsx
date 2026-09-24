@@ -201,8 +201,10 @@ export function DashboardClient({
       {/* Enterprise Delay Defense & EOT Shield Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-2xl p-4 md:p-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs border border-slate-800">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-blue-600/30 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 text-xl font-bold">
-            🛡️
+          <div className="h-10 w-10 rounded-xl bg-blue-600/30 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -401,8 +403,10 @@ export function DashboardClient({
 
         {projectGlance.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center bg-slate-50/50">
-            <div className="mx-auto h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-lg mb-2">
-              🏗️
+            <div className="mx-auto h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
+              <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
             </div>
             <h4 className="text-sm font-semibold text-slate-800">No civil projects found</h4>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4 leading-relaxed">

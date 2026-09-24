@@ -120,10 +120,12 @@ export function InstallBanner({ deferredPrompt, isIOS, isStandalone }: InstallBa
               type="button"
               onClick={handleInstallClick}
               disabled={installing}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-md shadow-blue-600/30 transition-all cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 shadow-md shadow-blue-600/30 transition-all cursor-pointer whitespace-nowrap"
             >
-              <span>{isIOS ? 'Install' : 'Install'}</span>
-              <span className="text-[10px]">📲</span>
+              <svg className="w-3.5 h-3.5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Install</span>
             </button>
 
             <button
@@ -167,7 +169,9 @@ function IosInstallModal({ onClose }: { onClose: () => void }) {
             onClick={onClose}
             className="text-slate-400 hover:text-white p-1 rounded-lg"
           >
-            ✕
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -184,7 +188,7 @@ function IosInstallModal({ onClose }: { onClose: () => void }) {
               <p className="leading-snug">
                 Tap the <strong className="text-white">Share</strong> icon{' '}
                 <span className="inline-block px-1 py-0.5 rounded bg-slate-800 text-blue-400 font-mono text-[11px]">
-                  ⎋ / [↑]
+                  Share [↑]
                 </span>{' '}
                 at the bottom of your Safari browser bar.
               </p>
@@ -196,7 +200,7 @@ function IosInstallModal({ onClose }: { onClose: () => void }) {
               </div>
               <p className="leading-snug">
                 Scroll down and tap <strong className="text-white">&quot;Add to Home Screen&quot;</strong>{' '}
-                <span className="text-slate-400 font-semibold">[➕]</span>.
+                <span className="text-slate-400 font-semibold">[+]</span>.
               </p>
             </div>
 

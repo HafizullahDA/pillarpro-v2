@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     const payload = parseResult.data
 
-    console.error('🔥 [Production Form Error Received]:', {
+    console.error('[Production Form Error Received]:', {
       context: payload.context,
       message: payload.message,
       metadata: payload.metadata,
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (webhookUrl) {
       // Fire-and-forget alert to external webhook (Slack, Discord, Teams, or Zapier)
       const alertBody = {
-        text: `⚠️ *PillarPro Error Alert*\n*Context:* ${payload.context}\n*Message:* ${payload.message}\n*URL:* ${payload.url || 'N/A'}\n*Time:* ${payload.timestamp || new Date().toISOString()}\n\`\`\`json\n${JSON.stringify(payload.metadata || {}, null, 2)}\n\`\`\``,
+        text: `*PillarPro Error Alert*\n*Context:* ${payload.context}\n*Message:* ${payload.message}\n*URL:* ${payload.url || 'N/A'}\n*Time:* ${payload.timestamp || new Date().toISOString()}\n\`\`\`json\n${JSON.stringify(payload.metadata || {}, null, 2)}\n\`\`\``,
       }
 
       fetch(webhookUrl, {

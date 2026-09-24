@@ -342,7 +342,9 @@ export function SupplierScanConfirmModal({
         {/* Missing details guidance banners */}
         {supplierNotDetected && (
           <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 flex items-start gap-2.5">
-            <span className="text-base leading-none">⚠️</span>
+            <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
             <div>
               <p className="font-semibold">Supplier name was not detected on invoice</p>
               <p className="text-amber-800 text-[11px] mt-0.5">
@@ -354,7 +356,9 @@ export function SupplierScanConfirmModal({
 
         {projectNotDetected && (
           <div className="rounded-xl bg-blue-50 border border-blue-200 p-3 text-xs text-blue-900 flex items-start gap-2.5">
-            <span className="text-base leading-none">🏗️</span>
+            <svg className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
             <div>
               <p className="font-semibold">Project site was not specified on invoice</p>
               <p className="text-blue-800 text-[11px] mt-0.5">
@@ -368,7 +372,13 @@ export function SupplierScanConfirmModal({
         {imagePreviewUrl && (
           <details className="group border border-slate-200 rounded-xl bg-slate-50/50 p-2.5 text-xs">
             <summary className="cursor-pointer font-semibold text-slate-700 flex items-center justify-between">
-              <span>📷 View Scanned Invoice / Slip</span>
+              <span className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                View Scanned Invoice / Slip
+              </span>
               <span className="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
             </summary>
             <div className="mt-2 text-center">
@@ -386,7 +396,9 @@ export function SupplierScanConfirmModal({
         <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <label className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
-              <span>🏢</span>
+              <svg className="w-3.5 h-3.5 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
               <span>Supplier Account</span>
             </label>
             <div className="inline-flex p-0.5 bg-slate-200 rounded-lg text-xs font-medium">
@@ -410,7 +422,7 @@ export function SupplierScanConfirmModal({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                ➕ Create New Supplier
+                + Create New Supplier
               </button>
             </div>
           </div>
@@ -466,7 +478,9 @@ export function SupplierScanConfirmModal({
         {/* SECTION 2: PROJECT SITE RESOLUTION */}
         <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-2">
           <label className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
-            <span>🏗️</span>
+            <svg className="w-3.5 h-3.5 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
             <span>Project (Site Allocation)</span>
           </label>
           <Select
@@ -488,7 +502,9 @@ export function SupplierScanConfirmModal({
         {/* SECTION 3: INVOICE / TRANSACTION DETAILS */}
         <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-3">
           <label className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
-            <span>📦</span>
+            <svg className="w-3.5 h-3.5 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
             <span>Material & Invoice Details</span>
           </label>
 

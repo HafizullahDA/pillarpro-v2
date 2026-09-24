@@ -531,10 +531,13 @@ export function AttendanceClient({
                 size="sm"
                 loading={scanning}
                 onClick={() => cameraInputRef.current?.click()}
-                className="bg-transparent border-0 text-blue-700 hover:bg-white text-xs h-8 px-2.5 shadow-none"
+                className="bg-transparent border-0 text-blue-700 hover:bg-white text-xs h-8 px-2.5 shadow-none inline-flex items-center gap-1.5"
                 title="Capture photo of physical muster roll / labor diary"
               >
-                <span className="mr-1">📷</span>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
                 <span>Scan Muster Roll</span>
               </Button>
               <Button
@@ -546,7 +549,9 @@ export function AttendanceClient({
                 className="bg-transparent border-0 text-blue-700 hover:bg-white text-xs h-8 px-2 shadow-none"
                 title="Upload muster roll photo / PDF"
               >
-                <span>🖼️</span>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
               </Button>
             </div>
 
@@ -635,7 +640,19 @@ export function AttendanceClient({
           }`}
         >
           <div className="flex items-center gap-2">
-            <span>{saveStatus.type === 'success' ? '✓' : saveStatus.type === 'error' ? '✕' : 'ℹ'}</span>
+            {saveStatus.type === 'success' ? (
+              <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : saveStatus.type === 'error' ? (
+              <svg className="w-4 h-4 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
             <span className="font-medium">{saveStatus.message}</span>
           </div>
           <button
@@ -709,7 +726,6 @@ export function AttendanceClient({
                             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition-colors cursor-pointer"
                             title="Click to edit manual overtime hours"
                           >
-                            <span>⚡</span>
                             <span>{currentOT}h OT</span>
                             {w.daily_wage_rate ? <span className="opacity-80">(+₹{currentOTWage})</span> : null}
                           </button>
@@ -780,16 +796,15 @@ export function AttendanceClient({
                   {isExpandedOT && canMark && (
                     <div className="mt-3 pt-3 border-t border-slate-100 bg-slate-50/90 rounded-xl p-3 space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                          <span>⏱️</span>
-                          <span>Manual Overtime (OT) — {w.name}</span>
+                        <span className="text-xs font-bold text-slate-800">
+                          Manual Overtime (OT) — {w.name}
                         </span>
                         <button
                           type="button"
                           onClick={() => setExpandedOTWorkerId(null)}
-                          className="text-xs font-semibold text-slate-400 hover:text-slate-600 px-1 cursor-pointer"
+                          className="text-xs font-semibold text-slate-500 hover:text-slate-800 px-2 py-0.5 rounded hover:bg-slate-200 transition-colors cursor-pointer"
                         >
-                          ✕ Done
+                          Done
                         </button>
                       </div>
 

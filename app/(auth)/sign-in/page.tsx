@@ -258,8 +258,10 @@ export default function SignInPage() {
 
               <div className="mt-6 space-y-3 text-xs text-slate-600 leading-relaxed">
                 <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300/80 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 cursor-default">
-                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs border border-blue-200/80">
-                    ✓
+                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 border border-blue-200/80">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
                   <div>
                     <strong className="text-slate-900 font-semibold block mb-0.5">Multi-Agency RA Bill Audit</strong>
@@ -268,8 +270,10 @@ export default function SignInPage() {
                 </div>
 
                 <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300/80 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 cursor-default">
-                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs border border-blue-200/80">
-                    ✓
+                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 border border-blue-200/80">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
                   <div>
                     <strong className="text-slate-900 font-semibold block mb-0.5">Clause 5 Delay Defense &amp; LD Shield</strong>
@@ -278,8 +282,10 @@ export default function SignInPage() {
                 </div>
 
                 <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300/80 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 cursor-default">
-                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs border border-blue-200/80">
-                    ✓
+                  <div className="h-5 w-5 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 border border-blue-200/80">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
                   <div>
                     <strong className="text-slate-900 font-semibold block mb-0.5">PillarVision™ Document Scanner</strong>
@@ -449,7 +455,9 @@ export default function SignInPage() {
                     </>
                   ) : cooldown > 0 ? (
                     <span className="flex items-center gap-2">
-                      <span>🛡️</span>
+                      <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
                       <span>Security Cooldown ({cooldown}s)</span>
                     </span>
                   ) : (

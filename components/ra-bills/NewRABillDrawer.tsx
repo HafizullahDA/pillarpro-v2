@@ -635,7 +635,9 @@ export function NewRABillDrawer({
           <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
             <div className="flex items-center gap-2.5">
               <div className="h-8 w-8 rounded-lg bg-blue-600 text-white flex items-center justify-center text-sm shadow-sm">
-                ✨
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
               </div>
               <div>
                 <p className="text-xs font-semibold text-slate-800">Auto-fill with AI Scan</p>
@@ -739,7 +741,9 @@ export function NewRABillDrawer({
           <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs space-y-3">
             <div className="flex items-center justify-between font-bold text-amber-900">
               <span className="flex items-center gap-1.5">
-                <span>⚠️</span>
+                <svg className="w-4 h-4 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
                 <span>Final Bill Contract Closure Settings</span>
               </span>
               <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">
@@ -769,7 +773,7 @@ export function NewRABillDrawer({
             </div>
             {billForm.actual_completion_date && (
               <p className="text-[11px] font-semibold text-amber-800 pt-1 border-t border-amber-200/60">
-                📅 Retention Release Scheduled For:{' '}
+                Retention Release Scheduled For:{' '}
                 <strong className="font-mono text-slate-900">
                   {calculateDLPReleaseDate(billForm.actual_completion_date, Number(billForm.dlp_months) || 12)}
                 </strong>
@@ -1001,7 +1005,9 @@ export function NewRABillDrawer({
         <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              <span>📖</span>
+              <svg className="w-3.5 h-3.5 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
               <span>Measurement Book (MB) Reference</span>
             </span>
             <span className="text-[10px] text-slate-500 font-medium">
@@ -1129,7 +1135,10 @@ export function NewRABillDrawer({
         <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-              <span>🏗️</span> Departmental Store Recoveries & Advances
+              <svg className="w-3.5 h-3.5 text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <span>Departmental Store Recoveries & Advances</span>
             </span>
             <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
               Form 26 Item 2 & 8(a)
@@ -1295,7 +1304,9 @@ export function NewRABillDrawer({
           <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3.5 text-xs space-y-2.5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
               <span className="flex items-center gap-1.5 font-bold text-emerald-900">
-                <span>🏛️</span>
+                <svg className="w-4 h-4 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                </svg>
                 <span>Estimated Treasury Realization</span>
               </span>
               {/* Entity Selector */}

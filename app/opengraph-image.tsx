@@ -126,16 +126,16 @@ export default async function Image() {
             width: '100%',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '20px' }}>🛡️</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#38bdf8' }} />
             <span style={{ color: '#cbd5e1', fontSize: '18px', fontWeight: 600 }}>Multi-Tenant Data Isolation</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '20px' }}>⚡</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#34d399' }} />
             <span style={{ color: '#cbd5e1', fontSize: '18px', fontWeight: 600 }}>Zero Spreadsheet Chaos</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '20px' }}>📱</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#fbbf24' }} />
             <span style={{ color: '#cbd5e1', fontSize: '18px', fontWeight: 600 }}>Site Camera OCR & Muster Roll</span>
           </div>
         </div>

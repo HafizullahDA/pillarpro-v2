@@ -601,7 +601,7 @@ export function WageLedgerClient({
                           </span>
                           {s.otHours > 0 && (
                             <span className="text-[10px] font-semibold text-amber-700 mt-0.5">
-                              ⚡ +{s.otHours}h OT
+                              +{s.otHours}h OT
                             </span>
                           )}
                         </div>
@@ -639,7 +639,7 @@ export function WageLedgerClient({
                       <td className="px-4 py-3.5 text-center">
                         {s.status === 'paid' && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Paid ✓
+                            Paid
                           </span>
                         )}
                         {s.status === 'partial' && (
@@ -836,9 +836,11 @@ export function WageLedgerClient({
               <button
                 type="button"
                 onClick={() => setHistoryWorker(null)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-md"
               >
-                ✕
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 

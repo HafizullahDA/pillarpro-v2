@@ -92,7 +92,7 @@ export function MeasurementSheetPDF({
       {isFinal && (
         <div className="mb-4 -mx-6 -mt-6 bg-amber-400 text-amber-950 font-bold px-6 py-2 flex items-center justify-between text-xs tracking-wider uppercase border-b border-amber-500">
           <span className="flex items-center gap-2">
-            <span>📜</span> CPWA CODE COMPLIANT FINAL BILL — PRINTED ON YELLOW PAPER (PARAS 10.2.14 & 10.2.20)
+            CPWA CODE COMPLIANT FINAL BILL — PRINTED ON YELLOW PAPER (PARAS 10.2.14 & 10.2.20)
           </span>
           <span className="font-mono bg-amber-500/80 px-2 py-0.5 rounded text-[11px]">
             FORM CPWA 27-B
@@ -171,7 +171,7 @@ export function MeasurementSheetPDF({
         <div className="mt-3 pt-3 border-t border-dashed border-slate-300 bg-slate-50/80 -mx-6 px-6 py-2 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           <div>
             <span className="text-[10px] uppercase font-bold text-blue-900 flex items-center gap-1">
-              <span>📖</span> Measurement Book No.
+              Measurement Book No.
             </span>
             <p className="font-mono font-bold text-slate-900 mt-0.5">
               {bill.mb_number ? `MB #${bill.mb_number}` : 'e-MB Registered'}

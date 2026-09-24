@@ -13,12 +13,12 @@ import { uploadDocumentToStorage } from '@/lib/storage'
 import { createDPRSchema, DPRPhoto } from '@/lib/validations/dpr'
 
 const WEATHER_OPTIONS = [
-  { value: 'sunny_clear',      label: '☀️ Sunny / Clear Weather' },
-  { value: 'overcast_cloudy',   label: '⛅ Overcast / Cloudy' },
-  { value: 'rain_drizzle',      label: '🌦️ Light Rain / Drizzle (Work Continued)' },
-  { value: 'heavy_rain_halt',   label: '🌧️ Heavy Rain / Work Suspended' },
-  { value: 'extreme_heat',      label: '🌡️ Extreme Heat' },
-  { value: 'fog_cold',          label: '🌫️ Fog / Severe Cold' },
+  { value: 'sunny_clear',      label: 'Sunny / Clear Weather' },
+  { value: 'overcast_cloudy',   label: 'Overcast / Cloudy' },
+  { value: 'rain_drizzle',      label: 'Light Rain / Drizzle (Work Continued)' },
+  { value: 'heavy_rain_halt',   label: 'Heavy Rain / Work Suspended' },
+  { value: 'extreme_heat',      label: 'Extreme Heat' },
+  { value: 'fog_cold',          label: 'Fog / Severe Cold' },
 ]
 
 interface NewDPRDrawerProps {

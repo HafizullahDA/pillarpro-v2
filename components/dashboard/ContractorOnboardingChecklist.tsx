@@ -18,7 +18,7 @@ interface StepItem {
   href: string
   actionLabel: string
   isCompleted: boolean
-  icon: string
+  icon: React.ReactNode
   badgeText: string
 }
 
@@ -44,7 +44,11 @@ export function ContractorOnboardingChecklist({
       href: '/projects',
       actionLabel: projectCount > 0 ? 'Manage Sites' : '+ Create Project',
       isCompleted: projectCount > 0,
-      icon: '🏗️',
+      icon: (
+        <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      ),
       badgeText: projectCount > 0 ? `${projectCount} Active Site${projectCount > 1 ? 's' : ''}` : 'Step 1',
     },
     {
@@ -54,7 +58,11 @@ export function ContractorOnboardingChecklist({
       href: '/suppliers',
       actionLabel: supplierCount > 0 ? 'View Khatas' : '+ Add Supplier',
       isCompleted: supplierCount > 0,
-      icon: '🚚',
+      icon: (
+        <svg className="w-5 h-5 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+      ),
       badgeText: supplierCount > 0 ? `${supplierCount} Supplier${supplierCount > 1 ? 's' : ''}` : 'Step 2',
     },
     {
@@ -64,7 +72,11 @@ export function ContractorOnboardingChecklist({
       href: '/ra-bills',
       actionLabel: raBillCount > 0 ? 'View RA Bills' : '+ Record RA Bill',
       isCompleted: raBillCount > 0,
-      icon: '📄',
+      icon: (
+        <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      ),
       badgeText: raBillCount > 0 ? `${raBillCount} Bill${raBillCount > 1 ? 's' : ''}` : 'Step 3',
     },
     {
@@ -74,7 +86,12 @@ export function ContractorOnboardingChecklist({
       href: hasExpenseOrLedger ? '/expenses' : '/expenses',
       actionLabel: hasExpenseOrLedger ? 'View Cash Book' : '+ Log Expense / Wage',
       isCompleted: hasExpenseOrLedger,
-      icon: '📸',
+      icon: (
+        <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
       badgeText: hasExpenseOrLedger ? 'Active Costing' : 'Step 4',
     },
   ]
@@ -126,8 +143,20 @@ export function ContractorOnboardingChecklist({
       {/* ── HEADER & PROGRESS SUMMARY ── */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
-            {allCompleted ? '🎉' : '🚀'}
+          <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 border ${
+            allCompleted
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+              : 'bg-blue-50 border-blue-200 text-blue-600'
+          }`}>
+            {allCompleted ? (
+              <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            )}
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -206,7 +235,9 @@ export function ContractorOnboardingChecklist({
               >
                 <div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xl">{step.icon}</span>
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0">
+                      {step.icon}
+                    </div>
                     {step.isCompleted ? (
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-300">
                         <svg className="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>

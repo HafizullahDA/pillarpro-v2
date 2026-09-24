@@ -436,7 +436,12 @@ export function LogDieselDrawer({
             {endVal < startVal && endVal > 0 && (
               <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div>
-                  <span className="font-semibold">⚠️ Closing reading ({endVal}) is less than opening ({startVal}).</span>
+                  <span className="font-semibold flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    Closing reading ({endVal}) is less than opening ({startVal}).
+                  </span>
                   <span className="block text-[11px] text-amber-700">Did you mean machine ran <strong>+{endVal} {unit}</strong> today?</span>
                 </div>
                 <Button
@@ -506,7 +511,9 @@ export function LogDieselDrawer({
 
         {error && (
           <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium flex items-start gap-2">
-            <span className="text-sm">⚠️</span>
+            <svg className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
             <div className="flex-1">
               <p className="font-bold">Cannot Save Daily Log</p>
               <p className="mt-0.5">{error}</p>

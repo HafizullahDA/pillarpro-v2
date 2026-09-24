@@ -337,7 +337,7 @@ export function RABillsClient({
         )}
       </div>
 
-      {/* ── ⚠️ EXPIRING BANK GUARANTEES ALERT BANNER ── */}
+      {/* ── EXPIRING BANK GUARANTEES ALERT BANNER ── */}
       {expiringBGs.length > 0 && (
         <div className="rounded-xl border border-rose-300 bg-rose-50/90 p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
@@ -472,7 +472,7 @@ export function RABillsClient({
         </div>
       </div>
 
-      {/* ── 🌟 PROMINENT KPI TILES ── */}
+      {/* ── PROMINENT KPI TILES ── */}
       {/* Visual hierarchy: Outstanding RA Balance and Retention Withheld are HERO cards */}
       <div className="space-y-3">
         <div className="flex items-center justify-between text-xs text-slate-500 px-1">
@@ -803,10 +803,12 @@ export function RABillsClient({
                         <button
                           type="button"
                           onClick={() => openWhatsApp(generateRABillWhatsAppText(b, org))}
-                          className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-semibold"
+                          className="inline-flex items-center gap-1.5 text-xs py-1 px-2 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-semibold"
                           title="Share via WhatsApp"
                         >
-                          <span className="text-xs">💬</span>
+                          <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
                           Share
                         </button>
                         {canEdit && (

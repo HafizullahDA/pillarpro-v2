@@ -79,10 +79,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             </div>
             <button
               onClick={() => removeToast(t.id)}
-              className="text-slate-400 hover:text-white ml-3 shrink-0"
+              className="text-slate-400 hover:text-white ml-3 shrink-0 p-1"
               aria-label="Close"
             >
-              ✕
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
         ))}

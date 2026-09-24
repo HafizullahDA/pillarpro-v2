@@ -128,7 +128,10 @@ export function PartnersClient({
             {formatINR(totalOutOfPocket)}
           </p>
           <p className="text-[11px] text-blue-600 mt-1 flex items-center gap-1 font-medium">
-            <span>★</span> Paid from personal UPI / Cash
+            <svg className="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Paid from personal UPI / Cash
           </p>
         </div>
 

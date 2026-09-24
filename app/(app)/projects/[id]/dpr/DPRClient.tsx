@@ -34,13 +34,13 @@ interface DPRClientProps {
   userRole: string
 }
 
-const WEATHER_LABELS: Record<string, { label: string; icon: string }> = {
-  sunny_clear:    { label: 'Sunny / Clear', icon: '☀️' },
-  overcast_cloudy: { label: 'Cloudy', icon: '⛅' },
-  rain_drizzle:   { label: 'Light Rain', icon: '🌦️' },
-  heavy_rain_halt:{ label: 'Heavy Rain / Halted', icon: '🌧️' },
-  extreme_heat:   { label: 'Extreme Heat', icon: '🌡️' },
-  fog_cold:       { label: 'Fog / Cold', icon: '🌫️' },
+const WEATHER_LABELS: Record<string, { label: string }> = {
+  sunny_clear:    { label: 'Sunny / Clear' },
+  overcast_cloudy: { label: 'Cloudy' },
+  rain_drizzle:   { label: 'Light Rain' },
+  heavy_rain_halt:{ label: 'Heavy Rain / Halted' },
+  extreme_heat:   { label: 'Extreme Heat' },
+  fog_cold:       { label: 'Fog / Cold' },
 }
 
 export function DPRClient({ project, reports, userRole }: DPRClientProps) {
@@ -51,21 +51,21 @@ export function DPRClient({ project, reports, userRole }: DPRClientProps) {
 
   const copyWhatsAppReport = (dpr: DPRItem) => {
     const weather = WEATHER_LABELS[dpr.weather]?.label || dpr.weather
-    const text = `*🏗️ PillarPro Daily Progress Report (DPR)*
+    const text = `*PillarPro Daily Progress Report (DPR)*
 *Project:* ${project.name}
 *Date:* ${formatDate(dpr.report_date)}
 *Weather:* ${weather}
 
-*👷 Manpower & Plant:*
+*Manpower & Plant:*
 • Masons (मिस्त्री): ${dpr.masons_count}
 • Labourers (मजदूर): ${dpr.labourers_count}
 • Total Workers: ${dpr.total_manpower_count}
 • Active Machines: ${dpr.machinery_active_count}
 
-*📝 Work Executed:*
+*Work Executed:*
 ${dpr.work_completed_notes}
-${dpr.impediments_delays ? `\n*⚠️ Delays / Bottlenecks:*\n${dpr.impediments_delays}` : ''}
-${dpr.photos.length > 0 ? `\n*📸 Site Photos Attached:* ${dpr.photos.length} photo(s)` : ''}`
+${dpr.impediments_delays ? `\n*Delays / Bottlenecks:*\n${dpr.impediments_delays}` : ''}
+${dpr.photos.length > 0 ? `\n*Site Photos Attached:* ${dpr.photos.length} photo(s)` : ''}`
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).catch(() => {})
@@ -114,7 +114,7 @@ ${dpr.photos.length > 0 ? `\n*📸 Site Photos Attached:* ${dpr.photos.length} p
       ) : (
         <div className="space-y-4">
           {reports.map(dpr => {
-            const weatherInfo = WEATHER_LABELS[dpr.weather] || { label: dpr.weather, icon: '⛅' }
+            const weatherInfo = WEATHER_LABELS[dpr.weather] || { label: dpr.weather }
 
             return (
               <div
@@ -124,7 +124,11 @@ ${dpr.photos.length > 0 ? `\n*📸 Site Photos Attached:* ${dpr.photos.length} p
                 {/* Header row */}
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-xl">{weatherInfo.icon}</span>
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">
                         {formatDate(dpr.report_date)}
@@ -184,8 +188,11 @@ ${dpr.photos.length > 0 ? `\n*📸 Site Photos Attached:* ${dpr.photos.length} p
                 {/* Impediments / Delays */}
                 {dpr.impediments_delays && (
                   <div className="text-xs space-y-1 bg-amber-50/60 p-3 rounded-xl border border-amber-200/70">
-                    <span className="font-semibold text-amber-900 uppercase tracking-wider text-[10px] flex items-center gap-1">
-                      <span>⚠️</span> Delays / Site Obstacles:
+                    <span className="font-semibold text-amber-900 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5 text-amber-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      Delays / Site Obstacles:
                     </span>
                     <p className="text-amber-950 leading-relaxed">
                       {dpr.impediments_delays}
