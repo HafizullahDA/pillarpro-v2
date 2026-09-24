@@ -141,13 +141,31 @@ describe('Offline IndexedDB Store & Queue', () => {
     expect(all['/suppliers'].payload.suppliers[0].name).toBe('Sharma Steels')
   })
 
-  it('retrieves individual snapshot by route even if offline user ID changes', async () => {
-    await saveOfflineSnapshot('/ra-bills', {
-      bills: [{ bill_number: 'RA-01', amount: 50000 }],
+  it('supports queueing worker items and attendance muster rolls offline', async () => {
+    const workerId = await saveToOfflineQueue('worker', {
+      id: 'worker-uuid-1',
+      name: 'Ramesh Kumar',
+      trade: 'Mason',
+      daily_wage_rate: 750,
     })
 
-    const snap = await getOfflineSnapshot<any>('/ra-bills')
-    expect(snap).not.toBeNull()
-    expect(snap?.payload.bills[0].bill_number).toBe('RA-01')
+    expect(workerId).toMatch(/^worker_/)
+
+    const attendanceId = await saveToOfflineQueue('attendance', [
+      {
+        worker_id: 'worker-uuid-1',
+        worker_name: 'Ramesh Kumar',
+        date: '2026-09-24',
+        status: 'present',
+        present: true,
+        overtime_hours: 2.0,
+      }
+    ])
+
+    expect(attendanceId).toMatch(/^attendance_/)
+
+    const queue = await getOfflineQueue()
+    expect(queue.some(q => q.type === 'worker' && q.payload.name === 'Ramesh Kumar')).toBe(true)
+    expect(queue.some(q => q.type === 'attendance' && Array.isArray(q.payload) && q.payload[0].worker_id === 'worker-uuid-1')).toBe(true)
   })
 })

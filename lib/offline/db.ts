@@ -13,7 +13,7 @@ type OfflineSnapshot<T = unknown> = {
 
 export type QueuedItem = {
   id: string
-  type: 'expense' | 'attendance' | 'supplier' | 'supplier_transaction' | 'diesel_log'
+  type: 'expense' | 'attendance' | 'worker' | 'supplier' | 'supplier_transaction' | 'diesel_log'
   payload: any
   createdAt: number
 }
