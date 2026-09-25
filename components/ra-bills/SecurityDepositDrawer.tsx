@@ -60,6 +60,7 @@ export function SecurityDepositDrawer({
 
   // Multi-Rule Engine Calculator State
   const [selectedRuleId, setSelectedRuleId] = useState<AsdRuleId>('jk_pwd')
+  const [jkCalculationBase, setJkCalculationBase] = useState<'advertised_cost' | 'bid_price'>('advertised_cost')
   const [calcAdvertisedCost, setCalcAdvertisedCost] = useState('')
   const [calcBidPrice, setCalcBidPrice] = useState('')
   const [customThreshold, setCustomThreshold] = useState('10')
@@ -96,10 +97,11 @@ export function SecurityDepositDrawer({
       ruleId: selectedRuleId,
       advertisedCost: adv,
       bidPrice: bid,
+      calculationBase: jkCalculationBase,
       customThresholdPercent: parseFloat(customThreshold) || 0,
       customRatePercent: parseFloat(customRate) || 0,
     })
-  }, [isAsd, selectedRuleId, calcAdvertisedCost, calcBidPrice, customThreshold, customRate])
+  }, [isAsd, selectedRuleId, jkCalculationBase, calcAdvertisedCost, calcBidPrice, customThreshold, customRate])
 
   const handleApplyCalculatedAsd = () => {
     if (!computedAsd || computedAsd.additionalSecurityAmount <= 0) return
@@ -272,6 +274,52 @@ export function SecurityDepositDrawer({
               </p>
             </div>
 
+            {/* J&K PWD Ground Practice vs Circular Toggle */}
+            {selectedRuleId === 'jk_pwd' && (
+              <div className="space-y-1.5 pt-0.5">
+                <label className="block text-[11px] font-semibold text-amber-950">
+                  Calculation Standard (J&K):
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setJkCalculationBase('advertised_cost')}
+                    className={`px-2.5 py-1.5 rounded-lg border text-left text-[11px] transition-all cursor-pointer ${
+                      jkCalculationBase === 'advertised_cost'
+                        ? 'bg-amber-600 text-white border-amber-700 shadow-xs font-semibold'
+                        : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-100/50'
+                    }`}
+                  >
+                    <div className="font-bold flex items-center justify-between">
+                      <span>PWD Division Practice</span>
+                      {jkCalculationBase === 'advertised_cost' && <span className="text-[10px]">✓ Active</span>}
+                    </div>
+                    <div className={jkCalculationBase === 'advertised_cost' ? 'text-amber-100 text-[10px]' : 'text-slate-500 text-[10px]'}>
+                      On Advertised Cost (Allotment Order)
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setJkCalculationBase('bid_price')}
+                    className={`px-2.5 py-1.5 rounded-lg border text-left text-[11px] transition-all cursor-pointer ${
+                      jkCalculationBase === 'bid_price'
+                        ? 'bg-amber-600 text-white border-amber-700 shadow-xs font-semibold'
+                        : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-100/50'
+                    }`}
+                  >
+                    <div className="font-bold flex items-center justify-between">
+                      <span>Finance Circular Text</span>
+                      {jkCalculationBase === 'bid_price' && <span className="text-[10px]">✓ Active</span>}
+                    </div>
+                    <div className={jkCalculationBase === 'bid_price' ? 'text-amber-100 text-[10px]' : 'text-slate-500 text-[10px]'}>
+                      On Quoted Bid Price (Literal)
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* If Custom Rule Selected */}
             {selectedRuleId === 'custom' && (
               <div className="grid grid-cols-2 gap-2.5 pt-1">
@@ -332,7 +380,7 @@ export function SecurityDepositDrawer({
 
             {/* Live Calculation Output Card */}
             {computedAsd && (
-              <div className="rounded-lg bg-white border border-amber-200 p-2.5 space-y-1.5 text-xs shadow-sm">
+              <div className="rounded-lg bg-white border border-amber-200 p-2.5 space-y-2 text-xs shadow-sm">
                 <div className="flex justify-between items-center text-slate-700">
                   <span className="text-[11px]">Rebate / Below Estimate:</span>
                   <span className="font-semibold text-slate-900">
@@ -356,6 +404,34 @@ export function SecurityDepositDrawer({
                     ₹{computedAsd.additionalSecurityAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
+
+                {/* For J&K PWD: Show Side-by-Side Comparison Between Allotment Demand and Circular Text */}
+                {selectedRuleId === 'jk_pwd' && computedAsd.departmentDemandAmount !== undefined && (
+                  <div className="rounded-md bg-amber-50/90 border border-amber-200 p-2 space-y-1.5 text-[10.5px]">
+                    <div className="font-bold text-amber-950 flex items-center justify-between">
+                      <span>J&amp;K Department Reality Comparison:</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-slate-700">
+                      <div className="bg-white/80 p-1.5 rounded border border-amber-200">
+                        <span className="text-slate-500 block">PWD Allotment Order:</span>
+                        <strong className="text-amber-900 font-mono text-xs">
+                          ₹{computedAsd.departmentDemandAmount.toLocaleString('en-IN')}
+                        </strong>
+                        <span className="text-[9.5px] text-slate-500 block">5.20% on Advertised Cost</span>
+                      </div>
+                      <div className="bg-white/80 p-1.5 rounded border border-amber-200">
+                        <span className="text-slate-500 block">Circular Text Literal:</span>
+                        <strong className="text-slate-800 font-mono text-xs">
+                          ₹{computedAsd.circularTheoreticalAmount?.toLocaleString('en-IN')}
+                        </strong>
+                        <span className="text-[9.5px] text-slate-500 block">2.08% on Bid Price</span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-amber-900 leading-tight">
+                      💡 <strong>Note:</strong> Executive Engineer Allotment Orders (e.g. R&amp;B Gurez Order No. 11) enforce the <strong>PWD Allotment Order (₹{computedAsd.departmentDemandAmount.toLocaleString('en-IN')})</strong> based on Advertised Cost.
+                    </p>
+                  </div>
+                )}
 
                 {/* Permissible Instrument Guidance */}
                 <div className="rounded bg-slate-50 border border-slate-200 p-1.5 text-[10.5px] text-slate-600 mt-1">

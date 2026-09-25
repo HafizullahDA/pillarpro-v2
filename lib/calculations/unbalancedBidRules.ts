@@ -91,6 +91,7 @@ export interface CalculateAsdOptions {
   ruleId: AsdRuleId
   advertisedCost: number
   bidPrice: number
+  calculationBase?: 'advertised_cost' | 'bid_price'
   customThresholdPercent?: number
   customRatePercent?: number
 }
@@ -108,6 +109,9 @@ export interface AsdCalculationResult {
   instrumentGuide: string
   instrumentWarning?: string
   calculationFormulaText: string
+  departmentDemandAmount?: number
+  circularTheoreticalAmount?: number
+  calculationBaseUsed?: 'advertised_cost' | 'bid_price'
 }
 
 /**
@@ -118,6 +122,7 @@ export function calculateUnbalancedBidSecurity({
   ruleId,
   advertisedCost,
   bidPrice,
+  calculationBase = 'advertised_cost',
   customThresholdPercent = 10,
   customRatePercent = 0,
 }: CalculateAsdOptions): AsdCalculationResult {
@@ -137,6 +142,7 @@ export function calculateUnbalancedBidSecurity({
       instrumentGuide: meta.instrumentGuide,
       instrumentWarning: meta.instrumentWarning,
       calculationFormulaText: 'Quoted Bid ≥ Estimated Cost → ASD = ₹0',
+      calculationBaseUsed: calculationBase,
     }
   }
 
@@ -148,30 +154,59 @@ export function calculateUnbalancedBidSecurity({
   let isTriggered = false
   let slabDescription = ''
   let calculationFormulaText = ''
+  let departmentDemandAmount: number | undefined
+  let circularTheoreticalAmount: number | undefined
 
   switch (ruleId) {
     case 'jk_pwd': {
-      // Circular No. FD-Code/441/2021-02-158 dated 08.08.2025
-      // Applied on Quoted Bid Price
+      // 1. Department Division Practice (Applied on Advertised Cost, as demanded in PWD Allotment Orders)
+      // Rates: 26% discount -> 26 * 0.2% = 5.2% on Advertised Cost -> exactly ₹93,340 for ₹17.95L
+      const pCeil = Math.ceil(percentageBelow)
+      const deptRate = roundToTwo(pCeil * 0.2)
+      departmentDemandAmount = percentageBelow <= 10 ? 0 : roundToTwo((deptRate / 100) * advertisedCost)
+
+      // 2. Finance Dept Circular 08-08-2025 Literal Text (Applied on Quoted Bid Price)
+      let circRate = 0
       if (percentageBelow <= 10) {
-        ratePercent = 0
-        additionalSecurityAmount = 0
-        slabDescription = 'Up to and including 10% below: Nil (No ASD required)'
-        calculationFormulaText = `${percentageBelow}% below advertised cost ≤ 10% threshold → Nil (₹0)`
+        circRate = 0
       } else if (percentageBelow < 20) {
-        const pointsBelow10 = roundToTwo(percentageBelow - 10)
-        ratePercent = roundToTwo(pointsBelow10 * 0.1)
-        additionalSecurityAmount = roundToTwo((ratePercent / 100) * bidPrice)
-        isTriggered = additionalSecurityAmount > 0
-        slabDescription = `>10% to <20% below: 0.1% per point below 10% (${pointsBelow10}% × 0.1 = ${ratePercent}%)`
-        calculationFormulaText = `${ratePercent}% applied to Bid Price (₹${bidPrice.toLocaleString('en-IN')}) = ₹${additionalSecurityAmount.toLocaleString('en-IN')}`
+        circRate = roundToTwo((percentageBelow - 10) * 0.1)
       } else {
-        const pointsBelow20 = roundToTwo(percentageBelow - 20)
-        ratePercent = roundToTwo(1.0 + pointsBelow20 * 0.2)
-        additionalSecurityAmount = roundToTwo((ratePercent / 100) * bidPrice)
+        circRate = roundToTwo(1.0 + (percentageBelow - 20) * 0.2)
+      }
+      circularTheoreticalAmount = roundToTwo((circRate / 100) * bidPrice)
+
+      if (calculationBase === 'advertised_cost') {
+        // Department PWD Divisional Allotment Practice
+        if (percentageBelow <= 10) {
+          ratePercent = 0
+          additionalSecurityAmount = 0
+          slabDescription = 'Up to and including 10% below: Nil (No ASD required)'
+          calculationFormulaText = `${percentageBelow}% below advertised cost ≤ 10% threshold → Nil (₹0)`
+        } else {
+          ratePercent = deptRate
+          additionalSecurityAmount = departmentDemandAmount
+          isTriggered = additionalSecurityAmount > 0
+          slabDescription = `PWD Allotment Practice: ${pCeil}% discount × 0.2% = ${deptRate}% on Advertised Cost (₹${advertisedCost.toLocaleString('en-IN')})`
+          calculationFormulaText = `${deptRate}% on Advertised Cost (₹${advertisedCost.toLocaleString('en-IN')}) = ₹${additionalSecurityAmount.toLocaleString('en-IN')} (Matches PWD Allotment Order)`
+        }
+      } else {
+        // Finance Circular Literal Text on Bid Price
+        ratePercent = circRate
+        additionalSecurityAmount = circularTheoreticalAmount
         isTriggered = additionalSecurityAmount > 0
-        slabDescription = `≥20% below: 1.0% + 0.2% per point below 20% (1.0% + ${pointsBelow20}% × 0.2 = ${ratePercent}%)`
-        calculationFormulaText = `${ratePercent}% applied to Bid Price (₹${bidPrice.toLocaleString('en-IN')}) = ₹${additionalSecurityAmount.toLocaleString('en-IN')}`
+        if (percentageBelow <= 10) {
+          slabDescription = 'Up to and including 10% below: Nil (No ASD required)'
+          calculationFormulaText = `${percentageBelow}% below advertised cost ≤ 10% threshold → Nil (₹0)`
+        } else if (percentageBelow < 20) {
+          const pts = roundToTwo(percentageBelow - 10)
+          slabDescription = `Finance Circular: >10% to <20% below: 0.1% per point below 10% (${pts}% × 0.1 = ${circRate}%) on Bid Price`
+          calculationFormulaText = `${circRate}% applied to Bid Price (₹${bidPrice.toLocaleString('en-IN')}) = ₹${additionalSecurityAmount.toLocaleString('en-IN')}`
+        } else {
+          const pts = roundToTwo(percentageBelow - 20)
+          slabDescription = `Finance Circular: ≥20% below: 1.0% + 0.2% per point below 20% (${circRate}%) on Bid Price`
+          calculationFormulaText = `${circRate}% applied to Bid Price (₹${bidPrice.toLocaleString('en-IN')}) = ₹${additionalSecurityAmount.toLocaleString('en-IN')}`
+        }
       }
       break
     }
@@ -328,5 +363,8 @@ export function calculateUnbalancedBidSecurity({
     instrumentGuide: meta.instrumentGuide,
     instrumentWarning: meta.instrumentWarning,
     calculationFormulaText,
+    departmentDemandAmount,
+    circularTheoreticalAmount,
+    calculationBaseUsed: calculationBase,
   }
 }

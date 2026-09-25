@@ -12,7 +12,7 @@ describe('Universal Multi-Rule Engine for Unbalanced Bids (ASD / APG / CDR)', ()
     expect(ASD_RULES.custom).toBeDefined()
   })
 
-  describe('1. J&K PWD Rule (Circular 08-08-2025)', () => {
+  describe('1. J&K PWD Rule (Allotment Order Practice vs Circular Text)', () => {
     it('returns 0 for bids up to and including 10% below advertised cost', () => {
       const res = calculateUnbalancedBidSecurity({
         ruleId: 'jk_pwd',
@@ -25,27 +25,31 @@ describe('Universal Multi-Rule Engine for Unbalanced Bids (ASD / APG / CDR)', ()
       expect(res.isTriggered).toBe(false)
     })
 
-    it('calculates 0.1% per point below 10% on bid price for 10% to 20% discount', () => {
-      const res = calculateUnbalancedBidSecurity({
-        ruleId: 'jk_pwd',
-        advertisedCost: 1000000,
-        bidPrice: 850000, // 15% below -> 5 pts * 0.1% = 0.5%
-      })
-      expect(res.percentageBelow).toBe(15)
-      expect(res.ratePercent).toBe(0.5)
-      expect(res.additionalSecurityAmount).toBe(4250) // 0.5% of 8,50,000
-      expect(res.isTriggered).toBe(true)
-    })
-
-    it('calculates 1% + 0.2% per point below 20% for bids >= 20% discount', () => {
+    it('calculates exact PWD Allotment Order demand (Rs. 93,340) on Advertised Cost for 17.95L / 13.39L project', () => {
       const res = calculateUnbalancedBidSecurity({
         ruleId: 'jk_pwd',
         advertisedCost: 1795000,
-        bidPrice: 1339422.22, // 25.38% below -> 1.0 + (5.38 * 0.2) = 2.08%
+        bidPrice: 1339422.22,
+        calculationBase: 'advertised_cost',
+      })
+      expect(res.percentageBelow).toBe(25.38)
+      expect(res.ratePercent).toBe(5.2) // 26% ceil discount * 0.2% = 5.2% on Advertised Cost
+      expect(res.additionalSecurityAmount).toBe(93340) // EXACT MATCH to PWD Allotment Order No. 11!
+      expect(res.departmentDemandAmount).toBe(93340)
+      expect(res.circularTheoreticalAmount).toBe(27859.98)
+    })
+
+    it('calculates theoretical circular text figure (Rs. 27,859.98) on Quoted Bid Price', () => {
+      const res = calculateUnbalancedBidSecurity({
+        ruleId: 'jk_pwd',
+        advertisedCost: 1795000,
+        bidPrice: 1339422.22,
+        calculationBase: 'bid_price',
       })
       expect(res.percentageBelow).toBe(25.38)
       expect(res.ratePercent).toBe(2.08)
       expect(res.additionalSecurityAmount).toBe(27859.98)
+      expect(res.departmentDemandAmount).toBe(93340)
     })
   })
 

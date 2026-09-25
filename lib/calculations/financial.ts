@@ -35,17 +35,21 @@ import { calculateUnbalancedBidSecurity } from './unbalancedBidRules'
  */
 export function calculateAdditionalPerformanceSecurity(
   advertisedCost: number,
-  bidPrice: number
+  bidPrice: number,
+  calculationBase: 'advertised_cost' | 'bid_price' = 'bid_price'
 ): {
   percentageBelow: number
   ratePercent: number
   additionalSecurityAmount: number
   slabDescription: string
+  departmentDemandAmount?: number
+  circularTheoreticalAmount?: number
 } {
   const res = calculateUnbalancedBidSecurity({
     ruleId: 'jk_pwd',
     advertisedCost,
     bidPrice,
+    calculationBase,
   })
 
   return {
@@ -53,6 +57,9 @@ export function calculateAdditionalPerformanceSecurity(
     ratePercent: res.ratePercent,
     additionalSecurityAmount: res.additionalSecurityAmount,
     slabDescription: res.slabDescription,
+    departmentDemandAmount: res.departmentDemandAmount,
+    circularTheoreticalAmount: res.circularTheoreticalAmount,
   }
 }
+
 

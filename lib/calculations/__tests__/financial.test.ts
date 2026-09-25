@@ -75,10 +75,17 @@ describe('calculateAdditionalPerformanceSecurity (J&K Circular 08-08-2025)', () 
   it('calculates properly for real-world project values (e.g. 17.95L Advertised Cost, 13.39L Bid Price)', () => {
     const advertised = 1795000
     const bid = 1339422.22
-    const res = calculateAdditionalPerformanceSecurity(advertised, bid)
+    const res = calculateAdditionalPerformanceSecurity(advertised, bid, 'bid_price')
     expect(res.percentageBelow).toBe(25.38)
     expect(res.ratePercent).toBe(2.08) // 1.0 + (5.38 * 0.2) = 2.076 -> 2.08%
     expect(res.additionalSecurityAmount).toBe(27859.98) // (2.08 / 100) * 1339422.22
+
+    // Department PWD Division Allotment Practice (on Advertised Cost)
+    const resDept = calculateAdditionalPerformanceSecurity(advertised, bid, 'advertised_cost')
+    expect(resDept.percentageBelow).toBe(25.38)
+    expect(resDept.ratePercent).toBe(5.2) // 26% ceil * 0.2% = 5.2% on Advertised Cost
+    expect(resDept.additionalSecurityAmount).toBe(93340) // Exact match to PWD Allotment Order No. 11!
   })
 })
+
 
