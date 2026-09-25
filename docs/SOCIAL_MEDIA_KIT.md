@@ -1,9 +1,36 @@
 # PillarPro — Official Social Media Kit & Content Playbook
-**Brand Handle**: `@pillarprojk` | **Official Email**: `pillarprojk@gmail.com` | **Domain**: Civil Contracting OS (PWD, PMGSY, R&B, Jal Shakti, NHAI, CPWD)
+**Brand Handle**: `@pillarprojk` | **Official Website**: `pillarprojk.com` | **Official Email**: `contact@pillarprojk.com` | **Domain**: Civil Contracting OS (PWD, PMGSY, R&B, Jal Shakti, NHAI, CPWD)
 
 ---
 
-## 1. Brand Identity & Profile Configurations
+## 1. Brand Identity & Logo Specifications
+
+### Official Logo & Visual Asset Identity (From SaaS Platform)
+The official PillarPro logo reflects structural strength, engineering precision, and modern construction tech:
+
+* **The Emblem / App Icon**:
+  - **Background**: Rounded square foundation in Royal Blue (`#2563eb` / `bg-blue-600`) with radius 16px.
+  - **The Pillar (Letter "P")**: Pure white (`#FFFFFF`) structural column representing an architectural civil pillar, featuring a fluting relief accent in ice blue (`#DBEAFE`) and a footing base cap (`#93C5FD`).
+  - **The Cantilever**: A precision precast beam loop completing the letter "P" (`#FFFFFF` with `#2563eb` inner cutout and `#BFDBFE` structural connector brackets).
+* **The Wordmark**:
+  - **"Pillar"**: Heavyweight, architectural geometric font in Deep Slate (`#0f172a`) on light backgrounds or Pure White (`#ffffff`) on dark backgrounds.
+  - **"Pro"**: Royal Blue (`#2563eb`) accent representing digital acceleration and professional grade.
+* **Official Subtitle / Monogram**:
+  - `CIVIL CONTRACTING OPERATING SYSTEM` (in tracking-[0.2em] bold uppercase, `#64748b`).
+
+### Official Brand Color Tokens
+
+| Color Name | HEX Code | Tailwind Token | Strategic Association |
+| :--- | :--- | :--- | :--- |
+| **Royal Pillar Blue (Primary)** | `#2563eb` | `bg-blue-600` | SaaS icon foundation, "Pro" wordmark, digital trust |
+| **Deep Steel Navy (Primary)** | `#0f172a` | `bg-slate-900` | Heavy civil infrastructure, executive ledgers |
+| **Safety Amber (Accent)** | `#d97706` | `bg-amber-600` | Active civil sites, alert horizon, high-visibility |
+| **Contractor Emerald (Success)** | `#059669` | `bg-emerald-600` | Retention recovery, bill clearances, approved claims |
+| **Architectural Slate (Surface)** | `#f8fafc` | `bg-slate-50` | Clean high-contrast site reading daylight layout |
+
+---
+
+## 2. Official Taglines & Platform Bios
 
 ### Official Taglines
 * **Primary (Short)**: *The Operating System for Civil Contractors.*
@@ -15,58 +42,34 @@
 ### Platform Bios
 
 #### LinkedIn Company Page (About Section)
-> **PillarPro** is India's dedicated construction-tech operating system engineered specifically for government civil contractors (PWD, PMGSY, R&B, Jal Shakti, NHAI, CPWD). 
+> **PillarPro** is India's dedicated construction-tech operating system engineered specifically for government civil contractors (PWD, PMGSY, R&B, Jal Shakti, NHAI, CPWD).
 >
 > From AI-powered Running Account (RA) bill scanning and offline-first site logs to automated J&K PWD & CPWD Unbalanced Bid (ASD/CDR) calculators and statutory hindrance registers — PillarPro eliminates payment delays, leakage, and paperwork chaos.
 >
-> 🌐 Website: https://pillarpro.in  
-> ✉️ Contact: pillarprojk@gmail.com  
-> 📍 Made with pride for civil infrastructure builders.
+> 🌐 Website: https://pillarprojk.com  
+> ✉️ Contact: contact@pillarprojk.com  
+> 📍 Built with pride for civil infrastructure builders.
 
 #### Twitter / X Bio (160 Characters Max)
-> The Operating System for Civil Contractors. AI RA Bills, J&K PWD Unbalanced Bid CDRs, Offline DPR & Hindrance Logs. Built for PWD, PMGSY & NHAI builders. 🚜🇮🇳
+> The Operating System for Civil Contractors. AI RA Bills, J&K PWD Unbalanced Bid CDRs, Offline DPR & Hindrance Logs. Built for PWD, PMGSY & NHAI builders. 🚜🇮🇳  
+> pillarprojk.com
 
 #### Instagram & Facebook Bio
 > 🏗️ The OS Built for Civil & Govt Contractors  
 > ⚡ 1-Click RA Bills • CDR / Bank Guarantee Tracker  
 > 📱 Offline Site Attendance & DPR  
 > 📊 Auto Unbalanced Bid / ASD Calculator (PWD / CPWD)  
-> 🔗 Try PillarPro free 👇  
-> [linkinbio / pillarpro.in]
+> 🔗 Visit: pillarprojk.com 👇  
+> [linkinbio / pillarprojk.com]
 
 #### WhatsApp Business Bio
 > **PillarPro — Civil Contractor Platform**  
-> Manage running bills, measurement book (MB) references, site expenses, workers, and bank guarantees on mobile. Designed for PWD, PMGSY, and R&B contractors.
+> Manage running bills, measurement book (MB) references, site expenses, workers, and bank guarantees on mobile. Built for PWD, PMGSY, and R&B contractors.  
+> 🌐 pillarprojk.com | ✉️ contact@pillarprojk.com
 
 ---
 
-### Visual Style & Color Tokens
-
-| Color Name | HEX Code | Tailwind Token | Strategic Association |
-| :--- | :--- | :--- | :--- |
-| **Deep Steel Navy** | `#0f172a` | `bg-slate-900` | Institutional trust, stability, executive ledgers |
-| **Safety Amber / Orange** | `#d97706` | `bg-amber-600` | Construction equipment, alert horizons, active work |
-| **Contractor Emerald** | `#059669` | `bg-emerald-600` | Recovered retention, bill clearances, healthy margins |
-| **Blueprint Blue** | `#2563eb` | `bg-blue-600` | Engineering precision, cloud sync, modern software |
-| **Site Slate** | `#f8fafc` | `bg-slate-50` | Clean background, high-readability reports |
-
----
-
-## 2. The 4 Core Content Pillars
-
-```
-                     ┌───────────────────────────────────┐
-                     │     PillarPro Content Matrix      │
-                     └─────────────────┬─────────────────┘
-                                       │
-        ┌──────────────┬───────────────┴───────────────┬──────────────┐
-        │              │                               │              │
-┌───────▼──────┐┌──────▼───────┐               ┌───────▼──────┐┌──────▼──────┐
-│  Pillar 1:   ││  Pillar 2:   │               │  Pillar 3:   ││  Pillar 4:  │
-│  Contractor  ││  Feature     │               │  Circular &  ││  ROI & Case │
-│  Pain Points ││  Spotlights  │               │  Compliance  ││  Studies    │
-└──────────────┘└──────────────┘               └──────────────┘└──────────────┘
-```
+## 3. The 4 Core Content Pillars
 
 1. **Pillar 1: Contractor Pain Points** (Empathy & Problem Resonance)
    - Unreconciled TDS/GST deductions on bills.
@@ -86,7 +89,7 @@
 
 ---
 
-## 3. Plug-and-Play Post Copy (Ready to Publish)
+## 4. Plug-and-Play Post Copy (Ready to Publish)
 
 ### A. LinkedIn Posts (B2B & Contractor Executive Audience)
 
@@ -107,7 +110,7 @@
 >
 > Stop guessing on government tenders. Take control with PillarPro.
 >
-> 📲 Experience it at pillarpro.in | Reach our team: pillarprojk@gmail.com
+> 📲 Experience it at https://pillarprojk.com | Reach our team: contact@pillarprojk.com
 >
 > `#CivilContractors` `#JKPWD` `#CPWD` `#ConstructionTech` `#PillarPro` `#TenderManagement`
 
@@ -132,7 +135,7 @@
 >
 > Built for Indian infrastructure contractors.
 >
-> 👉 Join forward-thinking contractors at pillarpro.in
+> 👉 Join forward-thinking contractors at https://pillarprojk.com
 >
 > `#GovtContractors` `#PMGSY` `#PWD` `#InfrastructureIndia` `#PillarPro`
 
@@ -163,7 +166,7 @@
 > • Offline Site DPR & Attendance  
 > • Hindrance & EOT Tracker  
 >
-> Built for builders of India. Try it today: pillarpro.in 🚜🇮🇳
+> Built for builders of India. Try it today: https://pillarprojk.com 🚜🇮🇳
 
 ---
 
@@ -174,7 +177,7 @@
 * **Slide 2**: *Manual Way*: Site measurements on paper $\rightarrow$ 3 days finding last bill deduction $\rightarrow$ Wrong GST-TDS calculation $\rightarrow$ Treasury objection.
 * **Slide 3**: *PillarPro Way*: Scan physical bill $\rightarrow$ AI auto-populates Net Payable, Retention & Statutory Deductions in 10 seconds.
 * **Slide 4**: *The Retention Radar*: See exactly how much security deposit is locked with the department across all running projects.
-* **Slide 5 (CTA)**: *Upgrade your contracting business. Sign up free at pillarpro.in or DM us `@pillarprojk`.*
+* **Slide 5 (CTA)**: *Upgrade your contracting business. Sign up free at https://pillarprojk.com or DM us `@pillarprojk`.*
 
 ---
 
@@ -186,6 +189,7 @@
   > *Right: 3 seconds on PillarPro.*  
   > *Track bills, CDRs, site workers, and expenses from your pocket. Link in bio!"*
 * **Music**: Energetic, modern trending beat.
+* **Ending Screen**: PillarPro official logo (White P-pillar on Royal Blue rounded square) with domain `pillarprojk.com`.
 
 ---
 
@@ -203,12 +207,12 @@
 > 🔹 **Bank Guarantee & CDR Expiry Alerts**: Never let an active guarantee lapse.  
 > 🔹 **Offline Site Attendance & DPR**: Works in remote valleys without internet.  
 >
-> 📲 **Try PillarPro free**: https://pillarpro.in  
-> 💬 Contact us directly: pillarprojk@gmail.com / Reply to this message.
+> 📲 **Try PillarPro free**: https://pillarprojk.com  
+> 💬 Contact us directly: contact@pillarprojk.com / Reply to this message.
 
 ---
 
-## 4. Visual Asset Templates & Specifications
+## 5. Visual Asset Templates & Specifications
 
 ### 1. The "Circular Alert" Card
 * **Dimensions**: 1080 × 1080 px (Square for Instagram/LinkedIn) & 1200 × 675 px (Twitter)
@@ -216,7 +220,7 @@
 * **Header**: `[GOVT CIRCULAR ALERT]` in bold Amber tag.
 * **Headline**: *"J&K PWD Circular 08-08-2025: Unbalanced Bid Additional Security Deposit Rules"*
 * **Key Visual**: Clean tabular comparison of the 3 slabs (≤10%, 10%–20%, ≥20%) with a callout *"Applied on Quoted Bid Price, Not Advertised Cost"*.
-* **Footer**: PillarPro logo + `pillarpro.in`.
+* **Footer**: PillarPro official logo + `pillarprojk.com`.
 
 ### 2. The "Feature Spotlight" Card
 * **Headline**: *"1-Click Additional Performance Security (APS) Calculator"*
@@ -225,10 +229,11 @@
   - Auto-fetches Advertised Cost & Allotted Bid
   - Pre-validates accepted instruments (CDR, FDR, e-BG)
   - Instant audit note for your allotment file
+* **Footer**: `pillarprojk.com` | `contact@pillarprojk.com`
 
 ---
 
-## 5. Master Hashtag Matrix
+## 6. Master Hashtag Matrix
 
 ### Core Platform Tags
 `#PillarPro` `#CivilContractors` `#GovtContractors` `#ConstructionTech` `#InfraIndia`
@@ -241,7 +246,7 @@
 
 ---
 
-## 6. Weekly Execution Cadence (Recommended)
+## 7. Weekly Execution Cadence (Recommended)
 
 | Day | Platform | Format | Topic |
 | :--- | :--- | :--- | :--- |
