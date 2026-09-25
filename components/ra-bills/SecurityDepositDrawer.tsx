@@ -11,7 +11,11 @@ import { getTodayIST } from '@/lib/date'
 import { securityDepositSchema } from '@/lib/validations/raBill'
 import { translateError } from '@/lib/errorTranslator'
 import { ProjectOption } from '@/app/(app)/ra-bills/RABillActions'
-import { calculateAdditionalPerformanceSecurity } from '@/lib/calculations/financial'
+import {
+  calculateUnbalancedBidSecurity,
+  ASD_RULES,
+  AsdRuleId,
+} from '@/lib/calculations/financial'
 
 export const DEPOSIT_TYPES = [
   { value: 'additional_performance_security', label: 'Additional Security Deposit / CDR (Unbalanced Bid)' },
@@ -54,13 +58,18 @@ export function SecurityDepositDrawer({
     notes: '',
   })
 
-  // J&K PWD Unbalanced Bid Calculator Inputs
+  // Multi-Rule Engine Calculator State
+  const [selectedRuleId, setSelectedRuleId] = useState<AsdRuleId>('jk_pwd')
   const [calcAdvertisedCost, setCalcAdvertisedCost] = useState('')
   const [calcBidPrice, setCalcBidPrice] = useState('')
+  const [customThreshold, setCustomThreshold] = useState('10')
+  const [customRate, setCustomRate] = useState('')
 
   const isAsd =
     depositForm.deposit_type === 'additional_performance_security' ||
     depositForm.deposit_type === 'additional_security_deposit'
+
+  const activeRule = ASD_RULES[selectedRuleId] || ASD_RULES.jk_pwd
 
   // When project changes, auto-populate advertised cost and awarded bid price if present
   useEffect(() => {
@@ -77,14 +86,20 @@ export function SecurityDepositDrawer({
     }
   }, [depositForm.project_id, projects])
 
-  // Compute Unbalanced Bid ASD metrics as per J&K PWD Circular (08-08-2025)
+  // Compute Unbalanced Bid ASD metrics via Universal Multi-Rule Engine
   const computedAsd = useMemo(() => {
     if (!isAsd) return null
     const adv = parseFloat(calcAdvertisedCost)
     const bid = parseFloat(calcBidPrice)
     if (isNaN(adv) || isNaN(bid) || adv <= 0 || bid <= 0) return null
-    return calculateAdditionalPerformanceSecurity(adv, bid)
-  }, [isAsd, calcAdvertisedCost, calcBidPrice])
+    return calculateUnbalancedBidSecurity({
+      ruleId: selectedRuleId,
+      advertisedCost: adv,
+      bidPrice: bid,
+      customThresholdPercent: parseFloat(customThreshold) || 0,
+      customRatePercent: parseFloat(customRate) || 0,
+    })
+  }, [isAsd, selectedRuleId, calcAdvertisedCost, calcBidPrice, customThreshold, customRate])
 
   const handleApplyCalculatedAsd = () => {
     if (!computedAsd || computedAsd.additionalSecurityAmount <= 0) return
@@ -93,7 +108,7 @@ export function SecurityDepositDrawer({
       amount: String(computedAsd.additionalSecurityAmount),
       notes: f.notes
         ? f.notes
-        : `Additional Security Deposit for Unbalanced Bid (${computedAsd.percentageBelow}% below advertised cost as per J&K PWD Circular 08-08-2025)`,
+        : `Additional Security / APG calculated under ${computedAsd.ruleName}: ${computedAsd.calculationFormulaText}`,
     }))
   }
 
@@ -214,43 +229,91 @@ export function SecurityDepositDrawer({
           </Select>
         </FieldWrapper>
 
-        {/* J&K PWD Circular Unbalanced Bid Auto-Calculator */}
+        {/* Universal Multi-Rule Engine for Unbalanced Bid / Additional Performance Security */}
         {isAsd && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-3.5 space-y-3 shadow-xs">
+            <div className="flex items-center justify-between border-b border-amber-200/80 pb-2">
               <div className="flex items-center gap-1.5">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-600 text-white text-[10px] font-bold">
                   %
                 </span>
                 <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
-                  J&K PWD Unbalanced Bid Calculator
+                  Unbalanced Bid &amp; ASD Engine
                 </h4>
               </div>
-              <span className="text-[10px] font-semibold text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded-full border border-amber-300">
-                Circular 08-08-2025
+              <span className="text-[10px] font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                Multi-Norm Engine
               </span>
             </div>
 
-            <p className="text-[11px] text-amber-900 leading-snug">
-              Additional performance security is calculated on the <strong>bidder&apos;s quoted bid price</strong>:
-            </p>
-            <div className="text-[10px] bg-white/70 border border-amber-200 rounded p-2 text-amber-950 space-y-0.5">
-              <div>• <strong>≤ 10% below</strong>: Nil (No ASD required)</div>
-              <div>• <strong>&gt; 10% up to 20% below</strong>: 0.1% for every percentage point below 10%</div>
-              <div>• <strong>≥ 20% below</strong>: 1% + 0.2% for every percentage point below 20%</div>
+            {/* Procuring Authority / Calculation Rule Selector */}
+            <FieldWrapper label="Department / Regulatory Norm" required>
+              <Select
+                value={selectedRuleId}
+                onChange={e => setSelectedRuleId(e.target.value as AsdRuleId)}
+                className="bg-white text-xs font-medium"
+              >
+                {Object.values(ASD_RULES).map(r => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </Select>
+            </FieldWrapper>
+
+            {/* Official Authority & Formula Context */}
+            <div className="text-[11px] bg-white/90 border border-amber-200 rounded-lg p-2.5 text-amber-950 space-y-1">
+              <div className="flex justify-between items-center text-[10px] text-amber-800 font-semibold border-b border-amber-100 pb-1">
+                <span>{activeRule.authority}</span>
+                <span className="font-mono">{activeRule.circularRef.split('(')[0]}</span>
+              </div>
+              <p className="pt-0.5 text-[11px] text-slate-700 leading-snug">
+                {activeRule.basisDescription}
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
+            {/* If Custom Rule Selected */}
+            {selectedRuleId === 'custom' && (
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
+                <div>
+                  <label className="block text-[11px] font-semibold text-amber-950 mb-1">
+                    Trigger Threshold (% below)
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 10"
+                    value={customThreshold}
+                    onChange={e => setCustomThreshold(e.target.value)}
+                    className="bg-white text-xs h-8"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-amber-950 mb-1">
+                    Security Rate (% on Bid)
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 5"
+                    value={customRate}
+                    onChange={e => setCustomRate(e.target.value)}
+                    className="bg-white text-xs h-8"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Financial Inputs */}
+            <div className="grid grid-cols-2 gap-2.5 pt-0.5">
               <div>
                 <label className="block text-[11px] font-semibold text-amber-950 mb-1">
-                  Advertised Cost (₹)
+                  Advertised / Est. Cost (₹)
                 </label>
                 <Input
                   type="number"
                   placeholder="e.g. 1795000"
                   value={calcAdvertisedCost}
                   onChange={e => setCalcAdvertisedCost(e.target.value)}
-                  className="bg-white text-xs h-8"
+                  className="bg-white text-xs h-8 font-mono"
                 />
               </div>
               <div>
@@ -262,7 +325,7 @@ export function SecurityDepositDrawer({
                   placeholder="e.g. 1339422.22"
                   value={calcBidPrice}
                   onChange={e => setCalcBidPrice(e.target.value)}
-                  className="bg-white text-xs h-8"
+                  className="bg-white text-xs h-8 font-mono"
                 />
               </div>
             </div>
@@ -271,7 +334,7 @@ export function SecurityDepositDrawer({
             {computedAsd && (
               <div className="rounded-lg bg-white border border-amber-200 p-2.5 space-y-1.5 text-xs shadow-sm">
                 <div className="flex justify-between items-center text-slate-700">
-                  <span className="text-[11px]">Percentage Below Advertised:</span>
+                  <span className="text-[11px]">Rebate / Below Estimate:</span>
                   <span className="font-semibold text-slate-900">
                     {computedAsd.percentageBelow > 0
                       ? `${computedAsd.percentageBelow}% below`
@@ -279,24 +342,39 @@ export function SecurityDepositDrawer({
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-slate-700">
-                  <span className="text-[11px]">ASD Rate on Bid Price:</span>
-                  <span className="font-bold text-amber-700">
-                    {computedAsd.ratePercent > 0 ? `${computedAsd.ratePercent}%` : 'Nil (0%)'}
+                  <span className="text-[11px]">Formula Evaluation:</span>
+                  <span
+                    className="text-[11px] font-medium text-slate-800 text-right max-w-[65%] truncate"
+                    title={computedAsd.slabDescription}
+                  >
+                    {computedAsd.slabDescription}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-slate-700 pt-1 border-t border-slate-100">
-                  <span className="text-[11px] font-semibold">Calculated Security:</span>
+                  <span className="text-[11px] font-semibold">Calculated Security (APS):</span>
                   <span className="font-mono font-bold text-sm text-emerald-700">
                     ₹{computedAsd.additionalSecurityAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
+
+                {/* Permissible Instrument Guidance */}
+                <div className="rounded bg-slate-50 border border-slate-200 p-1.5 text-[10.5px] text-slate-600 mt-1">
+                  <strong className="text-slate-800">Accepted Instruments:</strong> {computedAsd.instrumentGuide}
+                </div>
+
+                {/* Warning note if any (e.g. MoRTH/NHAI e-BG strictly mandated) */}
+                {computedAsd.instrumentWarning && (
+                  <div className="rounded bg-rose-50 border border-rose-200 p-1.5 text-[10.5px] text-rose-800 font-medium">
+                    ⚠️ {computedAsd.instrumentWarning}
+                  </div>
+                )}
 
                 {computedAsd.additionalSecurityAmount > 0 && (
                   <Button
                     type="button"
                     size="sm"
                     variant="secondary"
-                    className="w-full mt-2 h-7 text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 font-medium"
+                    className="w-full mt-2 h-7 text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 font-semibold"
                     onClick={handleApplyCalculatedAsd}
                   >
                     Apply ₹{computedAsd.additionalSecurityAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} to Amount
@@ -309,20 +387,62 @@ export function SecurityDepositDrawer({
 
         <div className="grid grid-cols-2 gap-3">
           <FieldWrapper
-            label={isAsd ? 'Term Deposit / CDR No.' : 'Reference / BG No.'}
+            label={
+              !isAsd
+                ? 'Reference / BG No.'
+                : selectedRuleId === 'jk_pwd'
+                ? 'Term Deposit / CDR No.'
+                : selectedRuleId === 'morth_nhai'
+                ? 'e-Bank Guarantee (e-BG) No.'
+                : 'Instrument / Ref No.'
+            }
             required
-            hint={isAsd ? 'e.g. CDR No. 139707' : 'e.g. 0540124BG0001'}
+            hint={
+              !isAsd
+                ? 'e.g. 0540124BG0001'
+                : selectedRuleId === 'jk_pwd'
+                ? 'e.g. CDR No. 139707'
+                : selectedRuleId === 'morth_nhai'
+                ? 'e-BG Ref (SFMS verified)'
+                : 'FDR / CDR / BG No.'
+            }
           >
             <Input
-              placeholder={isAsd ? 'CDR / FDR / Ref No.' : 'BG / FDR No.'}
+              placeholder={
+                !isAsd
+                  ? 'BG / FDR No.'
+                  : selectedRuleId === 'jk_pwd'
+                  ? 'CDR No. 139707'
+                  : selectedRuleId === 'morth_nhai'
+                  ? 'e.g. 0540124BG0001'
+                  : 'Instrument Ref No.'
+              }
               value={depositForm.reference_number}
               onChange={e => setDepositForm(f => ({ ...f, reference_number: e.target.value }))}
             />
           </FieldWrapper>
 
-          <FieldWrapper label={isAsd ? 'Issuing Bank & Branch' : 'Issuing Bank'}>
+          <FieldWrapper
+            label={
+              !isAsd
+                ? 'Issuing Bank'
+                : selectedRuleId === 'jk_pwd'
+                ? 'Issuing Bank & Branch'
+                : selectedRuleId === 'morth_nhai'
+                ? 'Issuing Bank (SFMS)'
+                : 'Issuing Bank & Branch'
+            }
+          >
             <Input
-              placeholder={isAsd ? 'e.g. J&K Bank Branch Pazalpora' : 'State Bank of India'}
+              placeholder={
+                !isAsd
+                  ? 'State Bank of India'
+                  : selectedRuleId === 'jk_pwd'
+                  ? 'e.g. J&K Bank Branch Pazalpora'
+                  : selectedRuleId === 'morth_nhai'
+                  ? 'e.g. State Bank of India'
+                  : 'State Bank of India'
+              }
               value={depositForm.issuing_bank}
               onChange={e => setDepositForm(f => ({ ...f, issuing_bank: e.target.value }))}
             />
