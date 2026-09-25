@@ -62,6 +62,7 @@ export default function SignUpPage() {
       const params = new URLSearchParams(window.location.search)
       const code = params.get('join')
       const plan = params.get('plan')
+      const roleParam = params.get('role')
       if (code) {
         setJoinCode(code.toUpperCase().trim())
         setMode('join_firm')

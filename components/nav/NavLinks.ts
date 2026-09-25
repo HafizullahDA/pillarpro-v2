@@ -7,7 +7,7 @@ export const NAV_ITEMS = [
   { href: '/ledgers',       label: 'Ledgers',         i18nKey: 'nav.ledgers',       icon: 'ledgers'   },
   { href: '/hindrances',    label: 'Delay Defense',   i18nKey: 'nav.hindrances',    icon: 'shield'    },
   { href: '/partners',      label: 'Partners',        i18nKey: 'nav.partners',      icon: 'partners'  },
-  { href: '/admin/users',   label: 'Team',            i18nKey: 'nav.team',          icon: 'admin'     },
+  { href: '/admin/users',   label: 'Team & Roles',    i18nKey: 'nav.team',          icon: 'admin'     },
   { href: '/admin/periods', label: 'Month Close',     i18nKey: 'nav.month_close',   icon: 'admin'     },
 ] as const
 

@@ -36,7 +36,7 @@ export const ROLES_CONFIG: {
   {
     id: 'site_supervisor',
     label: 'Site Engineer / Supervisor',
-    description: 'Site engineers & supervisors: Daily labor attendance, Daily Progress Reports (DPR), machinery meter/diesel tracking, store inventory issues, and site hindrances.',
+    description: 'Operational logging for assigned sites: log daily attendance, add site workers, and record expenses. Read-only everywhere else.',
   },
   {
     id: 'accountant',
@@ -53,7 +53,7 @@ export const ROLES_CONFIG: {
 export function formatRoleLabel(role?: string | null): string {
   if (!role) return 'Staff Member'
   const clean = role.toLowerCase().trim()
-  if (clean === 'site_supervisor') return 'Site Engineer / Supervisor'
+  if (clean === 'site_supervisor' || clean === 'site_engineer') return 'Site Engineer / Supervisor'
   if (clean === 'managing_partner') return 'Managing Partner'
   if (clean === 'partner') return 'Partner'
   if (clean === 'owner') return 'Owner'
@@ -67,7 +67,7 @@ export function normalizeRole(role: string | null | undefined): CanonicalRole | 
   const r = role.toLowerCase().trim()
   if (r === 'owner') return 'owner'
   if (r === 'partner' || r === 'managing_partner') return 'partner'
-  if (r === 'site_supervisor' || r === 'site_engineer') return 'site_supervisor'
+  if (r === 'site_supervisor') return 'site_supervisor'
   if (r === 'accountant') return 'accountant'
   if (r === 'viewer') return 'viewer'
   return null

@@ -213,7 +213,7 @@ export function UserManagementClient({
                 <th className="text-left px-4 py-3 font-semibold">Joined Date</th>
                 <th className="text-left px-4 py-3 font-semibold">Status</th>
                 <th className="text-left px-4 py-3 font-semibold">Assigned Role</th>
-                <th className="text-left px-4 py-3 font-semibold">Site Supervision Scope</th>
+                <th className="text-left px-4 py-3 font-semibold">Assigned Project / Site Scope</th>
                 <th className="text-right px-4 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
@@ -299,23 +299,20 @@ export function UserManagementClient({
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {canonicalRole === 'site_supervisor' ? (
-                          <select
-                            value={assignedProjectId}
-                            onChange={e => handleAssignProject(p.id, e.target.value)}
-                            className="text-xs rounded-lg border border-slate-300 px-2 py-1 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[200px] truncate"
-                            disabled={isLoading}
-                          >
-                            <option value="">All / Unassigned</option>
-                            {projects.map(proj => (
-                              <option key={proj.id} value={proj.id}>
-                                {proj.name}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span className="text-xs text-slate-400">All Company Projects</span>
-                        )}
+                        <select
+                          value={assignedProjectId}
+                          onChange={e => handleAssignProject(p.id, e.target.value)}
+                          className="text-xs font-medium rounded-lg border border-slate-300 px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[220px] truncate shadow-2xs disabled:bg-slate-50 disabled:opacity-75"
+                          disabled={isLoading}
+                          title="Assign to a specific site or leave as All Company Projects"
+                        >
+                          <option value="">All Company Projects (Full Scope)</option>
+                          {projects.map(proj => (
+                            <option key={proj.id} value={proj.id}>
+                              {proj.name}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td className="px-4 py-3 text-right">
                         {isPending ? (
