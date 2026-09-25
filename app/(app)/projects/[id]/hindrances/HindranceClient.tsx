@@ -34,6 +34,7 @@ interface HindranceClientProps {
     start_date?: string | null
     end_date?: string | null
     status?: string | null
+    organization_id?: string | null
   }
   userRole: string
   orgProfile: {
@@ -237,6 +238,7 @@ export function HindranceClient({
         const { data, error } = await supabase
           .from('hindrances')
           .insert({
+            organization_id: project.organization_id || undefined,
             project_id: project.id,
             hindrance_number: nextNum,
             category,
@@ -332,6 +334,7 @@ export function HindranceClient({
       const { data, error } = await supabase
         .from('eot_applications')
         .insert({
+          organization_id: project.organization_id || undefined,
           project_id: project.id,
           application_number: eotAppNumber.trim(),
           stipulated_date_of_completion: project.end_date || new Date().toISOString().split('T')[0],

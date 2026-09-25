@@ -18,7 +18,7 @@ export default async function AllHindrancesPage() {
   ] = await Promise.all([
     supabase
       .from('projects')
-      .select('id, name, agency_name, advertised_cost, awarded_amount, start_date, end_date, status')
+      .select('id, name, agency_name, advertised_cost, awarded_amount, start_date, end_date, status, organization_id')
       .order('created_at', { ascending: false }),
     supabase.rpc('get_user_role'),
     supabase.rpc('get_organization_profile'),

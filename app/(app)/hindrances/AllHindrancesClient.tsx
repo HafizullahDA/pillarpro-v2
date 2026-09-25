@@ -30,6 +30,7 @@ interface Project {
   start_date?: string | null
   end_date?: string | null
   status?: string | null
+  organization_id?: string | null
 }
 
 interface AllHindrancesClientProps {
@@ -129,11 +130,13 @@ export function AllHindrancesClient({
       const grossDays = calculateDurationDays(startDate, endDate)
       const netDays = Math.max(0, grossDays - (Number(overlappingDays) || 0))
       const projHindrances = hindrances.filter(h => (h as any).project_id === targetProjectId)
+      const targetProj = projects.find(p => p.id === targetProjectId)
       const nextNum = projHindrances.length > 0 ? Math.max(...projHindrances.map(h => h.hindrance_number)) + 1 : 1
 
       const { data, error } = await supabase
         .from('hindrances')
         .insert({
+          organization_id: targetProj?.organization_id || undefined,
           project_id: targetProjectId,
           hindrance_number: nextNum,
           category,
@@ -185,6 +188,7 @@ export function AllHindrancesClient({
       const { data, error } = await supabase
         .from('eot_applications')
         .insert({
+          organization_id: targetProj?.organization_id || undefined,
           project_id: eotTargetProjectId,
           application_number: eotAppNumber.trim(),
           stipulated_date_of_completion: targetProj?.end_date || new Date().toISOString().split('T')[0],

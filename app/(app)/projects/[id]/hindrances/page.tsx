@@ -19,7 +19,7 @@ export default async function ProjectHindrancePage({ params }: { params: { id: s
   ] = await Promise.all([
     supabase
       .from('projects')
-      .select('id, name, agency_name, advertised_cost, awarded_amount, start_date, end_date, status')
+      .select('id, name, agency_name, advertised_cost, awarded_amount, start_date, end_date, status, organization_id')
       .eq('id', params.id)
       .single(),
     supabase.rpc('get_user_role'),
