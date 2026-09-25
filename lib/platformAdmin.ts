@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const DEFAULT_PLATFORM_ADMINS = [
-  'hafizullahlone@gmail.com',
+  'pillarprojk@gmail.com',
   'contact@pillarprojk.com',
 ]
 

@@ -603,7 +603,7 @@ export function VisitorsClient({
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
                   <div>
-                    <p className="font-semibold text-slate-900">hafizullahlone@gmail.com</p>
+                    <p className="font-semibold text-slate-900">pillarprojk@gmail.com</p>
                     <p className="text-[10px] text-slate-500">Root Platform Owner</p>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
@@ -622,7 +622,7 @@ export function VisitorsClient({
                 </div>
 
                 {delegatedAdmins
-                  .filter(a => a.email !== 'hafizullahlone@gmail.com' && a.email !== 'contact@pillarprojk.com')
+                  .filter(a => a.email !== 'pillarprojk@gmail.com' && a.email !== 'contact@pillarprojk.com')
                   .map(a => (
                     <div
                       key={a.email}
