@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { formatRoleLabel } from '@/lib/permissions'
 import { UserProfileModal } from './UserProfileModal'
 import { Logo } from '@/components/ui/Logo'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
@@ -23,7 +24,7 @@ export function MobileHeader({
         <div className="flex items-center gap-2">
           <Logo theme="dark" href="/dashboard" size="sm" />
           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 capitalize border border-slate-700">
-            {userRole.replace('_', ' ')}
+            {formatRoleLabel(userRole)}
           </span>
         </div>
 

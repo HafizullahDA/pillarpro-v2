@@ -37,6 +37,7 @@ export default function SignUpPage() {
   const [displayName, setDisplayName]     = useState('')
   const [firmName, setFirmName]           = useState('')
   const [joinCode, setJoinCode]           = useState('')
+  const [joinRole, setJoinRole]           = useState<'site_supervisor' | 'accountant' | 'partner' | 'viewer'>('site_supervisor')
   const [selectedPlan, setSelectedPlan]   = useState<string | null>(null)
   const [email, setEmail]                 = useState('')
   const [password, setPassword]           = useState('')
@@ -117,7 +118,7 @@ export default function SignUpPage() {
       const { error: joinError } = await supabase.rpc('join_organization', {
         p_join_code: joinCode.trim().toUpperCase(),
         p_display_name: displayName.trim() || email.split('@')[0],
-        p_role: 'site_supervisor',
+        p_role: joinRole,
       })
 
       if (joinError) {
@@ -181,6 +182,7 @@ export default function SignUpPage() {
             display_name: displayName.trim() || email.split('@')[0],
             firm_name: mode === 'new_firm' ? firmName.trim() : undefined,
             join_code: mode === 'join_firm' ? joinCode.trim().toUpperCase() : undefined,
+            join_role: mode === 'join_firm' ? joinRole : undefined,
             seed_starter: seedStarter,
             preferred_plan: selectedPlan || 'growth',
           },

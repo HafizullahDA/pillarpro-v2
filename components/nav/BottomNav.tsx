@@ -7,6 +7,7 @@ import { NAV_ITEMS, isNavVisible } from './NavLinks'
 import { Icons } from './NavIcons'
 import { UserProfileModal } from './UserProfileModal'
 import { cn } from '@/lib/utils'
+import { formatRoleLabel } from '@/lib/permissions'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 
@@ -93,7 +94,7 @@ export function BottomNav({
                     {userName}
                   </p>
                   <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 capitalize">
-                    {userRole.replace('_', ' ')}
+                    {formatRoleLabel(userRole)}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 truncate">{userEmail || 'Tap to view profile & settings'}</p>

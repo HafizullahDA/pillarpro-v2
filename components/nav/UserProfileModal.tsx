@@ -9,6 +9,7 @@ import { Drawer } from '@/components/ui/Drawer'
 import { FieldWrapper, Input } from '@/components/ui/FormField'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { formatRoleLabel } from '@/lib/permissions'
 import { isDefaultPlatformAdmin } from '@/lib/platformAdmin'
 import {
   getClientOrganization,
@@ -170,7 +171,7 @@ export function UserProfileModal({
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-slate-900 truncate">{name}</p>
             {userEmail && <p className="text-xs text-slate-500 truncate mb-1">{userEmail}</p>}
-            <Badge label={userRole.replace('_', ' ')} variant="info" className="capitalize mt-0.5" />
+            <Badge label={formatRoleLabel(userRole)} variant="info" className="capitalize mt-0.5" />
           </div>
         </div>
 

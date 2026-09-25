@@ -28,7 +28,7 @@ export async function GET(request: Request) {
             await supabase.rpc('join_organization', {
               p_join_code: meta.join_code,
               p_display_name: meta.display_name || data.user.email?.split('@')[0],
-              p_role: 'site_supervisor',
+              p_role: meta.join_role || 'site_supervisor',
             })
           }
         } else {

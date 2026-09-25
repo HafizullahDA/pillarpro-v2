@@ -7,6 +7,7 @@ import { NAV_ITEMS, isNavVisible } from './NavLinks'
 import { Icons } from './NavIcons'
 import { UserProfileModal } from './UserProfileModal'
 import { cn } from '@/lib/utils'
+import { formatRoleLabel } from '@/lib/permissions'
 import { Logo } from '@/components/ui/Logo'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 
@@ -123,7 +124,7 @@ export function Sidebar({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-white truncate group-hover:text-blue-300 transition-colors">{userName}</p>
-              <p className="text-xs text-slate-400 capitalize">{userRole.replace('_', ' ')}</p>
+              <p className="text-xs text-slate-400 capitalize">{formatRoleLabel(userRole)}</p>
             </div>
             <svg className="h-4 w-4 text-slate-500 group-hover:text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
