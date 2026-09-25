@@ -21,9 +21,6 @@ export async function GET(request: Request) {
           .eq('id', data.user.id)
           .maybeSingle()
 
-        if (!userProfile?.organization_id || userProfile?.status !== 'active') {
-          const meta = data.user.user_metadata || {}
-          if (meta.join_code) {
         const meta = data.user.user_metadata || {}
 
         if (meta.join_code) {
@@ -33,7 +30,6 @@ export async function GET(request: Request) {
               p_display_name: meta.display_name || data.user.email?.split('@')[0],
               p_role: 'site_supervisor',
             })
-          } else {
           }
         } else {
           // Check if the organization already has any projects created
@@ -70,4 +66,3 @@ export async function GET(request: Request) {
     )}`
   )
 }
-

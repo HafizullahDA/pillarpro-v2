@@ -159,14 +159,6 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
 
       {/* Directory Table */}
       {!displayedProjects.length ? (
-        <EmptyState
-          title={tab === 'active' ? 'No active projects found' : 'No archived projects'}
-          description={
-            tab === 'active'
-              ? 'Add your first project to start tracking expenses, attendance, and RA bills.'
-              : 'Archived projects will appear here. Linked financial records remain preserved.'
-          }
-        />
         <div className="space-y-4">
           <EmptyState
             title={tab === 'active' ? 'No active projects found' : 'No archived projects'}
