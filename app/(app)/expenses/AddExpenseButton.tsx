@@ -55,10 +55,12 @@ export function AddExpenseButton({
   projects,
   suppliers = [],
   partners = [],
+  onExpenseCreated,
 }: {
   projects: Project[]
   suppliers?: SupplierItem[]
   partners?: PartnerItem[]
+  onExpenseCreated?: (expense: any) => void
 }) {
   const router = useRouter()
   const supabase = createClient()
@@ -358,6 +360,23 @@ export function AddExpenseButton({
       setSaving(false)
       setOpen(false)
       resetForm()
+      if (onExpenseCreated) {
+        const targetProj = projects.find(p => p.id === payload.project_id);
+        const targetPartner = partnerList.find(p => p.id === payload.paid_by_partner_id);
+        onExpenseCreated({
+          id: expData?.id || String(Date.now()),
+          project_id: payload.project_id,
+          category: payload.category,
+          amount: payload.amount,
+          date: payload.date,
+          payment_mode: form.payment_mode,
+          description: payload.description,
+          receipt_url: null,
+          paid_by_partner_id: payload.paid_by_partner_id,
+          projects: targetProj ? { name: targetProj.name } : null,
+          partners: targetPartner ? { name: targetPartner.name } : null,
+        });
+      }
       toast.success(`Expense of ₹${amountNum.toLocaleString('en-IN')} recorded`)
       router.refresh()
     } catch (err: any) {

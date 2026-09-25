@@ -24,7 +24,7 @@ export default async function ExpensesLedgerPage() {
     supabase.from('partners').select('id, name').order('name'),
     supabase
       .from('expenses')
-      .select('id, project_id, description, category, amount, date, payment_mode, receipt_url, paid_by_partner_id, projects(name), partners(name)')
+      .select('id, project_id, description, category, amount, date, mode, receipt_url, paid_by_partner_id, projects(name), partners(name)')
       .order('date', { ascending: false })
       .limit(100),
   ])
@@ -32,8 +32,11 @@ export default async function ExpensesLedgerPage() {
   const activeProjects = projects ?? []
   const activeProjectIds = new Set(activeProjects.map(p => p.id))
 
-  const activeExpenses = (expenses ?? []).filter(
-    e => !e.project_id || activeProjectIds.has(e.project_id)
+  const activeExpenses = (expenses ?? []).map((e: any) => ({
+    ...e,
+    payment_mode: e.mode || e.payment_mode || 'Cash',
+  })).filter(
+    (e: any) => !e.project_id || activeProjects.length === 0 || activeProjectIds.has(e.project_id)
   )
 
   return (

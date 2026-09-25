@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -55,6 +55,10 @@ export function ExpensesClient({
   const [expenseToDelete, setExpenseToDelete] = useState<ExpenseToDelete | null>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
 
+  useEffect(() => {
+    setExpenses(initialExpenses)
+  }, [initialExpenses])
+
   const canDelete = canDeleteExpense(userRole)
   const canCreate = canCreateExpense(userRole)
 
@@ -98,7 +102,16 @@ export function ExpensesClient({
               Export CSV
             </button>
           )}
-          {canCreate && <AddExpenseButton projects={projects} suppliers={suppliers} partners={partners} />}
+          {canCreate && (
+            <AddExpenseButton
+              projects={projects}
+              suppliers={suppliers}
+              partners={partners}
+              onExpenseCreated={(newExp) => {
+                setExpenses(prev => [newExp, ...prev])
+              }}
+            />
+          )}
         </div>
       </div>
 
