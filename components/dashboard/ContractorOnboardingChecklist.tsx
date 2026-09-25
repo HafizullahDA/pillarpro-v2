@@ -35,6 +35,26 @@ export function ContractorOnboardingChecklist({
   const [dismissed, setDismissed] = useState<boolean>(false)
   const [collapsed, setCollapsed] = useState<boolean>(false)
   const [mounted, setMounted] = useState<boolean>(false)
+  const [seeding, setSeeding] = useState<boolean>(false)
+  const [seedError, setSeedError] = useState<string>('')
+
+  const handleSeedStarter = async () => {
+    setSeeding(true)
+    setSeedError('')
+    try {
+      const res = await fetch('/api/organization/seed-starter', {
+        method: 'POST',
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Failed to seed sample project.')
+      }
+      window.location.reload()
+    } catch (err) {
+      setSeedError(err instanceof Error ? err.message : 'Failed to seed sample project')
+      setSeeding(false)
+    }
+  }
 
   const steps: StepItem[] = [
     {
@@ -219,6 +239,55 @@ export function ContractorOnboardingChecklist({
           />
         </div>
       </div>
+
+      {/* ── 1-CLICK SAMPLE HIGHWAY PROJECT SEED BANNER (when projectCount === 0) ── */}
+      {projectCount === 0 && (
+        <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-blue-50/90 border border-blue-200/90 shadow-2xs space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-blue-950">
+                  New Account: Want to explore PillarPro with realistic sample data?
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                  PMGSY Package (₹1.78 Cr)
+                </span>
+              </div>
+              <p className="text-xs text-blue-800/80 leading-relaxed max-w-2xl">
+                Pre-load the full 10-module highway package with CPWD/PWD Form 26 Measurement Book, RA Bill 01, Clause 5 Delay Defense notices, Partner Equity, and Store Inventory.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={seeding}
+              onClick={handleSeedStarter}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:opacity-50 transition-all shrink-0 shadow-xs"
+            >
+              {seeding ? (
+                <>
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  </svg>
+                  <span>Loading PMGSY Package...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5 text-blue-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  <span>Pre-load Sample Highway Project &amp; RA Bill</span>
+                </>
+              )}
+            </button>
+          </div>
+          {seedError && (
+            <p className="text-xs text-rose-600 font-medium bg-rose-50 p-2 rounded-lg border border-rose-200">
+              {seedError}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ── INTERACTIVE STEPS GRID (Visible when not collapsed) ── */}
       {!collapsed && (

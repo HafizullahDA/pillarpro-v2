@@ -43,6 +43,26 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalProject, setModalProject] = useState<ProjectRow | null>(null)
   const [modalMode, setModalMode] = useState<'archive' | 'unarchive'>('archive')
+  const [seeding, setSeeding] = useState(false)
+  const [seedError, setSeedError] = useState('')
+
+  const handleSeedStarter = async () => {
+    setSeeding(true)
+    setSeedError('')
+    try {
+      const res = await fetch('/api/organization/seed-starter', {
+        method: 'POST',
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Failed to seed sample project.')
+      }
+      window.location.reload()
+    } catch (err) {
+      setSeedError(err instanceof Error ? err.message : 'Failed to seed sample project')
+      setSeeding(false)
+    }
+  }
 
   useEffect(() => {
     if (projects && projects.length > 0) {
@@ -147,6 +167,59 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
               : 'Archived projects will appear here. Linked financial records remain preserved.'
           }
         />
+        <div className="space-y-4">
+          <EmptyState
+            title={tab === 'active' ? 'No active projects found' : 'No archived projects'}
+            description={
+              tab === 'active'
+                ? 'Add your first project to start tracking expenses, attendance, and RA bills.'
+                : 'Archived projects will appear here. Linked financial records remain preserved.'
+            }
+          />
+          {tab === 'active' && (
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-blue-50/90 border border-blue-200/90 shadow-2xs text-center max-w-lg mx-auto space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-xs font-bold text-blue-950">
+                  New to PillarPro? Explore with pre-loaded civil data
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                  PMGSY Package
+                </span>
+              </div>
+              <p className="text-xs text-blue-800/80 leading-relaxed">
+                Pre-load the complete 10-module PMGSY Highway civil package (₹1.78 Cr) with Form 26 Measurement Book, RA Bill 01, Clause 5 Delay Defense notices, Partner Equity, and Store Inventory.
+              </p>
+              <button
+                type="button"
+                disabled={seeding}
+                onClick={handleSeedStarter}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:opacity-50 transition-all shadow-xs"
+              >
+                {seeding ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                    <span>Loading PMGSY Highway Package...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5 text-blue-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span>Pre-load Sample Highway Project &amp; RA Bill</span>
+                  </>
+                )}
+              </button>
+              {seedError && (
+                <p className="text-xs text-rose-600 font-medium">
+                  {seedError}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
           <div className="overflow-x-auto">

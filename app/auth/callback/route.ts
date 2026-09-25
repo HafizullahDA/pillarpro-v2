@@ -24,12 +24,30 @@ export async function GET(request: Request) {
         if (!userProfile?.organization_id || userProfile?.status !== 'active') {
           const meta = data.user.user_metadata || {}
           if (meta.join_code) {
+        const meta = data.user.user_metadata || {}
+
+        if (meta.join_code) {
+          if (!userProfile?.organization_id || userProfile?.status !== 'active') {
             await supabase.rpc('join_organization', {
               p_join_code: meta.join_code,
               p_display_name: meta.display_name || data.user.email?.split('@')[0],
               p_role: 'site_supervisor',
             })
           } else {
+          }
+        } else {
+          // Check if the organization already has any projects created
+          let hasProjects = false
+          if (userProfile?.organization_id) {
+            const { count } = await supabase
+              .from('projects')
+              .select('id', { count: 'exact', head: true })
+              .eq('organization_id', userProfile.organization_id)
+            hasProjects = (count ?? 0) > 0
+          }
+
+          // If the profile isn't fully active OR if organization has 0 projects and user requested sample project:
+          if (!userProfile?.organization_id || userProfile?.status !== 'active' || (!hasProjects && meta.seed_starter !== false)) {
             await supabase.rpc('onboard_contractor', {
               p_firm_name: meta.firm_name || 'My Contracting Firm',
               p_display_name: meta.display_name || data.user.email?.split('@')[0],
