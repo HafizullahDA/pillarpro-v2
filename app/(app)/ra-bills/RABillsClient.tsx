@@ -25,6 +25,16 @@ import { RABillItem } from '@/lib/types/boq'
 export const BG_EXPIRY_THRESHOLD_DAYS = 30
 // ════════════════════════════════════════════════════════════════════════
 
+export const DEPOSIT_TYPE_LABELS: Record<string, string> = {
+  additional_performance_security: 'Additional Security / CDR',
+  additional_security_deposit: 'Additional Security / CDR',
+  performance_bank_guarantee: 'Performance BG (PBG)',
+  security_deposit: 'Security Deposit (SD)',
+  earnest_money_deposit: 'Earnest Money (EMD)',
+  fixed_deposit_receipt: 'Fixed Deposit (FDR)',
+  other: 'Other Deposit',
+}
+
 export type RABillRow = {
   id: string
   project_id: string
@@ -625,7 +635,9 @@ export function RABillsClient({
                           </a>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 capitalize">{sd.deposit_type.replace(/_/g, ' ')}</td>
+                      <td className="px-3 py-2.5 font-medium text-slate-800">
+                        {DEPOSIT_TYPE_LABELS[sd.deposit_type] || sd.deposit_type.replace(/_/g, ' ')}
+                      </td>
                       <td className="px-3 py-2.5 font-medium">{sd.projects?.name || '—'}</td>
                       <td className="px-3 py-2.5 text-slate-600">{sd.issuing_bank || '—'}</td>
                       <td className="px-3 py-2.5 text-right font-semibold text-slate-900 tabular-nums">

@@ -22,7 +22,7 @@ export default async function RABillsLedgerPage() {
     supabase.rpc('get_user_role'),
     supabase
       .from('projects')
-      .select('id, name, agency_name')
+      .select('id, name, agency_name, advertised_cost, awarded_amount')
       .eq('archived', false)
       .order('name'),
     supabase

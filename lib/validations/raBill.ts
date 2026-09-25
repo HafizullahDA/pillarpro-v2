@@ -75,6 +75,8 @@ export const securityDepositSchema = z.object({
     'security_deposit',
     'earnest_money_deposit',
     'fixed_deposit_receipt',
+    'additional_performance_security',
+    'additional_security_deposit',
     'other',
   ]),
   reference_number: z.string().trim().min(1, 'Reference / Guarantee Number is required.').max(100),

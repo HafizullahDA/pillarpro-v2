@@ -12,7 +12,13 @@ import { RABillScanConfirmModal, ScannedRABillData } from '@/components/ra-bills
 import { UpgradeModal } from '@/components/subscription/UpgradeModal'
 import { isSubscriptionActive, SubscriptionOrgData } from '@/lib/subscription'
 
-export type ProjectOption = { id: string; name: string; agency_name?: string | null }
+export type ProjectOption = {
+  id: string
+  name: string
+  agency_name?: string | null
+  advertised_cost?: number | null
+  awarded_amount?: number | null
+}
 export type RABillOption = {
   id: string
   bill_number: string
