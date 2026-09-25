@@ -9,6 +9,7 @@ import { Drawer } from '@/components/ui/Drawer'
 import { FieldWrapper, Input } from '@/components/ui/FormField'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { isDefaultPlatformAdmin } from '@/lib/platformAdmin'
 import {
   getClientOrganization,
   updateClientOrganization,
@@ -408,6 +409,26 @@ export function UserProfileModal({
             View Plans
           </Link>
         </div>
+
+        {isDefaultPlatformAdmin(userEmail) && (
+          <Link
+            href="/admin/visitors"
+            onClick={onClose}
+            className="rounded-xl border border-amber-300 bg-amber-50/80 p-3 flex items-center justify-between gap-3 shadow-2xs hover:bg-amber-100/70 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <svg className="w-5 h-5 text-amber-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <div>
+                <p className="text-xs font-bold text-amber-950">Visitor Telemetry & Stay Duration</p>
+                <p className="text-[11px] text-amber-800">Platform Owner Live Analytics</p>
+              </div>
+            </div>
+            <span className="text-xs font-bold text-amber-700">Open &rarr;</span>
+          </Link>
+        )}
 
         <div className="border-t border-slate-100 pt-4 space-y-3">
           <Button variant="danger" loading={signingOut} onClick={handleSignOut} className="w-full">

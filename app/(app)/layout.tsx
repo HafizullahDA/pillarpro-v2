@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { isPlatformAdmin } from '@/lib/platformAdmin'
 import { Sidebar } from '@/components/nav/Sidebar'
 import { IconRail } from '@/components/nav/IconRail'
 import { BottomNav } from '@/components/nav/BottomNav'
@@ -21,6 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: roleData } = await supabase.rpc('get_user_role')
   const displayName = (user.user_metadata?.display_name as string | undefined) ?? user.email ?? 'User'
   const userRole = (roleData as string | null) ?? 'pending'
+  const isSuperAdmin = await isPlatformAdmin(supabase, user.email)
 
   return (
     <IdleTimeoutProvider>
@@ -31,7 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <SubscriptionStatusBanner userCreatedAt={user.created_at} />
             <MobileHeader userName={displayName} userRole={userRole} userEmail={user.email} />
             <div className="flex-1 flex min-w-0">
-              <Sidebar userName={displayName} userRole={userRole} userEmail={user.email} />
+              <Sidebar userName={displayName} userRole={userRole} userEmail={user.email} isPlatformAdmin={isSuperAdmin} />
               <IconRail userName={displayName} userRole={userRole} userEmail={user.email} />
               <div className="flex-1 flex flex-col min-w-0">
                 <main className="flex-1 pb-20 md:pb-0">
