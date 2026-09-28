@@ -9,6 +9,8 @@ import { ContractRecord, ContractDocument, ContractDocumentType, CONTRACT_DOC_TY
 import { EditContractModal } from '@/components/contracts/EditContractModal'
 import { UploadContractDocumentModal } from '@/components/contracts/UploadContractDocumentModal'
 import { canManageContracts } from '@/lib/permissions'
+import { ContractClause, ContractObligation } from '@/lib/types/contractClauses'
+import { ContractClausesMasterView } from '@/components/contracts/ContractClausesMasterView'
 
 interface ContractDetailClientProps {
   project: {
@@ -19,6 +21,8 @@ interface ContractDetailClientProps {
   }
   initialContract: ContractRecord | null
   initialDocuments: ContractDocument[]
+  initialClauses?: ContractClause[]
+  initialObligations?: ContractObligation[]
   userRole?: string | null
 }
 
@@ -26,6 +30,8 @@ export function ContractDetailClient({
   project,
   initialContract,
   initialDocuments,
+  initialClauses = [],
+  initialObligations = [],
   userRole,
 }: ContractDetailClientProps) {
   const [contract, setContract] = useState<ContractRecord | null>(initialContract)
@@ -415,79 +421,15 @@ export function ContractDetailClient({
         </div>
       )}
 
-      {/* SECTION 4: GCC, SCC & Clauses */}
-      {activeSection === 'clauses' && (
-        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-6">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">
-              Governing Conditions of Contract
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-slate-500 block mb-0.5">General Conditions of Contract (GCC)</span>
-                <span className="font-bold text-slate-900">{contract?.gcc_type || 'CPWD GCC 2020 / 2024'}</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                <span className="text-slate-500 block mb-0.5">Payment Terms &amp; Billing Cycle</span>
-                <span className="font-bold text-slate-900">{contract?.payment_terms_frequency || 'Monthly Running Account Bills'}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-slate-100 pt-5">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">
-              Commercial &amp; Delay Defense Provisions
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              {/* LD Clause */}
-              <div className="p-3.5 bg-rose-50/50 border border-rose-200 rounded-xl space-y-1">
-                <span className="text-rose-800 font-bold block">Liquidated Damages (Clause 2)</span>
-                <p className="text-slate-700">
-                  Rate: <span className="font-bold">{contract?.liquidated_damages_percent_per_week || 0.5}%</span> per week of unexcused delay.
-                </p>
-                <p className="text-slate-700">
-                  Maximum Cap: <span className="font-bold">{contract?.liquidated_damages_max_cap_percent || 10}%</span> of total contract value.
-                </p>
-              </div>
-
-              {/* EOT Notice */}
-              <div className="p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl space-y-1">
-                <span className="text-blue-800 font-bold block">Extension of Time (Clause 5)</span>
-                <p className="text-slate-700">
-                  Statutory Notice Window: <span className="font-bold text-blue-900">{contract?.eot_notice_days || 14} Days</span> from occurrence of impediment.
-                </p>
-                <p className="text-slate-700">
-                  Governing Rule: {contract?.eot_clause || 'Clause 5 CPWD / PWD GCC Form 27'}
-                </p>
-              </div>
-
-              {/* Price Escalation */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                <span className="text-slate-800 font-bold block">Price Escalation (Clause 10CC / 10CA)</span>
-                <p className="text-slate-700">
-                  Applicability: <span className="font-bold">{contract?.escalation_applicable ? 'YES (Clause 10CC Active)' : 'NO (Fixed Rate Contract)'}</span>
-                </p>
-                {contract?.escalation_notes && <p className="text-slate-500 text-[11px] mt-1">{contract.escalation_notes}</p>}
-              </div>
-
-              {/* Variations */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                <span className="text-slate-800 font-bold block">Variations &amp; Deviations (Clause 12)</span>
-                <p className="text-slate-700">
-                  Allowable Deviation Limit: <span className="font-bold">{contract?.variation_limit_percent || 25}%</span>
-                </p>
-                <p className="text-slate-500 text-[11px]">Deviations exceeding this threshold trigger market rate analysis.</p>
-              </div>
-            </div>
-
-            {contract?.scc_notes && (
-              <div className="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                <span className="text-slate-800 font-bold block mb-1">Special Conditions of Contract (SCC) Notes</span>
-                <p className="text-slate-600 whitespace-pre-line">{contract.scc_notes}</p>
-              </div>
-            )}
-          </div>
-        </div>
+      {/* SECTION 4: Contract Clauses & Obligations Master */}
+      {activeSection === 'clauses' && contract && (
+        <ContractClausesMasterView
+          contract={contract}
+          existingDocuments={documents}
+          initialClauses={initialClauses}
+          initialObligations={initialObligations}
+          onContractUpdated={updated => setContract(updated)}
+        />
       )}
 
       {/* SECTION 5: Document & Drawing Repository */}

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { ContractDetailClient } from './ContractDetailClient'
 import { ContractRecord, ContractDocument } from '@/lib/types/contract'
+import { ContractClause, ContractObligation } from '@/lib/types/contractClauses'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -18,8 +19,14 @@ export default async function ProjectContractPage({ params }: { params: { id: st
 
   if (!project) notFound()
 
-  // 2. Fetch contract & documents in parallel
-  const [{ data: userRole }, { data: contractData }, { data: documentsData }] = await Promise.all([
+  // 2. Fetch contract, documents, clauses & obligations in parallel
+  const [
+    { data: userRole },
+    { data: contractData },
+    { data: documentsData },
+    { data: clausesData },
+    { data: obligationsData },
+  ] = await Promise.all([
     supabase.rpc('get_user_role'),
     supabase
       .from('contracts')
@@ -33,6 +40,14 @@ export default async function ProjectContractPage({ params }: { params: { id: st
       .select('*')
       .eq('project_id', params.id)
       .order('created_at', { ascending: false }),
+    supabase
+      .from('contract_clauses')
+      .select('*, contract_documents(id, title, document_type)')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('contract_obligations')
+      .select('*, contract_clauses(id, clause_number, clause_title, category)')
+      .order('due_date', { ascending: true }),
   ])
 
   // Fallback initial contract if table hasn't been migrated or seeded yet
@@ -102,12 +117,20 @@ export default async function ProjectContractPage({ params }: { params: { id: st
   }
 
   const documents: ContractDocument[] = (documentsData as ContractDocument[]) || []
+  const clauses: ContractClause[] = Array.isArray(clausesData)
+    ? (clausesData as ContractClause[]).filter(c => !contract?.id || c.contract_id === contract.id)
+    : []
+  const obligations: ContractObligation[] = Array.isArray(obligationsData)
+    ? (obligationsData as ContractObligation[]).filter(o => !contract?.id || o.contract_id === contract.id)
+    : []
 
   return (
     <ContractDetailClient
       project={project}
       initialContract={contract}
       initialDocuments={documents}
+      initialClauses={clauses}
+      initialObligations={obligations}
       userRole={userRole as string | null}
     />
   )
