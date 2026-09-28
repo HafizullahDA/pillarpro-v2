@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Badge } from '@/components/ui/Badge'
@@ -11,7 +11,6 @@ import { FieldWrapper } from '@/components/ui/FormField'
 import { useToast } from '@/components/ui/Toast'
 import { formatINR, formatDate } from '@/lib/format'
 import {
-  HindranceItem,
   HindranceCategory,
   HindranceDelayType,
   HINDRANCE_CATEGORY_LABELS,
@@ -20,6 +19,23 @@ import {
   calculateDurationDays,
   generateClause5NoticeText,
 } from '@/lib/calculations/hindrance'
+import {
+  ContractEvent,
+  DetailedHindrance,
+  ContractDefenseStatus,
+  ContractEventCategory,
+  EVENT_CATEGORY_CONFIG,
+  TimelineNode,
+} from '@/lib/types/contractDefense'
+import { ContractRecord } from '@/lib/types/contract'
+import { BOQItem } from '@/lib/types/boq'
+import {
+  buildContractTimeline,
+  calculateDefenseMetrics,
+  calculateEventDelayDays,
+} from '@/lib/calculations/contractDefense'
+import { NewContractEventModal } from '@/components/contract-defense/NewContractEventModal'
+import { ContractTimelineView } from '@/components/contract-defense/ContractTimelineView'
 
 interface Project {
   id: string
@@ -35,6 +51,11 @@ interface Project {
 
 interface AllHindrancesClientProps {
   projects: Project[]
+  contracts: ContractRecord[]
+  boqItems: BOQItem[]
+  initialContractEvents: ContractEvent[]
+  initialHindrances: DetailedHindrance[]
+  initialEOTApplications: any[]
   userRole: string
   orgProfile: {
     name?: string
@@ -44,36 +65,63 @@ interface AllHindrancesClientProps {
     registration_no?: string
     address?: string
   }
-  initialHindrances: HindranceItem[]
-  initialEOTApplications: any[]
 }
+
+type DefenseTab =
+  | 'events'
+  | 'hindrances'
+  | 'timeline'
+  | 'eot'
+  | 'evidence'
+  | 'correspondence'
+  | 'notices'
+  | 'variations'
+  | 'claims'
 
 export function AllHindrancesClient({
   projects,
-  userRole,
-  orgProfile,
+  contracts,
+  boqItems,
+  initialContractEvents,
   initialHindrances,
   initialEOTApplications,
+  userRole,
+  orgProfile,
 }: AllHindrancesClientProps) {
   const supabase = createClient()
   const { success, error: toastError, info } = useToast()
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all')
-  const [hindrances, setHindrances] = useState<HindranceItem[]>(initialHindrances)
+  const [contractEvents, setContractEvents] = useState<ContractEvent[]>(initialContractEvents)
+  const [hindrances, setHindrances] = useState<DetailedHindrance[]>(initialHindrances)
   const [eotApps, setEotApps] = useState<any[]>(initialEOTApplications)
-  const [activeTab, setActiveTab] = useState<'register' | 'eot'>('register')
+  const [activeTab, setActiveTab] = useState<DefenseTab>('events')
 
-  // Drawer / Modals
+  // Modals & Drawers
+  const [newEventModalOpen, setNewEventModalOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [eotModalOpen, setEotModalOpen] = useState(false)
   const [noticeModalOpen, setNoticeModalOpen] = useState(false)
-  const [selectedHindrance, setSelectedHindrance] = useState<HindranceItem | null>(null)
+  const [selectedHindranceForNotice, setSelectedHindranceForNotice] = useState<DetailedHindrance | null>(null)
   const [form27ModalOpen, setForm27ModalOpen] = useState(false)
   const [selectedEOT, setSelectedEOT] = useState<any | null>(null)
+  const [selectedEventDetail, setSelectedEventDetail] = useState<ContractEvent | null>(null)
+  const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false)
+  const [hindranceToUpdate, setHindranceToUpdate] = useState<DetailedHindrance | null>(null)
+  const [newHindranceStatus, setNewHindranceStatus] = useState<ContractDefenseStatus>('OPEN')
+  const [hindranceRemovalDate, setHindranceRemovalDate] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Form State for Log Hindrance
+  // Filters for Events Tab
+  const [eventCategoryFilter, setEventCategoryFilter] = useState<string>('all')
+  const [eventStatusFilter, setEventStatusFilter] = useState<string>('all')
+
+  // Filters for Hindrance Tab
+  const [hindranceStatusFilter, setHindranceStatusFilter] = useState<string>('all')
+
+  // Form State for Log Hindrance (Appendix 21)
   const [targetProjectId, setTargetProjectId] = useState<string>(projects[0]?.id || '')
+  const [targetContractId, setTargetContractId] = useState<string>('')
   const [category, setCategory] = useState<HindranceCategory>('site_handover')
   const [description, setDescription] = useState('')
   const [locationChainage, setLocationChainage] = useState('')
@@ -81,6 +129,13 @@ export function AllHindrancesClient({
   const [endDate, setEndDate] = useState('')
   const [delayType, setDelayType] = useState<HindranceDelayType>('compensable')
   const [overlappingDays, setOverlappingDays] = useState<number>(0)
+  const [affectedWork, setAffectedWork] = useState('')
+  const [selectedBoqIds, setSelectedBoqIds] = useState<string[]>([])
+  const [labourImpact, setLabourImpact] = useState('')
+  const [machineryImpact, setMachineryImpact] = useState('')
+  const [deptComm, setDeptComm] = useState('')
+  const [contractorComm, setContractorComm] = useState('')
+  const [standardStatus, setStandardStatus] = useState<ContractDefenseStatus>('OPEN')
   const [noticeServed, setNoticeServed] = useState(false)
   const [noticeDate, setNoticeDate] = useState('')
   const [noticeRefNo, setNoticeRefNo] = useState('')
@@ -98,26 +153,73 @@ export function AllHindrancesClient({
   const [eotDaysSought, setEotDaysSought] = useState(30)
   const [eotJustification, setEotJustification] = useState('')
 
-  // Filter hindrances & EOTs by selected project
-  const filteredHindrances = selectedProjectId === 'all'
-    ? hindrances
-    : hindrances.filter(h => (h as any).project_id === selectedProjectId)
+  // Filtered datasets by project
+  const filteredEvents = useMemo(() => {
+    return selectedProjectId === 'all'
+      ? contractEvents
+      : contractEvents.filter(e => e.project_id === selectedProjectId)
+  }, [contractEvents, selectedProjectId])
 
-  const filteredEOTs = selectedProjectId === 'all'
-    ? eotApps
-    : eotApps.filter(e => e.project_id === selectedProjectId)
+  const filteredHindrances = useMemo(() => {
+    return selectedProjectId === 'all'
+      ? hindrances
+      : hindrances.filter(h => h.project_id === selectedProjectId)
+  }, [hindrances, selectedProjectId])
 
-  // Calculate aggregated metrics
-  const totalAwarded = selectedProjectId === 'all'
-    ? projects.reduce((sum, p) => sum + (Number(p.awarded_amount) || 0), 0)
-    : (projects.find(p => p.id === selectedProjectId)?.awarded_amount || 0)
+  const filteredEOTs = useMemo(() => {
+    return selectedProjectId === 'all'
+      ? eotApps
+      : eotApps.filter(e => e.project_id === selectedProjectId)
+  }, [eotApps, selectedProjectId])
 
-  const metrics = calculateHindranceMetrics(filteredHindrances, totalAwarded)
+  const availableContracts = useMemo(() => {
+    return targetProjectId
+      ? contracts.filter(c => c.project_id === targetProjectId)
+      : contracts
+  }, [contracts, targetProjectId])
+
+  const availableBoqItems = useMemo(() => {
+    return targetProjectId
+      ? boqItems.filter(b => b.project_id === targetProjectId)
+      : boqItems
+  }, [boqItems, targetProjectId])
+
+  // Chronological Timeline calculation
+  const timelineNodes: TimelineNode[] = useMemo(() => {
+    return buildContractTimeline(filteredEvents, filteredHindrances)
+  }, [filteredEvents, filteredHindrances])
+
+  // Aggregated Defense Metrics
+  const defenseMetrics = useMemo(() => {
+    return calculateDefenseMetrics(filteredEvents, filteredHindrances)
+  }, [filteredEvents, filteredHindrances])
+
+  const totalAwarded = useMemo(() => {
+    return selectedProjectId === 'all'
+      ? projects.reduce((sum, p) => sum + (Number(p.awarded_amount) || 0), 0)
+      : (projects.find(p => p.id === selectedProjectId)?.awarded_amount || 0)
+  }, [projects, selectedProjectId])
+
+  const legacyHindranceMetrics = useMemo(() => {
+    return calculateHindranceMetrics(filteredHindrances as any, totalAwarded)
+  }, [filteredHindrances, totalAwarded])
 
   const getProjectName = (projectId: string) => {
     return projects.find(p => p.id === projectId)?.name || 'Project'
   }
 
+  const getContractAgreement = (contractId?: string | null) => {
+    if (!contractId) return null
+    return contracts.find(c => c.id === contractId)?.agreement_number || null
+  }
+
+  // Handle Event Creation Success
+  const handleEventCreated = (newEvent: ContractEvent) => {
+    setContractEvents(prev => [newEvent, ...prev])
+    setNewEventModalOpen(false)
+  }
+
+  // Handle Save Hindrance (Enhanced Appendix 21)
   const handleSaveHindrance = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!targetProjectId || !description.trim() || !startDate) {
@@ -129,42 +231,62 @@ export function AllHindrancesClient({
     try {
       const grossDays = calculateDurationDays(startDate, endDate)
       const netDays = Math.max(0, grossDays - (Number(overlappingDays) || 0))
-      const projHindrances = hindrances.filter(h => (h as any).project_id === targetProjectId)
+      const projHindrances = hindrances.filter(h => h.project_id === targetProjectId)
       const targetProj = projects.find(p => p.id === targetProjectId)
       const nextNum = projHindrances.length > 0 ? Math.max(...projHindrances.map(h => h.hindrance_number)) + 1 : 1
+      const hindCode = `HR-${new Date().getFullYear()}-${String(nextNum).padStart(3, '0')}`
+
+      const payload: any = {
+        organization_id: targetProj?.organization_id || undefined,
+        project_id: targetProjectId,
+        contract_id: targetContractId || null,
+        hindrance_number: nextNum,
+        hindrance_code: hindCode,
+        category,
+        description: description.trim(),
+        location_chainage: locationChainage.trim() || null,
+        start_date: startDate,
+        end_date: endDate || null,
+        removal_date: endDate || null,
+        delay_type: delayType,
+        overlapping_days: Number(overlappingDays) || 0,
+        net_delay_days: netDays,
+        duration_days: netDays,
+        affected_work: affectedWork.trim() || null,
+        affected_boq_items: selectedBoqIds,
+        labour_impact: labourImpact.trim() || null,
+        machinery_impact: machineryImpact.trim() || null,
+        department_communication: deptComm.trim() || null,
+        contractor_communication: contractorComm.trim() || null,
+        standard_status: standardStatus,
+        status: standardStatus === 'RESOLVED' || standardStatus === 'CLOSED' ? 'resolved' : 'active',
+        notice_served: noticeServed,
+        notice_date: noticeServed ? (noticeDate || new Date().toISOString().split('T')[0]) : null,
+        notice_reference_no: noticeServed ? noticeRefNo.trim() : null,
+        officer_acknowledged_by: officerAcknowledgedBy.trim() || null,
+        officer_designation: officerDesignation.trim() || null,
+      }
 
       const { data, error } = await supabase
         .from('hindrances')
-        .insert({
-          organization_id: targetProj?.organization_id || undefined,
-          project_id: targetProjectId,
-          hindrance_number: nextNum,
-          category,
-          description: description.trim(),
-          location_chainage: locationChainage.trim() || null,
-          start_date: startDate,
-          end_date: endDate || null,
-          delay_type: delayType,
-          overlapping_days: Number(overlappingDays) || 0,
-          net_delay_days: netDays,
-          notice_served: noticeServed,
-          notice_date: noticeServed ? (noticeDate || new Date().toISOString().split('T')[0]) : null,
-          notice_reference_no: noticeServed ? noticeRefNo.trim() : null,
-          officer_acknowledged_by: officerAcknowledgedBy.trim() || null,
-          officer_designation: officerDesignation.trim() || null,
-          status: 'active',
-        })
+        .insert(payload)
         .select()
         .single()
 
       if (error) throw error
 
-      setHindrances(prev => [data as HindranceItem, ...prev])
-      success('Site hindrance logged in official register.')
+      setHindrances(prev => [data as DetailedHindrance, ...prev])
+      success('Site hindrance recorded in official Appendix 21 Register.')
       setDrawerOpen(false)
       setDescription('')
       setLocationChainage('')
       setEndDate('')
+      setAffectedWork('')
+      setSelectedBoqIds([])
+      setLabourImpact('')
+      setMachineryImpact('')
+      setDeptComm('')
+      setContractorComm('')
     } catch (err: any) {
       toastError(err?.message || 'Failed to record hindrance.')
     } finally {
@@ -172,6 +294,57 @@ export function AllHindrancesClient({
     }
   }
 
+  // Handle Quick Status Update for Hindrance
+  const handleUpdateHindranceStatus = async () => {
+    if (!hindranceToUpdate) return
+    setSubmitting(true)
+    try {
+      const isClosed = newHindranceStatus === 'RESOLVED' || newHindranceStatus === 'CLOSED'
+      const remDate = hindranceRemovalDate || (isClosed ? new Date().toISOString().split('T')[0] : null)
+      const grossDays = calculateDurationDays(hindranceToUpdate.start_date, remDate)
+      const netDays = Math.max(0, grossDays - (Number(hindranceToUpdate.overlapping_days) || 0))
+
+      const { error } = await supabase
+        .from('hindrances')
+        .update({
+          standard_status: newHindranceStatus,
+          status: isClosed ? 'resolved' : 'active',
+          end_date: remDate,
+          removal_date: remDate,
+          net_delay_days: netDays,
+          duration_days: netDays,
+        })
+        .eq('id', hindranceToUpdate.id)
+
+      if (error) throw error
+
+      setHindrances(prev =>
+        prev.map(h =>
+          h.id === hindranceToUpdate.id
+            ? {
+                ...h,
+                standard_status: newHindranceStatus,
+                status: isClosed ? 'resolved' : 'active',
+                end_date: remDate,
+                removal_date: remDate,
+                net_delay_days: netDays,
+                duration_days: netDays,
+              }
+            : h
+        )
+      )
+
+      success(`Hindrance #${hindranceToUpdate.hindrance_number} updated to ${newHindranceStatus}.`)
+      setStatusUpdateModalOpen(false)
+      setHindranceToUpdate(null)
+    } catch (err: any) {
+      toastError(err?.message || 'Failed to update status.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // Handle Create EOT
   const handleCreateEOT = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!eotTargetProjectId || !eotAppNumber.trim() || !proposedDate) {
@@ -182,8 +355,8 @@ export function AllHindrancesClient({
     setSubmitting(true)
     try {
       const targetProj = projects.find(p => p.id === eotTargetProjectId)
-      const projHindrances = hindrances.filter(h => (h as any).project_id === eotTargetProjectId)
-      const projMetrics = calculateHindranceMetrics(projHindrances, targetProj?.awarded_amount || 0)
+      const projHindrances = hindrances.filter(h => h.project_id === eotTargetProjectId)
+      const projMetrics = calculateHindranceMetrics(projHindrances as any, targetProj?.awarded_amount || 0)
 
       const { data, error } = await supabase
         .from('eot_applications')
@@ -215,66 +388,115 @@ export function AllHindrancesClient({
     }
   }
 
-  const handleOpenNoticeModal = (h: HindranceItem) => {
-    setSelectedHindrance(h)
+  const handleOpenNoticeModal = (h: DetailedHindrance) => {
+    setSelectedHindranceForNotice(h)
     setCustomLetterRef(`PP/EOT/NOTICE/${String(h.hindrance_number).padStart(2, '0')}`)
     setNoticeModalOpen(true)
   }
 
-  const selectedProjForNotice = selectedHindrance
-    ? projects.find(p => p.id === (selectedHindrance as any).project_id) || { name: 'Subject Project', agency_name: 'Public Works Department' }
+  const selectedProjForNotice = selectedHindranceForNotice
+    ? projects.find(p => p.id === selectedHindranceForNotice.project_id) || { name: 'Subject Project', agency_name: 'Public Works Department' }
     : { name: 'Subject Project', agency_name: 'Public Works Department' }
 
-  const generatedNoticeText = selectedHindrance
+  const generatedNoticeText = selectedHindranceForNotice
     ? generateClause5NoticeText({
         project: selectedProjForNotice,
-        hindrance: selectedHindrance,
+        hindrance: selectedHindranceForNotice as any,
         firmName: orgProfile.legal_name || orgProfile.name || 'Contracting Agency',
         contractRefNo: contractRefNo,
-        refNo: customLetterRef || `PP/EOT/NOTICE/${selectedHindrance.hindrance_number}`,
+        refNo: customLetterRef || `PP/EOT/NOTICE/${selectedHindranceForNotice.hindrance_number}`,
       })
     : ''
 
+  // Filtered Events view
+  const visibleEvents = useMemo(() => {
+    return filteredEvents.filter(ev => {
+      if (eventCategoryFilter !== 'all' && ev.event_type !== eventCategoryFilter) return false
+      if (eventStatusFilter !== 'all' && ev.status !== eventStatusFilter) return false
+      return true
+    })
+  }, [filteredEvents, eventCategoryFilter, eventStatusFilter])
+
+  // Filtered Hindrances view
+  const visibleHindrances = useMemo(() => {
+    return filteredHindrances.filter(h => {
+      const std = h.standard_status || (h.status === 'active' ? 'OPEN' : 'RESOLVED')
+      if (hindranceStatusFilter !== 'all' && std !== hindranceStatusFilter) return false
+      return true
+    })
+  }, [filteredHindrances, hindranceStatusFilter])
+
+  const getStatusBadgeVariant = (status?: string): 'default' | 'success' | 'warning' | 'danger' | 'neutral' => {
+    switch (status) {
+      case 'OPEN':
+        return 'danger'
+      case 'UNDER_REVIEW':
+      case 'UNDER REVIEW':
+        return 'warning'
+      case 'RESOLVED':
+      case 'REMOVED':
+        return 'success'
+      case 'CLOSED':
+        return 'neutral'
+      case 'DISPUTED':
+        return 'danger'
+      default:
+        return 'neutral'
+    }
+  }
+
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
-              Delay Defense &amp; EOT Engine
+              Contract Defense
             </h1>
             <Badge label="CPWD GCC Clause 5" variant="default" />
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+              Works Manual Appx 21
+            </span>
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
               Form 27 Ready
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Contemporaneous site hindrance register, 14-day statutory notice countdown, and 10% Liquidated Damages shield.
+            Contemporaneous site records, 14-day statutory notices, chronological events &amp; 10% LD shield.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <Button
             size="sm"
             variant="secondary"
             className="text-xs font-semibold"
             onClick={() => setEotModalOpen(true)}
           >
-            + New EOT Claim (Form 27)
+            + EOT Claim (Form 27)
+          </Button>
+
+          <Button
+            size="sm"
+            variant="secondary"
+            className="text-xs font-semibold border-slate-300 text-slate-800 hover:bg-slate-100"
+            onClick={() => setDrawerOpen(true)}
+          >
+            + Log Hindrance
           </Button>
 
           <Button
             size="sm"
             className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => setDrawerOpen(true)}
+            onClick={() => setNewEventModalOpen(true)}
           >
-            + Log Site Hindrance
+            + Log Contract Event
           </Button>
         </div>
       </div>
 
-      {/* Project Selector & Direct Deep Link */}
+      {/* Project Selector */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-700 whitespace-nowrap">Filter by Project:</span>
@@ -291,17 +513,22 @@ export function AllHindrancesClient({
         </div>
 
         {selectedProjectId !== 'all' && (
-          <Link
-            href={`/projects/${selectedProjectId}/hindrances`}
-            className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
-          >
-            Open Dedicated Project Register &rarr;
-          </Link>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-slate-500 font-mono">
+              Awarded: <b className="text-slate-900">{formatINR(totalAwarded)}</b>
+            </span>
+            <Link
+              href={`/projects/${selectedProjectId}/hindrances`}
+              className="font-semibold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
+            >
+              Open Dedicated Project Register &rarr;
+            </Link>
+          </div>
         )}
       </div>
 
-      {/* Statutory 14-Day Warning Alert Banner */}
-      {metrics.urgentNoticesCount > 0 && (
+      {/* Statutory 14-Day Notice Alert Banner */}
+      {legacyHindranceMetrics.urgentNoticesCount > 0 && (
         <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-900 shadow-xs">
           <div className="flex items-start gap-3">
             <svg className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -309,7 +536,7 @@ export function AllHindrancesClient({
             </svg>
             <div>
               <p className="font-bold text-rose-950">
-                Statutory 14-Day Notice Action Required ({metrics.urgentNoticesCount} Hindrance{metrics.urgentNoticesCount === 1 ? '' : 's'})
+                Statutory 14-Day Notice Action Required ({legacyHindranceMetrics.urgentNoticesCount} Hindrance{legacyHindranceMetrics.urgentNoticesCount === 1 ? '' : 's'})
               </p>
               <p className="text-rose-800/90 mt-0.5 leading-relaxed">
                 Clause 5 of standard government contracts mandates written notice within 14 days of site impediment. Dispatch official notice letters now to preserve your right to Extension of Time and Price Escalation (Clause 10CA/10CC).
@@ -320,103 +547,378 @@ export function AllHindrancesClient({
             size="sm"
             variant="secondary"
             className="text-xs py-1.5 px-3.5 h-auto shrink-0 bg-white border-rose-300 text-rose-900 hover:bg-rose-100"
-            onClick={() => setActiveTab('register')}
+            onClick={() => setActiveTab('hindrances')}
           >
             Review Notices &rarr;
           </Button>
         </div>
       )}
 
-      {/* Top Metric Cards */}
+      {/* Metric Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Net Delay</p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Contract Events</p>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 tabular-nums">{metrics.totalNetDays}</span>
-            <span className="text-xs font-semibold text-slate-500">Days</span>
+            <span className="text-2xl font-black text-slate-900 tabular-nums">{defenseMetrics.totalEvents}</span>
+            <span className="text-xs font-semibold text-rose-600">({defenseMetrics.openEvents} Open)</span>
+          </div>
+          <p className="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-2 truncate">
+            {defenseMetrics.totalEOTRelevantDays} EOT-relevant delay days
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hindrance Register</p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-black text-slate-900 tabular-nums">{legacyHindranceMetrics.totalNetDays}</span>
+            <span className="text-xs font-semibold text-slate-500">Net Days</span>
           </div>
           <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600 border-t border-slate-100 pt-2">
-            <span>Compensable: <b className="text-emerald-700">{metrics.compensableDays}d</b></span>
-            <span>Weather: <b className="text-slate-700">{metrics.nonCompensableDays}d</b></span>
+            <span>Compensable: <b className="text-emerald-700">{legacyHindranceMetrics.compensableDays}d</b></span>
+            <span>Non-Comp: <b className="text-slate-700">{legacyHindranceMetrics.nonCompensableDays}d</b></span>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">10% LD Penalty Shield</p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Financial Exposure Shield</p>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-black text-emerald-700 tabular-nums">
-              {formatINR(metrics.ldProtectedAmount)}
+              {formatINR(defenseMetrics.totalFinancialExposure || legacyHindranceMetrics.ldProtectedAmount)}
             </span>
           </div>
           <p className="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-2 truncate">
-            Protected from liquidated damages deductions
+            Defending against 10% LD deductions
           </p>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Clause 5 Notices</p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Clause 5 &amp; EOT Claims</p>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className={`text-2xl font-black tabular-nums ${metrics.urgentNoticesCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
-              {metrics.unservedNoticesCount}
+            <span className={`text-2xl font-black tabular-nums ${legacyHindranceMetrics.urgentNoticesCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+              {filteredEOTs.length}
             </span>
-            <span className="text-xs font-semibold text-slate-500">Unserved</span>
+            <span className="text-xs font-semibold text-slate-500">Claims ({legacyHindranceMetrics.unservedNoticesCount} unserved)</span>
           </div>
           <p className="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-2 truncate">
-            {metrics.urgentNoticesCount > 0 ? (
-              <span className="text-rose-600 font-bold">{metrics.urgentNoticesCount} notice(s) urgent/overdue</span>
-            ) : (
-              <span className="text-emerald-600 font-semibold">All notice clocks healthy</span>
-            )}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">EOT Applications</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900 tabular-nums">{filteredEOTs.length}</span>
-            <span className="text-xs font-semibold text-slate-500">Claims</span>
-          </div>
-          <p className="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-2 truncate">
-            Form 27 submissions for time extension
+            Form 27 applications filed
           </p>
         </div>
       </div>
 
-      {/* Tabs Navigation */}
-      <div className="flex border-b border-slate-200 gap-6 text-sm font-semibold">
-        <button
-          onClick={() => setActiveTab('register')}
-          className={`pb-3 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
-            activeTab === 'register'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <span>Digital Hindrance Register</span>
-          <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-bold">
-            {filteredHindrances.length}
-          </span>
-        </button>
+      {/* 9 CONTRACT DEFENSE TABS */}
+      <div className="border-b border-slate-200 overflow-x-auto">
+        <div className="flex gap-4 md:gap-6 text-sm font-semibold whitespace-nowrap min-w-max pb-px">
+          <button
+            onClick={() => setActiveTab('events')}
+            className={`pb-3 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === 'events'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>1. Contract Events</span>
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-bold">
+              {filteredEvents.length}
+            </span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('eot')}
-          className={`pb-3 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
-            activeTab === 'eot'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <span>EOT Claims &amp; Form 27</span>
-          <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-bold">
-            {filteredEOTs.length}
-          </span>
-        </button>
+          <button
+            onClick={() => setActiveTab('hindrances')}
+            className={`pb-3 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === 'hindrances'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>2. Hindrance Register</span>
+            <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-bold">
+              {filteredHindrances.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('timeline')}
+            className={`pb-3 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === 'timeline'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>3. Contract Timeline</span>
+            <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-bold">
+              {timelineNodes.length} Nodes
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('eot')}
+            className={`pb-3 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === 'eot'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>4. EOT &amp; Form 27</span>
+            <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-bold">
+              {filteredEOTs.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('evidence')}
+            className={`pb-3 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === 'evidence'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>5. Evidence</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('correspondence')}
+            className={`pb-3 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === 'correspondence'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>6. Correspondence</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('notices')}
+            className={`pb-3 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === 'notices'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>7. Notices</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('variations')}
+            className={`pb-3 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === 'variations'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>8. Variations</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('claims')}
+            className={`pb-3 border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
+              activeTab === 'claims'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>9. Claims</span>
+          </button>
+        </div>
       </div>
 
-      {/* TAB 1: Digital Hindrance Register */}
-      {activeTab === 'register' && (
+      {/* TAB 1: CONTRACT EVENTS */}
+      {activeTab === 'events' && (
         <div className="space-y-4">
-          {filteredHindrances.length === 0 ? (
+          {/* Controls Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-bold text-slate-700">Filter Events:</span>
+              <select
+                value={eventCategoryFilter}
+                onChange={e => setEventCategoryFilter(e.target.value)}
+                className="px-2.5 py-1.5 border border-slate-300 rounded-lg bg-slate-50 text-slate-800 font-medium focus:outline-none"
+              >
+                <option value="all">All 16 Categories</option>
+                {Object.entries(EVENT_CATEGORY_CONFIG).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label}</option>
+                ))}
+              </select>
+
+              <select
+                value={eventStatusFilter}
+                onChange={e => setEventStatusFilter(e.target.value)}
+                className="px-2.5 py-1.5 border border-slate-300 rounded-lg bg-slate-50 text-slate-800 font-medium focus:outline-none"
+              >
+                <option value="all">All Statuses</option>
+                <option value="OPEN">OPEN</option>
+                <option value="UNDER_REVIEW">UNDER REVIEW</option>
+                <option value="RESOLVED">RESOLVED</option>
+                <option value="CLOSED">CLOSED</option>
+                <option value="DISPUTED">DISPUTED</option>
+              </select>
+            </div>
+
+            <Button
+              size="sm"
+              className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setNewEventModalOpen(true)}
+            >
+              + Log Contract Event
+            </Button>
+          </div>
+
+          {visibleEvents.length === 0 ? (
+            <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-12 text-center space-y-3">
+              <div className="mx-auto w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl">
+                <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-base font-bold text-slate-900">No Contract Events Logged</h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                Log contract events such as site handover delays, drawing revisions, departmental instructions, and utility shifting using factual, neutral language.
+              </p>
+              <Button
+                size="sm"
+                className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => setNewEventModalOpen(true)}
+              >
+                + Log First Contract Event
+              </Button>
+            </div>
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-2xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-700">
+                  <thead className="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3">Event # &amp; Category</th>
+                      <th className="px-4 py-3">Project &amp; Contract</th>
+                      <th className="px-4 py-3">Description &amp; Cause</th>
+                      <th className="px-4 py-3">Dates &amp; Delay</th>
+                      <th className="px-4 py-3">Financial Impact</th>
+                      <th className="px-4 py-3">Relevance</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {visibleEvents.map(ev => {
+                      const catConfig = EVENT_CATEGORY_CONFIG[ev.event_type as ContractEventCategory]
+                      const label = catConfig?.label || ev.event_type
+                      const delayDays = ev.actual_delay_days || ev.estimated_delay_days || calculateEventDelayDays(ev.start_date, ev.end_date)
+                      const projName = ev.projects?.name || getProjectName(ev.project_id)
+                      const agrNum = ev.contracts?.agreement_number || getContractAgreement(ev.contract_id)
+
+                      return (
+                        <tr key={ev.id} className="hover:bg-slate-50/75 transition-colors">
+                          <td className="px-4 py-3.5 whitespace-nowrap">
+                            <p className="font-bold text-slate-900 font-mono">{ev.event_number}</p>
+                            <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                              {label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5 whitespace-nowrap max-w-[160px]">
+                            <p className="font-semibold text-slate-900 truncate">{projName}</p>
+                            {agrNum && (
+                              <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
+                                Agr: {agrNum}
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5 max-w-xs">
+                            <p className="font-semibold text-slate-900 line-clamp-2">{ev.description}</p>
+                            {ev.cause && (
+                              <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1 italic">
+                                Cause: {ev.cause}
+                              </p>
+                            )}
+                            {ev.location && (
+                              <p className="text-[10px] text-blue-600 font-mono mt-0.5">
+                                Loc: {ev.location}
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5 whitespace-nowrap">
+                            <p className="font-medium text-slate-900">
+                              {formatDate(ev.start_date)} &rarr; {ev.end_date ? formatDate(ev.end_date) : <span className="text-amber-600 font-semibold">Ongoing</span>}
+                            </p>
+                            <p className="text-[11px] font-bold text-slate-700 mt-0.5">
+                              {delayDays}d delay
+                            </p>
+                          </td>
+                          <td className="px-4 py-3.5 whitespace-nowrap">
+                            {ev.financial_impact > 0 ? (
+                              <span className="font-bold text-slate-900 font-mono">
+                                {formatINR(ev.financial_impact)}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 font-mono">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5 whitespace-nowrap space-y-1">
+                            {ev.eot_relevance && (
+                              <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                EOT Cl. 5
+                              </span>
+                            )}
+                            {ev.claim_relevance && (
+                              <span className="block px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                                Claims Cl. 12
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5 whitespace-nowrap">
+                            <Badge
+                              label={ev.status.replace(/_/g, ' ')}
+                              variant={getStatusBadgeVariant(ev.status)}
+                            />
+                          </td>
+                          <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                            <button
+                              onClick={() => setSelectedEventDetail(ev)}
+                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                            >
+                              View Details &rarr;
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 2: HINDRANCE REGISTER */}
+      {activeTab === 'hindrances' && (
+        <div className="space-y-4">
+          {/* Controls Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-bold text-slate-700">Filter Hindrances:</span>
+              <select
+                value={hindranceStatusFilter}
+                onChange={e => setHindranceStatusFilter(e.target.value)}
+                className="px-2.5 py-1.5 border border-slate-300 rounded-lg bg-slate-50 text-slate-800 font-medium focus:outline-none"
+              >
+                <option value="all">All Hindrance Statuses</option>
+                <option value="OPEN">OPEN</option>
+                <option value="UNDER REVIEW">UNDER REVIEW</option>
+                <option value="REMOVED">REMOVED</option>
+                <option value="CLOSED">CLOSED</option>
+                <option value="DISPUTED">DISPUTED</option>
+              </select>
+            </div>
+
+            <Button
+              size="sm"
+              className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setDrawerOpen(true)}
+            >
+              + Log Site Hindrance
+            </Button>
+          </div>
+
+          {visibleHindrances.length === 0 ? (
             <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-12 text-center space-y-3">
               <div className="mx-auto w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl">
                 <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -425,7 +927,7 @@ export function AllHindrancesClient({
               </div>
               <h3 className="text-base font-bold text-slate-900">No Hindrances Recorded Yet</h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                Log every site obstruction—from delayed land handover to utility shifts and drawing revisions. Creating contemporaneous records protects you from 10% Liquidated Damages.
+                Log every site impediment—from delayed site possession to utility shifts and drawing approvals in accordance with CPWD Works Manual Appendix 21.
               </p>
               <Button
                 size="sm"
@@ -441,61 +943,64 @@ export function AllHindrancesClient({
                 <table className="w-full text-left text-xs text-slate-700">
                   <thead className="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
                     <tr>
-                      <th className="px-4 py-3">Project &amp; #</th>
-                      <th className="px-4 py-3">Hindrance Description</th>
-                      <th className="px-4 py-3">Category</th>
-                      <th className="px-4 py-3">Dates &amp; Net Delay</th>
-                      <th className="px-4 py-3">Classification</th>
-                      <th className="px-4 py-3">Clause 5 Notice</th>
+                      <th className="px-4 py-3"># &amp; Code</th>
+                      <th className="px-4 py-3">Location &amp; Work</th>
+                      <th className="px-4 py-3">Nature of Hindrance</th>
+                      <th className="px-4 py-3">Dates &amp; Duration</th>
+                      <th className="px-4 py-3">Labour / Plant Impact</th>
+                      <th className="px-4 py-3">Notice Status</th>
+                      <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredHindrances.map(h => {
+                    {visibleHindrances.map(h => {
                       const urgency = getNoticeUrgency(h.start_date, h.notice_served, h.notice_date)
-                      const isOngoing = !h.end_date
-                      const projName = getProjectName((h as any).project_id)
+                      const projName = getProjectName(h.project_id)
+                      const stdStatus = h.standard_status || (h.status === 'resolved' ? 'RESOLVED' : 'OPEN')
 
                       return (
                         <tr key={h.id} className="hover:bg-slate-50/75 transition-colors">
                           <td className="px-4 py-3.5 whitespace-nowrap">
                             <p className="font-bold text-slate-900">#{h.hindrance_number}</p>
-                            <p className="text-[11px] text-slate-500 font-medium truncate max-w-[140px]">{projName}</p>
+                            <p className="text-[10px] font-mono text-slate-500">{h.hindrance_code || `HR-${h.hindrance_number}`}</p>
+                            <p className="text-[11px] text-slate-500 font-medium truncate max-w-[130px] mt-0.5">{projName}</p>
                           </td>
-                          <td className="px-4 py-3.5 max-w-xs">
-                            <p className="font-semibold text-slate-900 line-clamp-2">{h.description}</p>
-                            {h.location_chainage && (
-                              <p className="text-[11px] text-blue-600 font-mono mt-0.5 font-medium flex items-center gap-1">
-                                <svg className="w-3 h-3 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                <span>{h.location_chainage}</span>
+                          <td className="px-4 py-3.5 max-w-[160px]">
+                            {h.location_chainage ? (
+                              <p className="font-mono text-blue-600 font-semibold">{h.location_chainage}</p>
+                            ) : (
+                              <p className="text-slate-400 italic">Site general</p>
+                            )}
+                            {h.affected_work && (
+                              <p className="text-[11px] text-slate-600 truncate mt-0.5">
+                                Work: {h.affected_work}
                               </p>
                             )}
                           </td>
-                          <td className="px-4 py-3.5">
-                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200">
-                              {HINDRANCE_CATEGORY_LABELS[h.category] || h.category}
+                          <td className="px-4 py-3.5 max-w-xs">
+                            <p className="font-semibold text-slate-900 line-clamp-2">{h.description}</p>
+                            <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                              {HINDRANCE_CATEGORY_LABELS[h.category as HindranceCategory] || h.category}
                             </span>
                           </td>
                           <td className="px-4 py-3.5 whitespace-nowrap">
                             <p className="font-semibold text-slate-900">
-                              {formatDate(h.start_date)} &rarr; {h.end_date ? formatDate(h.end_date) : <span className="text-blue-600 font-bold">Ongoing</span>}
+                              {formatDate(h.start_date)} &rarr; {h.end_date || h.removal_date ? formatDate(h.end_date || h.removal_date!) : <span className="text-blue-600 font-bold">Ongoing</span>}
                             </p>
-                            <p className="text-[11px] text-slate-500 mt-0.5">
-                              <b className="text-slate-900 font-bold">{h.net_delay_days}d Net Delay</b>
+                            <p className="text-[11px] text-slate-600 mt-0.5">
+                              <b className="text-slate-900">{h.net_delay_days || h.duration_days || 0}d Net Delay</b>
                             </p>
                           </td>
-                          <td className="px-4 py-3.5">
-                            {h.delay_type === 'compensable' ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                                Compensable
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
-                                Non-Compensable
-                              </span>
+                          <td className="px-4 py-3.5 max-w-[140px]">
+                            {h.labour_impact && (
+                              <p className="text-[11px] text-slate-700 truncate">Labour: {h.labour_impact}</p>
+                            )}
+                            {h.machinery_impact && (
+                              <p className="text-[11px] text-slate-700 truncate">Plant: {h.machinery_impact}</p>
+                            )}
+                            {!h.labour_impact && !h.machinery_impact && (
+                              <span className="text-[11px] text-slate-400">—</span>
                             )}
                           </td>
                           <td className="px-4 py-3.5 whitespace-nowrap">
@@ -511,6 +1016,23 @@ export function AllHindrancesClient({
                               {urgency.label}
                             </span>
                           </td>
+                          <td className="px-4 py-3.5 whitespace-nowrap">
+                            <button
+                              onClick={() => {
+                                setHindranceToUpdate(h)
+                                setNewHindranceStatus((h.standard_status as ContractDefenseStatus) || 'OPEN')
+                                setHindranceRemovalDate(h.end_date || h.removal_date || '')
+                                setStatusUpdateModalOpen(true)
+                              }}
+                              className="cursor-pointer"
+                              title="Click to update status"
+                            >
+                              <Badge
+                                label={stdStatus}
+                                variant={getStatusBadgeVariant(stdStatus)}
+                              />
+                            </button>
+                          </td>
                           <td className="px-4 py-3.5 text-right whitespace-nowrap space-x-1">
                             <button
                               onClick={() => handleOpenNoticeModal(h)}
@@ -519,7 +1041,7 @@ export function AllHindrancesClient({
                               Notice Letter
                             </button>
                             <Link
-                              href={`/projects/${(h as any).project_id}/hindrances`}
+                              href={`/projects/${h.project_id}/hindrances`}
                               className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-[11px] font-semibold transition-colors"
                             >
                               Open &rarr;
@@ -536,9 +1058,47 @@ export function AllHindrancesClient({
         </div>
       )}
 
-      {/* TAB 2: EOT Claims */}
+      {/* TAB 3: CONTRACT TIMELINE */}
+      {activeTab === 'timeline' && (
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-1">
+            <h3 className="text-sm font-bold text-slate-900">Project-Level Chronological Contract Timeline</h3>
+            <p className="text-xs text-slate-500">
+              Chronological sequence of site handovers, work orders, hindrances, instructions, notices, and variations to defend against liquidated damages and justify time extension.
+            </p>
+          </div>
+
+          <ContractTimelineView
+            timelineNodes={timelineNodes}
+            onSelectNode={node => {
+              if (node.type === 'event') {
+                const ev = contractEvents.find(e => e.id === node.sourceId)
+                if (ev) setSelectedEventDetail(ev)
+              } else {
+                const h = hindrances.find(item => item.id === node.sourceId)
+                if (h) handleOpenNoticeModal(h)
+              }
+            }}
+          />
+        </div>
+      )}
+
+      {/* TAB 4: EOT CLAIMS & FORM 27 */}
       {activeTab === 'eot' && (
         <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-500">
+              Official CPWD Form 27 extension applications filed with the Executive Engineer.
+            </p>
+            <Button
+              size="sm"
+              className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setEotModalOpen(true)}
+            >
+              + Draft Form 27 Application
+            </Button>
+          </div>
+
           {filteredEOTs.length === 0 ? (
             <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-12 text-center space-y-3">
               <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xl">
@@ -564,9 +1124,9 @@ export function AllHindrancesClient({
                 <div key={app.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-bold text-slate-900 text-sm">{app.application_number}</h3>
+                      <h3 className="font-bold text-slate-900 text-sm font-mono">{app.application_number}</h3>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        {getProjectName(app.project_id)} &bull; Submitted on {formatDate(app.submission_date)}
+                        {getProjectName(app.project_id)} &bull; Submitted on {formatDate(app.submission_date || app.created_at)}
                       </p>
                     </div>
                     <Badge
@@ -575,21 +1135,21 @@ export function AllHindrancesClient({
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl">
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl font-mono">
                     <div>
-                      <p className="text-slate-500">Days Sought</p>
+                      <p className="text-slate-500 font-sans">Days Sought</p>
                       <p className="font-bold text-slate-900 text-sm tabular-nums">{app.total_days_sought} Days</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Proposed Completion</p>
+                      <p className="text-slate-500 font-sans">Proposed Completion</p>
                       <p className="font-semibold text-slate-900">{formatDate(app.proposed_extended_date)}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Compensable Days</p>
+                      <p className="text-slate-500 font-sans">Compensable</p>
                       <p className="font-semibold text-emerald-700">{app.compensable_days || 0} Days</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Non-Compensable</p>
+                      <p className="text-slate-500 font-sans">Non-Compensable</p>
                       <p className="font-semibold text-slate-700">{app.non_compensable_days || 0} Days</p>
                     </div>
                   </div>
@@ -621,24 +1181,259 @@ export function AllHindrancesClient({
         </div>
       )}
 
-      {/* DRAWER: Log Site Hindrance */}
+      {/* TABS 5 to 9: STRUCTURED PLACEHOLDERS */}
+      {activeTab === 'evidence' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xl">
+            📷
+          </div>
+          <h3 className="text-base font-bold text-slate-900">Evidence Repository</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Upload geo-tagged site photographs, site order book inspection copies, joint measurement sheets, and meteorological rainfall reports.
+          </p>
+          <div className="pt-2">
+            <span className="text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg font-mono">
+              Ready for documentary defense filing
+            </span>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'correspondence' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl">
+            ✉️
+          </div>
+          <h3 className="text-base font-bold text-slate-900">Official Correspondence</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Log inward and outward letters with Executive Engineer, Superintending Engineer, and Consultant with speed post tracking.
+          </p>
+          <div className="pt-2">
+            <span className="text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg font-mono">
+              Contractual communication register
+            </span>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'notices' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-xl">
+            ⚠️
+          </div>
+          <h3 className="text-base font-bold text-slate-900">Statutory Notices Engine</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Generate and dispatch formal notices under Clause 2 (Delay penalty defense), Clause 5 (14-day delay notice), and Clause 10CA/10CC (Price escalation reservation).
+          </p>
+          <div className="pt-2">
+            <Button
+              size="sm"
+              className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => {
+                if (filteredHindrances.length > 0) {
+                  handleOpenNoticeModal(filteredHindrances[0])
+                } else {
+                  toastError('Please log a hindrance first to generate a notice.')
+                }
+              }}
+            >
+              Draft Clause 5 Notice
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'variations' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xl">
+            📋
+          </div>
+          <h3 className="text-base font-bold text-slate-900">Variations &amp; Deviations (Clause 12)</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Track deviations beyond contractual deviation limits (+/- 30%), extra non-schedule items, and substituted item rate analyses.
+          </p>
+          <div className="pt-2">
+            <span className="text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg font-mono">
+              Linked with BOQ Master &amp; Measurement Book
+            </span>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'claims' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xl">
+            ⚖️
+          </div>
+          <h3 className="text-base font-bold text-slate-900">Claims &amp; Escalation (Clause 10CC / Hudson Formula)</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Quantify financial damages for idle machinery, unabsorbed head-office overheads, idle labour, and price escalation during extended periods.
+          </p>
+          <div className="pt-2">
+            <span className="text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg font-mono">
+              Total Recorded Exposure: {formatINR(defenseMetrics.totalFinancialExposure)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* NEW CONTRACT EVENT MODAL */}
+      <NewContractEventModal
+        open={newEventModalOpen}
+        onClose={() => setNewEventModalOpen(false)}
+        projects={projects}
+        contracts={contracts}
+        boqItems={boqItems}
+        defaultProjectId={selectedProjectId !== 'all' ? selectedProjectId : projects[0]?.id}
+        onSuccess={handleEventCreated}
+      />
+
+      {/* EVENT DETAIL INSPECTOR MODAL */}
+      <Modal
+        open={!!selectedEventDetail}
+        onClose={() => setSelectedEventDetail(null)}
+        title={selectedEventDetail ? `Contract Event: ${selectedEventDetail.event_number}` : 'Event Details'}
+      >
+        {selectedEventDetail && (
+          <div className="space-y-4 text-left text-xs text-slate-700">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div>
+                <span className="font-bold text-sm text-slate-900 font-mono">{selectedEventDetail.event_number}</span>
+                <span className="ml-2 text-xs px-2 py-0.5 rounded font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+                  {EVENT_CATEGORY_CONFIG[selectedEventDetail.event_type as ContractEventCategory]?.label || selectedEventDetail.event_type}
+                </span>
+              </div>
+              <Badge
+                label={selectedEventDetail.status.replace(/_/g, ' ')}
+                variant={getStatusBadgeVariant(selectedEventDetail.status)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl">
+              <div>
+                <p className="text-slate-500">Project</p>
+                <p className="font-semibold text-slate-900">{getProjectName(selectedEventDetail.project_id)}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Contract Agreement</p>
+                <p className="font-semibold text-slate-900 font-mono">
+                  {selectedEventDetail.contracts?.agreement_number || getContractAgreement(selectedEventDetail.contract_id) || 'Not specified'}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">Event Date</p>
+                <p className="font-semibold text-slate-900">{formatDate(selectedEventDetail.event_date)}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Responsible Party</p>
+                <p className="font-semibold text-slate-900">{selectedEventDetail.responsible_party || 'Department'}</p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-slate-500 font-medium">Description</p>
+              <p className="text-slate-900 font-semibold mt-0.5 bg-white p-2.5 rounded-lg border border-slate-200">
+                {selectedEventDetail.description}
+              </p>
+            </div>
+
+            {selectedEventDetail.cause && (
+              <div>
+                <p className="text-slate-500 font-medium">Neutral Factual Cause</p>
+                <p className="text-slate-800 mt-0.5 italic bg-slate-50 p-2 rounded border border-slate-200">
+                  {selectedEventDetail.cause}
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-slate-500">Location</p>
+                <p className="font-semibold text-slate-900">{selectedEventDetail.location || 'Site overall'}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Delay Period</p>
+                <p className="font-semibold text-slate-900">
+                  {formatDate(selectedEventDetail.start_date)} &rarr; {selectedEventDetail.end_date ? formatDate(selectedEventDetail.end_date) : 'Ongoing'} ({selectedEventDetail.actual_delay_days || selectedEventDetail.estimated_delay_days || 0}d)
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">Financial Impact</p>
+                <p className="font-bold text-slate-900 font-mono text-sm">{formatINR(selectedEventDetail.financial_impact)}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">EOT Clause</p>
+                <p className="font-semibold text-slate-900 font-mono">{selectedEventDetail.eot_clause || 'Clause 5'}</p>
+              </div>
+            </div>
+
+            {(selectedEventDetail.labour_affected || selectedEventDetail.machinery_affected || selectedEventDetail.material_affected) && (
+              <div className="bg-slate-50 p-3 rounded-xl space-y-1">
+                <p className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Resource Impacts</p>
+                {selectedEventDetail.labour_affected && (
+                  <p className="text-slate-600"><b>Labour:</b> {selectedEventDetail.labour_affected}</p>
+                )}
+                {selectedEventDetail.machinery_affected && (
+                  <p className="text-slate-600"><b>Machinery:</b> {selectedEventDetail.machinery_affected}</p>
+                )}
+                {selectedEventDetail.material_affected && (
+                  <p className="text-slate-600"><b>Material:</b> {selectedEventDetail.material_affected}</p>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end pt-3 border-t border-slate-200">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setSelectedEventDetail(null)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* DRAWER: LOG HINDRANCE (Appendix 21) */}
       <Drawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Log Site Hindrance"
+        title="Log Site Hindrance (Works Manual Appendix 21)"
       >
         <form onSubmit={handleSaveHindrance} className="space-y-4">
           <FieldWrapper label="Target Project" required>
             <select
               value={targetProjectId}
-              onChange={e => setTargetProjectId(e.target.value)}
-              className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs focus:border-blue-600 focus:outline-none font-medium"
+              onChange={e => {
+                setTargetProjectId(e.target.value)
+                setTargetContractId('')
+                setSelectedBoqIds([])
+              }}
+              className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs font-medium focus:border-blue-600 focus:outline-none"
             >
               {projects.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
           </FieldWrapper>
+
+          {availableContracts.length > 0 && (
+            <FieldWrapper label="Associated Contract">
+              <select
+                value={targetContractId}
+                onChange={e => setTargetContractId(e.target.value)}
+                className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs"
+              >
+                <option value="">No specific contract (Project Level)</option>
+                {availableContracts.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.agreement_number ? `Agr: ${c.agreement_number}` : c.contract_title || c.id}
+                  </option>
+                ))}
+              </select>
+            </FieldWrapper>
+          )}
 
           <FieldWrapper label="Category of Hindrance" required>
             <select
@@ -652,29 +1447,62 @@ export function AllHindrancesClient({
             </select>
           </FieldWrapper>
 
-          <FieldWrapper label="Description of Impediment" required>
+          <FieldWrapper label="Nature of Hindrance / Description" required>
             <textarea
               rows={3}
               required
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="e.g. Electric poles in road widening stretch, awaiting department utility shifting."
-              className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs focus:border-blue-600 focus:outline-none"
-            />
-          </FieldWrapper>
-
-          <FieldWrapper label="Location / Chainage (Km)">
-            <input
-              type="text"
-              value={locationChainage}
-              onChange={e => setLocationChainage(e.target.value)}
-              placeholder="e.g. Km 4+200 to Km 4+600, Box Culvert No. 3"
+              placeholder="e.g. Electric utility pole at Km 4+200 obstructing culvert excavation; awaiting department shifting."
               className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs focus:border-blue-600 focus:outline-none"
             />
           </FieldWrapper>
 
           <div className="grid grid-cols-2 gap-3">
-            <FieldWrapper label="Date of Occurrence" required>
+            <FieldWrapper label="Location / Chainage (Km)">
+              <input
+                type="text"
+                value={locationChainage}
+                onChange={e => setLocationChainage(e.target.value)}
+                placeholder="e.g. Km 4+200 to 4+600"
+                className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs"
+              />
+            </FieldWrapper>
+
+            <FieldWrapper label="Affected Work / Activity">
+              <input
+                type="text"
+                value={affectedWork}
+                onChange={e => setAffectedWork(e.target.value)}
+                placeholder="e.g. Subgrade, Culvert No. 2"
+                className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs"
+              />
+            </FieldWrapper>
+          </div>
+
+          {availableBoqItems.length > 0 && (
+            <FieldWrapper label="Affected BOQ Items">
+              <select
+                multiple
+                value={selectedBoqIds}
+                onChange={e => {
+                  const opts = Array.from(e.target.selectedOptions, o => o.value)
+                  setSelectedBoqIds(opts)
+                }}
+                className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 shadow-2xs h-24"
+              >
+                {availableBoqItems.map(b => (
+                  <option key={b.id} value={b.id}>
+                    Item {b.item_number}: {b.description.slice(0, 40)}...
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-slate-500 mt-1">Hold Ctrl (Windows) / Cmd (Mac) to select multiple BOQ items.</p>
+            </FieldWrapper>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <FieldWrapper label="Date of Occurrence (Start)" required>
               <input
                 type="date"
                 required
@@ -684,7 +1512,7 @@ export function AllHindrancesClient({
               />
             </FieldWrapper>
 
-            <FieldWrapper label="Date of Removal">
+            <FieldWrapper label="Date of Removal (End)">
               <input
                 type="date"
                 value={endDate}
@@ -695,14 +1523,14 @@ export function AllHindrancesClient({
             </FieldWrapper>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-2">
             <FieldWrapper label="Classification" required>
               <select
                 value={delayType}
                 onChange={e => setDelayType(e.target.value as HindranceDelayType)}
-                className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs"
+                className="block w-full rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs text-slate-900 shadow-2xs"
               >
-                <option value="compensable">Compensable (Dept Delay)</option>
+                <option value="compensable">Compensable (Dept)</option>
                 <option value="non_compensable">Non-Compensable (Force Majeure)</option>
               </select>
             </FieldWrapper>
@@ -713,7 +1541,65 @@ export function AllHindrancesClient({
                 min="0"
                 value={overlappingDays}
                 onChange={e => setOverlappingDays(Number(e.target.value))}
-                className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-2xs"
+                className="block w-full rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs text-slate-900 shadow-2xs"
+              />
+            </FieldWrapper>
+
+            <FieldWrapper label="Register Status">
+              <select
+                value={standardStatus}
+                onChange={e => setStandardStatus(e.target.value as ContractDefenseStatus)}
+                className="block w-full rounded-xl border border-slate-300 bg-white px-2 py-2 text-xs text-slate-900 shadow-2xs font-semibold"
+              >
+                <option value="OPEN">OPEN</option>
+                <option value="UNDER_REVIEW">UNDER REVIEW</option>
+                <option value="RESOLVED">REMOVED / RESOLVED</option>
+                <option value="CLOSED">CLOSED</option>
+                <option value="DISPUTED">DISPUTED</option>
+              </select>
+            </FieldWrapper>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FieldWrapper label="Labour Impact">
+              <input
+                type="text"
+                value={labourImpact}
+                onChange={e => setLabourImpact(e.target.value)}
+                placeholder="e.g. 15 skilled & 30 helpers idled"
+                className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 shadow-2xs"
+              />
+            </FieldWrapper>
+
+            <FieldWrapper label="Machinery Impact">
+              <input
+                type="text"
+                value={machineryImpact}
+                onChange={e => setMachineryImpact(e.target.value)}
+                placeholder="e.g. 1 Hydraulic Excavator idled"
+                className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 shadow-2xs"
+              />
+            </FieldWrapper>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FieldWrapper label="Department Communication">
+              <input
+                type="text"
+                value={deptComm}
+                onChange={e => setDeptComm(e.target.value)}
+                placeholder="e.g. Letter EE/PWD/2026/89 dt 12/03"
+                className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 shadow-2xs"
+              />
+            </FieldWrapper>
+
+            <FieldWrapper label="Contractor Communication">
+              <input
+                type="text"
+                value={contractorComm}
+                onChange={e => setContractorComm(e.target.value)}
+                placeholder="e.g. Letter PP/EOT/04 dt 15/03"
+                className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 shadow-2xs"
               />
             </FieldWrapper>
           </div>
@@ -727,7 +1613,7 @@ export function AllHindrancesClient({
                 className="w-4 h-4 text-blue-600 rounded border-slate-300"
               />
               <span className="text-xs font-semibold text-slate-900">
-                Formal Clause 5 Written Notice Already Dispatched to Dept
+                Formal Clause 5 Written Notice Already Dispatched to Department
               </span>
             </label>
           </div>
@@ -769,17 +1655,70 @@ export function AllHindrancesClient({
               disabled={submitting}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              {submitting ? 'Recording…' : 'Record in Hindrance Register'}
+              {submitting ? 'Recording…' : 'Record in Appendix 21 Register'}
             </Button>
           </div>
         </form>
       </Drawer>
 
-      {/* MODAL: Draft EOT Application */}
+      {/* QUICK STATUS UPDATE MODAL */}
+      <Modal
+        open={statusUpdateModalOpen}
+        onClose={() => setStatusUpdateModalOpen(false)}
+        title={hindranceToUpdate ? `Update Hindrance #${hindranceToUpdate.hindrance_number} Status` : 'Update Status'}
+      >
+        <div className="space-y-4 text-left text-xs">
+          <FieldWrapper label="Select New Status" required>
+            <select
+              value={newHindranceStatus}
+              onChange={e => setNewHindranceStatus(e.target.value as ContractDefenseStatus)}
+              className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 font-semibold"
+            >
+              <option value="OPEN">OPEN (Impediment Active)</option>
+              <option value="UNDER_REVIEW">UNDER REVIEW (Dept Inspecting)</option>
+              <option value="RESOLVED">REMOVED / RESOLVED (Impediment Cleared)</option>
+              <option value="CLOSED">CLOSED (Formally Concluded)</option>
+              <option value="DISPUTED">DISPUTED (Contested by Dept)</option>
+            </select>
+          </FieldWrapper>
+
+          {(newHindranceStatus === 'RESOLVED' || newHindranceStatus === 'CLOSED') && (
+            <FieldWrapper label="Removal / Resolution Date" required>
+              <input
+                type="date"
+                required
+                value={hindranceRemovalDate}
+                onChange={e => setHindranceRemovalDate(e.target.value)}
+                className="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+              />
+            </FieldWrapper>
+          )}
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setStatusUpdateModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={submitting}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={handleUpdateHindranceStatus}
+            >
+              {submitting ? 'Saving…' : 'Update Status'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODAL: DRAFT EOT APPLICATION */}
       <Modal
         open={eotModalOpen}
         onClose={() => setEotModalOpen(false)}
-        title="Draft Extension of Time (EOT) Application"
+        title="Draft Extension of Time (EOT) Application (Form 27)"
       >
         <form onSubmit={handleCreateEOT} className="space-y-4 text-left">
           <FieldWrapper label="Project" required>
@@ -858,7 +1797,7 @@ export function AllHindrancesClient({
         </form>
       </Modal>
 
-      {/* MODAL: Clause 5 Formal Legal Notice Generator */}
+      {/* MODAL: CLAUSE 5 STATUTORY NOTICE */}
       <Modal
         open={noticeModalOpen}
         onClose={() => setNoticeModalOpen(false)}
@@ -926,7 +1865,7 @@ export function AllHindrancesClient({
         </div>
       </Modal>
 
-      {/* MODAL: CPWD Form 27 Printable View */}
+      {/* MODAL: FORM 27 PRINTABLE VIEW */}
       <Modal
         open={form27ModalOpen}
         onClose={() => setForm27ModalOpen(false)}
@@ -994,4 +1933,3 @@ export function AllHindrancesClient({
     </div>
   )
 }
-
