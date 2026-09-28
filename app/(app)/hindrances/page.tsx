@@ -5,6 +5,7 @@ import { ContractRecord } from '@/lib/types/contract'
 import { BOQItem } from '@/lib/types/boq'
 import { EvidenceRecord } from '@/lib/types/evidence'
 import { CorrespondenceRecord, ContractNoticeRule } from '@/lib/types/correspondence'
+import { EOTCase } from '@/lib/types/eot'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -24,6 +25,7 @@ export default async function AllHindrancesPage() {
     { data: evidenceData },
     { data: correspondenceData },
     { data: noticeRulesData },
+    { data: eotCasesData },
   ] = await Promise.all([
     supabase
       .from('projects')
@@ -63,6 +65,10 @@ export default async function AllHindrancesPage() {
       .from('contract_notice_rules')
       .select('*')
       .order('clause_number', { ascending: true }),
+    supabase
+      .from('contract_eot_cases')
+      .select('*, projects(id, name, agency_name), contracts(id, agreement_number, contract_title)')
+      .order('created_at', { ascending: false }),
   ])
 
   const projects = Array.isArray(projectsData) ? projectsData : []
@@ -84,6 +90,9 @@ export default async function AllHindrancesPage() {
   const noticeRules: ContractNoticeRule[] = Array.isArray(noticeRulesData)
     ? (noticeRulesData as ContractNoticeRule[])
     : []
+  const eotCases: EOTCase[] = Array.isArray(eotCasesData)
+    ? (eotCasesData as EOTCase[])
+    : []
 
   return (
     <AllHindrancesClient
@@ -96,6 +105,7 @@ export default async function AllHindrancesPage() {
       initialEvidence={evidence}
       initialCorrespondence={correspondence}
       noticeRules={noticeRules}
+      initialEOTCases={eotCases}
       userRole={userRole || 'owner'}
       orgProfile={orgProfile || {}}
     />

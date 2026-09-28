@@ -43,6 +43,8 @@ import { EvidenceCompletenessBadge } from '@/components/evidence/EvidenceComplet
 import { UploadEvidenceModal } from '@/components/evidence/UploadEvidenceModal'
 import { CorrespondenceRecord, ContractNoticeRule } from '@/lib/types/correspondence'
 import { CorrespondenceVaultView } from '@/components/correspondence/CorrespondenceVaultView'
+import { EOTCase } from '@/lib/types/eot'
+import { EOTMasterView } from '@/components/eot/EOTMasterView'
 
 interface Project {
   id: string
@@ -66,6 +68,7 @@ interface AllHindrancesClientProps {
   initialEvidence: EvidenceRecord[]
   initialCorrespondence?: CorrespondenceRecord[]
   noticeRules?: ContractNoticeRule[]
+  initialEOTCases?: EOTCase[]
   userRole: string
   orgProfile: {
     name?: string
@@ -98,6 +101,7 @@ export function AllHindrancesClient({
   initialEvidence,
   initialCorrespondence,
   noticeRules,
+  initialEOTCases = [],
   userRole,
   orgProfile,
 }: AllHindrancesClientProps) {
@@ -110,6 +114,7 @@ export function AllHindrancesClient({
   const [eotApps, setEotApps] = useState<any[]>(initialEOTApplications)
   const [evidenceList, setEvidenceList] = useState<EvidenceRecord[]>(initialEvidence)
   const [correspondenceList, setCorrespondenceList] = useState<CorrespondenceRecord[]>(initialCorrespondence || [])
+  const [eotCasesList, setEotCasesList] = useState<EOTCase[]>(initialEOTCases || [])
   const [activeTab, setActiveTab] = useState<DefenseTab>('events')
 
   // Modals & Drawers
@@ -206,6 +211,11 @@ export function AllHindrancesClient({
   const noticesCount = useMemo(() => {
     return filteredCorrespondence.filter(c => c.category === 'NOTICE').length
   }, [filteredCorrespondence])
+
+  const filteredEOTCases = useMemo(() => {
+    if (selectedProjectId === 'all') return eotCasesList
+    return eotCasesList.filter(c => c.project_id === selectedProjectId)
+  }, [eotCasesList, selectedProjectId])
 
   const availableContracts = useMemo(() => {
     return targetProjectId
@@ -693,7 +703,7 @@ export function AllHindrancesClient({
           >
             <span>4. EOT &amp; Form 27</span>
             <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-bold">
-              {filteredEOTs.length}
+              {filteredEOTCases.length}
             </span>
           </button>
 
@@ -1127,102 +1137,18 @@ export function AllHindrancesClient({
         </div>
       )}
 
-      {/* TAB 4: EOT CLAIMS & FORM 27 */}
+      {/* TAB 4: EOT CLAIMS & FORM 27 ENGINE */}
       {activeTab === 'eot' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-slate-500">
-              Official CPWD Form 27 extension applications filed with the Executive Engineer.
-            </p>
-            <Button
-              size="sm"
-              className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => setEotModalOpen(true)}
-            >
-              + Draft Form 27 Application
-            </Button>
-          </div>
-
-          {filteredEOTs.length === 0 ? (
-            <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-12 text-center space-y-3">
-              <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xl">
-                <svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-base font-bold text-slate-900">No EOT Applications Filed</h3>
-              <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                Submit an official Form 27 application to the Executive / Superintending Engineer before contract completion expires to shield your firm from penalty deductions.
-              </p>
-              <Button
-                size="sm"
-                className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => setEotModalOpen(true)}
-              >
-                + Draft EOT Application (Form 27)
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredEOTs.map(app => (
-                <div key={app.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-sm font-mono">{app.application_number}</h3>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        {getProjectName(app.project_id)} &bull; Submitted on {formatDate(app.submission_date || app.created_at)}
-                      </p>
-                    </div>
-                    <Badge
-                      label={app.status?.replace(/_/g, ' ') || 'submitted'}
-                      variant={app.status === 'sanctioned_without_ld' ? 'success' : app.status === 'sanctioned_with_ld' ? 'danger' : 'neutral'}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl font-mono">
-                    <div>
-                      <p className="text-slate-500 font-sans">Days Sought</p>
-                      <p className="font-bold text-slate-900 text-sm tabular-nums">{app.total_days_sought} Days</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500 font-sans">Proposed Completion</p>
-                      <p className="font-semibold text-slate-900">{formatDate(app.proposed_extended_date)}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500 font-sans">Compensable</p>
-                      <p className="font-semibold text-emerald-700">{app.compensable_days || 0} Days</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500 font-sans">Non-Compensable</p>
-                      <p className="font-semibold text-slate-700">{app.non_compensable_days || 0} Days</p>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-slate-600 line-clamp-2 italic">
-                    &ldquo;{app.justification}&rdquo;
-                  </p>
-
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-[11px] text-slate-500 font-mono">
-                      Clause 5 Standard GCC
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="text-xs py-1 px-3 h-auto"
-                      onClick={() => {
-                        setSelectedEOT(app)
-                        setForm27ModalOpen(true)
-                      }}
-                    >
-                      View / Print Form 27 &rarr;
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <EOTMasterView
+          initialCases={eotCasesList}
+          projects={projects}
+          contracts={contracts}
+          contractEvents={contractEvents}
+          hindrances={hindrances}
+          evidenceList={evidenceList}
+          correspondenceList={correspondenceList}
+          selectedProjectId={selectedProjectId}
+        />
       )}
 
       {/* TAB 5: EVIDENCE VAULT */}
