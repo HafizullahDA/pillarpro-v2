@@ -168,4 +168,22 @@ describe('Offline IndexedDB Store & Queue', () => {
     expect(queue.some(q => q.type === 'worker' && q.payload.name === 'Ramesh Kumar')).toBe(true)
     expect(queue.some(q => q.type === 'attendance' && Array.isArray(q.payload) && q.payload[0].worker_id === 'worker-uuid-1')).toBe(true)
   })
+
+  it('persists and retrieves /attendance snapshot for offline muster roll fallback', async () => {
+    const testWorkers = [
+      { id: 'w1', name: 'Ghulam Nabi', trade: 'Mason', daily_wage_rate: 850 },
+      { id: 'w2', name: 'Altaf Ahmad', trade: 'Helper', daily_wage_rate: 550 },
+    ]
+
+    await saveOfflineSnapshot('/attendance', {
+      workers: testWorkers,
+      projects: [{ id: 'p1', name: 'Chemistry Block' }],
+    })
+
+    const snap = await getOfflineSnapshot<{ workers: typeof testWorkers }>('/attendance')
+    expect(snap).not.toBeNull()
+    expect(snap?.payload.workers.length).toBe(2)
+    expect(snap?.payload.workers[0].name).toBe('Ghulam Nabi')
+  })
 })
+

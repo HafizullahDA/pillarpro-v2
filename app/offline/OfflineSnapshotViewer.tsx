@@ -69,10 +69,12 @@ export function OfflineSnapshotViewer() {
   const [newWorkerSaving, setNewWorkerSaving] = useState(false)
 
   // Diesel form
+  const [dieselAssetId, setDieselAssetId] = useState('')
   const [dieselMachine, setDieselMachine] = useState('')
   const [dieselLiters, setDieselLiters] = useState('')
   const [dieselMeter, setDieselMeter] = useState('')
   const [dieselVendor, setDieselVendor] = useState('')
+
 
   const refreshData = useCallback(async () => {
     try {
@@ -456,10 +458,17 @@ export function OfflineSnapshotViewer() {
     }
 
     const projectName = availableProjects.find(p => p.id === selectedProjectId)?.name || customProjectName || 'Job Site'
+    const matchedAsset = machineryList.find((a: any) => a.id === dieselAssetId)
+    const machineName = matchedAsset
+      ? `${matchedAsset.asset_name} ${matchedAsset.registration_number ? `(${matchedAsset.registration_number})` : ''}`
+      : (dieselMachine || 'Site Machinery')
+
     const payload = {
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `diesel_${Date.now()}`,
+      asset_id: matchedAsset ? matchedAsset.id : null,
+      asset_name: machineName,
       project_id: selectedProjectId || null,
       project_name: projectName,
-      asset_name: dieselMachine || 'Site Machinery',
       diesel_liters: litersNum,
       end_meter: parseFloat(dieselMeter) || 0,
       fuel_vendor: dieselVendor || 'Local Bunk',
@@ -468,7 +477,8 @@ export function OfflineSnapshotViewer() {
     }
 
     await saveToOfflineQueue('diesel_log', payload)
-    setActionSuccess(`Diesel log (${litersNum}L for ${dieselMachine || 'machine'}) queued locally!`)
+    setActionSuccess(`Diesel log (${litersNum}L for ${machineName}) queued locally!`)
+    setDieselAssetId('')
     setDieselMachine('')
     setDieselLiters('')
     setDieselMeter('')
@@ -1263,14 +1273,41 @@ export function OfflineSnapshotViewer() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-300 mb-1">Equipment / Machine *</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Excavator JCB-3DX"
-                    required
-                    value={dieselMachine}
-                    onChange={(e) => setDieselMachine(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-blue-500"
-                  />
+                  {machineryList.length > 0 ? (
+                    <select
+                      value={dieselAssetId}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setDieselAssetId(val)
+                        const asset = machineryList.find((a: any) => a.id === val)
+                        if (asset) {
+                          setDieselMachine(asset.asset_name)
+                          if (asset.current_meter) setDieselMeter(String(asset.current_meter))
+                        } else {
+                          setDieselMachine('')
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="">-- Select from Fleet or Type Below --</option>
+                      {machineryList.map((a: any) => (
+                        <option key={a.id} value={a.id}>
+                          {a.asset_name} {a.registration_number ? `(${a.registration_number})` : ''} — {a.current_meter || 0} {a.meter_tracking || 'h'}
+                        </option>
+                      ))}
+                      <option value="custom">Other / Custom Machine</option>
+                    </select>
+                  ) : null}
+                  {(machineryList.length === 0 || dieselAssetId === 'custom' || !dieselAssetId) && (
+                    <input
+                      type="text"
+                      placeholder="e.g. Excavator JCB-3DX"
+                      required={!dieselAssetId || dieselAssetId === 'custom'}
+                      value={dieselMachine}
+                      onChange={(e) => setDieselMachine(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-blue-500 ${machineryList.length > 0 ? 'mt-2' : ''}`}
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-300 mb-1">Diesel Liters *</label>

@@ -23,7 +23,42 @@ export async function flushOfflineQueue(): Promise<{ synced: number; errors: num
   for (const item of sortedQueue) {
     try {
       if (item.type === 'expense') {
-        const { error } = await supabase.from('expenses').insert(item.payload)
+        const payload = item.payload
+        let projectId = payload.project_id
+        if (!projectId) {
+          const { data: projs } = await supabase.from('projects').select('id').limit(1)
+          if (projs && projs[0]) projectId = projs[0].id
+        }
+
+        const categoryMap: Record<string, string> = {
+          'Fuel / Diesel': 'fuel',
+          'fuel': 'fuel',
+          'Material / Cement / Steel': 'material',
+          'material': 'material',
+          'Labour Advance': 'labour',
+          'labour': 'labour',
+          'Equipment / Machinery': 'equipment',
+          'equipment': 'equipment',
+          'Food / Refreshments': 'food',
+          'food': 'food',
+          'Travel / Logistics': 'travel',
+          'travel': 'travel',
+          'Other / Misc': 'other',
+          'other': 'other',
+        }
+        const cleanCat = categoryMap[payload.category] || 'other'
+        const cleanExpense: any = {
+          project_id: projectId,
+          amount: Number(payload.amount) || 0,
+          category: cleanCat,
+          date: payload.date || new Date().toISOString().split('T')[0],
+          description: [payload.paid_to ? `Paid to: ${payload.paid_to}` : '', payload.description].filter(Boolean).join(' — ') || 'Site Expense',
+          mode: payload.mode || 'cash',
+        }
+        if (payload.reference) cleanExpense.reference = payload.reference
+        if (payload.id && typeof payload.id === 'string' && payload.id.includes('-')) cleanExpense.id = payload.id
+
+        const { error } = await supabase.from('expenses').insert(cleanExpense)
         if (error) throw error
       } else if (item.type === 'worker') {
         // Offline workers have a client-generated UUID, making retries safe.
@@ -109,14 +144,53 @@ export async function flushOfflineQueue(): Promise<{ synced: number; errors: num
         if (error) throw error
       } else if (item.type === 'diesel_log') {
         let payload = item.payload
-        if (!payload.organization_id) {
+        let orgId = payload.organization_id
+        if (!orgId) {
           const { data: organizationId } = await supabase.rpc('get_user_organization_id')
-          if (organizationId) payload = { ...payload, organization_id: organizationId }
+          if (organizationId) orgId = organizationId
         }
-        const { error } = await supabase
-          .from('machinery_logs')
-          .upsert(payload, { onConflict: 'id', ignoreDuplicates: true })
-        if (error) throw error
+
+        // Resolve asset_id if missing or only asset_name was logged offline
+        let assetId = payload.asset_id
+        if (!assetId && (payload.asset_name || orgId)) {
+          const { data: foundAssets } = await supabase
+            .from('machinery_assets')
+            .select('id, asset_name')
+            .limit(10)
+
+          if (foundAssets && foundAssets.length > 0) {
+            const matched = payload.asset_name
+              ? foundAssets.find((a: any) => a.asset_name.toLowerCase().includes(payload.asset_name.toLowerCase()))
+              : null
+            assetId = matched ? matched.id : foundAssets[0].id
+          }
+        }
+
+        if (assetId && orgId) {
+          const cleanLog: any = {
+            organization_id: orgId,
+            asset_id: assetId,
+            project_id: payload.project_id || null,
+            log_date: payload.log_date || new Date().toISOString().split('T')[0],
+            operator_name: payload.operator_name || null,
+            start_meter: Number(payload.start_meter) || 0,
+            end_meter: Number(payload.end_meter) || 0,
+            work_description: payload.work_description || null,
+            diesel_liters: Number(payload.diesel_liters) || 0,
+            diesel_rate_per_liter: Number(payload.diesel_rate_per_liter) || 90,
+            fuel_vendor: payload.fuel_vendor || null,
+          }
+          if (payload.id && typeof payload.id === 'string' && payload.id.includes('-')) {
+            cleanLog.id = payload.id
+          }
+
+          const { error } = await supabase
+            .from('machinery_logs')
+            .upsert(cleanLog, { onConflict: 'id', ignoreDuplicates: true })
+          if (error) throw error
+        } else {
+          console.warn('Diesel log skipped during sync due to missing asset or org:', payload)
+        }
       }
 
       await removeFromOfflineQueue(item.id)

@@ -12,6 +12,8 @@ import { createMachineryLogSchema } from '@/lib/validations/machinery'
 import { formatINR } from '@/lib/format'
 import { getUserOrganizationId } from '@/lib/organization'
 import { calculateShiftWorkingHours } from '@/lib/calculations/machinery'
+import { saveToOfflineQueue } from '@/lib/offline/db'
+
 
 interface AssetOption {
   id: string
@@ -167,8 +169,53 @@ export function LogDieselDrawer({
 
     setSaving(true)
 
+    const offlinePayload = {
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `diesel_${Date.now()}`,
+      asset_id: resolvedAssetId,
+      project_id: form.project_id || null,
+      log_date: form.log_date,
+      operator_name: form.operator_name.trim() || null,
+      start_meter: finalStartMeter,
+      end_meter: finalEndMeter,
+      work_description: workDesc || null,
+      diesel_liters: Number(form.diesel_liters) || 0,
+      diesel_rate_per_liter: Number(form.diesel_rate_per_liter) || 0,
+      fuel_vendor: form.fuel_vendor.trim() || null,
+      is_offline: true,
+    }
+
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      try {
+        await saveToOfflineQueue('diesel_log', offlinePayload)
+        setSaving(false)
+        showToast(`Offline: Logged ${totalRun} ${unit} & ${dieselLiters}L diesel locally! Will sync on reconnect.`, 'success')
+        if (onSuccess) onSuccess(offlinePayload)
+        onClose()
+        return
+      } catch {
+        setSaving(false)
+        showToast('Failed to save diesel log locally.', 'error')
+        return
+      }
+    }
+
     // Resiliently resolve organization ID
-    const orgId = await getUserOrganizationId(form.project_id || undefined)
+    let orgId: string | null = null
+    try {
+      orgId = await getUserOrganizationId(form.project_id || undefined)
+    } catch {
+      // offline / network error
+    }
+
+    if (!orgId && !navigator.onLine) {
+      await saveToOfflineQueue('diesel_log', offlinePayload)
+      setSaving(false)
+      showToast(`Offline: Logged ${totalRun} ${unit} & ${dieselLiters}L diesel locally! Will sync on reconnect.`, 'success')
+      if (onSuccess) onSuccess(offlinePayload)
+      onClose()
+      return
+    }
+
     if (!orgId) {
       setSaving(false)
       const msg = 'Could not verify organization context.'
@@ -196,6 +243,16 @@ export function LogDieselDrawer({
     setSaving(false)
 
     if (insertErr) {
+      const isNet = insertErr.message?.includes('fetch') || insertErr.message?.includes('network') || !navigator.onLine
+      if (isNet) {
+        try {
+          await saveToOfflineQueue('diesel_log', { ...offlinePayload, organization_id: orgId })
+          showToast(`Network drop: Logged ${totalRun} ${unit} & ${dieselLiters}L diesel locally! Will auto-sync.`, 'success')
+          if (onSuccess) onSuccess(offlinePayload)
+          onClose()
+          return
+        } catch {}
+      }
       setError(insertErr.message)
       showToast(`Save failed: ${insertErr.message}`, 'error')
       return

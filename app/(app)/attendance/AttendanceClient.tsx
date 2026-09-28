@@ -17,8 +17,9 @@ import { compressImage } from '@/lib/imageCompress'
 import { AttendanceScanConfirmModal } from '@/components/attendance/AttendanceScanConfirmModal'
 import { DeleteWorkerModal } from '@/components/attendance/DeleteWorkerModal'
 import { WageLedgerClient } from './WageLedgerClient'
-import { saveOfflineSnapshot } from '@/lib/offline/db'
+import { saveOfflineSnapshot, getOfflineSnapshot, getOfflineQueue, saveToOfflineQueue } from '@/lib/offline/db'
 import { STANDARD_SHIFT_WORKING_HOURS, calculateHourlyWage, calculateOTDays, calculateOTWage } from '@/lib/calculations/attendance'
+
 
 type Project = { id: string; name: string }
 type Worker = { id: string; name: string; trade: string | null; daily_wage_rate: number | null }
@@ -94,17 +95,58 @@ export function AttendanceClient({
   const loadWorkers = useCallback(async () => {
     setLoadingWorkers(true)
     setFetchError('')
-    const { data, error } = await supabase
-      .from('workers')
-      .select('id, name, trade, daily_wage_rate')
-      .order('name')
-    setLoadingWorkers(false)
-    if (error) {
-      setFetchError(`Failed to load workers: ${error.message}`)
-      return
+    let workerList: Worker[] = []
+
+    try {
+      const { data, error } = await supabase
+        .from('workers')
+        .select('id, name, trade, daily_wage_rate')
+        .order('name')
+
+      if (error) {
+        throw error
+      }
+      workerList = data ?? []
+    } catch {
+      // Network failure or offline -> fallback to offline snapshot
+      try {
+        const snap = await getOfflineSnapshot<{ workers: Worker[]; projects: Project[] }>('/attendance')
+        if (snap?.payload?.workers?.length) {
+          workerList = snap.payload.workers
+        } else {
+          setFetchError('Offline mode: No cached workers found. You can add new workers using the "+ Add Worker" button.')
+        }
+      } catch {
+        setFetchError('Failed to load workers and no offline cache available.')
+      }
     }
-    const workerList = data ?? []
+
+    // Merge any pending workers from offline queue
+    try {
+      const q = await getOfflineQueue()
+      const pendingWorkers = q
+        .filter(item => item.type === 'worker' && item.payload?.name)
+        .map(item => ({
+          id: item.payload.id,
+          name: item.payload.name,
+          trade: item.payload.trade || 'Helper',
+          daily_wage_rate: Number(item.payload.daily_wage_rate) || 0,
+        }))
+
+      if (pendingWorkers.length > 0) {
+        const map = new Map<string, Worker>()
+        workerList.forEach(w => map.set(w.id, w))
+        pendingWorkers.forEach(w => {
+          if (!map.has(w.id)) map.set(w.id, w)
+        })
+        workerList = Array.from(map.values())
+      }
+    } catch {}
+
+    workerList.sort((a, b) => a.name.localeCompare(b.name))
     setWorkers(workerList)
+    setLoadingWorkers(false)
+
     if (workerList.length > 0) {
       void saveOfflineSnapshot('/attendance', { workers: workerList, projects })
     }
@@ -116,34 +158,65 @@ export function AttendanceClient({
     const endDate   = `${year}-${String(month).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`
 
     let attData: MonthAttendanceRow[] = []
-    const { data, error } = await supabase
-      .from('attendance')
-      .select('worker_id, date, status, notes, overtime_hours')
-      .eq('project_id', projectId)
-      .gte('date', startDate)
-      .lte('date', endDate)
-
-    if (error && (error.message?.includes('overtime_hours') || error.code === '42703')) {
-      const { data: fbData, error: fbErr } = await supabase
+    try {
+      const { data, error } = await supabase
         .from('attendance')
-        .select('worker_id, date, status, notes')
+        .select('worker_id, date, status, notes, overtime_hours')
         .eq('project_id', projectId)
         .gte('date', startDate)
         .lte('date', endDate)
-      if (fbErr) {
-        setFetchError(`Failed to load monthly attendance: ${fbErr.message}`)
-        return
+
+      if (error && (error.message?.includes('overtime_hours') || error.code === '42703')) {
+        const { data: fbData, error: fbErr } = await supabase
+          .from('attendance')
+          .select('worker_id, date, status, notes')
+          .eq('project_id', projectId)
+          .gte('date', startDate)
+          .lte('date', endDate)
+        if (!fbErr && fbData) attData = fbData
+      } else if (!error && data) {
+        attData = data
       }
-      attData = fbData ?? []
-    } else if (error) {
-      setFetchError(`Failed to load monthly attendance: ${error.message}`)
-      return
-    } else {
-      attData = data ?? []
+    } catch {
+      // Network/offline tolerated
     }
+
+    // Merge offline queue attendance items for this month & project
+    try {
+      const q = await getOfflineQueue()
+      for (const item of q) {
+        if (item.type === 'attendance') {
+          if (Array.isArray(item.payload)) {
+            for (const r of item.payload) {
+              if ((!r.project_id || r.project_id === projectId) && r.date >= startDate && r.date <= endDate) {
+                attData.push({
+                  worker_id: r.worker_id,
+                  date: r.date,
+                  status: r.status,
+                  overtime_hours: r.overtime_hours,
+                  notes: r.notes,
+                })
+              }
+            }
+          } else if (item.payload?.worker_id) {
+            const r = item.payload
+            if ((!r.project_id || r.project_id === projectId) && r.date >= startDate && r.date <= endDate) {
+              attData.push({
+                worker_id: r.worker_id,
+                date: r.date,
+                status: r.status,
+                overtime_hours: r.overtime_hours,
+                notes: r.notes,
+              })
+            }
+          }
+        }
+      }
+    } catch {}
 
     setMonthAttendance(attData)
   }, [projectId, year, month, daysInMonth, supabase])
+
 
   // Load workers and monthly attendance records
   useEffect(() => {
@@ -252,12 +325,22 @@ export function AttendanceClient({
       return
     }
 
+    const isNetworkError = (err: any) => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return true
+      const msg = (err?.message || '').toLowerCase()
+      return msg.includes('fetch') || msg.includes('network') || msg.includes('timeout') || msg.includes('offline')
+    }
+
     if (typeof window !== 'undefined' && !navigator.onLine) {
       try {
-        const { saveToOfflineQueue } = await import('@/lib/offline/db')
         await saveToOfflineQueue('attendance', rows)
         setSaving(false)
         setSaveStatus({ type: 'success', message: 'Offline: Attendance saved locally. Will auto-sync when network returns.' })
+        // Optimistically update monthAttendance
+        setMonthAttendance(prev => {
+          const filtered = prev.filter(r => !(r.date === dateStr && rows.some(newR => newR.worker_id === r.worker_id)))
+          return [...filtered, ...rows.map(r => ({ worker_id: r.worker_id, date: r.date, status: r.status, overtime_hours: r.overtime_hours, notes: r.notes }))]
+        })
         return
       } catch {
         setSaving(false)
@@ -267,32 +350,52 @@ export function AttendanceClient({
     }
 
     let saveError = null
-    const { error: upsertErr } = await supabase
-      .from('attendance')
-      .upsert(rows, { onConflict: 'project_id,worker_id,date' })
+    try {
+      const { error: upsertErr } = await supabase
+        .from('attendance')
+        .upsert(rows, { onConflict: 'project_id,worker_id,date' })
 
-    if (upsertErr) {
-      if (
-        upsertErr.message?.includes('overtime_hours') ||
-        upsertErr.code === '42703' ||
-        upsertErr.message?.includes('attendance_status_check')
-      ) {
-        const fallbackRows = rows.map(({ overtime_hours, ...rest }) => ({
-          ...rest,
-          status: rest.status === 'overtime' ? 'present' : rest.status,
-        }))
-        const { error: fbErr } = await supabase
-          .from('attendance')
-          .upsert(fallbackRows, { onConflict: 'project_id,worker_id,date' })
-        saveError = fbErr
-      } else {
-        saveError = upsertErr
+      if (upsertErr) {
+        if (
+          upsertErr.message?.includes('overtime_hours') ||
+          upsertErr.code === '42703' ||
+          upsertErr.message?.includes('attendance_status_check')
+        ) {
+          const fallbackRows = rows.map(({ overtime_hours, ...rest }) => ({
+            ...rest,
+            status: rest.status === 'overtime' ? 'present' : rest.status,
+          }))
+          const { error: fbErr } = await supabase
+            .from('attendance')
+            .upsert(fallbackRows, { onConflict: 'project_id,worker_id,date' })
+          saveError = fbErr
+        } else {
+          saveError = upsertErr
+        }
       }
+    } catch (err: any) {
+      saveError = err
     }
 
     setSaving(false)
 
     if (saveError) {
+      if (isNetworkError(saveError)) {
+        try {
+          await saveToOfflineQueue('attendance', rows)
+          setSaveStatus({
+            type: 'success',
+            message: 'Network disconnected: Attendance saved locally in offline queue! Will auto-sync when reconnected.'
+          })
+          setMonthAttendance(prev => {
+            const filtered = prev.filter(r => !(r.date === dateStr && rows.some(newR => newR.worker_id === r.worker_id)))
+            return [...filtered, ...rows.map(r => ({ worker_id: r.worker_id, date: r.date, status: r.status, overtime_hours: r.overtime_hours, notes: r.notes }))]
+          })
+          return
+        } catch {
+          // continue to show error
+        }
+      }
       setSaveStatus({ type: 'error', message: `Failed to save attendance: ${saveError.message}` })
       return
     }
@@ -360,6 +463,39 @@ export function AttendanceClient({
     if (!wForm.name.trim()) { setWError('Name is required.'); return }
     setWSaving(true); setWError('')
 
+    const cleanName = wForm.name.trim()
+    const cleanRate = wForm.daily_wage_rate ? parseFloat(wForm.daily_wage_rate) : 0
+    const newWorkerId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `worker_${Date.now()}`
+
+    // Offline first check
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      try {
+        const workerObj = {
+          id: newWorkerId,
+          name: cleanName,
+          trade: wForm.trade || 'Helper',
+          daily_wage_rate: cleanRate,
+          is_offline: true,
+        }
+        await saveToOfflineQueue('worker', workerObj)
+        const updated = [...workers, workerObj].sort((a, b) => a.name.localeCompare(b.name))
+        setWorkers(updated)
+        void saveOfflineSnapshot('/attendance', { workers: updated, projects })
+        setWorkerOpen(false)
+        setWForm({ name: '', trade: 'Helper', daily_wage_rate: '' })
+        setWSaving(false)
+        setSaveStatus({
+          type: 'success',
+          message: `Offline: Worker "${cleanName}" added to site muster! Will auto-sync on reconnect.`
+        })
+        return
+      } catch {
+        setWSaving(false)
+        setWError('Failed to save worker offline locally.')
+        return
+      }
+    }
+
     let effectiveOrgId = organizationId
     if (!effectiveOrgId) {
       try {
@@ -370,17 +506,73 @@ export function AttendanceClient({
       }
     }
 
-    const { error } = await supabase.from('workers').insert({
-      name: wForm.name.trim(),
-      trade: wForm.trade,
-      daily_wage_rate: wForm.daily_wage_rate ? parseFloat(wForm.daily_wage_rate) : 0,
-      ...(effectiveOrgId ? { organization_id: effectiveOrgId } : {}),
-    })
-    setWSaving(false)
-    if (error) { setWError(error.message); return }
-    setWorkerOpen(false)
-    setWForm({ name: '', trade: 'Helper', daily_wage_rate: '' })
-    loadWorkers()
+    try {
+      const { error } = await supabase.from('workers').insert({
+        id: newWorkerId,
+        name: cleanName,
+        trade: wForm.trade,
+        daily_wage_rate: cleanRate,
+        ...(effectiveOrgId ? { organization_id: effectiveOrgId } : {}),
+      })
+
+      if (error) {
+        const isNet = error.message?.includes('fetch') || error.message?.includes('network') || error.message?.includes('Failed to fetch')
+        if (isNet) {
+          const workerObj = {
+            id: newWorkerId,
+            name: cleanName,
+            trade: wForm.trade || 'Helper',
+            daily_wage_rate: cleanRate,
+            is_offline: true,
+          }
+          await saveToOfflineQueue('worker', workerObj)
+          const updated = [...workers, workerObj].sort((a, b) => a.name.localeCompare(b.name))
+          setWorkers(updated)
+          void saveOfflineSnapshot('/attendance', { workers: updated, projects })
+          setWorkerOpen(false)
+          setWForm({ name: '', trade: 'Helper', daily_wage_rate: '' })
+          setWSaving(false)
+          setSaveStatus({
+            type: 'success',
+            message: `Connection lost: Worker "${cleanName}" saved offline locally! Will auto-sync on reconnect.`
+          })
+          return
+        }
+        setWSaving(false)
+        setWError(error.message)
+        return
+      }
+
+      setWSaving(false)
+      setWorkerOpen(false)
+      setWForm({ name: '', trade: 'Helper', daily_wage_rate: '' })
+      loadWorkers()
+    } catch {
+      // Network drop during fetch
+      const workerObj = {
+        id: newWorkerId,
+        name: cleanName,
+        trade: wForm.trade || 'Helper',
+        daily_wage_rate: cleanRate,
+        is_offline: true,
+      }
+      try {
+        await saveToOfflineQueue('worker', workerObj)
+        const updated = [...workers, workerObj].sort((a, b) => a.name.localeCompare(b.name))
+        setWorkers(updated)
+        void saveOfflineSnapshot('/attendance', { workers: updated, projects })
+        setWorkerOpen(false)
+        setWForm({ name: '', trade: 'Helper', daily_wage_rate: '' })
+        setWSaving(false)
+        setSaveStatus({
+          type: 'success',
+          message: `Network offline: Worker "${cleanName}" saved locally! Will auto-sync on reconnect.`
+        })
+      } catch {
+        setWSaving(false)
+        setWError('Failed to save worker locally.')
+      }
+    }
   }
 
   // Summary calculations for the active day (7 net working hours + 1 hr break standard)
