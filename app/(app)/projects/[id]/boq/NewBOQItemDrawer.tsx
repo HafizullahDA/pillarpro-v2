@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { FieldWrapper, Input, Textarea, Select } from '@/components/ui/FormField'
 import { useToast } from '@/components/ui/Toast'
 import { formatINR } from '@/lib/format'
-import { BOQItem } from '@/lib/types/boq'
+import { BOQItem, BOQ_ITEM_TYPES, BOQItemType } from '@/lib/types/boq'
 
 interface NewBOQItemDrawerProps {
   open: boolean
@@ -29,6 +29,8 @@ const COMMON_UNITS = [
   { value: 'litre', label: 'Litre (L)' },
   { value: 'set', label: 'Set / Assembly' },
   { value: 'LS', label: 'Lump Sum (LS)' },
+  { value: 'km', label: 'Kilometre (km)' },
+  { value: 'ha', label: 'Hectare (ha)' },
 ]
 
 export function NewBOQItemDrawer({
@@ -46,28 +48,46 @@ export function NewBOQItemDrawer({
 
   const [form, setForm] = useState({
     item_number: '',
+    chapter: '',
+    item_type: 'original' as BOQItemType | string,
     description: '',
+    detailed_specification: '',
+    department_item_code: '',
+    schedule_reference: '',
     unit: 'cum',
     tender_quantity: '',
     awarded_rate: '',
+    notes: '',
   })
 
   useEffect(() => {
     if (itemToEdit) {
       setForm({
-        item_number: itemToEdit.item_number,
-        description: itemToEdit.description,
-        unit: itemToEdit.unit,
-        tender_quantity: itemToEdit.tender_quantity.toString(),
-        awarded_rate: itemToEdit.awarded_rate.toString(),
+        item_number: itemToEdit.item_number || '',
+        chapter: itemToEdit.chapter || '',
+        item_type: itemToEdit.item_type || 'original',
+        description: itemToEdit.description || '',
+        detailed_specification: itemToEdit.detailed_specification || '',
+        department_item_code: itemToEdit.department_item_code || '',
+        schedule_reference: itemToEdit.schedule_reference || '',
+        unit: itemToEdit.unit || 'cum',
+        tender_quantity: itemToEdit.tender_quantity?.toString() || '',
+        awarded_rate: itemToEdit.awarded_rate?.toString() || '',
+        notes: itemToEdit.notes || '',
       })
     } else {
       setForm({
         item_number: '',
+        chapter: '',
+        item_type: 'original',
         description: '',
+        detailed_specification: '',
+        department_item_code: '',
+        schedule_reference: '',
         unit: 'cum',
         tender_quantity: '',
         awarded_rate: '',
+        notes: '',
       })
     }
     setError('')
@@ -100,32 +120,34 @@ export function NewBOQItemDrawer({
 
     setSaving(true)
     try {
+      const payload: Record<string, any> = {
+        item_number: form.item_number.trim(),
+        chapter: form.chapter.trim() || null,
+        item_type: form.item_type || 'original',
+        description: form.description.trim(),
+        detailed_specification: form.detailed_specification.trim() || null,
+        department_item_code: form.department_item_code.trim() || null,
+        schedule_reference: form.schedule_reference.trim() || null,
+        unit: form.unit,
+        tender_quantity: tenderQtyNum,
+        awarded_rate: awardedRateNum,
+        notes: form.notes.trim() || null,
+        updated_at: new Date().toISOString(),
+      }
+
       if (itemToEdit) {
         const { error: updateError } = await supabase
           .from('boq_items')
-          .update({
-            item_number: form.item_number.trim(),
-            description: form.description.trim(),
-            unit: form.unit,
-            tender_quantity: tenderQtyNum,
-            awarded_rate: awardedRateNum,
-            updated_at: new Date().toISOString(),
-          })
+          .update(payload)
           .eq('id', itemToEdit.id)
 
         if (updateError) throw updateError
         toast.success(`BOQ Item "${form.item_number}" updated successfully.`)
       } else {
+        payload.project_id = projectId
         const { error: insertError } = await supabase
           .from('boq_items')
-          .insert({
-            project_id: projectId,
-            item_number: form.item_number.trim(),
-            description: form.description.trim(),
-            unit: form.unit,
-            tender_quantity: tenderQtyNum,
-            awarded_rate: awardedRateNum,
-          })
+          .insert(payload)
 
         if (insertError) throw insertError
         toast.success(`BOQ Item "${form.item_number}" added successfully.`)
@@ -154,13 +176,57 @@ export function NewBOQItemDrawer({
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <FieldWrapper label="Item No / DSR Code" required>
+          <FieldWrapper label="Item No / Schedule Code" required>
             <Input
               type="text"
               placeholder="e.g. 1.1 or DSR-4.1.5"
               value={form.item_number}
               onChange={(e) => setForm({ ...form, item_number: e.target.value })}
               required
+            />
+          </FieldWrapper>
+
+          <FieldWrapper label="Item Classification / Type" required>
+            <Select
+              value={form.item_type}
+              onChange={(e) => setForm({ ...form, item_type: e.target.value })}
+            >
+              {BOQ_ITEM_TYPES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </Select>
+          </FieldWrapper>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <FieldWrapper label="Chapter / Sub-Head / Trade">
+            <Input
+              type="text"
+              placeholder="e.g. Earthwork, Concrete, Roadwork"
+              value={form.chapter}
+              onChange={(e) => setForm({ ...form, chapter: e.target.value })}
+            />
+          </FieldWrapper>
+
+          <FieldWrapper label="Schedule Ref (DSR / SSR / MoRTH)">
+            <Input
+              type="text"
+              placeholder="e.g. CPWD DSR 2023, State SSR"
+              value={form.schedule_reference}
+              onChange={(e) => setForm({ ...form, schedule_reference: e.target.value })}
+            />
+          </FieldWrapper>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <FieldWrapper label="Dept Item Code">
+            <Input
+              type="text"
+              placeholder="e.g. 2.8.1 or NSI-04"
+              value={form.department_item_code}
+              onChange={(e) => setForm({ ...form, department_item_code: e.target.value })}
             />
           </FieldWrapper>
 
@@ -230,6 +296,24 @@ export function NewBOQItemDrawer({
             </span>
           </div>
         </div>
+
+        <FieldWrapper label="Detailed Engineering Specification (Optional)">
+          <Textarea
+            rows={2}
+            placeholder="Detailed mix design, IS code standards, test frequency, curing duration..."
+            value={form.detailed_specification}
+            onChange={(e) => setForm({ ...form, detailed_specification: e.target.value })}
+          />
+        </FieldWrapper>
+
+        <FieldWrapper label="Engineer Notes / Remarks (Optional)">
+          <Input
+            type="text"
+            placeholder="Any site observation or contractor notes"
+            value={form.notes}
+            onChange={(e) => setForm({ ...form, notes: e.target.value })}
+          />
+        </FieldWrapper>
 
         <div className="flex gap-2 pt-2">
           <Button

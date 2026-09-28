@@ -370,15 +370,35 @@ export function BOQClient({
                   return (
                     <tr key={item.boq_item_id} className="hover:bg-slate-50/60 transition-colors">
                       {/* Item No */}
-                      <td className="p-3 font-mono font-bold text-slate-900 whitespace-nowrap">
-                        {item.item_number}
+                      <td className="p-3 whitespace-nowrap">
+                        <Link
+                          href={`/projects/${project.id}/boq/${item.boq_item_id}`}
+                          className="font-mono font-bold text-blue-600 hover:text-blue-800 hover:underline block"
+                          title="Open Item Cockpit & Deviations"
+                        >
+                          {item.item_number}
+                        </Link>
+                        {item.item_type && item.item_type !== 'original' && (
+                          <span className="inline-block text-[9px] font-bold uppercase px-1.5 py-0.2 rounded mt-0.5 border bg-amber-50 text-amber-700 border-amber-200">
+                            {String(item.item_type).replace('_', ' ')}
+                          </span>
+                        )}
                       </td>
 
                       {/* Description */}
                       <td className="p-3 text-slate-700 max-w-xs">
-                        <p className="line-clamp-2" title={item.description}>
+                        <Link
+                          href={`/projects/${project.id}/boq/${item.boq_item_id}`}
+                          className="hover:text-blue-600 block line-clamp-2"
+                          title={item.description}
+                        >
                           {item.description}
-                        </p>
+                        </Link>
+                        {item.chapter && (
+                          <span className="inline-block text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded mt-0.5">
+                            {item.chapter}
+                          </span>
+                        )}
                       </td>
 
                       {/* Unit */}
@@ -443,6 +463,16 @@ export function BOQClient({
                       {/* Actions */}
                       <td className="p-3 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1">
+                          <Link
+                            href={`/projects/${project.id}/boq/${item.boq_item_id}`}
+                            className="p-1.5 text-blue-600 hover:text-blue-800 rounded-md hover:bg-blue-50 transition-colors"
+                            title="Open Item Cockpit & Deviations"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </Link>
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(item)}
