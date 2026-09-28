@@ -41,6 +41,8 @@ import { ContractTimelineView } from '@/components/contract-defense/ContractTime
 import { EvidenceVaultView } from '@/components/evidence/EvidenceVaultView'
 import { EvidenceCompletenessBadge } from '@/components/evidence/EvidenceCompletenessBadge'
 import { UploadEvidenceModal } from '@/components/evidence/UploadEvidenceModal'
+import { CorrespondenceRecord, ContractNoticeRule } from '@/lib/types/correspondence'
+import { CorrespondenceVaultView } from '@/components/correspondence/CorrespondenceVaultView'
 
 interface Project {
   id: string
@@ -62,6 +64,8 @@ interface AllHindrancesClientProps {
   initialHindrances: DetailedHindrance[]
   initialEOTApplications: any[]
   initialEvidence: EvidenceRecord[]
+  initialCorrespondence?: CorrespondenceRecord[]
+  noticeRules?: ContractNoticeRule[]
   userRole: string
   orgProfile: {
     name?: string
@@ -92,6 +96,8 @@ export function AllHindrancesClient({
   initialHindrances,
   initialEOTApplications,
   initialEvidence,
+  initialCorrespondence,
+  noticeRules,
   userRole,
   orgProfile,
 }: AllHindrancesClientProps) {
@@ -103,6 +109,7 @@ export function AllHindrancesClient({
   const [hindrances, setHindrances] = useState<DetailedHindrance[]>(initialHindrances)
   const [eotApps, setEotApps] = useState<any[]>(initialEOTApplications)
   const [evidenceList, setEvidenceList] = useState<EvidenceRecord[]>(initialEvidence)
+  const [correspondenceList, setCorrespondenceList] = useState<CorrespondenceRecord[]>(initialCorrespondence || [])
   const [activeTab, setActiveTab] = useState<DefenseTab>('events')
 
   // Modals & Drawers
@@ -189,6 +196,16 @@ export function AllHindrancesClient({
       ? evidenceList
       : evidenceList.filter(ev => ev.project_id === selectedProjectId)
   }, [evidenceList, selectedProjectId])
+
+  const filteredCorrespondence = useMemo(() => {
+    return selectedProjectId === 'all'
+      ? correspondenceList
+      : correspondenceList.filter(c => c.project_id === selectedProjectId)
+  }, [correspondenceList, selectedProjectId])
+
+  const noticesCount = useMemo(() => {
+    return filteredCorrespondence.filter(c => c.category === 'NOTICE').length
+  }, [filteredCorrespondence])
 
   const availableContracts = useMemo(() => {
     return targetProjectId
@@ -703,6 +720,9 @@ export function AllHindrancesClient({
             }`}
           >
             <span>6. Correspondence</span>
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-bold">
+              {filteredCorrespondence.length}
+            </span>
           </button>
 
           <button
@@ -714,6 +734,9 @@ export function AllHindrancesClient({
             }`}
           >
             <span>7. Notices</span>
+            <span className="text-xs bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full font-bold">
+              {noticesCount}
+            </span>
           </button>
 
           <button
@@ -1216,49 +1239,35 @@ export function AllHindrancesClient({
         />
       )}
 
-      {/* TABS 6 to 9: STRUCTURED SUB-MODULES */}
+      {/* TABS 6 & 7: CORRESPONDENCE VAULT & NOTICES ENGINE */}
       {activeTab === 'correspondence' && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl">
-            ✉️
-          </div>
-          <h3 className="text-base font-bold text-slate-900">Official Correspondence</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Log inward and outward letters with Executive Engineer, Superintending Engineer, and Consultant with speed post tracking.
-          </p>
-          <div className="pt-2">
-            <span className="text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg font-mono">
-              Contractual communication register
-            </span>
-          </div>
-        </div>
+        <CorrespondenceVaultView
+          initialRecords={correspondenceList}
+          noticeRules={noticeRules || []}
+          projects={projects}
+          contracts={contracts}
+          boqItems={boqItems}
+          contractEvents={contractEvents}
+          hindrances={hindrances}
+          eotApplications={eotApps}
+          selectedProjectId={selectedProjectId}
+          initialTab="all"
+        />
       )}
 
       {activeTab === 'notices' && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-xl">
-            ⚠️
-          </div>
-          <h3 className="text-base font-bold text-slate-900">Statutory Notices Engine</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Generate and dispatch formal notices under Clause 2 (Delay penalty defense), Clause 5 (14-day delay notice), and Clause 10CA/10CC (Price escalation reservation).
-          </p>
-          <div className="pt-2">
-            <Button
-              size="sm"
-              className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => {
-                if (filteredHindrances.length > 0) {
-                  handleOpenNoticeModal(filteredHindrances[0])
-                } else {
-                  toastError('Please log a hindrance first to generate a notice.')
-                }
-              }}
-            >
-              Draft Clause 5 Notice
-            </Button>
-          </div>
-        </div>
+        <CorrespondenceVaultView
+          initialRecords={correspondenceList}
+          noticeRules={noticeRules || []}
+          projects={projects}
+          contracts={contracts}
+          boqItems={boqItems}
+          contractEvents={contractEvents}
+          hindrances={hindrances}
+          eotApplications={eotApps}
+          selectedProjectId={selectedProjectId}
+          initialTab="notices"
+        />
       )}
 
       {activeTab === 'variations' && (
