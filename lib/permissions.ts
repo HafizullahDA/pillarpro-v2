@@ -76,6 +76,7 @@ export function normalizeRole(role: string | null | undefined): CanonicalRole | 
 export type AppModule =
   | 'dashboard'
   | 'projects'
+  | 'contracts'
   | 'suppliers'
   | 'ra_bills'
   | 'attendance'
@@ -103,6 +104,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
   owner: {
     dashboard: ['view'],
     projects: ['view', 'create', 'edit', 'archive'],
+    contracts: ['view', 'create', 'edit', 'delete'],
     suppliers: ['view', 'create', 'edit', 'delete'],
     ra_bills: ['view', 'create', 'edit'],
     attendance: ['view', 'create', 'edit', 'delete'],
@@ -118,6 +120,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
   partner: {
     dashboard: ['view'],
     projects: ['view', 'create', 'edit'],
+    contracts: ['view', 'create', 'edit'],
     suppliers: ['view', 'create', 'edit'],
     ra_bills: ['view', 'create', 'edit'],
     attendance: ['view', 'create', 'edit', 'delete'],
@@ -133,6 +136,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
   site_supervisor: {
     dashboard: ['view'],
     projects: ['view'],
+    contracts: ['view', 'create', 'edit'],
     suppliers: ['view'],
     ra_bills: ['view'],
     attendance: ['view', 'create', 'edit'],
@@ -148,6 +152,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
   accountant: {
     dashboard: ['view'],
     projects: ['view'],
+    contracts: ['view', 'create', 'edit'],
     suppliers: ['view', 'create', 'edit'],
     ra_bills: ['view', 'create', 'edit'],
     attendance: ['view'],
@@ -163,6 +168,7 @@ const PERMISSIONS_MATRIX: Record<CanonicalRole, Partial<Record<AppModule, AppAct
   viewer: {
     dashboard: ['view'],
     projects: ['view'],
+    contracts: ['view'],
     suppliers: ['view'],
     ra_bills: ['view'],
     attendance: ['view'],
@@ -225,6 +231,9 @@ export const canDeleteDPR = (role: string | null | undefined) => can(role, 'dpr'
 
 export const canManageInventory = (role: string | null | undefined) => can(role, 'inventory', 'create')
 export const canDeleteInventory = (role: string | null | undefined) => can(role, 'inventory', 'delete')
+
+export const canViewContracts = (role: string | null | undefined) => can(role, 'contracts', 'view')
+export const canManageContracts = (role: string | null | undefined) => can(role, 'contracts', 'edit')
 
 
 

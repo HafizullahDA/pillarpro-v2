@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { formatDate } from '@/lib/format'
@@ -25,6 +26,7 @@ interface ProjectDetailHeaderProps {
 }
 
 export function ProjectDetailHeader({ project, isOwner, canArchive = isOwner ?? false }: ProjectDetailHeaderProps) {
+  const pathname = usePathname()
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'archive' | 'unarchive'>('archive')
 
@@ -125,6 +127,70 @@ export function ProjectDetailHeader({ project, isOwner, canArchive = isOwner ?? 
             )}
           </div>
         )}
+      </div>
+
+      {/* Module Navigation Pills */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pt-2 pb-1 border-t border-slate-200 text-xs font-semibold">
+        <Link
+          href={`/projects/${project.id}`}
+          className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
+            pathname === `/projects/${project.id}`
+              ? 'bg-slate-900 text-white'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          Cockpit
+        </Link>
+        <Link
+          href={`/projects/${project.id}/contract`}
+          className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+            pathname.startsWith(`/projects/${project.id}/contract`)
+              ? 'bg-emerald-700 text-white'
+              : 'text-emerald-800 bg-emerald-50 hover:bg-emerald-100'
+          }`}
+        >
+          <span>Contract Master</span>
+        </Link>
+        <Link
+          href={`/projects/${project.id}/boq`}
+          className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
+            pathname.startsWith(`/projects/${project.id}/boq`)
+              ? 'bg-slate-900 text-white'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          BOQ &amp; e-MB
+        </Link>
+        <Link
+          href={`/projects/${project.id}/dpr`}
+          className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
+            pathname.startsWith(`/projects/${project.id}/dpr`)
+              ? 'bg-slate-900 text-white'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          DPR Diary
+        </Link>
+        <Link
+          href={`/projects/${project.id}/ledger`}
+          className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
+            pathname.startsWith(`/projects/${project.id}/ledger`)
+              ? 'bg-slate-900 text-white'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          Form 43 Ledger
+        </Link>
+        <Link
+          href={`/projects/${project.id}/hindrances`}
+          className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
+            pathname.startsWith(`/projects/${project.id}/hindrances`)
+              ? 'bg-blue-600 text-white'
+              : 'text-blue-700 bg-blue-50 hover:bg-blue-100'
+          }`}
+        >
+          Delay Defense
+        </Link>
       </div>
 
       <ArchiveProjectModal

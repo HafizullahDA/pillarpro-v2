@@ -47,6 +47,40 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {/* Contract Master & Legal Charter */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between shadow-xs border-l-4 border-l-emerald-600 md:col-span-2">
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900">Contract Master &amp; Legal Charter</h3>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  Central Source of Truth
+                </span>
+              </div>
+              <span className="text-xs text-slate-500 font-mono font-semibold">
+                Agreement &bull; Work Order &bull; NIT &bull; GCC/SCC
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              Complete administrative authority, governing GCC/SCC clauses, defect liability period (DLP), liquidated damages provisions, GST details, and multi-document repository.
+            </p>
+          </div>
+          <div className="pt-4 flex items-center justify-between flex-wrap gap-2">
+            <a
+              href={`/projects/${project.id}/contract`}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Open Contract Master &amp; Documents
+            </a>
+            <span className="text-xs text-slate-400">
+              Linked to BOQ, e-MB, and Delay Defense
+            </span>
+          </div>
+        </div>
+
         {/* Bill of Quantities (BOQ) & e-MB */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between shadow-xs">
           <div>
