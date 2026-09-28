@@ -1,9 +1,11 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
+
 
 interface LedgerTabsHeaderProps {
   userRole?: string
@@ -40,7 +42,7 @@ export const LEDGER_TABS = [
     labelEn: 'Supplier Khata',
     labelHi: 'सप्लायर खाता',
     subLabel: 'Bills & Payables',
-    roles: ['owner', 'partner', 'managing_partner', 'accountant', 'viewer'],
+    roles: ['owner', 'partner', 'managing_partner', 'accountant', 'site_supervisor', 'site_engineer', 'viewer'],
   },
   {
     id: 'ra-bills',
@@ -48,7 +50,7 @@ export const LEDGER_TABS = [
     labelEn: 'Client & RA Bills',
     labelHi: 'क्लाइंट बिल व क्लेम',
     subLabel: 'Form 43 & Retention',
-    roles: ['owner', 'partner', 'managing_partner', 'accountant', 'viewer'],
+    roles: ['owner', 'partner', 'managing_partner', 'accountant', 'site_supervisor', 'site_engineer', 'viewer'],
   },
   {
     id: 'expenses',
@@ -112,6 +114,18 @@ export function LedgerTabsHeader({ userRole = 'owner' }: LedgerTabsHeaderProps) 
     tab => (tab.roles as readonly string[]).includes(normalizedRole) || normalizedRole === 'owner' || !userRole
   )
 
+  const activeTabRef = useRef<HTMLAnchorElement>(null)
+
+  useEffect(() => {
+    if (activeTabRef.current) {
+      activeTabRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      })
+    }
+  }, [pathname])
+
   return (
     <div className="bg-white border-b border-slate-200 md:sticky md:top-0 z-20 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-2 sm:pt-3.5 sm:pb-2.5 space-y-2 sm:space-y-2.5">
@@ -146,6 +160,7 @@ export function LedgerTabsHeader({ userRole = 'owner' }: LedgerTabsHeaderProps) 
             return (
               <Link
                 key={tab.id}
+                ref={isActive ? activeTabRef : undefined}
                 href={tab.href}
                 className={cn(
                   'group relative flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all duration-200 ease-out shrink-0 select-none cursor-pointer',

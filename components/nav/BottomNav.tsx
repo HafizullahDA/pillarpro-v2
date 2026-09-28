@@ -12,14 +12,21 @@ import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 const PRIMARY_TABS = [
-  { href: '/dashboard',  label: 'Home',       i18nKey: 'nav.dashboard',  icon: 'dashboard'  },
-  { href: '/projects',   label: 'Projects',   i18nKey: 'nav.projects',   icon: 'projects'   },
-  { href: '/ledgers',    label: 'Ledgers',    i18nKey: 'nav.ledgers',    icon: 'ledgers'    },
-  { href: '/hindrances', label: 'Defense',    i18nKey: 'nav.hindrances', icon: 'shield'     },
+  { href: '/dashboard',         label: 'Home',      i18nKey: 'nav.dashboard',  icon: 'dashboard', aliases: ['/dashboard'] },
+  { href: '/projects',          label: 'Projects',  i18nKey: 'nav.projects',   icon: 'projects',  aliases: ['/projects']  },
+  { href: '/ledgers/suppliers', label: 'Suppliers', i18nKey: 'nav.suppliers',  icon: 'suppliers', aliases: ['/suppliers', '/ledgers/suppliers'] },
+  { href: '/ledgers/ra-bills',  label: 'RA Bills',  i18nKey: 'nav.ra_bills',   icon: 'ra_bills',  aliases: ['/ra-bills', '/ledgers/ra-bills']  },
 ]
 
-// All other NAV_ITEMS appear in the "More" drawer on mobile
-const PRIMARY_HREFS = new Set(PRIMARY_TABS.map(t => t.href))
+// All primary tabs and aliases that should not duplicate in the "More" drawer
+const PRIMARY_HREFS = new Set([
+  '/dashboard',
+  '/projects',
+  '/ledgers/suppliers',
+  '/ledgers/ra-bills',
+  '/suppliers',
+  '/ra-bills',
+])
 
 export function BottomNav({
   userName = 'User',
@@ -41,7 +48,9 @@ export function BottomNav({
     .filter(item => !PRIMARY_HREFS.has(item.href))
     .filter(item => isNavVisible(item.href, userRole))
 
-  const isMoreActive = moreItems.some(item => pathname.startsWith(item.href))
+  const isMoreActive =
+    pathname.startsWith('/offline') ||
+    moreItems.some(item => pathname === item.href || pathname.startsWith(item.href))
 
   const signOut = async () => {
     await supabase.auth.signOut()
@@ -130,6 +139,25 @@ export function BottomNav({
                 )
               })}
 
+              {/* Site Offline Hub shortcut in grid */}
+              <Link
+                href="/offline"
+                onClick={() => setMoreOpen(false)}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl text-xs font-medium transition-all text-center border',
+                  pathname.startsWith('/offline')
+                    ? 'bg-blue-50 border-blue-200 text-blue-600 font-semibold shadow-xs'
+                    : 'bg-emerald-50/70 border-emerald-200/80 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900',
+                )}
+              >
+                <span className={pathname.startsWith('/offline') ? 'text-blue-600' : 'text-emerald-600'}>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </span>
+                <span className="truncate max-w-full">Offline Hub</span>
+              </Link>
+
               {/* Explicit Profile shortcut in grid */}
               <button
                 type="button"
@@ -162,7 +190,10 @@ export function BottomNav({
       {/* Bottom bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 flex md:hidden safe-area-pb shadow-lg">
         {PRIMARY_TABS.map(tab => {
-          const active = pathname.startsWith(tab.href)
+          const active =
+            pathname === tab.href ||
+            pathname.startsWith(tab.href) ||
+            (tab.aliases && tab.aliases.some(a => pathname === a || pathname.startsWith(a)))
           const tabLabel = t(tab.i18nKey, tab.label)
           return (
             <Link

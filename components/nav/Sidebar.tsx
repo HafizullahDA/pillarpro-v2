@@ -36,9 +36,16 @@ export function Sidebar({
           <Logo theme="dark" href="/dashboard" size="md" />
         </div>
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {visibleNavItems.map(item => {
-            const active = pathname.startsWith(item.href)
+            const active =
+              item.href === '/ledgers/suppliers'
+                ? pathname.startsWith('/ledgers/suppliers') || pathname.startsWith('/suppliers')
+                : item.href === '/ledgers/ra-bills'
+                ? pathname.startsWith('/ledgers/ra-bills') || pathname.startsWith('/ra-bills')
+                : item.href === '/dashboard'
+                ? pathname === '/dashboard' || pathname === '/'
+                : pathname.startsWith(item.href)
             const label = t((item as any).i18nKey || '', item.label)
             return (
               <Link
