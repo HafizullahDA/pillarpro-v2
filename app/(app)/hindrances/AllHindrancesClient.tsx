@@ -29,13 +29,18 @@ import {
 } from '@/lib/types/contractDefense'
 import { ContractRecord } from '@/lib/types/contract'
 import { BOQItem } from '@/lib/types/boq'
+import { EvidenceRecord } from '@/lib/types/evidence'
 import {
   buildContractTimeline,
   calculateDefenseMetrics,
   calculateEventDelayDays,
 } from '@/lib/calculations/contractDefense'
+import { calculateEvidenceCompleteness } from '@/lib/calculations/evidenceCompleteness'
 import { NewContractEventModal } from '@/components/contract-defense/NewContractEventModal'
 import { ContractTimelineView } from '@/components/contract-defense/ContractTimelineView'
+import { EvidenceVaultView } from '@/components/evidence/EvidenceVaultView'
+import { EvidenceCompletenessBadge } from '@/components/evidence/EvidenceCompletenessBadge'
+import { UploadEvidenceModal } from '@/components/evidence/UploadEvidenceModal'
 
 interface Project {
   id: string
@@ -56,6 +61,7 @@ interface AllHindrancesClientProps {
   initialContractEvents: ContractEvent[]
   initialHindrances: DetailedHindrance[]
   initialEOTApplications: any[]
+  initialEvidence: EvidenceRecord[]
   userRole: string
   orgProfile: {
     name?: string
@@ -85,16 +91,18 @@ export function AllHindrancesClient({
   initialContractEvents,
   initialHindrances,
   initialEOTApplications,
+  initialEvidence,
   userRole,
   orgProfile,
 }: AllHindrancesClientProps) {
   const supabase = createClient()
-  const { success, error: toastError, info } = useToast()
+  const { success, error: toastError } = useToast()
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all')
   const [contractEvents, setContractEvents] = useState<ContractEvent[]>(initialContractEvents)
   const [hindrances, setHindrances] = useState<DetailedHindrance[]>(initialHindrances)
   const [eotApps, setEotApps] = useState<any[]>(initialEOTApplications)
+  const [evidenceList, setEvidenceList] = useState<EvidenceRecord[]>(initialEvidence)
   const [activeTab, setActiveTab] = useState<DefenseTab>('events')
 
   // Modals & Drawers
@@ -111,6 +119,10 @@ export function AllHindrancesClient({
   const [newHindranceStatus, setNewHindranceStatus] = useState<ContractDefenseStatus>('OPEN')
   const [hindranceRemovalDate, setHindranceRemovalDate] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // Quick Attach Evidence Modal
+  const [quickUploadOpen, setQuickUploadOpen] = useState(false)
+  const [quickTargetEventId, setQuickTargetEventId] = useState<string>('')
 
   // Filters for Events Tab
   const [eventCategoryFilter, setEventCategoryFilter] = useState<string>('all')
@@ -171,6 +183,12 @@ export function AllHindrancesClient({
       ? eotApps
       : eotApps.filter(e => e.project_id === selectedProjectId)
   }, [eotApps, selectedProjectId])
+
+  const filteredEvidence = useMemo(() => {
+    return selectedProjectId === 'all'
+      ? evidenceList
+      : evidenceList.filter(ev => ev.project_id === selectedProjectId)
+  }, [evidenceList, selectedProjectId])
 
   const availableContracts = useMemo(() => {
     return targetProjectId
@@ -452,18 +470,18 @@ export function AllHindrancesClient({
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
-              Contract Defense
+              Contract Defense &amp; Evidence Vault
             </h1>
             <Badge label="CPWD GCC Clause 5" variant="default" />
             <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
               Works Manual Appx 21
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-              Form 27 Ready
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200">
+              Evidence Vault Ready
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Contemporaneous site records, 14-day statutory notices, chronological events &amp; 10% LD shield.
+            Contemporaneous site records, 14-day statutory notices, evidence repository &amp; 10% LD shield.
           </p>
         </div>
 
@@ -580,6 +598,17 @@ export function AllHindrancesClient({
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Evidence Vault</p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-black text-indigo-700 tabular-nums">{filteredEvidence.length}</span>
+            <span className="text-xs font-semibold text-slate-500">Files Stored</span>
+          </div>
+          <p className="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-2 truncate">
+            Preserving contemporaneously linked proof
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Financial Exposure Shield</p>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-black text-emerald-700 tabular-nums">
@@ -588,19 +617,6 @@ export function AllHindrancesClient({
           </div>
           <p className="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-2 truncate">
             Defending against 10% LD deductions
-          </p>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Clause 5 &amp; EOT Claims</p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className={`text-2xl font-black tabular-nums ${legacyHindranceMetrics.urgentNoticesCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
-              {filteredEOTs.length}
-            </span>
-            <span className="text-xs font-semibold text-slate-500">Claims ({legacyHindranceMetrics.unservedNoticesCount} unserved)</span>
-          </div>
-          <p className="mt-2 text-[11px] text-slate-500 border-t border-slate-100 pt-2 truncate">
-            Form 27 applications filed
           </p>
         </div>
       </div>
@@ -672,7 +688,10 @@ export function AllHindrancesClient({
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <span>5. Evidence</span>
+            <span>5. Evidence Vault</span>
+            <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold">
+              {filteredEvidence.length}
+            </span>
           </button>
 
           <button
@@ -791,8 +810,8 @@ export function AllHindrancesClient({
                       <th className="px-4 py-3">Project &amp; Contract</th>
                       <th className="px-4 py-3">Description &amp; Cause</th>
                       <th className="px-4 py-3">Dates &amp; Delay</th>
+                      <th className="px-4 py-3">Evidence Completeness</th>
                       <th className="px-4 py-3">Financial Impact</th>
-                      <th className="px-4 py-3">Relevance</th>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3 text-right">Actions</th>
                     </tr>
@@ -804,6 +823,10 @@ export function AllHindrancesClient({
                       const delayDays = ev.actual_delay_days || ev.estimated_delay_days || calculateEventDelayDays(ev.start_date, ev.end_date)
                       const projName = ev.projects?.name || getProjectName(ev.project_id)
                       const agrNum = ev.contracts?.agreement_number || getContractAgreement(ev.contract_id)
+
+                      // Calculate Evidence Completeness for this event
+                      const linkedEv = evidenceList.filter(e => e.related_contract_event_id === ev.id)
+                      const completeness = calculateEvidenceCompleteness(ev.event_type, linkedEv)
 
                       return (
                         <tr key={ev.id} className="hover:bg-slate-50/75 transition-colors">
@@ -843,24 +866,22 @@ export function AllHindrancesClient({
                             </p>
                           </td>
                           <td className="px-4 py-3.5 whitespace-nowrap">
+                            <EvidenceCompletenessBadge
+                              completeness={completeness}
+                              targetTitle={ev.event_number}
+                              onAttachEvidence={() => {
+                                setQuickTargetEventId(ev.id)
+                                setQuickUploadOpen(true)
+                              }}
+                            />
+                          </td>
+                          <td className="px-4 py-3.5 whitespace-nowrap">
                             {ev.financial_impact > 0 ? (
                               <span className="font-bold text-slate-900 font-mono">
                                 {formatINR(ev.financial_impact)}
                               </span>
                             ) : (
                               <span className="text-slate-400 font-mono">—</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3.5 whitespace-nowrap space-y-1">
-                            {ev.eot_relevance && (
-                              <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                EOT Cl. 5
-                              </span>
-                            )}
-                            {ev.claim_relevance && (
-                              <span className="block px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
-                                Claims Cl. 12
-                              </span>
                             )}
                           </td>
                           <td className="px-4 py-3.5 whitespace-nowrap">
@@ -1181,24 +1202,21 @@ export function AllHindrancesClient({
         </div>
       )}
 
-      {/* TABS 5 to 9: STRUCTURED PLACEHOLDERS */}
+      {/* TAB 5: EVIDENCE VAULT */}
       {activeTab === 'evidence' && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xl">
-            📷
-          </div>
-          <h3 className="text-base font-bold text-slate-900">Evidence Repository</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Upload geo-tagged site photographs, site order book inspection copies, joint measurement sheets, and meteorological rainfall reports.
-          </p>
-          <div className="pt-2">
-            <span className="text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg font-mono">
-              Ready for documentary defense filing
-            </span>
-          </div>
-        </div>
+        <EvidenceVaultView
+          initialEvidence={filteredEvidence}
+          projects={projects}
+          contracts={contracts}
+          boqItems={boqItems}
+          contractEvents={contractEvents}
+          hindrances={hindrances}
+          eotApplications={eotApps}
+          selectedProjectId={selectedProjectId}
+        />
       )}
 
+      {/* TABS 6 to 9: STRUCTURED SUB-MODULES */}
       {activeTab === 'correspondence' && (
         <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
           <div className="mx-auto w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl">
@@ -1294,106 +1312,189 @@ export function AllHindrancesClient({
         onClose={() => setSelectedEventDetail(null)}
         title={selectedEventDetail ? `Contract Event: ${selectedEventDetail.event_number}` : 'Event Details'}
       >
-        {selectedEventDetail && (
-          <div className="space-y-4 text-left text-xs text-slate-700">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <div>
-                <span className="font-bold text-sm text-slate-900 font-mono">{selectedEventDetail.event_number}</span>
-                <span className="ml-2 text-xs px-2 py-0.5 rounded font-semibold bg-blue-50 text-blue-800 border border-blue-200">
-                  {EVENT_CATEGORY_CONFIG[selectedEventDetail.event_type as ContractEventCategory]?.label || selectedEventDetail.event_type}
-                </span>
-              </div>
-              <Badge
-                label={selectedEventDetail.status.replace(/_/g, ' ')}
-                variant={getStatusBadgeVariant(selectedEventDetail.status)}
-              />
-            </div>
+        {selectedEventDetail && (() => {
+          const detailEvidence = evidenceList.filter(e => e.related_contract_event_id === selectedEventDetail.id)
+          const completeness = calculateEvidenceCompleteness(selectedEventDetail.event_type, detailEvidence)
 
-            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl">
-              <div>
-                <p className="text-slate-500">Project</p>
-                <p className="font-semibold text-slate-900">{getProjectName(selectedEventDetail.project_id)}</p>
+          return (
+            <div className="space-y-4 text-left text-xs text-slate-700">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                <div>
+                  <span className="font-bold text-sm text-slate-900 font-mono">{selectedEventDetail.event_number}</span>
+                  <span className="ml-2 text-xs px-2 py-0.5 rounded font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+                    {EVENT_CATEGORY_CONFIG[selectedEventDetail.event_type as ContractEventCategory]?.label || selectedEventDetail.event_type}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <EvidenceCompletenessBadge
+                    completeness={completeness}
+                    targetTitle={selectedEventDetail.event_number}
+                    onAttachEvidence={() => {
+                      setQuickTargetEventId(selectedEventDetail.id)
+                      setQuickUploadOpen(true)
+                    }}
+                  />
+                  <Badge
+                    label={selectedEventDetail.status.replace(/_/g, ' ')}
+                    variant={getStatusBadgeVariant(selectedEventDetail.status)}
+                  />
+                </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl">
+                <div>
+                  <p className="text-slate-500">Project</p>
+                  <p className="font-semibold text-slate-900">{getProjectName(selectedEventDetail.project_id)}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Contract Agreement</p>
+                  <p className="font-semibold text-slate-900 font-mono">
+                    {selectedEventDetail.contracts?.agreement_number || getContractAgreement(selectedEventDetail.contract_id) || 'Not specified'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Event Date</p>
+                  <p className="font-semibold text-slate-900">{formatDate(selectedEventDetail.event_date)}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Responsible Party</p>
+                  <p className="font-semibold text-slate-900">{selectedEventDetail.responsible_party || 'Department'}</p>
+                </div>
+              </div>
+
               <div>
-                <p className="text-slate-500">Contract Agreement</p>
-                <p className="font-semibold text-slate-900 font-mono">
-                  {selectedEventDetail.contracts?.agreement_number || getContractAgreement(selectedEventDetail.contract_id) || 'Not specified'}
+                <p className="text-slate-500 font-medium">Description</p>
+                <p className="text-slate-900 font-semibold mt-0.5 bg-white p-2.5 rounded-lg border border-slate-200">
+                  {selectedEventDetail.description}
                 </p>
               </div>
-              <div>
-                <p className="text-slate-500">Event Date</p>
-                <p className="font-semibold text-slate-900">{formatDate(selectedEventDetail.event_date)}</p>
-              </div>
-              <div>
-                <p className="text-slate-500">Responsible Party</p>
-                <p className="font-semibold text-slate-900">{selectedEventDetail.responsible_party || 'Department'}</p>
-              </div>
-            </div>
 
-            <div>
-              <p className="text-slate-500 font-medium">Description</p>
-              <p className="text-slate-900 font-semibold mt-0.5 bg-white p-2.5 rounded-lg border border-slate-200">
-                {selectedEventDetail.description}
-              </p>
-            </div>
+              {selectedEventDetail.cause && (
+                <div>
+                  <p className="text-slate-500 font-medium">Neutral Factual Cause</p>
+                  <p className="text-slate-800 mt-0.5 italic bg-slate-50 p-2 rounded border border-slate-200">
+                    {selectedEventDetail.cause}
+                  </p>
+                </div>
+              )}
 
-            {selectedEventDetail.cause && (
-              <div>
-                <p className="text-slate-500 font-medium">Neutral Factual Cause</p>
-                <p className="text-slate-800 mt-0.5 italic bg-slate-50 p-2 rounded border border-slate-200">
-                  {selectedEventDetail.cause}
-                </p>
-              </div>
-            )}
+              {/* Linked Supporting Evidence Section */}
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-slate-900 text-xs">
+                    Supporting Documentary Proofs ({detailEvidence.length} on file)
+                  </p>
+                  <Button
+                    size="sm"
+                    className="text-[10px] py-1 px-2.5 h-auto bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => {
+                      setQuickTargetEventId(selectedEventDetail.id)
+                      setQuickUploadOpen(true)
+                    }}
+                  >
+                    + Attach Proof
+                  </Button>
+                </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-slate-500">Location</p>
-                <p className="font-semibold text-slate-900">{selectedEventDetail.location || 'Site overall'}</p>
-              </div>
-              <div>
-                <p className="text-slate-500">Delay Period</p>
-                <p className="font-semibold text-slate-900">
-                  {formatDate(selectedEventDetail.start_date)} &rarr; {selectedEventDetail.end_date ? formatDate(selectedEventDetail.end_date) : 'Ongoing'} ({selectedEventDetail.actual_delay_days || selectedEventDetail.estimated_delay_days || 0}d)
-                </p>
-              </div>
-              <div>
-                <p className="text-slate-500">Financial Impact</p>
-                <p className="font-bold text-slate-900 font-mono text-sm">{formatINR(selectedEventDetail.financial_impact)}</p>
-              </div>
-              <div>
-                <p className="text-slate-500">EOT Clause</p>
-                <p className="font-semibold text-slate-900 font-mono">{selectedEventDetail.eot_clause || 'Clause 5'}</p>
-              </div>
-            </div>
-
-            {(selectedEventDetail.labour_affected || selectedEventDetail.machinery_affected || selectedEventDetail.material_affected) && (
-              <div className="bg-slate-50 p-3 rounded-xl space-y-1">
-                <p className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Resource Impacts</p>
-                {selectedEventDetail.labour_affected && (
-                  <p className="text-slate-600"><b>Labour:</b> {selectedEventDetail.labour_affected}</p>
-                )}
-                {selectedEventDetail.machinery_affected && (
-                  <p className="text-slate-600"><b>Machinery:</b> {selectedEventDetail.machinery_affected}</p>
-                )}
-                {selectedEventDetail.material_affected && (
-                  <p className="text-slate-600"><b>Material:</b> {selectedEventDetail.material_affected}</p>
+                {detailEvidence.length > 0 ? (
+                  <div className="divide-y divide-slate-100">
+                    {detailEvidence.map(ev => (
+                      <div key={ev.id} className="py-2 flex items-center justify-between gap-2">
+                        <div>
+                          <p className="font-semibold text-slate-900">{ev.title}</p>
+                          <p className="text-[10px] text-slate-400 font-mono">
+                            {ev.evidence_number} &bull; {ev.type} &bull; {formatDate(ev.document_date)}
+                          </p>
+                        </div>
+                        <a
+                          href={ev.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] font-semibold text-blue-600 hover:text-blue-800"
+                        >
+                          View &rarr;
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic">
+                    No documentary proofs attached yet. Attach letters or site photos to raise completeness.
+                  </p>
                 )}
               </div>
-            )}
 
-            <div className="flex justify-end pt-3 border-t border-slate-200">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setSelectedEventDetail(null)}
-              >
-                Close
-              </Button>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-slate-500">Location</p>
+                  <p className="font-semibold text-slate-900">{selectedEventDetail.location || 'Site overall'}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Delay Period</p>
+                  <p className="font-semibold text-slate-900">
+                    {formatDate(selectedEventDetail.start_date)} &rarr; {selectedEventDetail.end_date ? formatDate(selectedEventDetail.end_date) : 'Ongoing'} ({selectedEventDetail.actual_delay_days || selectedEventDetail.estimated_delay_days || 0}d)
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Financial Impact</p>
+                  <p className="font-bold text-slate-900 font-mono text-sm">{formatINR(selectedEventDetail.financial_impact)}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">EOT Clause</p>
+                  <p className="font-semibold text-slate-900 font-mono">{selectedEventDetail.eot_clause || 'Clause 5'}</p>
+                </div>
+              </div>
+
+              {(selectedEventDetail.labour_affected || selectedEventDetail.machinery_affected || selectedEventDetail.material_affected) && (
+                <div className="bg-slate-50 p-3 rounded-xl space-y-1">
+                  <p className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Resource Impacts</p>
+                  {selectedEventDetail.labour_affected && (
+                    <p className="text-slate-600"><b>Labour:</b> {selectedEventDetail.labour_affected}</p>
+                  )}
+                  {selectedEventDetail.machinery_affected && (
+                    <p className="text-slate-600"><b>Machinery:</b> {selectedEventDetail.machinery_affected}</p>
+                  )}
+                  {selectedEventDetail.material_affected && (
+                    <p className="text-slate-600"><b>Material:</b> {selectedEventDetail.material_affected}</p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end pt-3 border-t border-slate-200">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setSelectedEventDetail(null)}
+                >
+                  Close
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
       </Modal>
+
+      {/* QUICK UPLOAD EVIDENCE MODAL */}
+      <UploadEvidenceModal
+        open={quickUploadOpen}
+        onClose={() => {
+          setQuickUploadOpen(false)
+          setQuickTargetEventId('')
+        }}
+        projects={projects}
+        contracts={contracts}
+        boqItems={boqItems}
+        contractEvents={contractEvents}
+        hindrances={hindrances}
+        eotApplications={eotApps}
+        defaultProjectId={selectedProjectId !== 'all' ? selectedProjectId : projects[0]?.id}
+        defaultContractEventId={quickTargetEventId}
+        onSuccess={newEv => {
+          setEvidenceList(prev => [newEv, ...prev])
+          setQuickUploadOpen(false)
+          setQuickTargetEventId('')
+        }}
+      />
 
       {/* DRAWER: LOG HINDRANCE (Appendix 21) */}
       <Drawer
