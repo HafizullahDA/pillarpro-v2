@@ -159,7 +159,17 @@ export function ProjectDetailHeader({ project, isOwner, canArchive = isOwner ?? 
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
-          BOQ &amp; e-MB
+          BOQ Master
+        </Link>
+        <Link
+          href={`/measurement?projectId=${project.id}`}
+          className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+            pathname.startsWith('/measurement')
+              ? 'bg-indigo-700 text-white'
+              : 'text-indigo-800 bg-indigo-50 hover:bg-indigo-100'
+          }`}
+        >
+          <span>Measurement (e-MB)</span>
         </Link>
         <Link
           href={`/projects/${project.id}/dpr`}
