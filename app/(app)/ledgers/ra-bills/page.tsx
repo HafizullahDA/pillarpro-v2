@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { RABillsClient } from '@/app/(app)/ra-bills/RABillsClient'
+import { BOQItem } from '@/lib/types/boq'
+import { MeasurementEntry } from '@/lib/types/measurement'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -18,6 +20,8 @@ export default async function RABillsLedgerPage() {
     { data: bills },
     { data: deposits },
     { data: deductions },
+    { data: boqData },
+    { data: measurementsData },
   ] = await Promise.all([
     supabase.rpc('get_user_role'),
     supabase
@@ -93,6 +97,29 @@ export default async function RABillsLedgerPage() {
     supabase
       .from('bill_deductions')
       .select('id, ra_bill_id, deduction_label, deduction_amount'),
+    supabase
+      .from('boq_items')
+      .select('*')
+      .order('item_number', { ascending: true }),
+    supabase
+      .from('measurement_entries')
+      .select(`
+        *,
+        boq_items:boq_item_id (
+          id,
+          item_number,
+          description,
+          unit,
+          tender_quantity,
+          awarded_rate
+        ),
+        measurement_books:measurement_book_id (
+          id,
+          book_number,
+          title
+        )
+      `)
+      .order('measurement_date', { ascending: false }),
   ])
 
   // Attach itemized deductions to corresponding bills
@@ -101,13 +128,19 @@ export default async function RABillsLedgerPage() {
     bill_deductions: (deductions ?? []).filter(d => d.ra_bill_id === b.id),
   }))
 
+  const boqItems: BOQItem[] = Array.isArray(boqData) ? (boqData as BOQItem[]) : []
+  const measurements: MeasurementEntry[] = Array.isArray(measurementsData)
+    ? (measurementsData as MeasurementEntry[])
+    : []
+
   return (
     <RABillsClient
       initialBills={billsWithDeductions as any}
       initialDeposits={(deposits as any) ?? []}
       projects={projects ?? []}
       userRole={(userRole as string) ?? ''}
+      boqItems={boqItems}
+      measurements={measurements}
     />
   )
 }
-

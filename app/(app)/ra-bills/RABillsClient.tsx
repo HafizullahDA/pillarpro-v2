@@ -17,7 +17,11 @@ import { generateRABillWhatsAppText, openWhatsApp } from '@/lib/whatsapp'
 import { exportRABillsRegister } from '@/lib/export/csv'
 import { saveOfflineSnapshot } from '@/lib/offline/db'
 import { useToast } from '@/components/ui/Toast'
-import { RABillItem } from '@/lib/types/boq'
+import { RABillItem, BOQItem } from '@/lib/types/boq'
+import { MeasurementEntry } from '@/lib/types/measurement'
+import { calculateUnbilledCertifiedWork } from '@/lib/calculations/measurementBilling'
+import { BillPreparationWizard } from '@/components/ra-bills/BillPreparationWizard'
+import { SupportingMeasurementsModal } from '@/components/ra-bills/SupportingMeasurementsModal'
 
 // ════════════════════════════════════════════════════════════════════════
 // CONFIGURABLE THRESHOLD FOR EXPIRING BANK GUARANTEES (IN DAYS)
@@ -102,6 +106,8 @@ interface RABillsClientProps {
   initialDeposits: SecurityDepositRow[]
   projects: ProjectOption[]
   userRole?: string
+  boqItems?: BOQItem[]
+  measurements?: MeasurementEntry[]
 }
 
 const STATUS_BADGE_CONFIG = {
@@ -115,12 +121,26 @@ export function RABillsClient({
   initialDeposits,
   projects,
   userRole,
+  boqItems = [],
+  measurements = [],
 }: RABillsClientProps) {
   const supabase = createClient()
   const toast = useToast()
   const canCreate = canCreateRaBill(userRole)
   const canEdit = canEditRaBill(userRole) || canCreate
   const [editingBill, setEditingBill] = useState<RABillRow | null>(null)
+  const [wizardOpen, setWizardOpen] = useState(false)
+  const [supportingModalData, setSupportingModalData] = useState<{
+    open: boolean
+    raBillId: string
+    raBillNumber: string
+    boqItemId: string
+    itemNumber: string
+    description: string
+    unit: string
+    rate: number
+    billedQuantity: number
+  } | null>(null)
   // Filters
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
@@ -267,6 +287,8 @@ export function RABillsClient({
     }
   }, [kpiScopeBills, kpiScopeDeposits])
 
+
+
   // 4. EXPIRING BANK GUARANTEES CALCULATION
   const todayMs = new Date().setHours(0, 0, 0, 0)
   const expiringBGs = useMemo(() => {
@@ -318,6 +340,24 @@ export function RABillsClient({
   }, [initialBills])
 
   const selectedProjectObj = projects.find(p => p.id === selectedProjectId)
+
+  const unbilledWorkSummary = useMemo(() => {
+    const relevantBOQ = selectedProjectId === 'all'
+      ? (boqItems || [])
+      : (boqItems || []).filter((b: any) => b.project_id === selectedProjectId)
+
+    const relevantMeasurements = selectedProjectId === 'all'
+      ? (measurements || [])
+      : (measurements || []).filter((m: any) => m.project_id === selectedProjectId)
+
+    return calculateUnbilledCertifiedWork({
+      boqItems: relevantBOQ,
+      measurements: relevantMeasurements,
+      totalBilledWorkValue: metrics.totalCertified,
+      projectId: selectedProjectId,
+      projectName: selectedProjectObj?.name || 'Consolidated',
+    })
+  }, [boqItems, measurements, selectedProjectId, selectedProjectObj, metrics.totalCertified])
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
@@ -496,7 +536,40 @@ export function RABillsClient({
         </div>
 
         {/* Top Tier: Primary Focus Cards (Outstanding, Net Bank Cash, & Retention) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* UNBILLED CERTIFIED WORK (e-MB Intake Hero) */}
+          <div className="bg-gradient-to-br from-white to-indigo-50/50 rounded-2xl border-2 border-indigo-300 p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -mr-6 -mt-6 pointer-events-none" />
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-indigo-600" />
+                  Unbilled Certified Work
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                  Ready to Bill
+                </span>
+              </div>
+              <p className="text-3xl font-black text-slate-900 tabular-nums tracking-tight">
+                {formatINR(unbilledWorkSummary.unbilledCertifiedWorkValue)}
+              </p>
+              <div className="text-[11px] text-slate-500 mt-1 flex flex-col gap-0.5 font-medium">
+                <span>Certified: <strong className="text-emerald-700">{formatINR(unbilledWorkSummary.totalCertifiedWorkValue)}</strong></span>
+                <span>Billed: <strong className="text-slate-700">{formatINR(unbilledWorkSummary.totalBilledWorkValue)}</strong></span>
+              </div>
+            </div>
+            {canCreate && unbilledWorkSummary.unbilledCertifiedWorkValue > 0 && (
+              <div className="pt-3 mt-2 border-t border-indigo-100">
+                <button
+                  type="button"
+                  onClick={() => setWizardOpen(true)}
+                  className="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors text-center shadow-xs flex items-center justify-center gap-1"
+                >
+                  Prepare RA Bill &rarr;
+                </button>
+              </div>
+            )}
+          </div>
           {/* 1. OUTSTANDING RA BALANCE (Hero Focus #1) */}
           <div className="bg-gradient-to-br from-white to-rose-50/40 rounded-2xl border-2 border-rose-300/80 p-5 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full -mr-6 -mt-6 pointer-events-none" />
@@ -1119,6 +1192,38 @@ export function RABillsClient({
             organization={org}
           />
         </PrintPreviewModal>
+      )}
+
+      {/* Bill Preparation Wizard */}
+      {wizardOpen && (
+        <BillPreparationWizard
+          open={wizardOpen}
+          onClose={() => setWizardOpen(false)}
+          projects={projects}
+          defaultProjectId={selectedProjectId !== 'all' ? selectedProjectId : undefined}
+          allBOQItems={boqItems}
+          allMeasurements={measurements}
+          existingBills={initialBills}
+          onSuccess={() => {
+            setWizardOpen(false)
+          }}
+        />
+      )}
+
+      {/* Supporting Measurements Traceability Modal */}
+      {supportingModalData && supportingModalData.open && (
+        <SupportingMeasurementsModal
+          open={supportingModalData.open}
+          onClose={() => setSupportingModalData(null)}
+          raBillId={supportingModalData.raBillId}
+          raBillNumber={supportingModalData.raBillNumber}
+          boqItemId={supportingModalData.boqItemId}
+          itemNumber={supportingModalData.itemNumber}
+          description={supportingModalData.description}
+          unit={supportingModalData.unit}
+          rate={supportingModalData.rate}
+          billedQuantity={supportingModalData.billedQuantity}
+        />
       )}
 
       {/* Edit RA Bill Drawer */}

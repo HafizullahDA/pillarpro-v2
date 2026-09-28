@@ -296,11 +296,21 @@ export function MeasurementClient({
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Total Certified Value (EE)</span>
-              <p className="text-xl font-bold font-mono text-emerald-700 mt-1">{formatINR(stats.certifiedValue)}</p>
-              <div className="mt-2 text-[11px] text-emerald-700 flex items-center gap-1 font-medium">
-                <span>{stats.certifiedCount} Certified Entries</span>
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Total Certified Value (EE)</span>
+                <p className="text-xl font-bold font-mono text-emerald-700 mt-1">{formatINR(stats.certifiedValue)}</p>
+                <div className="mt-2 text-[11px] text-emerald-700 flex items-center gap-1 font-medium">
+                  <span>{stats.certifiedCount} Certified Entries</span>
+                </div>
+              </div>
+              <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between">
+                <Link
+                  href={`/ledgers/ra-bills?projectId=${currentProject.id}`}
+                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800"
+                >
+                  Bill in RA Bill &rarr;
+                </Link>
               </div>
             </div>
 
@@ -772,10 +782,16 @@ export function MeasurementClient({
               <p className="text-xs text-slate-500">Summary bill of quantities executed and certified for invoicing</p>
             </div>
             <div className="flex items-center gap-2">
+              <Link
+                href={`/ledgers/ra-bills?projectId=${currentProject.id}`}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+              >
+                + Prepare RA Bill
+              </Link>
               <Button size="sm" variant="secondary" onClick={() => setCertModalOpen(true)}>
                 + Issue Measurement Certificate
               </Button>
-              <Button size="sm" variant="primary" onClick={() => setPrintMode('abstract')}>
+              <Button size="sm" variant="secondary" onClick={() => setPrintMode('abstract')}>
                 Print / Export Abstract
               </Button>
             </div>

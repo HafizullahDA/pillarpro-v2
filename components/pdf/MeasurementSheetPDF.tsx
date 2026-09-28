@@ -11,12 +11,14 @@ interface MeasurementSheetPDFProps {
   bill: RABillRow
   items: RABillItem[]
   organization?: OrganizationProfile
+  onViewSupportingMeasurements?: (item: RABillItem) => void
 }
 
 export function MeasurementSheetPDF({
   bill,
   items,
   organization,
+  onViewSupportingMeasurements,
 }: MeasurementSheetPDFProps) {
   const generatedAt = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
@@ -267,6 +269,19 @@ export function MeasurementSheetPDF({
                     </td>
                     <td className="p-2 border-r border-slate-200 text-slate-800">
                       <p className="font-medium">{it.boq_items?.description || 'Item of work'}</p>
+                      {onViewSupportingMeasurements && (
+                        <button
+                          type="button"
+                          onClick={() => onViewSupportingMeasurements(it)}
+                          className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200 transition-colors print:hidden"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          View Supporting Measurements
+                        </button>
+                      )}
                       {it.remarks && (
                         <p className="text-[10px] text-slate-500 italic mt-0.5">Note: {it.remarks}</p>
                       )}
