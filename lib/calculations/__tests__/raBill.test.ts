@@ -7,6 +7,7 @@ import {
   deriveBillPaymentStatus,
   calculateCPWAMemorandum,
   calculateDLPReleaseDate,
+  calculateMobilizationAdvanceRecovery,
 } from '../raBill'
 
 describe('RA Bill Statutory Deductions & Net Payable Calculations', () => {
@@ -158,6 +159,73 @@ describe('RA Bill Statutory Deductions & Net Payable Calculations', () => {
     expect(message).toContain('*e-MB Ref:* MB #MB-412 (Pages 24 to 48)')
     expect(message).toContain('₹1,50,00,000')
     expect(message).toContain('₹38,00,000')
+  })
+
+  describe('CPWD GCC Clause 10B Mobilization Advance Recovery', () => {
+    it('does not trigger recovery before work reaches 10% commencement threshold', () => {
+      // Contract: ₹1 Crore, Advance: ₹10 Lakhs, Cumulative Work: ₹8 Lakhs (< 10 Lakhs threshold)
+      const result = calculateMobilizationAdvanceRecovery({
+        totalAdvanceGranted: 1000000,
+        totalAdvanceRecoveredPrior: 0,
+        contractValue: 10000000,
+        cumulativeWorkCertified: 800000,
+        currentBillWorkCertified: 500000,
+      })
+
+      expect(result.isRecoveryApplicable).toBe(false)
+      expect(result.recoveryAmount).toBe(0)
+      expect(result.unrecoveredAdvanceBalance).toBe(1000000)
+      expect(result.explanation).toContain('has not reached the Clause 10B commencement threshold')
+    })
+
+    it('calculates prorated recovery when cumulative work is between 10% and 80%', () => {
+      // Contract: ₹1 Crore, Advance: ₹10 Lakhs, Target Span: (80L - 10L) = 70L
+      // Current bill work: ₹14 Lakhs. Prorated: 10L * (14L / 70L) = 2,00,000
+      const result = calculateMobilizationAdvanceRecovery({
+        totalAdvanceGranted: 1000000,
+        totalAdvanceRecoveredPrior: 0,
+        contractValue: 10000000,
+        cumulativeWorkCertified: 2400000, // 24% of contract (>= 10%)
+        currentBillWorkCertified: 1400000,
+      })
+
+      expect(result.isRecoveryApplicable).toBe(true)
+      expect(result.recoveryAmount).toBe(200000) // ₹2,00,000
+      expect(result.unrecoveredAdvanceBalance).toBe(800000) // ₹8,00,000 remaining
+      expect(result.recoveryProgressPercent).toBe(20) // 20% recovered
+    })
+
+    it('caps recovery to remaining advance and handles full recovery', () => {
+      // Advance: ₹10 Lakhs, Prior recovered: ₹9 Lakhs, Remaining: ₹1 Lakh
+      // Current bill work: ₹20 Lakhs (which would otherwise produce > ₹1L recovery)
+      const result = calculateMobilizationAdvanceRecovery({
+        totalAdvanceGranted: 1000000,
+        totalAdvanceRecoveredPrior: 900000,
+        contractValue: 10000000,
+        cumulativeWorkCertified: 7500000,
+        currentBillWorkCertified: 2000000,
+      })
+
+      expect(result.isRecoveryApplicable).toBe(true)
+      expect(result.recoveryAmount).toBe(100000) // Capped at remaining ₹1,00,000
+      expect(result.unrecoveredAdvanceBalance).toBe(0)
+      expect(result.recoveryProgressPercent).toBe(100)
+    })
+
+    it('supports flat recovery percentage when configured (e.g. 15% flat deduction)', () => {
+      const result = calculateMobilizationAdvanceRecovery({
+        totalAdvanceGranted: 1000000,
+        totalAdvanceRecoveredPrior: 200000,
+        contractValue: 10000000,
+        cumulativeWorkCertified: 3000000,
+        currentBillWorkCertified: 1000000,
+        recoveryRatePercent: 15,
+      })
+
+      expect(result.isRecoveryApplicable).toBe(true)
+      expect(result.recoveryAmount).toBe(150000) // 15% of 10L = 1.5L
+      expect(result.unrecoveredAdvanceBalance).toBe(650000) // 8L - 1.5L = 6.5L
+    })
   })
 })
 

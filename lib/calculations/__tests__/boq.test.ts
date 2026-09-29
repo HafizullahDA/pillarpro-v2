@@ -3,6 +3,7 @@ import {
   calculateBOQProgress,
   parseBOQCSV,
   validateMeasurementQuantities,
+  calculateMilestoneStagePayment,
 } from '../boq'
 import { BOQSummaryItem } from '../../types/boq'
 
@@ -117,6 +118,52 @@ describe('BOQ Calculations & Progress Engine', () => {
     expect(result.errors.length).toBe(0)
     expect(result.warnings.length).toBe(1)
     expect(result.warnings[0]).toContain('exceeds tender quantity (100) by 10 (10% variation)')
+  })
+
+  it('calculates EPC/Turnkey milestone stage payments accurately (Schedule H)', () => {
+    // ₹1,00,00,000 lump sum bridge substructure item
+    const stages = [
+      { id: 'st-1', stageNumber: 1, description: 'Well foundation sinking', weightagePercentage: 40, status: 'CERTIFIED' as const },
+      { id: 'st-2', stageNumber: 2, description: 'Well cap casting', weightagePercentage: 35, status: 'CERTIFIED' as const },
+      { id: 'st-3', stageNumber: 3, description: 'Pier & Pier cap', weightagePercentage: 25, status: 'IN_PROGRESS' as const },
+    ]
+
+    // RA Bill 1 had already paid Stage 1 (₹40,00,000). Stage 2 is now certified.
+    const result = calculateMilestoneStagePayment({
+      boqItemAmount: 10000000,
+      stages,
+      previouslyPaidAmount: 4000000,
+    })
+
+    expect(result.totalItemAmount).toBe(10000000)
+    expect(result.cumulativeCertifiedPercentage).toBe(75) // 40% + 35%
+    expect(result.cumulativeCertifiedAmount).toBe(7500000) // ₹75 Lakhs
+    expect(result.previouslyPaidAmount).toBe(4000000) // ₹40 Lakhs
+    expect(result.currentPayableAmount).toBe(3500000) // ₹35 Lakhs due this bill
+    expect(result.balanceAmount).toBe(2500000) // ₹25 Lakhs remaining (Stage 3)
+    expect(result.completedStagesCount).toBe(2)
+    expect(result.totalStagesCount).toBe(3)
+    expect(result.isFullyCertified).toBe(false)
+  })
+
+  it('marks milestone as fully certified when all stages complete', () => {
+    const stages = [
+      { id: 'st-1', stageNumber: 1, description: 'Design & Engineering', weightagePercentage: 20, status: 'CERTIFIED' as const },
+      { id: 'st-2', stageNumber: 2, description: 'Supply & Erection', weightagePercentage: 60, status: 'CERTIFIED' as const },
+      { id: 'st-3', stageNumber: 3, description: 'Testing & Commissioning', weightagePercentage: 20, status: 'CERTIFIED' as const },
+    ]
+
+    const result = calculateMilestoneStagePayment({
+      boqItemAmount: 5000000,
+      stages,
+      previouslyPaidAmount: 4000000,
+    })
+
+    expect(result.cumulativeCertifiedPercentage).toBe(100)
+    expect(result.cumulativeCertifiedAmount).toBe(5000000)
+    expect(result.currentPayableAmount).toBe(1000000)
+    expect(result.balanceAmount).toBe(0)
+    expect(result.isFullyCertified).toBe(true)
   })
 })
 

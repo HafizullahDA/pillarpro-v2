@@ -136,6 +136,12 @@ export function buildAbstractOfMeasurements(
     if (entry.status === 'CERTIFIED') {
       item.certified_quantity = Number((item.certified_quantity + qty).toFixed(3))
     }
+
+    if (entry.billed_in_ra_bill_id) {
+      item.previous_quantity = Number((item.previous_quantity + qty).toFixed(3))
+    } else {
+      item.current_quantity = Number((item.current_quantity + qty).toFixed(3))
+    }
   }
 
   return Array.from(abstractMap.values()).map(item => {

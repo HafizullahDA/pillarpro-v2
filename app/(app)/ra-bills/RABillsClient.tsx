@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
@@ -79,7 +80,7 @@ export type RABillRow = {
   other_material_recovery?: number
   actual_completion_date?: string | null
   dlp_months?: number
-  status: 'submitted' | 'partially_paid' | 'fully_paid'
+  status: 'submitted' | 'partially_paid' | 'fully_paid' | 'cancelled' | 'rejected'
   document_url: string | null
   remarks: string | null
   projects?: { name: string; agency_name?: string | null } | null
@@ -115,6 +116,8 @@ const STATUS_BADGE_CONFIG = {
   submitted:      { label: 'Submitted (Pending)', variant: 'warning' as const },
   partially_paid: { label: 'Partially Paid',      variant: 'info' as const },
   fully_paid:     { label: 'Fully Paid',          variant: 'success' as const },
+  cancelled:      { label: 'Cancelled / Void',    variant: 'danger' as const },
+  rejected:       { label: 'Rejected by Dept',    variant: 'danger' as const },
 }
 
 export function RABillsClient({
@@ -125,10 +128,18 @@ export function RABillsClient({
   boqItems = [],
   measurements = [],
 }: RABillsClientProps) {
+  const router = useRouter()
   const supabase = createClient()
   const toast = useToast()
   const canCreate = canCreateRaBill(userRole)
   const canEdit = canEditRaBill(userRole) || canCreate
+
+  const [bills, setBills] = useState<RABillRow[]>(initialBills)
+
+  useEffect(() => {
+    setBills(initialBills)
+  }, [initialBills])
+
   const [editingBill, setEditingBill] = useState<RABillRow | null>(null)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [detailBill, setDetailBill] = useState<RABillRow | null>(null)
@@ -175,6 +186,35 @@ export function RABillsClient({
     }
   }
 
+  const handleCancelBill = async (bill: RABillRow) => {
+    if (!confirm(`Are you sure you want to void Bill ${bill.bill_number}? All billed measurements will be returned to the unbilled inventory.`)) {
+      return
+    }
+    try {
+      // 1. Unlink measurement entries (also handled by trg_reconcile_cancelled_ra_bill in PostgreSQL)
+      await supabase
+        .from('measurement_entries')
+        .update({ billed_in_ra_bill_id: null })
+        .eq('billed_in_ra_bill_id', bill.id)
+
+      // 2. Update status of the bill to 'cancelled'
+      const { error } = await supabase
+        .from('ra_bills')
+        .update({ status: 'cancelled' })
+        .eq('id', bill.id)
+
+      if (error) throw error
+
+      setBills(prev => prev.map(b => b.id === bill.id ? { ...b, status: 'cancelled' as const } : b))
+      setDetailBill(null)
+      toast.success(`Bill ${bill.bill_number} has been cancelled and measurements returned to unbilled inventory.`)
+      router.refresh()
+    } catch (err: any) {
+      console.error('Failed to cancel bill:', err)
+      toast.error(err.message || 'Failed to cancel bill.')
+    }
+  }
+
   useEffect(() => {
     getClientOrganization().then(setOrg)
   }, [])
@@ -182,16 +222,16 @@ export function RABillsClient({
   useEffect(() => {
     if (navigator.onLine) {
       void saveOfflineSnapshot('/ra-bills', {
-        bills: initialBills,
+        bills,
         deposits: initialDeposits,
         projects,
       })
     }
-  }, [initialBills, initialDeposits, projects])
+  }, [bills, initialDeposits, projects])
 
   // 1. FILTER BILLS (By Project, Status, Search)
   const filteredBills = useMemo(() => {
-    return initialBills.filter(b => {
+    return bills.filter(b => {
       // Project filter
       if (selectedProjectId !== 'all' && b.project_id !== selectedProjectId) return false
 
@@ -209,7 +249,7 @@ export function RABillsClient({
 
       return true
     })
-  }, [initialBills, selectedProjectId, selectedStatus, searchQuery])
+  }, [bills, selectedProjectId, selectedStatus, searchQuery])
 
   // 2. FILTER SECURITY DEPOSITS (By Project)
   const filteredDeposits = useMemo(() => {
@@ -221,9 +261,9 @@ export function RABillsClient({
 
   // 3. DYNAMIC KPI AGGREGATIONS (Aggregated across ALL or narrowed by Project)
   const kpiScopeBills = useMemo(() => {
-    if (selectedProjectId === 'all') return initialBills
-    return initialBills.filter(b => b.project_id === selectedProjectId)
-  }, [initialBills, selectedProjectId])
+    if (selectedProjectId === 'all') return bills
+    return bills.filter(b => b.project_id === selectedProjectId)
+  }, [bills, selectedProjectId])
 
   const kpiScopeDeposits = useMemo(() => {
     if (selectedProjectId === 'all') return initialDeposits
@@ -306,7 +346,7 @@ export function RABillsClient({
   }, [initialDeposits, todayMs])
 
   const billOptions: RABillOption[] = useMemo(() => {
-    return initialBills.map(b => {
+    return bills.map(b => {
       const netPassed = b.net_payable_this_bill != null
         ? Number(b.net_payable_this_bill)
         : (Number(b.net_payable_amount) != null && !isNaN(Number(b.net_payable_amount))
@@ -339,7 +379,7 @@ export function RABillsClient({
         projects: b.projects ? { name: b.projects.name } : null,
       }
     })
-  }, [initialBills])
+  }, [bills])
 
   const selectedProjectObj = projects.find(p => p.id === selectedProjectId)
 
@@ -747,7 +787,7 @@ export function RABillsClient({
           <div>
             <h2 className="text-sm font-bold text-slate-900">Submitted RA Bills Directory</h2>
             <p className="text-xs text-slate-500">
-              Showing {filteredBills.length} of {initialBills.length} government bills
+              Showing {filteredBills.length} of {bills.length} government bills
             </p>
           </div>
 
@@ -1205,9 +1245,10 @@ export function RABillsClient({
           defaultProjectId={selectedProjectId !== 'all' ? selectedProjectId : undefined}
           allBOQItems={boqItems}
           allMeasurements={measurements}
-          existingBills={initialBills}
+          existingBills={bills}
           onSuccess={() => {
             setWizardOpen(false)
+            router.refresh()
           }}
         />
       )}
@@ -1228,6 +1269,8 @@ export function RABillsClient({
               .eq('ra_bill_id', b.id)
             setEmbModal({ bill: b, items: (data || []) as RABillItem[] })
           }}
+          onCancelBill={handleCancelBill}
+          canCancel={canCreate}
         />
       )}
 

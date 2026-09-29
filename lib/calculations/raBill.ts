@@ -259,4 +259,103 @@ export function calculateDLPReleaseDate(completionDate: string, dlpMonths: numbe
   return date.toISOString().split('T')[0]
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// CPWD GCC CLAUSE 10B: MOBILIZATION ADVANCE RECOVERY ENGINE
+// ════════════════════════════════════════════════════════════════════════
+
+export interface MobilizationAdvanceRecoveryParams {
+  totalAdvanceGranted: number
+  totalAdvanceRecoveredPrior: number
+  contractValue: number
+  cumulativeWorkCertified: number
+  currentBillWorkCertified: number
+  recoveryThresholdPercent?: number // Gross work threshold to commence recovery (CPWD default: 10%)
+  completionTargetPercent?: number  // Gross work threshold to conclude recovery (CPWD default: 80%)
+  recoveryRatePercent?: number      // Optional fixed rate percentage (e.g. 10% or 15% of gross bill)
+}
+
+export interface MobilizationAdvanceRecoveryResult {
+  isRecoveryApplicable: boolean
+  recoveryAmount: number
+  unrecoveredAdvanceBalance: number
+  recoveryProgressPercent: number
+  explanation: string
+}
+
+/**
+ * Computes statutory mobilization advance recovery per CPWD GCC Clause 10B.
+ *
+ * Rules:
+ * 1. Recovery commences when cumulative gross work certified reaches recoveryThresholdPercent (default 10% of contract value).
+ * 2. Recovery is completed before gross work certified reaches completionTargetPercent (default 80% of contract value).
+ * 3. Prorated Formula:
+ *    Recovery = Total Advance * (Current Bill Work / (Target Span of Work))
+ *    where Target Span = Contract Value * (CompletionTarget% - RecoveryThreshold%)
+ *    Or flat percentage if recoveryRatePercent is explicitly provided.
+ * 4. Recovery amount in any bill cannot exceed the remaining unrecovered advance.
+ */
+export function calculateMobilizationAdvanceRecovery(
+  params: MobilizationAdvanceRecoveryParams
+): MobilizationAdvanceRecoveryResult {
+  const totalAdvance = Math.max(0, roundToTwo(params.totalAdvanceGranted))
+  const recoveredPrior = Math.max(0, roundToTwo(params.totalAdvanceRecoveredPrior))
+  const remainingAdvance = Math.max(0, roundToTwo(totalAdvance - recoveredPrior))
+  const contractValue = Math.max(0, roundToTwo(params.contractValue))
+  const cumulativeWork = Math.max(0, roundToTwo(params.cumulativeWorkCertified))
+  const currentWork = Math.max(0, roundToTwo(params.currentBillWorkCertified))
+
+  if (totalAdvance <= 0 || remainingAdvance <= 0 || contractValue <= 0 || currentWork <= 0) {
+    return {
+      isRecoveryApplicable: false,
+      recoveryAmount: 0,
+      unrecoveredAdvanceBalance: remainingAdvance,
+      recoveryProgressPercent: totalAdvance > 0 ? roundToTwo((recoveredPrior / totalAdvance) * 100) : 100,
+      explanation: remainingAdvance <= 0
+        ? 'Mobilization advance has been fully recovered.'
+        : 'No recovery applicable for this billing cycle.',
+    }
+  }
+
+  const thresholdPct = params.recoveryThresholdPercent ?? 10
+  const targetPct = params.completionTargetPercent ?? 80
+  const thresholdValue = roundToTwo((contractValue * thresholdPct) / 100)
+  const targetValue = roundToTwo((contractValue * targetPct) / 100)
+
+  // Recovery only commences when cumulative work reaches threshold
+  if (cumulativeWork < thresholdValue) {
+    return {
+      isRecoveryApplicable: false,
+      recoveryAmount: 0,
+      unrecoveredAdvanceBalance: remainingAdvance,
+      recoveryProgressPercent: roundToTwo((recoveredPrior / totalAdvance) * 100),
+      explanation: `Cumulative work (₹${cumulativeWork.toLocaleString('en-IN')}) has not reached the Clause 10B commencement threshold of ${thresholdPct}% (₹${thresholdValue.toLocaleString('en-IN')}).`,
+    }
+  }
+
+  let calculatedRecovery = 0
+
+  if (params.recoveryRatePercent !== undefined && params.recoveryRatePercent > 0) {
+    // Flat percentage on gross work done in current bill
+    calculatedRecovery = roundToTwo(safeMul(currentWork, params.recoveryRatePercent / 100))
+  } else {
+    // CPWD Prorated Formula: Total Advance * (Current Work / (Target Value - Threshold Value))
+    const targetSpan = Math.max(1, targetValue - thresholdValue)
+    calculatedRecovery = roundToTwo(safeMul(totalAdvance, currentWork / targetSpan))
+  }
+
+  // Recovery cannot exceed remaining unrecovered advance
+  const finalRecovery = Math.min(remainingAdvance, calculatedRecovery)
+  const newBalance = Math.max(0, roundToTwo(remainingAdvance - finalRecovery))
+  const newRecoveredTotal = roundToTwo(recoveredPrior + finalRecovery)
+  const progressPercent = roundToTwo((newRecoveredTotal / totalAdvance) * 100)
+
+  return {
+    isRecoveryApplicable: finalRecovery > 0,
+    recoveryAmount: finalRecovery,
+    unrecoveredAdvanceBalance: newBalance,
+    recoveryProgressPercent: progressPercent,
+    explanation: `Clause 10B recovery of ₹${finalRecovery.toLocaleString('en-IN')} calculated on current work of ₹${currentWork.toLocaleString('en-IN')}. Remaining advance: ₹${newBalance.toLocaleString('en-IN')} (${progressPercent}% recovered).`,
+  }
+}
+
 

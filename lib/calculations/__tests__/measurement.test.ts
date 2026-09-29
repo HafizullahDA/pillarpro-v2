@@ -180,4 +180,86 @@ describe('PillarPro e-MB Measurement Calculations', () => {
     expect(formatChainage(null, 150)).toBe('RD 150.00 m')
     expect(formatChainage(null, null)).toBe('—')
   })
+
+  it('segregates previous billed quantities from current unbilled quantities in abstract', () => {
+    const testBOQ: BOQItem[] = [
+      {
+        id: 'boq-item-1',
+        project_id: 'proj-1',
+        item_number: '1.01',
+        description: 'Earthwork excavation',
+        unit: 'cum',
+        organization_id: 'org-test',
+        tender_quantity: 1000,
+        awarded_rate: 250,
+        total_amount: 250000,
+        item_type: 'original',
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ]
+
+    const mixedEntries: MeasurementEntry[] = [
+      {
+        id: 'me-billed',
+        organization_id: 'org-test',
+        project_id: 'proj-1',
+        boq_item_id: 'boq-item-1',
+        entry_number: 'MB-01/P-01',
+        page_number: 1,
+        measurement_date: '2026-08-15',
+        description: 'Previously billed excavation',
+        calculation_mode: 'manual',
+        number_of_units: 1,
+        length: 0,
+        breadth: 0,
+        depth_height: 0,
+        calculated_quantity: 300,
+        unit: 'cum',
+        previous_quantity: 0,
+        current_quantity: 300,
+        cumulative_quantity: 300,
+        boq_balance_quantity: 700,
+        is_exceeded: false,
+        status: 'CERTIFIED',
+        billed_in_ra_bill_id: 'ra-bill-001',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      {
+        id: 'me-current',
+        organization_id: 'org-test',
+        project_id: 'proj-1',
+        boq_item_id: 'boq-item-1',
+        entry_number: 'MB-01/P-15',
+        page_number: 15,
+        measurement_date: '2026-09-15',
+        description: 'Current period excavation',
+        calculation_mode: 'manual',
+        number_of_units: 1,
+        length: 0,
+        breadth: 0,
+        depth_height: 0,
+        calculated_quantity: 450,
+        unit: 'cum',
+        previous_quantity: 300,
+        current_quantity: 450,
+        cumulative_quantity: 750,
+        boq_balance_quantity: 250,
+        is_exceeded: false,
+        status: 'CERTIFIED',
+        billed_in_ra_bill_id: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ]
+
+    const abstract = buildAbstractOfMeasurements(testBOQ, mixedEntries)
+    expect(abstract.length).toBe(1)
+    expect(abstract[0].previous_quantity).toBe(300)
+    expect(abstract[0].current_quantity).toBe(450)
+    expect(abstract[0].cumulative_quantity).toBe(750)
+    expect(abstract[0].balance_quantity).toBe(250)
+  })
 })

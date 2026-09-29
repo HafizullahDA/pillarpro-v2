@@ -14,6 +14,8 @@ interface RABillDetailModalProps {
   onInspectSupporting?: (bill: RABillRow) => void
   onPrintCertificate?: (bill: RABillRow) => void
   onPrintEMB?: (bill: RABillRow) => void
+  onCancelBill?: (bill: RABillRow) => void
+  canCancel?: boolean
 }
 
 export function RABillDetailModal({
@@ -23,6 +25,8 @@ export function RABillDetailModal({
   onInspectSupporting,
   onPrintCertificate,
   onPrintEMB,
+  onCancelBill,
+  canCancel = false,
 }: RABillDetailModalProps) {
   if (!open || !bill) return null
 
@@ -229,16 +233,29 @@ export function RABillDetailModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-          {onInspectSupporting && (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => onInspectSupporting(bill)}
-              className="text-xs text-blue-700 hover:text-blue-800"
-            >
-              ?? Inspect Itemized Measurements &rarr;
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {onInspectSupporting && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => onInspectSupporting(bill)}
+                className="text-xs text-blue-700 hover:text-blue-800"
+              >
+                Inspect Itemized Measurements &rarr;
+              </Button>
+            )}
+
+            {canCancel && bill.status !== 'cancelled' && bill.status !== 'rejected' && onCancelBill && (
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => onCancelBill(bill)}
+                className="text-xs"
+              >
+                Void / Cancel Bill
+              </Button>
+            )}
+          </div>
 
           <div className="ml-auto">
             <Button size="sm" variant="secondary" onClick={onClose}>

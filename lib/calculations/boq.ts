@@ -1,5 +1,5 @@
 import { BOQSummaryItem, ProjectBOQOverallProgress, CSVBOQRow } from '../types/boq'
-import { roundToTwo } from './financial'
+import { roundToTwo, safeMul, safeSub, safeAdd } from './financial'
 
 /**
  * Calculates overall financial and item progress from a list of BOQ summary items.
@@ -200,6 +200,81 @@ export function validateMeasurementQuantities(
     isValid: errors.length === 0,
     errors,
     warnings,
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// EPC & TURNKEY MILESTONE / STAGE-PAYMENT ENGINE
+// ════════════════════════════════════════════════════════════════════════
+
+export interface MilestoneStage {
+  id: string
+  stageNumber: number
+  description: string
+  weightagePercentage: number // e.g. 40 (meaning 40%)
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CERTIFIED'
+  completionDate?: string | null
+  certifiedDate?: string | null
+  certifiedBy?: string | null
+}
+
+export interface MilestonePaymentParams {
+  boqItemAmount: number
+  stages: MilestoneStage[]
+  previouslyPaidAmount?: number
+}
+
+export interface MilestonePaymentResult {
+  totalItemAmount: number
+  cumulativeCertifiedPercentage: number
+  cumulativeCertifiedAmount: number
+  previouslyPaidAmount: number
+  currentPayableAmount: number
+  balanceAmount: number
+  completedStagesCount: number
+  totalStagesCount: number
+  isFullyCertified: boolean
+}
+
+/**
+ * Calculates milestone and stage-payment entitlements for EPC, Turnkey, or Lump-Sum BOQ items.
+ * Accommodates Schedule H / Stage-Breakdown rules where payment releases are tied to certified completion of discrete physical stages.
+ */
+export function calculateMilestoneStagePayment(
+  params: MilestonePaymentParams
+): MilestonePaymentResult {
+  const totalItemAmount = Math.max(0, roundToTwo(params.boqItemAmount))
+  const previouslyPaid = Math.max(0, roundToTwo(params.previouslyPaidAmount ?? 0))
+  const stages = params.stages || []
+
+  // Sum weightage of stages marked CERTIFIED
+  let cumulativeCertifiedPct = 0
+  let completedCount = 0
+
+  for (const stage of stages) {
+    if (stage.status === 'CERTIFIED') {
+      cumulativeCertifiedPct = roundToTwo(cumulativeCertifiedPct + (Number(stage.weightagePercentage) || 0))
+      completedCount++
+    }
+  }
+
+  // Cap at 100%
+  cumulativeCertifiedPct = Math.min(100, cumulativeCertifiedPct)
+
+  const cumulativeCertifiedAmount = roundToTwo(safeMul(totalItemAmount, cumulativeCertifiedPct / 100))
+  const currentPayableAmount = Math.max(0, roundToTwo(safeSub(cumulativeCertifiedAmount, previouslyPaid)))
+  const balanceAmount = Math.max(0, roundToTwo(safeSub(totalItemAmount, cumulativeCertifiedAmount)))
+
+  return {
+    totalItemAmount,
+    cumulativeCertifiedPercentage: cumulativeCertifiedPct,
+    cumulativeCertifiedAmount,
+    previouslyPaidAmount: previouslyPaid,
+    currentPayableAmount,
+    balanceAmount,
+    completedStagesCount: completedCount,
+    totalStagesCount: stages.length,
+    isFullyCertified: cumulativeCertifiedPct >= 100,
   }
 }
 
