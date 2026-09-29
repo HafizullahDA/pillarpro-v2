@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { formatINR, formatDate } from '@/lib/format'
+import { RelatedRecordsPanel, RelatedRecordItem } from '@/components/common/RelatedRecordsPanel'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ContractRecord, ContractDocument, ContractDocumentType, CONTRACT_DOC_TYPES } from '@/lib/types/contract'
@@ -549,6 +550,105 @@ export function ContractDetailClient({
           )}
         </div>
       )}
+
+
+      {/* UNIFIED RELATED RECORDS & TRACEABILITY AUDIT TRAIL */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+        <RelatedRecordsPanel
+          title="Contract Master Traceability & Linked Enterprise Modules"
+          description="Unified relationships connecting the Contract Agreement to execution, billing, and delay defense."
+          records={[
+            {
+              id: project.id,
+              type: 'project' as const,
+              title: project.name,
+              subtitle: project.agency_name ? `Employer: ${project.agency_name}` : undefined,
+              amount: contract?.awarded_amount || null,
+              href: `/projects/${project.id}`,
+            },
+            {
+              id: `boq-${project.id}`,
+              type: 'boq' as const,
+              title: 'Schedule of Quantities (BOQ Master)',
+              subtitle: 'Authoritative item-rate schedule & specifications',
+              status: 'BOQ',
+              href: `/projects/${project.id}/boq`,
+            },
+            {
+              id: `emb-${project.id}`,
+              type: 'measurement' as const,
+              title: 'Electronic Measurement Books (e-MB)',
+              subtitle: 'Contemporary site measurements & test checks',
+              status: 'e-MB',
+              href: `/measurement?projectId=${project.id}`,
+            },
+            {
+              id: `ra-${project.id}`,
+              type: 'ra_bill' as const,
+              title: 'Running Account (RA) Bills',
+              subtitle: 'Submitted, certified, and passed contractor bills',
+              status: 'RA BILLS',
+              href: `/ledgers/ra-bills?projectId=${project.id}`,
+            },
+            {
+              id: `var-${project.id}`,
+              type: 'variation' as const,
+              title: 'Clause 12 Variations & Deviations',
+              subtitle: 'Sanctioned quantity variations, extra & substituted items',
+              status: 'VARIATIONS',
+              href: `/variations?projectId=${project.id}`,
+            },
+            {
+              id: `events-${project.id}`,
+              type: 'event' as const,
+              title: 'Contract Events & Site Hindrances (Appx 21)',
+              subtitle: 'Contemporaneous site delay records & notice tracking',
+              status: 'DEFENSE',
+              href: `/hindrances?projectId=${project.id}`,
+            },
+            {
+              id: `eot-${project.id}`,
+              type: 'eot' as const,
+              title: 'Extension of Time (EOT / Form 27)',
+              subtitle: 'Statutory delay justifications and completion date revisions',
+              status: 'EOT',
+              href: `/eot?projectId=${project.id}`,
+            },
+            {
+              id: `claims-${project.id}`,
+              type: 'claim' as const,
+              title: 'Contractual Claims & Disputes',
+              subtitle: 'Idle machinery, prolongation overheads, and price escalation',
+              status: 'CLAIMS',
+              href: `/claims?projectId=${project.id}`,
+            },
+            {
+              id: `evidence-${project.id}`,
+              type: 'evidence' as const,
+              title: 'Evidence Vault Repository',
+              subtitle: 'Contemporaneous site photos, test results, and correspondence',
+              status: 'EVIDENCE',
+              href: `/evidence?projectId=${project.id}`,
+            },
+            {
+              id: `security-${project.id}`,
+              type: 'security' as const,
+              title: 'Bank Guarantees, EMD & Security Deposit',
+              subtitle: `Retention: ${contract?.retention_percentage || 5}% • Performance Security: ₹${contract?.performance_security_amount || 0}`,
+              status: 'SECURITY',
+              href: `/projects/${project.id}/contract`,
+            },
+            {
+              id: `ledger-${project.id}`,
+              type: 'payment' as const,
+              title: 'Contractor Financial Ledger',
+              subtitle: 'Realized bill payments, TDS deductions & bank receipts',
+              status: 'LEDGER',
+              href: `/ledgers?projectId=${project.id}`,
+            },
+          ]}
+        />
+      </div>
 
       {/* Edit Contract Master Modal */}
       {contract && (

@@ -9,6 +9,7 @@ import { BOQItem, BOQItemRevision, BOQ_ITEM_TYPES, BOQItemType } from '@/lib/typ
 import { ContractRecord } from '@/lib/types/contract'
 import { AddBOQRevisionModal } from './AddBOQRevisionModal'
 import { NewBOQItemDrawer } from '../NewBOQItemDrawer'
+import { RelatedRecordsPanel, RelatedRecordItem } from '@/components/common/RelatedRecordsPanel'
 
 interface BOQItemDetailClientProps {
   project: {
@@ -517,6 +518,69 @@ export function BOQItemDetailClient({
             </table>
           </div>
         )}
+      </div>
+
+
+      {/* UNIFIED RELATED RECORDS AUDIT TRAIL */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+        <RelatedRecordsPanel
+          title="Unified Traceable Related Records (BOQ Item Audit Trail)"
+          description="Connected contractual, measurement, billing, variation, and delay defense records."
+          records={[
+            {
+              id: project.id,
+              type: 'project' as const,
+              title: project.name,
+              subtitle: project.agency_name ? `Employer: ${project.agency_name}` : undefined,
+              href: `/projects/${project.id}`,
+            },
+            ...(contract ? [{
+              id: contract.id,
+              type: 'contract' as const,
+              title: `Agreement: ${contract.agreement_number}`,
+              subtitle: contract.contract_title || undefined,
+              href: `/projects/${project.id}/contract`,
+            }] : []),
+            {
+              id: `meas-${item.id}`,
+              type: 'measurement' as const,
+              title: 'Electronic Measurements (e-MB)',
+              subtitle: `Cumulative Measured: ${measuredQty} ${item.unit}`,
+              status: 'e-MB',
+              href: `/measurement?projectId=${project.id}`,
+            },
+            {
+              id: `bills-${item.id}`,
+              type: 'ra_bill' as const,
+              title: 'Running Account Billing History',
+              subtitle: `Cumulative Billed: ${totalBilledQty} ${item.unit} (${formatINR(executedAmount)})`,
+              status: 'RA BILL',
+              href: `/ledgers/ra-bills?projectId=${project.id}`,
+            },
+            {
+              id: `vars-${item.id}`,
+              type: 'variation' as const,
+              title: 'Clause 12 Deviations & Extra Items',
+              subtitle: `Net Variation Qty: ${variationQty > 0 ? '+' : ''}${variationQty} ${item.unit}`,
+              status: 'VARIATION',
+              href: `/variations?projectId=${project.id}`,
+            },
+            {
+              id: `defense-${item.id}`,
+              type: 'hindrance' as const,
+              title: 'Contract Defense & Delay Hindrances',
+              subtitle: 'Contemporaneous hindrance records affecting this item',
+              href: `/hindrances?projectId=${project.id}`,
+            },
+            {
+              id: `ledger-${item.id}`,
+              type: 'payment' as const,
+              title: 'Financial Ledger & Realization',
+              subtitle: 'Passed bill payments and contractor ledger receipts',
+              href: `/ledgers?projectId=${project.id}`,
+            },
+          ]}
+        />
       </div>
 
       {/* Deviations, Variations & Rate Revision History */}

@@ -10,6 +10,7 @@ import {
 } from '@/lib/types/correspondence'
 import { formatDate } from '@/lib/format'
 import { DeadlineBadge } from './DeadlineBadge'
+import { RelatedRecordsPanel, RelatedRecordItem } from '@/components/common/RelatedRecordsPanel'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/Toast'
 
@@ -175,39 +176,66 @@ export function CorrespondenceDetailModal({
           </div>
         )}
 
-        {/* Relational Business Links */}
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
-          <p className="font-bold text-slate-900 text-xs">Linked Business Records</p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            {record.related_contract_event_id && (
-              <div className="p-2 rounded bg-slate-50 border border-slate-200">
-                <span className="text-[10px] text-slate-500 uppercase font-bold">Contract Event:</span>
-                <p className="font-bold text-slate-900">{record.contract_events?.event_number || 'Linked Event'}</p>
-              </div>
-            )}
-            {record.related_hindrance_id && (
-              <div className="p-2 rounded bg-slate-50 border border-slate-200">
-                <span className="text-[10px] text-slate-500 uppercase font-bold">Hindrance:</span>
-                <p className="font-bold text-slate-900">Hindrance #{record.hindrances?.hindrance_number || 'Linked'}</p>
-              </div>
-            )}
-            {record.related_boq_item_id && (
-              <div className="p-2 rounded bg-slate-50 border border-slate-200">
-                <span className="text-[10px] text-slate-500 uppercase font-bold">BOQ Item:</span>
-                <p className="font-bold text-slate-900">Item {record.related_boq_item_id}</p>
-              </div>
-            )}
-            {record.related_eot_id && (
-              <div className="p-2 rounded bg-slate-50 border border-slate-200">
-                <span className="text-[10px] text-slate-500 uppercase font-bold">EOT Claim:</span>
-                <p className="font-bold text-slate-900">Form 27 Claim</p>
-              </div>
-            )}
-          </div>
-          {!record.related_contract_event_id && !record.related_hindrance_id && !record.related_boq_item_id && !record.related_eot_id && (
-            <p className="text-[11px] text-slate-400 italic">No specific sub-module linked. General contract correspondence.</p>
-          )}
-        </div>
+        {/* UNIFIED RELATED RECORDS PANEL */}
+        <RelatedRecordsPanel
+          title="Connected Contractual Records"
+          description="Contemporaneous link to site events, hindrances, billing and claims."
+          records={[
+            {
+              id: record.project_id,
+              type: 'project' as const,
+              title: 'Project Master Record',
+              href: `/projects/${record.project_id}`,
+            },
+            ...(record.contract_id ? [{
+              id: record.contract_id,
+              type: 'contract' as const,
+              title: 'Contract Agreement',
+              href: `/projects/${record.project_id}/contract`,
+            }] : []),
+            ...(record.related_contract_event_id ? [{
+              id: record.related_contract_event_id,
+              type: 'event' as const,
+              title: record.contract_events?.event_number ? `Contract Event: ${record.contract_events.event_number}` : 'Linked Contract Event',
+              subtitle: record.contract_events?.description || undefined,
+              referenceNumber: record.contract_events?.event_number,
+              href: `/hindrances?tab=events&projectId=${record.project_id}`,
+            }] : []),
+            ...(record.related_hindrance_id ? [{
+              id: record.related_hindrance_id,
+              type: 'hindrance' as const,
+              title: `Hindrance #${record.hindrances?.hindrance_number || 'Linked'}`,
+              subtitle: record.hindrances?.description || undefined,
+              href: `/hindrances?tab=hindrances&projectId=${record.project_id}`,
+            }] : []),
+            ...(record.related_boq_item_id ? [{
+              id: record.related_boq_item_id,
+              type: 'boq' as const,
+              title: `BOQ Item #${record.related_boq_item_id.slice(0, 8)}`,
+              href: `/projects/${record.project_id}/boq/${record.related_boq_item_id}`,
+            }] : []),
+            ...(record.related_eot_id ? [{
+              id: record.related_eot_id,
+              type: 'eot' as const,
+              title: 'Extension of Time Case',
+              status: 'EOT',
+              href: `/eot?projectId=${record.project_id}`,
+            }] : []),
+            ...(record.related_claim_id ? [{
+              id: record.related_claim_id,
+              type: 'claim' as const,
+              title: 'Linked Contract Claim',
+              status: 'CLAIM',
+              href: `/claims?projectId=${record.project_id}`,
+            }] : []),
+            ...(record.attachment_url ? [{
+              id: `att-${record.id}`,
+              type: 'evidence' as const,
+              title: 'Dispatched Communication Attachment',
+              href: record.attachment_url,
+            }] : []),
+          ]}
+        />
 
         {/* Dispatch Details */}
         <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">

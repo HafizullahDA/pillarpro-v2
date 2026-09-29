@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { formatINR, formatDate } from '@/lib/format'
 import { createClient } from '@/lib/supabase/client'
 import { formatChainage } from '@/lib/calculations/measurement'
+import { RelatedRecordsPanel, RelatedRecordItem } from '@/components/common/RelatedRecordsPanel'
 
 interface SupportingMeasurementsModalProps {
   open: boolean
@@ -253,6 +254,54 @@ export function SupportingMeasurementsModal({
             Close
           </Button>
         </div>
+
+        {/* UNIFIED RELATED RECORDS SECTION */}
+        <div className="pt-2">
+          <RelatedRecordsPanel
+            title="Connected Billing & Contract Records"
+            records={[
+              {
+                id: boqItemId,
+                type: 'boq' as const,
+                title: `BOQ Item ${itemNumber}: ${description.slice(0, 40)}...`,
+                subtitle: `Billed Qty: ${billedQuantity} ${unit} @ ₹${rate}`,
+                amount: billedQuantity * rate,
+                href: '#',
+              },
+              {
+                id: raBillId,
+                type: 'ra_bill' as const,
+                title: `RA Bill #${raBillNumber}`,
+                subtitle: 'Active Running Account Bill',
+                status: 'CURRENT BILL',
+                href: `/ledgers/ra-bills`,
+              },
+              {
+                id: 'meas-reg',
+                type: 'measurement' as const,
+                title: 'e-MB Measurement Register',
+                subtitle: `${entries.length} supporting measurement records`,
+                status: 'VERIFIED',
+                href: `/measurement`,
+              },
+              {
+                id: 'vars-reg',
+                type: 'variation' as const,
+                title: 'Clause 12 Variation Orders',
+                subtitle: 'Approved scope and rate variations',
+                href: `/variations`,
+              },
+              {
+                id: 'ledger-sync',
+                type: 'payment' as const,
+                title: 'Financial Ledger & Realization',
+                subtitle: 'Passed bill disbursements & statutory deductions',
+                href: `/ledgers`,
+              },
+            ]}
+          />
+        </div>
+
       </div>
     </Modal>
   )

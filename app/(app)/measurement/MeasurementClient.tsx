@@ -27,6 +27,7 @@ import { MeasurementAdjustmentModal } from '@/components/measurement/Measurement
 import { NewMeasurementBookModal } from '@/components/measurement/NewMeasurementBookModal'
 import { NewMeasurementCertificateModal } from '@/components/measurement/NewMeasurementCertificateModal'
 import { MeasurementPrintSheet } from '@/components/measurement/MeasurementPrintSheet'
+import { MeasurementDetailModal } from '@/components/measurement/MeasurementDetailModal'
 
 interface MeasurementClientProps {
   projects: {
@@ -95,6 +96,7 @@ export function MeasurementClient({
   const [adjModalOpen, setAdjModalOpen] = useState(false)
   const [adjustingEntry, setAdjustingEntry] = useState<MeasurementEntry | null>(null)
   const [printMode, setPrintMode] = useState<'register' | 'abstract' | null>(null)
+  const [inspectingEntry, setInspectingEntry] = useState<MeasurementEntry | null>(null)
 
   // Filtered context
   const currentProject = useMemo(() => {
@@ -661,6 +663,12 @@ export function MeasurementClient({
                             />
                           </td>
                           <td className="p-3 text-right space-x-1">
+                            <button
+                              onClick={() => setInspectingEntry(entry)}
+                              className="px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 text-[11px] font-semibold"
+                            >
+                              Inspect
+                            </button>
                             {isCertified ? (
                               <button
                                 onClick={() => {
@@ -1057,6 +1065,19 @@ export function MeasurementClient({
             setEntries(prev => prev.map(e => (e.id === updatedEntry.id ? updatedEntry : e)))
             setAdjustments(prev => [adjustment, ...prev])
           }}
+        />
+      )}
+
+      
+      {/* Measurement Detail & Related Records Modal */}
+      {inspectingEntry && (
+        <MeasurementDetailModal
+          entry={inspectingEntry}
+          isOpen={!!inspectingEntry}
+          onClose={() => setInspectingEntry(null)}
+          boqItem={boqItems.find(b => b.id === inspectingEntry.boq_item_id) || null}
+          project={projects.find(p => p.id === inspectingEntry.project_id) || null}
+          contract={contracts.find(c => c.id === inspectingEntry.contract_id) || null}
         />
       )}
 

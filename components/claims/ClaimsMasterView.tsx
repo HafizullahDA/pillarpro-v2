@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { formatINR, formatDate } from '@/lib/format'
 import { Button } from '@/components/ui/Button'
 import { ContractClaim, ClaimType, ClaimStatus } from '@/lib/types/claims'
@@ -48,6 +48,12 @@ export function ClaimsMasterView({
   const [typeFilter, setTypeFilter] = useState<ClaimType | 'ALL'>('ALL')
   const [statusFilter, setStatusFilter] = useState<ClaimStatus | 'ALL'>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    if (selectedProjectId) {
+      setProjectId(selectedProjectId)
+    }
+  }, [selectedProjectId])
 
   // Modals state
   const [isNewModalOpen, setIsNewModalOpen] = useState(false)

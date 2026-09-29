@@ -8,6 +8,7 @@ import { formatINR, formatDate } from '@/lib/format'
 import { ContractClaim, ClaimStatus } from '@/lib/types/claims'
 import { ClaimStatusBadge } from './ClaimStatusBadge'
 import { ClaimTypeBadge } from './ClaimTypeBadge'
+import { RelatedRecordsPanel, RelatedRecordItem } from '@/components/common/RelatedRecordsPanel'
 
 interface Props {
   claim: ContractClaim | null
@@ -187,6 +188,70 @@ export function ClaimDetailModal({
               </span>
             </div>
           </div>
+
+
+          {/* UNIFIED RELATED RECORDS PANEL */}
+          <RelatedRecordsPanel
+            title="Traceable Related Records (Claim Substantiation)"
+            records={[
+              {
+                id: claim.project_id,
+                type: 'project' as const,
+                title: claim.projects?.name || 'Project Master Record',
+                href: `/projects/${claim.project_id}`,
+              },
+              ...(claim.contract_id ? [{
+                id: claim.contract_id,
+                type: 'contract' as const,
+                title: claim.contracts?.agreement_number ? `Agreement: ${claim.contracts.agreement_number}` : 'Contract Master',
+                subtitle: claim.contracts?.contract_title || undefined,
+                referenceNumber: claim.contracts?.agreement_number || undefined,
+                href: `/projects/${claim.project_id}/contract`,
+              }] : []),
+              {
+                id: `evts-${claim.id}`,
+                type: 'event' as const,
+                title: 'Linked Contract Events',
+                subtitle: `${claim.event_ids?.length || 0} contemporaneous delay events`,
+                href: `/hindrances?tab=events&projectId=${claim.project_id}`,
+              },
+              {
+                id: `hind-${claim.id}`,
+                type: 'hindrance' as const,
+                title: 'Linked Hindrances (Appx 21)',
+                subtitle: `${claim.hindrance_ids?.length || 0} hindrance register entries`,
+                href: `/hindrances?tab=hindrances&projectId=${claim.project_id}`,
+              },
+              {
+                id: `notices-${claim.id}`,
+                type: 'notice' as const,
+                title: 'Statutory Notices & Letters',
+                subtitle: `${claim.correspondence_ids?.length || 0} contractual notices dispatched`,
+                href: `/correspondence?projectId=${claim.project_id}`,
+              },
+              {
+                id: `eot-${claim.id}`,
+                type: 'eot' as const,
+                title: 'Extension of Time Cases (Form 27)',
+                subtitle: `${claim.eot_case_ids?.length || 0} linked EOT submissions`,
+                href: `/eot?projectId=${claim.project_id}`,
+              },
+              {
+                id: `evidence-${claim.id}`,
+                type: 'evidence' as const,
+                title: 'Evidence Vault Proofs',
+                subtitle: `${claim.evidence_ids?.length || 0} physical proofs & documents`,
+                href: `/evidence?projectId=${claim.project_id}`,
+              },
+              {
+                id: `ledger-${claim.id}`,
+                type: 'payment' as const,
+                title: 'Financial Realization & Ledger',
+                subtitle: `Approved: ₹${claim.approved_amount} • Paid: ₹${claim.paid_amount}`,
+                href: `/ledgers?projectId=${claim.project_id}`,
+              },
+            ]}
+          />
 
           {/* Award / Adjudication Record Form */}
           {showAwardForm ? (

@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/client'
 import { EOTCase, EOTStatus } from '@/lib/types/eot'
 import { EOTStatusBadge } from './EOTStatusBadge'
+import { RelatedRecordsPanel, RelatedRecordItem } from '@/components/common/RelatedRecordsPanel'
 import { ContractRecord } from '@/lib/types/contract'
 import { ContractEvent, DetailedHindrance } from '@/lib/types/contractDefense'
 import { EvidenceRecord } from '@/lib/types/evidence'
@@ -240,6 +241,62 @@ export function EOTCaseDetailModal({
             </div>
           </div>
         )}
+
+
+        {/* UNIFIED RELATED RECORDS PANEL */}
+        <RelatedRecordsPanel
+          title="Traceable Related Records (EOT Dossier Chain)"
+          records={[
+            {
+              id: eotCase.project_id,
+              type: 'project' as const,
+              title: eotCase.projects?.name || 'Project Master',
+              href: `/projects/${eotCase.project_id}`,
+            },
+            ...(eotCase.contract_id ? [{
+              id: eotCase.contract_id,
+              type: 'contract' as const,
+              title: eotCase.contracts?.agreement_number ? `Agreement: ${eotCase.contracts.agreement_number}` : 'Contract Master',
+              subtitle: eotCase.contracts?.contract_title || undefined,
+              href: `/projects/${eotCase.project_id}/contract`,
+            }] : []),
+            {
+              id: `evts-${eotCase.id}`,
+              type: 'event' as const,
+              title: 'Linked Potential EOT Events',
+              subtitle: `${linkedEvents.length} events logged`,
+              href: `/hindrances?tab=events&projectId=${eotCase.project_id}`,
+            },
+            {
+              id: `hind-${eotCase.id}`,
+              type: 'hindrance' as const,
+              title: 'Hindrance Register (Appendix 21)',
+              subtitle: `${linkedHindrances.length} hindrances recorded`,
+              href: `/hindrances?tab=hindrances&projectId=${eotCase.project_id}`,
+            },
+            {
+              id: `ev-${eotCase.id}`,
+              type: 'evidence' as const,
+              title: 'Evidence Vault Proof Documents',
+              subtitle: `${linkedEvidence.length} physical documents`,
+              href: `/evidence?projectId=${eotCase.project_id}`,
+            },
+            {
+              id: `corr-${eotCase.id}`,
+              type: 'notice' as const,
+              title: 'Statutory Notices Dispatched',
+              subtitle: `${linkedCorrespondence.length} notices on record`,
+              href: `/correspondence?projectId=${eotCase.project_id}`,
+            },
+            {
+              id: `claims-${eotCase.id}`,
+              type: 'claim' as const,
+              title: 'Contractual Delay Claims',
+              subtitle: 'Prolongation & idle resource claims',
+              href: `/claims?projectId=${eotCase.project_id}`,
+            },
+          ]}
+        />
 
         {/* Record Department Sanction Section (Collapsible / Toggle) */}
         {sanctionOpen ? (

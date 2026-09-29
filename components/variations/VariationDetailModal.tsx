@@ -8,6 +8,7 @@ import { formatINR, formatDate } from '@/lib/format'
 import { ContractVariation, VariationStatus } from '@/lib/types/variations'
 import { VariationStatusBadge } from './VariationStatusBadge'
 import { VariationTypeBadge } from './VariationTypeBadge'
+import { RelatedRecordsPanel, RelatedRecordItem } from '@/components/common/RelatedRecordsPanel'
 
 interface Props {
   variation: ContractVariation | null
@@ -238,6 +239,67 @@ export function VariationDetailModal({
               </div>
             )}
           </div>
+
+
+          {/* UNIFIED RELATED RECORDS PANEL */}
+          <RelatedRecordsPanel
+            title="Traceable Related Records (Variation Audit Trail)"
+            records={[
+              ...(variation.original_boq_item_id ? [{
+                id: variation.original_boq_item_id,
+                type: 'boq' as const,
+                title: variation.boq_items?.description ? `BOQ Item ${variation.boq_items.item_number}: ${variation.boq_items.description.slice(0, 45)}...` : `BOQ Item ${variation.original_boq_item_id.slice(0, 8)}`,
+                subtitle: `Tender Qty: ${variation.original_quantity} ${variation.proposed_unit} @ ₹${variation.original_rate}`,
+                referenceNumber: variation.boq_items?.item_number,
+                href: `/projects/${variation.project_id}/boq/${variation.original_boq_item_id}`,
+              }] : []),
+              {
+                id: variation.project_id,
+                type: 'project' as const,
+                title: variation.projects?.name || 'Project Master Record',
+                href: `/projects/${variation.project_id}`,
+              },
+              ...(variation.contract_id ? [{
+                id: variation.contract_id,
+                type: 'contract' as const,
+                title: variation.contracts?.agreement_number ? `Agreement: ${variation.contracts.agreement_number}` : 'Contract Master',
+                subtitle: variation.contracts?.contract_title || undefined,
+                referenceNumber: variation.contracts?.agreement_number || undefined,
+                href: `/projects/${variation.project_id}/contract`,
+              }] : []),
+              {
+                id: `meas-${variation.id}`,
+                type: 'measurement' as const,
+                title: 'e-MB Measurements Under Variation',
+                subtitle: `Executed realization: ${variation.executed_quantity} ${variation.proposed_unit}`,
+                status: 'e-MB',
+                href: `/measurement?projectId=${variation.project_id}`,
+              },
+              {
+                id: `ra-${variation.id}`,
+                type: 'ra_bill' as const,
+                title: 'RA Bills Realization',
+                subtitle: `Billed realization: ${variation.billed_quantity} ${variation.proposed_unit}`,
+                status: 'RA BILL',
+                href: `/ledgers/ra-bills?projectId=${variation.project_id}`,
+              },
+              {
+                id: `clm-${variation.id}`,
+                type: 'claim' as const,
+                title: 'Contractual Claims & Disputes',
+                subtitle: 'Dispute & damage compensation records',
+                status: 'DISPUTE',
+                href: `/claims?projectId=${variation.project_id}`,
+              },
+              ...(variation.supporting_document_url ? [{
+                id: `doc-${variation.id}`,
+                type: 'evidence' as const,
+                title: 'Supporting Document / Order Attachment',
+                subtitle: 'Contemporaneous proof record',
+                href: variation.supporting_document_url,
+              }] : []),
+            ]}
+          />
 
           {/* Record Department Sanction Drawer / Form */}
           {showSanctionForm ? (

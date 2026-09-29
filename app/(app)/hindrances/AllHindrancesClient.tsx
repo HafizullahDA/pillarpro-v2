@@ -49,6 +49,7 @@ import { ContractVariation } from '@/lib/types/variations'
 import { VariationsMasterView } from '@/components/variations/VariationsMasterView'
 import { ContractClaim } from '@/lib/types/claims'
 import { ClaimsMasterView } from '@/components/claims/ClaimsMasterView'
+import { RelatedRecordsPanel, RelatedRecordItem } from '@/components/common/RelatedRecordsPanel'
 
 interface Project {
   id: string
@@ -136,6 +137,7 @@ export function AllHindrancesClient({
   const [form27ModalOpen, setForm27ModalOpen] = useState(false)
   const [selectedEOT, setSelectedEOT] = useState<any | null>(null)
   const [selectedEventDetail, setSelectedEventDetail] = useState<ContractEvent | null>(null)
+  const [selectedHindranceDetail, setSelectedHindranceDetail] = useState<DetailedHindrance | null>(null)
   const [statusUpdateModalOpen, setStatusUpdateModalOpen] = useState(false)
   const [hindranceToUpdate, setHindranceToUpdate] = useState<DetailedHindrance | null>(null)
   const [newHindranceStatus, setNewHindranceStatus] = useState<ContractDefenseStatus>('OPEN')
@@ -1115,6 +1117,12 @@ export function AllHindrancesClient({
                           </td>
                           <td className="px-4 py-3.5 text-right whitespace-nowrap space-x-1">
                             <button
+                              onClick={() => setSelectedHindranceDetail(h)}
+                              className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                            >
+                              Inspect
+                            </button>
+                            <button
                               onClick={() => handleOpenNoticeModal(h)}
                               className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-semibold transition-colors cursor-pointer"
                             >
@@ -1522,6 +1530,88 @@ export function AllHindrancesClient({
                 </div>
               )}
 
+              
+              {/* UNIFIED RELATED RECORDS AUDIT TRAIL */}
+              <RelatedRecordsPanel
+                title="Connected Defense Records (Event Traceability)"
+                description="Contemporaneous links to hindrances, notices, evidence, EOT, and claims."
+                records={[
+                  {
+                    id: selectedEventDetail.project_id,
+                    type: 'project' as const,
+                    title: getProjectName(selectedEventDetail.project_id),
+                    href: `/projects/${selectedEventDetail.project_id}`,
+                  },
+                  ...(selectedEventDetail.contract_id ? [{
+                    id: selectedEventDetail.contract_id,
+                    type: 'contract' as const,
+                    title: `Agreement: ${selectedEventDetail.contracts?.agreement_number || getContractAgreement(selectedEventDetail.contract_id)}`,
+                    href: `/projects/${selectedEventDetail.project_id}/contract`,
+                  }] : []),
+                  ...hindrances
+                    .filter(h => h.id === selectedEventDetail.hindrance_id)
+                    .map(h => ({
+                      id: h.id,
+                      type: 'hindrance' as const,
+                      title: `Hindrance #${h.hindrance_number}: ${h.description.slice(0, 45)}...`,
+                      subtitle: `${h.category} � ${h.duration_days || 0} days delay`,
+                      referenceNumber: String(h.hindrance_number),
+                      href: `/hindrances?tab=hindrances&projectId=${selectedEventDetail.project_id}`,
+                    })),
+                  ...correspondenceList
+                    .filter(c => c.related_contract_event_id === selectedEventDetail.id)
+                    .map(c => ({
+                      id: c.id,
+                      type: 'notice' as const,
+                      title: `${c.letter_number}: ${c.subject.slice(0, 40)}...`,
+                      subtitle: `Sent: ${formatDate(c.date)} � Deadline: ${c.response_deadline ? formatDate(c.response_deadline) : 'N/A'}`,
+                      referenceNumber: c.letter_number,
+                      href: `/correspondence?projectId=${selectedEventDetail.project_id}`,
+                    })),
+                  ...detailEvidence.map(ev => ({
+                    id: ev.id,
+                    type: 'evidence' as const,
+                    title: ev.title,
+                    subtitle: `${ev.type} � ${formatDate(ev.document_date)}`,
+                    referenceNumber: ev.evidence_number,
+                    href: ev.file_url,
+                  })),
+                  ...eotCasesList
+                    .filter(eot => eot.event_ids?.includes(selectedEventDetail.id))
+                    .map(eot => ({
+                      id: eot.id,
+                      type: 'eot' as const,
+                      title: `EOT ${eot.eot_reference}: ${eot.cause || 'Extension Application'}`,
+                      subtitle: `Claimed: ${eot.claimed_days}d � Approved: ${eot.approved_days || 0}d`,
+                      referenceNumber: eot.eot_reference,
+                      status: eot.status,
+                      href: `/eot?projectId=${selectedEventDetail.project_id}`,
+                    })),
+                  ...claimsList
+                    .filter(clm => clm.event_ids?.includes(selectedEventDetail.id))
+                    .map(clm => ({
+                      id: clm.id,
+                      type: 'claim' as const,
+                      title: `Claim ${clm.claim_number}: ${clm.title}`,
+                      subtitle: `Claimed: ?${clm.claimed_amount.toLocaleString('en-IN')}`,
+                      referenceNumber: clm.claim_number,
+                      status: clm.status,
+                      href: `/claims?projectId=${selectedEventDetail.project_id}`,
+                    })),
+                  ...(selectedEventDetail.affected_boq_items || []).map(bId => {
+                    const boq = boqItems.find(b => b.id === bId)
+                    return {
+                      id: bId,
+                      type: 'boq' as const,
+                      title: boq ? `Item ${boq.item_number}: ${boq.description.slice(0, 40)}...` : `BOQ Item #${bId.slice(0, 8)}`,
+                      subtitle: boq ? `Tender Qty: ${boq.tender_quantity} ${boq.unit}` : undefined,
+                      referenceNumber: boq?.item_number,
+                      href: `/projects/${selectedEventDetail.project_id}/boq/${bId}`,
+                    }
+                  }),
+                ]}
+              />
+
               <div className="flex justify-end pt-3 border-t border-slate-200">
                 <Button
                   size="sm"
@@ -1534,6 +1624,171 @@ export function AllHindrancesClient({
             </div>
           )
         })()}
+      </Modal>
+
+      
+      {/* SELECTED HINDRANCE DETAIL & RELATED RECORDS MODAL */}
+      <Modal
+        open={!!selectedHindranceDetail}
+        onClose={() => setSelectedHindranceDetail(null)}
+        title={selectedHindranceDetail ? `Hindrance #${selectedHindranceDetail.hindrance_number}: ${selectedHindranceDetail.category}` : 'Hindrance Details'}
+      >
+        {selectedHindranceDetail && (
+          <div className="space-y-4 text-left text-xs">
+            <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200">
+              <span className="font-bold text-sm text-slate-900 font-mono">
+                Hindrance #${selectedHindranceDetail.hindrance_number}
+              </span>
+              <Badge
+                label={(selectedHindranceDetail.standard_status || selectedHindranceDetail.status || 'OPEN').toUpperCase()}
+                variant={getStatusBadgeVariant(selectedHindranceDetail.standard_status || selectedHindranceDetail.status)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl">
+              <div>
+                <p className="text-slate-500">Project</p>
+                <p className="font-semibold text-slate-900">{getProjectName(selectedHindranceDetail.project_id)}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Location / Chainage</p>
+                <p className="font-semibold text-slate-900">{selectedHindranceDetail.location_chainage || 'Site overall'}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Start Date</p>
+                <p className="font-semibold text-slate-900">{formatDate(selectedHindranceDetail.start_date)}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Removal / End Date</p>
+                <p className="font-semibold text-slate-900">
+                  {selectedHindranceDetail.end_date || selectedHindranceDetail.removal_date ? formatDate(selectedHindranceDetail.end_date || selectedHindranceDetail.removal_date!) : 'Ongoing / Unresolved'}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">Delay Period</p>
+                <p className="font-bold text-slate-900 font-mono">
+                  {selectedHindranceDetail.duration_days || selectedHindranceDetail.net_delay_days || 0} Gross Days (Overlapping: {selectedHindranceDetail.overlapping_days || 0}d)
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">Clause 5 Notice Status</p>
+                <p className="font-semibold text-slate-900">
+                  {selectedHindranceDetail.notice_served ? `Served on ${formatDate(selectedHindranceDetail.notice_date)}` : 'Notice Pending'}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-slate-500 font-medium">Description</p>
+              <p className="text-slate-900 font-semibold mt-0.5 bg-white p-2.5 rounded-lg border border-slate-200">
+                {selectedHindranceDetail.description}
+              </p>
+            </div>
+
+            {(selectedHindranceDetail.labour_impact || selectedHindranceDetail.machinery_impact) && (
+              <div className="bg-slate-50 p-3 rounded-xl space-y-1">
+                <p className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Site Impacts</p>
+                {selectedHindranceDetail.labour_impact && (
+                  <p className="text-slate-600"><b>Labour:</b> {selectedHindranceDetail.labour_impact}</p>
+                )}
+                {selectedHindranceDetail.machinery_impact && (
+                  <p className="text-slate-600"><b>Machinery / Plant:</b> {selectedHindranceDetail.machinery_impact}</p>
+                )}
+              </div>
+            )}
+
+            {/* UNIFIED RELATED RECORDS PANEL */}
+            <RelatedRecordsPanel
+              title="Traceable Related Records (Hindrance Audit Trail)"
+              description="Contemporaneous connection to contract, notices, EOT, and claims."
+              records={[
+                {
+                  id: selectedHindranceDetail.project_id,
+                  type: 'project' as const,
+                  title: getProjectName(selectedHindranceDetail.project_id),
+                  href: `/projects/${selectedHindranceDetail.project_id}`,
+                },
+                ...(selectedHindranceDetail.contract_id ? [{
+                  id: selectedHindranceDetail.contract_id,
+                  type: 'contract' as const,
+                  title: 'Contract Master Agreement',
+                  href: `/projects/${selectedHindranceDetail.project_id}/contract`,
+                }] : []),
+                ...contractEvents
+                  .filter(ev => ev.hindrance_id === selectedHindranceDetail.id || ev.id === selectedHindranceDetail.id)
+                  .map(ev => ({
+                    id: ev.id,
+                    type: 'event' as const,
+                    title: `Event ${ev.event_number}: ${ev.description.slice(0, 45)}...`,
+                    subtitle: `${ev.event_type} � ${formatDate(ev.event_date)}`,
+                    referenceNumber: ev.event_number,
+                    href: `/hindrances?tab=events&projectId=${selectedHindranceDetail.project_id}`,
+                  })),
+                ...correspondenceList
+                  .filter(c => c.related_hindrance_id === selectedHindranceDetail.id)
+                  .map(c => ({
+                    id: c.id,
+                    type: 'notice' as const,
+                    title: `Notice: ${c.letter_number}`,
+                    subtitle: c.subject,
+                    referenceNumber: c.letter_number,
+                    href: `/correspondence?projectId=${selectedHindranceDetail.project_id}`,
+                  })),
+                ...evidenceList
+                  .filter(e => e.related_hindrance_id === selectedHindranceDetail.id)
+                  .map(e => ({
+                    id: e.id,
+                    type: 'evidence' as const,
+                    title: e.title,
+                    subtitle: `${e.type} � ${formatDate(e.document_date)}`,
+                    referenceNumber: e.evidence_number,
+                    href: e.file_url,
+                  })),
+                ...eotCasesList
+                  .filter(eot => eot.hindrance_ids?.includes(selectedHindranceDetail.id))
+                  .map(eot => ({
+                    id: eot.id,
+                    type: 'eot' as const,
+                    title: `EOT Case ${eot.eot_reference}`,
+                    subtitle: `Claimed: ${eot.claimed_days}d � Status: ${eot.status}`,
+                    referenceNumber: eot.eot_reference,
+                    href: `/eot?projectId=${selectedHindranceDetail.project_id}`,
+                  })),
+                ...claimsList
+                  .filter(clm => clm.hindrance_ids?.includes(selectedHindranceDetail.id))
+                  .map(clm => ({
+                    id: clm.id,
+                    type: 'claim' as const,
+                    title: `Claim ${clm.claim_number}: ${clm.title}`,
+                    subtitle: `Claimed: ?${clm.claimed_amount.toLocaleString('en-IN')}`,
+                    referenceNumber: clm.claim_number,
+                    href: `/claims?projectId=${selectedHindranceDetail.project_id}`,
+                  })),
+              ]}
+            />
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  handleOpenNoticeModal(selectedHindranceDetail)
+                  setSelectedHindranceDetail(null)
+                }}
+                className="text-xs text-blue-700"
+              >
+                ?? Generate Clause 5 Notice Letter &rarr;
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setSelectedHindranceDetail(null)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* QUICK UPLOAD EVIDENCE MODAL */}

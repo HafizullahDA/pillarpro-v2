@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { EvidenceRecord, EVIDENCE_TYPE_CONFIG } from '@/lib/types/evidence'
 import { formatDate } from '@/lib/format'
+import { RelatedRecordsPanel, RelatedRecordItem } from '@/components/common/RelatedRecordsPanel'
 
 interface EvidencePreviewModalProps {
   open: boolean
@@ -202,111 +203,83 @@ export function EvidencePreviewModal({
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-blue-950">
               <p className="font-bold">Contemporaneous Relational Linking</p>
               <p className="text-[11px] text-blue-800/90 mt-0.5 leading-relaxed">
-                This evidence item directly supports the following project milestones, contractual claims, and site records.
+                This evidence item directly substantiates and proves the following project milestones, contractual claims, and site records.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {/* Linked Contract Event */}
-              <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Contract Event</p>
-                {evidence.related_contract_event_id ? (
-                  <div>
-                    <span className="font-bold text-slate-900 font-mono">
-                      {evidence.contract_events?.event_number || 'Linked Event'}
-                    </span>
-                    <p className="text-slate-600 line-clamp-2 mt-0.5">
-                      {evidence.contract_events?.description || `Event ID: ${evidence.related_contract_event_id}`}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-slate-400 italic">No contract event linked</p>
-                )}
-              </div>
-
-              {/* Linked Hindrance */}
-              <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hindrance Register</p>
-                {evidence.related_hindrance_id ? (
-                  <div>
-                    <span className="font-bold text-slate-900">
-                      Hindrance #{evidence.hindrances?.hindrance_number || 'Linked'}
-                    </span>
-                    <p className="text-slate-600 line-clamp-2 mt-0.5">
-                      {evidence.hindrances?.description || `Hindrance ID: ${evidence.related_hindrance_id}`}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-slate-400 italic">No hindrance linked</p>
-                )}
-              </div>
-
-              {/* Linked Measurement Entry */}
-              <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Measurement Book (MB)</p>
-                {evidence.related_measurement_id ? (
-                  <div>
-                    <span className="font-bold text-slate-900 font-mono">
-                      MB Entry #{evidence.measurement_entries?.entry_number || 'Linked'}
-                    </span>
-                    <p className="text-slate-600 mt-0.5">
-                      Measured Qty: <b className="text-slate-900">{evidence.measurement_entries?.calculated_quantity || 0}</b>
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-slate-400 italic">No measurement linked</p>
-                )}
-              </div>
-
-              {/* Linked BOQ Item */}
-              <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">BOQ Item</p>
-                {evidence.related_boq_item_id ? (
-                  <div>
-                    <span className="font-bold text-slate-900">
-                      Item {evidence.boq_items?.item_number || 'Linked'}
-                    </span>
-                    <p className="text-slate-600 line-clamp-2 mt-0.5">
-                      {evidence.boq_items?.description || `BOQ ID: ${evidence.related_boq_item_id}`}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-slate-400 italic">No BOQ item linked</p>
-                )}
-              </div>
-
-              {/* Linked RA Bill */}
-              <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">RA Bill</p>
-                {evidence.related_ra_bill_id ? (
-                  <div>
-                    <span className="font-bold text-slate-900 font-mono">
-                      RA Bill #{evidence.ra_bills?.bill_number || 'Linked'}
-                    </span>
-                  </div>
-                ) : (
-                  <p className="text-slate-400 italic">No RA bill linked</p>
-                )}
-              </div>
-
-              {/* Linked EOT Application */}
-              <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">EOT Application (Form 27)</p>
-                {evidence.related_eot_id ? (
-                  <div>
-                    <span className="font-bold text-slate-900 font-mono">
-                      {evidence.eot_applications?.application_number || 'Linked Application'}
-                    </span>
-                  </div>
-                ) : (
-                  <p className="text-slate-400 italic">No EOT claim linked</p>
-                )}
-              </div>
-            </div>
+            <RelatedRecordsPanel
+              title="Substantiated Business Records"
+              description="Traceable links to measurements, hindrances, variations, and claims."
+              records={[
+                {
+                  id: evidence.project_id,
+                  type: 'project' as const,
+                  title: 'Project Master Record',
+                  href: `/projects/${evidence.project_id}`,
+                },
+                ...(evidence.contract_id ? [{
+                  id: evidence.contract_id,
+                  type: 'contract' as const,
+                  title: 'Contract Agreement',
+                  href: `/projects/${evidence.project_id}/contract`,
+                }] : []),
+                ...(evidence.related_contract_event_id ? [{
+                  id: evidence.related_contract_event_id,
+                  type: 'event' as const,
+                  title: evidence.contract_events?.event_number ? `Contract Event: ${evidence.contract_events.event_number}` : 'Linked Delay Event',
+                  subtitle: evidence.contract_events?.description || undefined,
+                  referenceNumber: evidence.contract_events?.event_number,
+                  href: `/hindrances?tab=events&projectId=${evidence.project_id}`,
+                }] : []),
+                ...(evidence.related_hindrance_id ? [{
+                  id: evidence.related_hindrance_id,
+                  type: 'hindrance' as const,
+                  title: `Hindrance #${evidence.hindrances?.hindrance_number || 'Linked'}`,
+                  subtitle: evidence.hindrances?.description || undefined,
+                  href: `/hindrances?tab=hindrances&projectId=${evidence.project_id}`,
+                }] : []),
+                ...(evidence.related_measurement_id ? [{
+                  id: evidence.related_measurement_id,
+                  type: 'measurement' as const,
+                  title: `e-MB Entry #${evidence.measurement_entries?.entry_number || 'Linked'}`,
+                  subtitle: evidence.measurement_entries?.calculated_quantity ? `Quantity: ${evidence.measurement_entries.calculated_quantity}` : undefined,
+                  status: 'e-MB',
+                  href: `/measurement?projectId=${evidence.project_id}`,
+                }] : []),
+                ...(evidence.related_boq_item_id ? [{
+                  id: evidence.related_boq_item_id,
+                  type: 'boq' as const,
+                  title: evidence.boq_items?.item_number ? `BOQ Item ${evidence.boq_items.item_number}` : 'Linked BOQ Item',
+                  subtitle: evidence.boq_items?.description || undefined,
+                  referenceNumber: evidence.boq_items?.item_number,
+                  href: `/projects/${evidence.project_id}/boq/${evidence.related_boq_item_id}`,
+                }] : []),
+                ...(evidence.related_ra_bill_id ? [{
+                  id: evidence.related_ra_bill_id,
+                  type: 'ra_bill' as const,
+                  title: 'Linked Running Account Bill',
+                  status: 'RA BILL',
+                  href: `/ledgers/ra-bills?projectId=${evidence.project_id}`,
+                }] : []),
+                ...(evidence.related_eot_id ? [{
+                  id: evidence.related_eot_id,
+                  type: 'eot' as const,
+                  title: 'Extension of Time Case',
+                  status: 'EOT',
+                  href: `/eot?projectId=${evidence.project_id}`,
+                }] : []),
+                ...(evidence.related_claim_id ? [{
+                  id: evidence.related_claim_id,
+                  type: 'claim' as const,
+                  title: 'Contractual Claim',
+                  status: 'CLAIM',
+                  href: `/claims?projectId=${evidence.project_id}`,
+                }] : []),
+              ]}
+            />
           </div>
         )}
 
-        {/* TAB 3: VERSION HISTORY */}
         {activeTab === 'versions' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">

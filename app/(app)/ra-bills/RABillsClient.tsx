@@ -22,6 +22,7 @@ import { MeasurementEntry } from '@/lib/types/measurement'
 import { calculateUnbilledCertifiedWork } from '@/lib/calculations/measurementBilling'
 import { BillPreparationWizard } from '@/components/ra-bills/BillPreparationWizard'
 import { SupportingMeasurementsModal } from '@/components/ra-bills/SupportingMeasurementsModal'
+import { RABillDetailModal } from '@/components/ra-bills/RABillDetailModal'
 
 // ════════════════════════════════════════════════════════════════════════
 // CONFIGURABLE THRESHOLD FOR EXPIRING BANK GUARANTEES (IN DAYS)
@@ -130,6 +131,7 @@ export function RABillsClient({
   const canEdit = canEditRaBill(userRole) || canCreate
   const [editingBill, setEditingBill] = useState<RABillRow | null>(null)
   const [wizardOpen, setWizardOpen] = useState(false)
+  const [detailBill, setDetailBill] = useState<RABillRow | null>(null)
   const [supportingModalData, setSupportingModalData] = useState<{
     open: boolean
     raBillId: string
@@ -1206,6 +1208,25 @@ export function RABillsClient({
           existingBills={initialBills}
           onSuccess={() => {
             setWizardOpen(false)
+          }}
+        />
+      )}
+
+      {/* RA Bill Deep Detail & Unified Related Records Modal */}
+      {detailBill && (
+        <RABillDetailModal
+          bill={detailBill}
+          open={!!detailBill}
+          onClose={() => setDetailBill(null)}
+          onPrintCertificate={(b) => {
+            setCertBill(b)
+          }}
+          onPrintEMB={async (b) => {
+            const { data } = await supabase
+              .from('ra_bill_items')
+              .select('*')
+              .eq('ra_bill_id', b.id)
+            setEmbModal({ bill: b, items: (data || []) as RABillItem[] })
           }}
         />
       )}
