@@ -6,6 +6,7 @@ import { BOQItem } from '@/lib/types/boq'
 import { EvidenceRecord } from '@/lib/types/evidence'
 import { CorrespondenceRecord, ContractNoticeRule } from '@/lib/types/correspondence'
 import { EOTCase } from '@/lib/types/eot'
+import { ContractVariation } from '@/lib/types/variations'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -26,6 +27,7 @@ export default async function AllHindrancesPage() {
     { data: correspondenceData },
     { data: noticeRulesData },
     { data: eotCasesData },
+    { data: variationsData },
   ] = await Promise.all([
     supabase
       .from('projects')
@@ -69,6 +71,10 @@ export default async function AllHindrancesPage() {
       .from('contract_eot_cases')
       .select('*, projects(id, name, agency_name), contracts(id, agreement_number, contract_title)')
       .order('created_at', { ascending: false }),
+    supabase
+      .from('contract_variations')
+      .select('*, projects(id, name, agency_name, awarded_amount), contracts(id, agreement_number, contract_title), boq_items(id, item_number, description, unit, tender_quantity, awarded_rate)')
+      .order('instruction_date', { ascending: false }),
   ])
 
   const projects = Array.isArray(projectsData) ? projectsData : []
@@ -93,6 +99,9 @@ export default async function AllHindrancesPage() {
   const eotCases: EOTCase[] = Array.isArray(eotCasesData)
     ? (eotCasesData as EOTCase[])
     : []
+  const variations: ContractVariation[] = Array.isArray(variationsData)
+    ? (variationsData as ContractVariation[])
+    : []
 
   return (
     <AllHindrancesClient
@@ -106,6 +115,7 @@ export default async function AllHindrancesPage() {
       initialCorrespondence={correspondence}
       noticeRules={noticeRules}
       initialEOTCases={eotCases}
+      initialVariations={variations}
       userRole={userRole || 'owner'}
       orgProfile={orgProfile || {}}
     />

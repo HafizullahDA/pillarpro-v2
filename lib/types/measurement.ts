@@ -83,6 +83,7 @@ export interface MeasurementEntry {
   boq_balance_quantity: number
   is_exceeded: boolean
   deviation_order_type?: DeviationOrderType | null
+  variation_id?: string | null
   billed_in_ra_bill_id?: string | null
   remarks?: string | null
   site_reference?: string | null

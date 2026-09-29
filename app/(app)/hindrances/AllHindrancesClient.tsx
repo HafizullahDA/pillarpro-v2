@@ -45,6 +45,8 @@ import { CorrespondenceRecord, ContractNoticeRule } from '@/lib/types/correspond
 import { CorrespondenceVaultView } from '@/components/correspondence/CorrespondenceVaultView'
 import { EOTCase } from '@/lib/types/eot'
 import { EOTMasterView } from '@/components/eot/EOTMasterView'
+import { ContractVariation } from '@/lib/types/variations'
+import { VariationsMasterView } from '@/components/variations/VariationsMasterView'
 
 interface Project {
   id: string
@@ -69,6 +71,7 @@ interface AllHindrancesClientProps {
   initialCorrespondence?: CorrespondenceRecord[]
   noticeRules?: ContractNoticeRule[]
   initialEOTCases?: EOTCase[]
+  initialVariations?: ContractVariation[]
   userRole: string
   orgProfile: {
     name?: string
@@ -102,6 +105,7 @@ export function AllHindrancesClient({
   initialCorrespondence,
   noticeRules,
   initialEOTCases = [],
+  initialVariations = [],
   userRole,
   orgProfile,
 }: AllHindrancesClientProps) {
@@ -115,6 +119,7 @@ export function AllHindrancesClient({
   const [evidenceList, setEvidenceList] = useState<EvidenceRecord[]>(initialEvidence)
   const [correspondenceList, setCorrespondenceList] = useState<CorrespondenceRecord[]>(initialCorrespondence || [])
   const [eotCasesList, setEotCasesList] = useState<EOTCase[]>(initialEOTCases || [])
+  const [variationsList, setVariationsList] = useState<ContractVariation[]>(initialVariations || [])
   const [activeTab, setActiveTab] = useState<DefenseTab>('events')
 
   // Modals & Drawers
@@ -216,6 +221,11 @@ export function AllHindrancesClient({
     if (selectedProjectId === 'all') return eotCasesList
     return eotCasesList.filter(c => c.project_id === selectedProjectId)
   }, [eotCasesList, selectedProjectId])
+
+  const filteredVariations = useMemo(() => {
+    if (selectedProjectId === 'all') return variationsList
+    return variationsList.filter(v => v.project_id === selectedProjectId)
+  }, [variationsList, selectedProjectId])
 
   const availableContracts = useMemo(() => {
     return targetProjectId
@@ -757,7 +767,10 @@ export function AllHindrancesClient({
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <span>8. Variations</span>
+            <span>8. Variations &amp; Deviations</span>
+            <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-bold">
+              {filteredVariations.length}
+            </span>
           </button>
 
           <button
@@ -1197,20 +1210,13 @@ export function AllHindrancesClient({
       )}
 
       {activeTab === 'variations' && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xl">
-            📋
-          </div>
-          <h3 className="text-base font-bold text-slate-900">Variations &amp; Deviations (Clause 12)</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Track deviations beyond contractual deviation limits (+/- 30%), extra non-schedule items, and substituted item rate analyses.
-          </p>
-          <div className="pt-2">
-            <span className="text-xs bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg font-mono">
-              Linked with BOQ Master &amp; Measurement Book
-            </span>
-          </div>
-        </div>
+        <VariationsMasterView
+          initialVariations={variationsList}
+          projects={projects}
+          contracts={contracts}
+          boqItems={boqItems}
+          selectedProjectId={selectedProjectId}
+        />
       )}
 
       {activeTab === 'claims' && (

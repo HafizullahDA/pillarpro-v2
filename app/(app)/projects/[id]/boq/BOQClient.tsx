@@ -13,6 +13,11 @@ import { calculateBOQProgress } from '@/lib/calculations/boq'
 import { exportBOQScheduleCSV } from '@/lib/export/csv'
 import { NewBOQItemDrawer } from './NewBOQItemDrawer'
 import { ImportBOQModal } from './ImportBOQModal'
+import { ContractVariation } from '@/lib/types/variations'
+import { ContractRecord } from '@/lib/types/contract'
+import { aggregateVariationMetrics } from '@/lib/calculations/variations'
+import { ContractValueBreakdownCard } from '@/components/variations/ContractValueBreakdownCard'
+import { NewVariationModal } from '@/components/variations/NewVariationModal'
 
 interface BOQClientProps {
   project: {
@@ -23,13 +28,19 @@ interface BOQClientProps {
   }
   initialItems: BOQSummaryItem[]
   rawItems: BOQItem[]
+  contracts?: ContractRecord[]
+  initialVariations?: ContractVariation[]
 }
 
 export function BOQClient({
   project,
   initialItems,
   rawItems,
+  contracts = [],
+  initialVariations = [],
 }: BOQClientProps) {
+  const [variationsList, setVariationsList] = useState<ContractVariation[]>(initialVariations)
+  const [variationModalOpen, setVariationModalOpen] = useState(false)
   const router = useRouter()
   const supabase = createClient()
   const toast = useToast()
@@ -44,6 +55,11 @@ export function BOQClient({
 
   // Recalculate overall progress
   const progress = useMemo(() => calculateBOQProgress(items), [items])
+
+  // Recalculate 6-stage contract value & variations summary
+  const variationSummary = useMemo(() => {
+    return aggregateVariationMetrics(variationsList, Number(project.awarded_amount || progress.totalTenderAmount))
+  }, [variationsList, project.awarded_amount, progress.totalTenderAmount])
 
   // Filtered items list
   const filteredItems = useMemo(() => {
@@ -185,6 +201,14 @@ export function BOQClient({
             Bulk Import CSV
           </Button>
           <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setVariationModalOpen(true)}
+            className="text-xs font-semibold text-indigo-700 bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
+          >
+            + Log Variation / Extra Item
+          </Button>
+          <Button
             size="sm"
             onClick={() => {
               setEditingItem(null)
@@ -196,6 +220,9 @@ export function BOQClient({
           </Button>
         </div>
       </div>
+
+      {/* 6-Stage Contract Value Reconciliation */}
+      <ContractValueBreakdownCard summary={variationSummary} projectName={project.name} />
 
       {/* KPI Overview Strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
