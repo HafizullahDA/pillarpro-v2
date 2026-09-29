@@ -12,6 +12,7 @@ export const NAV_ITEMS = [
   { href: '/ledgers/inventory', label: 'Store & Stock',   i18nKey: 'nav.inventory',    icon: 'inventory' },
   { href: '/ledgers/expenses',  label: 'Site Expenses',   i18nKey: 'nav.expenses',     icon: 'expenses'  },
   { href: '/hindrances',        label: 'Contract Defense',   i18nKey: 'nav.hindrances',    icon: 'shield'    },
+  { href: '/reports',           label: 'Reports & Books', i18nKey: 'nav.reports',       icon: 'reports'   },
   { href: '/partners',          label: 'Partners',        i18nKey: 'nav.partners',      icon: 'partners'  },
   { href: '/admin/users',       label: 'Team & Roles',    i18nKey: 'nav.team',          icon: 'admin'     },
   { href: '/admin/periods',     label: 'Month Close',     i18nKey: 'nav.month_close',   icon: 'admin'     },
