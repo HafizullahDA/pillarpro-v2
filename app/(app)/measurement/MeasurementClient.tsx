@@ -22,6 +22,7 @@ import {
   buildAbstractOfMeasurements,
   formatChainage,
 } from '@/lib/calculations/measurement'
+import { canCertifyMeasurement } from '@/lib/permissions'
 import { NewMeasurementEntryModal } from '@/components/measurement/NewMeasurementEntryModal'
 import { MeasurementAdjustmentModal } from '@/components/measurement/MeasurementAdjustmentModal'
 import { NewMeasurementBookModal } from '@/components/measurement/NewMeasurementBookModal'
@@ -180,13 +181,41 @@ export function MeasurementClient({
   // Fast inline status updater
   const handleUpdateStatus = async (entryId: string, newStatus: MeasurementStatus) => {
     try {
+      const target = entries.find(e => e.id === entryId)
+      if (target?.billed_in_ra_bill_id) {
+        toast.showToast('Locked: Measurement has already been billed in an RA Bill and cannot be modified.', 'error')
+        return
+      }
+
+      if (target?.status === 'CERTIFIED' && (newStatus === 'DRAFT' || newStatus === 'SUBMITTED')) {
+        toast.showToast('Security Violation: Certified measurements cannot be downgraded to Draft or Submitted.', 'error')
+        return
+      }
+
+      if (newStatus === 'CERTIFIED' && !canCertifyMeasurement(userRole)) {
+        toast.showToast('Access Denied: Only Project Manager, Billing Engineer, Partner, or Owner can certify measurements.', 'error')
+        return
+      }
+
+      const { data: { user } } = await supabase.auth.getUser()
+      const userIdentifier = user?.email || 'Authorized Staff'
+
+      const updatePayload: Record<string, any> = {
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      }
+
+      if (newStatus === 'CHECKED') {
+        updatePayload.checked_at = new Date().toISOString()
+        updatePayload.checked_by = userIdentifier
+      } else if (newStatus === 'CERTIFIED') {
+        updatePayload.certified_at = new Date().toISOString()
+        updatePayload.certified_by = userIdentifier
+      }
+
       const { data: updated, error } = await supabase
         .from('measurement_entries')
-        .update({
-          status: newStatus,
-          checked_at: newStatus === 'CHECKED' ? new Date().toISOString() : undefined,
-          certified_at: newStatus === 'CERTIFIED' ? new Date().toISOString() : undefined,
-        })
+        .update(updatePayload)
         .eq('id', entryId)
         .select('*, boq_items:boq_item_id(*)')
         .single()
@@ -680,12 +709,18 @@ export function MeasurementClient({
                                 Record Adjustment
                               </button>
                             ) : isChecked ? (
-                              <button
-                                onClick={() => handleUpdateStatus(entry.id, 'CERTIFIED')}
-                                className="px-2 py-1 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 text-[11px] font-semibold"
-                              >
-                                Certify (EE)
-                              </button>
+                              canCertifyMeasurement(userRole) ? (
+                                <button
+                                  onClick={() => handleUpdateStatus(entry.id, 'CERTIFIED')}
+                                  className="px-2 py-1 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 text-[11px] font-semibold"
+                                >
+                                  Certify (EE)
+                                </button>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 italic font-medium px-2 py-1">
+                                  Awaiting EE
+                                </span>
+                              )
                             ) : (
                               <button
                                 onClick={() => handleUpdateStatus(entry.id, 'CHECKED')}

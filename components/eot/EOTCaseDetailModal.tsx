@@ -90,7 +90,23 @@ export function EOTCaseDetailModal({
 
       if (error) throw error
 
-      success('Department decision recorded and revised completion date updated.')
+      // ── WORKFLOW BRIDGE: PROPAGATE APPROVED EOT TO CONTRACT & PROJECT ──
+      if ((decisionStatus === 'APPROVED' || decisionStatus === 'PARTIALLY_APPROVED') && revisedDate) {
+        if (eotCase.contract_id) {
+          await supabase
+            .from('contracts')
+            .update({ current_completion_date: revisedDate })
+            .eq('id', eotCase.contract_id)
+        }
+        if (eotCase.project_id) {
+          await supabase
+            .from('projects')
+            .update({ end_date: revisedDate })
+            .eq('id', eotCase.project_id)
+        }
+      }
+
+      success('Department decision recorded and revised completion date updated across Contract and Project.')
       onUpdate(data as EOTCase)
       setSanctionOpen(false)
     } catch (err: any) {

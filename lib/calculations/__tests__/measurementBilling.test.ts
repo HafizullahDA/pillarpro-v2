@@ -200,4 +200,71 @@ describe('PillarPro Measurement & RA Bill Integration Engine', () => {
     expect(summary.totalBilledWorkValue).toBe(1000000)
     expect(summary.unbilledCertifiedWorkValue).toBe(250000)
   })
+
+  it('supports zero quantity billing without error or state distortion', () => {
+    const breakdown = calculateBOQBillingBreakdown({
+      boqItem: mockBOQ,
+      allMeasurements: mockMeasurements,
+      previouslyBilledQuantity: 400,
+      currentBillQuantity: 0,
+    })
+
+    expect(breakdown.current_bill_qty).toBe(0)
+    expect(breakdown.current_amount).toBe(0)
+    expect(breakdown.cumulative_billed_qty).toBe(400)
+    expect(breakdown.balance_quantity).toBe(600)
+    expect(validateBillingAgainstCertified(breakdown).isValid).toBe(true)
+  })
+
+  it('supports high-precision 3-decimal quantity calculations (12.345 cum)', () => {
+    const breakdown = calculateBOQBillingBreakdown({
+      boqItem: mockBOQ,
+      allMeasurements: mockMeasurements,
+      previouslyBilledQuantity: 400.123,
+      currentBillQuantity: 12.345,
+    })
+
+    expect(breakdown.previously_billed_qty).toBe(400.123)
+    expect(breakdown.current_bill_qty).toBe(12.345)
+    expect(breakdown.cumulative_billed_qty).toBe(412.468)
+    expect(breakdown.balance_quantity).toBe(587.532)
+    expect(validateBillingAgainstCertified(breakdown).isValid).toBe(true)
+  })
+
+  it('supports authorized negative adjustments and deduction entries', () => {
+    // Contractor was previously billed 100 cum. An EE test check revealed defective work, requiring a -15 cum deduction.
+    const breakdown = calculateBOQBillingBreakdown({
+      boqItem: mockBOQ,
+      allMeasurements: mockMeasurements,
+      previouslyBilledQuantity: 100,
+      currentBillQuantity: -15,
+    })
+
+    expect(breakdown.current_bill_qty).toBe(-15)
+    expect(breakdown.cumulative_billed_qty).toBe(85)
+    expect(breakdown.balance_quantity).toBe(915)
+
+    // With allowNegativeAdjustment flag
+    const validDeduction = validateBillingAgainstCertified(breakdown, { allowNegativeAdjustment: true })
+    expect(validDeduction.isValid).toBe(true)
+
+    // Without allowNegativeAdjustment flag, standard validation flags it
+    const invalidWithoutFlag = validateBillingAgainstCertified(breakdown)
+    expect(invalidWithoutFlag.isValid).toBe(false)
+    expect(invalidWithoutFlag.errorMessage).toContain('Billing quantity cannot be negative')
+  })
+
+  it('rejects negative adjustments that would make cumulative billed negative', () => {
+    const breakdown = calculateBOQBillingBreakdown({
+      boqItem: mockBOQ,
+      allMeasurements: mockMeasurements,
+      previouslyBilledQuantity: 10,
+      currentBillQuantity: -25, // 10 - 25 = -15 < 0
+    })
+
+    expect(breakdown.cumulative_billed_qty).toBe(-15)
+    const validation = validateBillingAgainstCertified(breakdown, { allowNegativeAdjustment: true })
+    expect(validation.isValid).toBe(false)
+    expect(validation.errorMessage).toContain('Cumulative billed quantity cannot be negative')
+  })
 })

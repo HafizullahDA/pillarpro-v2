@@ -81,6 +81,73 @@ export function VariationDetailModal({
 
       if (error) throw error
 
+      // ── WORKFLOW BRIDGE: VARIATION -> APPROVAL -> BOQ -> MEASUREMENT ──
+      if (sanctionStatus === 'APPROVED') {
+        if (variation.type === 'EXTRA_ITEM') {
+          // If approved extra item, insert into boq_items to enable site e-MB measurement
+          const itemNum = variation.proposed_item_code?.trim() || `EI-${variation.reference_number}`
+          const { data: newBoq, error: boqErr } = await supabase
+            .from('boq_items')
+            .insert({
+              organization_id: variation.organization_id,
+              project_id: variation.project_id,
+              contract_id: variation.contract_id || null,
+              item_number: itemNum,
+              description: variation.proposed_item_description,
+              unit: variation.proposed_unit,
+              tender_quantity: approvedQuantity,
+              awarded_rate: approvedRate,
+              total_amount: approvedAmount,
+              revised_quantity: approvedQuantity,
+              revised_rate: approvedRate,
+              revised_amount: approvedAmount,
+              item_type: 'extra_item',
+              schedule_reference: variation.reference_number,
+              notes: `Extra Item sanctioned under Order ${approvedOrderNumber || variation.reference_number}`,
+            })
+            .select('id')
+            .single()
+
+          if (!boqErr && newBoq?.id) {
+            await supabase
+              .from('contract_variations')
+              .update({ original_boq_item_id: newBoq.id })
+              .eq('id', variation.id)
+          }
+        } else if (variation.original_boq_item_id && (variation.type === 'DEVIATION' || variation.type === 'VARIATION')) {
+          // Update existing BOQ item revised quantities and record in revision ledger
+          await supabase
+            .from('boq_items')
+            .update({
+              revised_quantity: approvedQuantity,
+              revised_rate: approvedRate,
+              revised_amount: approvedAmount,
+              variation_quantity: approvedQuantity - Number(variation.original_quantity || 0),
+            })
+            .eq('id', variation.original_boq_item_id)
+
+          await supabase
+            .from('boq_item_revisions')
+            .insert({
+              organization_id: variation.organization_id,
+              project_id: variation.project_id,
+              contract_id: variation.contract_id || null,
+              boq_item_id: variation.original_boq_item_id,
+              revision_type: variation.type.toLowerCase(),
+              revision_reference: approvedOrderNumber || variation.reference_number,
+              previous_quantity: variation.original_quantity || 0,
+              new_quantity: approvedQuantity,
+              previous_rate: variation.original_rate || 0,
+              new_rate: approvedRate,
+              previous_amount: (variation.original_quantity || 0) * (variation.original_rate || 0),
+              new_amount: approvedAmount,
+              justification: variation.reason,
+              sanctioned_by: approvedAuthority || null,
+              sanction_date: approvalDate || null,
+            })
+        }
+      }
+
       toast.success('Department sanction status updated.')
       onUpdate(data)
       setShowSanctionForm(false)

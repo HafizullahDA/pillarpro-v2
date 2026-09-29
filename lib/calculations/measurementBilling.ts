@@ -62,7 +62,7 @@ export function calculateBOQBillingBreakdown({
 
   // 5. Current Bill Quantity: defaults to available unbilled certified quantity if not specified
   const currentBillQty = currentBillQuantity !== undefined
-    ? Math.max(0, Number(currentBillQuantity))
+    ? Number(Number(currentBillQuantity).toFixed(3))
     : unbilledCertifiedQty
 
   // 6. Cumulative Billed = Previously Billed + Current Bill
@@ -107,15 +107,23 @@ export function calculateBOQBillingBreakdown({
  * Throws or returns an explicit error if billing exceeds certified work.
  */
 export function validateBillingAgainstCertified(
-  breakdown: BOQMeasurementBillingBreakdown
+  breakdown: BOQMeasurementBillingBreakdown,
+  options?: { allowNegativeAdjustment?: boolean }
 ): {
   isValid: boolean
   errorMessage?: string
 } {
-  if (breakdown.current_bill_qty < 0) {
+  if (!options?.allowNegativeAdjustment && breakdown.current_bill_qty < 0) {
     return {
       isValid: false,
-      errorMessage: `Item ${breakdown.item_number}: Billing quantity cannot be negative.`,
+      errorMessage: `Item ${breakdown.item_number}: Billing quantity cannot be negative unless recording an authorized deduction or negative adjustment.`,
+    }
+  }
+
+  if (breakdown.cumulative_billed_qty < 0) {
+    return {
+      isValid: false,
+      errorMessage: `Item ${breakdown.item_number}: Cumulative billed quantity cannot be negative (${breakdown.cumulative_billed_qty} ${breakdown.unit}).`,
     }
   }
 
