@@ -168,27 +168,31 @@ CREATE OR REPLACE FUNCTION public.sync_approved_clause_to_notice_rules()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.status = 'APPROVED' AND NEW.notice_period_days IS NOT NULL AND NEW.notice_period_days > 0 THEN
-    INSERT INTO public.contract_notice_rules (
-      organization_id,
-      contract_id,
-      clause_number,
-      clause_name,
-      notice_period_days,
-      description,
-      applicable_to,
-      is_active
-    )
-    VALUES (
-      NEW.organization_id,
-      NEW.contract_id,
-      NEW.clause_number,
-      NEW.clause_title,
-      NEW.notice_period_days,
-      COALESCE(NEW.clause_text, NEW.clause_title),
-      'ALL',
-      TRUE
-    )
-    ON CONFLICT DO NOTHING;
+    -- Prevent duplicate notice rules for the same contract and clause
+    IF NOT EXISTS (
+      SELECT 1 FROM public.contract_notice_rules
+      WHERE contract_id = NEW.contract_id
+        AND clause_reference = NEW.clause_number
+    ) THEN
+      INSERT INTO public.contract_notice_rules (
+        organization_id,
+        contract_id,
+        clause_reference,
+        clause_name,
+        notice_period_days,
+        description,
+        trigger_event
+      )
+      VALUES (
+        NEW.organization_id,
+        NEW.contract_id,
+        NEW.clause_number,
+        NEW.clause_title,
+        NEW.notice_period_days,
+        COALESCE(NEW.clause_text, NEW.clause_title),
+        'Contractual clause notice requirement'
+      );
+    END IF;
   END IF;
 
   RETURN NEW;

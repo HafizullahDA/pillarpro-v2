@@ -334,6 +334,64 @@ export function ReportsClient({
         </div>
       )}
 
+      {/* Dynamic CSS @page & print orientation rules to prevent column clipping on wide ledgers */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page {
+            size: ${report.orientation === 'landscape' ? 'A4 landscape' : 'A4 portrait'};
+            margin: ${report.orientation === 'landscape' ? '8mm 6mm' : '10mm 8mm'};
+          }
+          html, body {
+            background: #fff !important;
+            color: #000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+          }
+          aside, nav, header, [role="navigation"], .print\\:hidden {
+            display: none !important;
+          }
+          #printable-report {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          #printable-report table {
+            width: 100% !important;
+            table-layout: auto !important;
+            border-collapse: collapse !important;
+            font-size: ${report.orientation === 'landscape' ? '7.5pt' : '8.5pt'} !important;
+          }
+          #printable-report th,
+          #printable-report td {
+            padding: 2.5px 4px !important;
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+            border: 1px solid #94a3b8 !important;
+          }
+          #printable-report thead {
+            display: table-header-group !important;
+          }
+          #printable-report tfoot {
+            display: table-footer-group !important;
+          }
+          #printable-report tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .attestation-block {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin-top: 16px !important;
+          }
+        }
+      `}} />
+
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* 4. OFFICIAL REPORT DOCUMENT (PRINTABLE CONTAINER) */}
       {/* ─────────────────────────────────────────────────────────────────── */}
@@ -501,7 +559,7 @@ export function ReportsClient({
         {/* ─────────────────────────────────────────────────────────────────── */}
         {/* 5. ATTESTATION & SIGN-OFF BLOCK */}
         {/* ─────────────────────────────────────────────────────────────────── */}
-        <div className="pt-6 border-t-2 border-slate-900 space-y-6">
+        <div className="pt-6 border-t-2 border-slate-900 space-y-6 attestation-block">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
             {/* Prepared By */}
             <div className="border border-slate-300 rounded-xl p-4 flex flex-col justify-between h-32 bg-slate-50/50">
