@@ -19,26 +19,12 @@
 -- 4. Enforces protections against unauthorized certification and altering billed records.
 -- ==============================================================================
 
--- 1. Expand public.user_role Enum safely
-DO $$ BEGIN
-  ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'project_manager';
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-DO $$ BEGIN
-  ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'site_engineer';
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-DO $$ BEGIN
-  ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'billing_engineer';
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-DO $$ BEGIN
-  ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'store_manager';
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-DO $$ BEGIN
-  ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'data_entry';
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+-- 1. Expand public.user_role Enum safely (bare ALTER TYPE statements; cannot run in PL/pgSQL DO blocks)
+ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'project_manager';
+ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'site_engineer';
+ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'billing_engineer';
+ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'store_manager';
+ALTER TYPE public.user_role ADD VALUE IF NOT EXISTS 'data_entry';
 
 -- 2. Update join_organization to accept all new roles
 CREATE OR REPLACE FUNCTION public.join_organization(
@@ -136,7 +122,7 @@ GRANT EXECUTE ON FUNCTION public.join_organization(TEXT, TEXT, TEXT) TO authenti
 -- 3. Create Immutable Audit Logs Table
 CREATE TABLE IF NOT EXISTS public.audit_logs (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id     UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  organization_id     UUID REFERENCES public.organizations(id) ON DELETE CASCADE,
   project_id          UUID REFERENCES public.projects(id) ON DELETE SET NULL,
   user_id             UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   user_email          TEXT,
@@ -149,6 +135,7 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
   previous_values     JSONB DEFAULT '{}'::jsonb,
   new_values          JSONB DEFAULT '{}'::jsonb,
   diff_summary        JSONB DEFAULT '{}'::jsonb,
+  summary             TEXT,
   notes               TEXT,
   ip_address          TEXT,
   user_agent          TEXT,
@@ -184,13 +171,13 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "audit_logs_select" ON public.audit_logs;
 CREATE POLICY "audit_logs_select" ON public.audit_logs
   FOR SELECT TO authenticated
-  USING (organization_id = public.get_user_organization_id());
+  USING (organization_id IS NULL OR organization_id = public.get_user_organization_id());
 
 DROP POLICY IF EXISTS "audit_logs_insert" ON public.audit_logs;
 CREATE POLICY "audit_logs_insert" ON public.audit_logs
   FOR INSERT TO authenticated
   WITH CHECK (
-    COALESCE(organization_id, public.get_user_organization_id()) = public.get_user_organization_id()
+    organization_id IS NULL OR organization_id = public.get_user_organization_id()
   );
 
 -- 5. Helper Function to Resolve Actor Details for Audit Trigger
@@ -316,8 +303,8 @@ DECLARE
 BEGIN
   SELECT * INTO v_actor FROM public.get_audit_actor();
 
-  IF (OLD.quantity IS DISTINCT FROM NEW.quantity) OR 
-     (OLD.rate IS DISTINCT FROM NEW.rate) OR 
+  IF (OLD.tender_quantity IS DISTINCT FROM NEW.tender_quantity) OR 
+     (OLD.awarded_rate IS DISTINCT FROM NEW.awarded_rate) OR 
      (OLD.revised_quantity IS DISTINCT FROM NEW.revised_quantity) THEN
     INSERT INTO public.audit_logs (
       organization_id, project_id, user_id, user_email, user_name, user_role,
@@ -334,9 +321,9 @@ BEGIN
       'boq_items',
       NEW.id::TEXT,
       'BOQ Item #' || COALESCE(NEW.item_number, NEW.id::TEXT),
-      json_build_object('quantity', OLD.quantity, 'rate', OLD.rate, 'revised_quantity', OLD.revised_quantity, 'amount', OLD.amount),
-      json_build_object('quantity', NEW.quantity, 'rate', NEW.rate, 'revised_quantity', NEW.revised_quantity, 'amount', NEW.amount),
-      json_build_object('old_qty', OLD.quantity, 'new_qty', NEW.quantity, 'revised_qty', NEW.revised_quantity),
+      json_build_object('tender_quantity', OLD.tender_quantity, 'awarded_rate', OLD.awarded_rate, 'revised_quantity', OLD.revised_quantity, 'total_amount', OLD.total_amount),
+      json_build_object('tender_quantity', NEW.tender_quantity, 'awarded_rate', NEW.awarded_rate, 'revised_quantity', NEW.revised_quantity, 'total_amount', NEW.total_amount),
+      json_build_object('old_qty', OLD.tender_quantity, 'new_qty', NEW.tender_quantity, 'revised_qty', NEW.revised_quantity),
       'Tender or revised BOQ schedule parameters altered.'
     );
   END IF;
@@ -444,20 +431,24 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
 DECLARE
   v_actor RECORD;
   v_bill_num TEXT;
+  v_org_id UUID;
 BEGIN
   SELECT * INTO v_actor FROM public.get_audit_actor();
   SELECT bill_number INTO v_bill_num FROM public.ra_bills WHERE id = NEW.bill_id;
+  SELECT organization_id INTO v_org_id FROM public.projects WHERE id = NEW.project_id;
+  IF v_org_id IS NULL THEN
+    v_org_id := v_actor.actor_org_id;
+  END IF;
 
   INSERT INTO public.audit_logs (
     organization_id, project_id, user_id, user_email, user_name, user_role,
     action, entity_type, entity_id, entity_identifier,
     previous_values, new_values, diff_summary, notes
   ) VALUES (
-    COALESCE(NEW.organization_id, v_actor.actor_org_id),
+    v_org_id,
     NEW.project_id,
     v_actor.actor_id,
     v_actor.actor_email,
@@ -585,7 +576,7 @@ BEGIN
 
   -- 1. Protect against certification by unauthorized roles
   IF NEW.status = 'CERTIFIED' AND (OLD.status IS NULL OR OLD.status != 'CERTIFIED') THEN
-    IF v_role NOT IN ('owner', 'partner', 'managing_partner', 'project_manager', 'billing_engineer') THEN
+    IF v_role IS NOT NULL AND v_role NOT IN ('owner', 'partner', 'managing_partner', 'project_manager', 'billing_engineer') THEN
       RAISE EXCEPTION 'Access Denied: Only Billing Engineers, Project Managers, Partners, or Owners can certify e-MB measurements.';
     END IF;
   END IF;
