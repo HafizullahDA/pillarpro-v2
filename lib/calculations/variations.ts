@@ -46,6 +46,12 @@ export function calculateVariationAmount(
   let amount = 0
   if (type === 'EXTRA_ITEM') {
     amount = Math.round(propQty * propRt * 100) / 100
+  } else if (type === 'SUBSTITUTED_ITEM') {
+    // Under CPWD Clause 12.4, substituted item net financial change is:
+    // (Proposed Qty * Proposed Rate) - (Original Qty * Original Rate)
+    const proposedTotal = propQty * propRt
+    const originalTotal = origQty * origRt
+    amount = Math.round((proposedTotal - originalTotal) * 100) / 100
   } else {
     amount = Math.round(differenceQuantity * propRt * 100) / 100
   }

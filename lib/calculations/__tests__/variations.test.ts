@@ -39,7 +39,15 @@ describe('Variations, Deviations and Extra Items Calculations', () => {
       expect(result.isDeletion).toBe(false)
     })
 
-    it('identifies deleted work and calculates deleted amount', () => {
+    
+    it('calculates substituted item financial difference correctly when quantity is constant', () => {
+      // 100 sqm tile at 1000 substituted with 100 sqm granite at 1800
+      const result = calculateVariationAmount('SUBSTITUTED_ITEM', 100, 100, 1000, 1800)
+      expect(result.differenceQuantity).toBe(0)
+      // (100 * 1800) - (100 * 1000) = 180,000 - 100,000 = 80,000
+      expect(result.amount).toBe(80000)
+    })
+      it('identifies deleted work and calculates deleted amount', () => {
       const result = calculateVariationAmount('DEVIATION', 100, 60, 500, 500)
       expect(result.differenceQuantity).toBe(-40)
       expect(result.amount).toBe(-20000)

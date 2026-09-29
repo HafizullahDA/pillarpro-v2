@@ -47,6 +47,8 @@ import { EOTCase } from '@/lib/types/eot'
 import { EOTMasterView } from '@/components/eot/EOTMasterView'
 import { ContractVariation } from '@/lib/types/variations'
 import { VariationsMasterView } from '@/components/variations/VariationsMasterView'
+import { ContractClaim } from '@/lib/types/claims'
+import { ClaimsMasterView } from '@/components/claims/ClaimsMasterView'
 
 interface Project {
   id: string
@@ -72,6 +74,7 @@ interface AllHindrancesClientProps {
   noticeRules?: ContractNoticeRule[]
   initialEOTCases?: EOTCase[]
   initialVariations?: ContractVariation[]
+  initialClaims?: ContractClaim[]
   userRole: string
   orgProfile: {
     name?: string
@@ -106,6 +109,7 @@ export function AllHindrancesClient({
   noticeRules,
   initialEOTCases = [],
   initialVariations = [],
+  initialClaims = [],
   userRole,
   orgProfile,
 }: AllHindrancesClientProps) {
@@ -120,6 +124,7 @@ export function AllHindrancesClient({
   const [correspondenceList, setCorrespondenceList] = useState<CorrespondenceRecord[]>(initialCorrespondence || [])
   const [eotCasesList, setEotCasesList] = useState<EOTCase[]>(initialEOTCases || [])
   const [variationsList, setVariationsList] = useState<ContractVariation[]>(initialVariations || [])
+  const [claimsList, setClaimsList] = useState<ContractClaim[]>(initialClaims || [])
   const [activeTab, setActiveTab] = useState<DefenseTab>('events')
 
   // Modals & Drawers
@@ -226,6 +231,11 @@ export function AllHindrancesClient({
     if (selectedProjectId === 'all') return variationsList
     return variationsList.filter(v => v.project_id === selectedProjectId)
   }, [variationsList, selectedProjectId])
+
+  const filteredClaims = useMemo(() => {
+    if (selectedProjectId === 'all') return claimsList
+    return claimsList.filter(c => c.project_id === selectedProjectId)
+  }, [claimsList, selectedProjectId])
 
   const availableContracts = useMemo(() => {
     return targetProjectId
@@ -781,7 +791,10 @@ export function AllHindrancesClient({
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <span>9. Claims</span>
+            <span>9. Claims &amp; Disputes</span>
+            <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-bold">
+              {filteredClaims.length}
+            </span>
           </button>
         </div>
       </div>
@@ -1126,6 +1139,114 @@ export function AllHindrancesClient({
       )}
 
       {/* TAB 3: CONTRACT TIMELINE */}
+      {activeTab === 'timeline' && (
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-1">
+            <h3 className="text-sm font-bold text-slate-900">Project-Level Chronological Contract Timeline</h3>
+            <p className="text-xs text-slate-500">
+              Chronological sequence of site handovers, work orders, hindrances, instructions, notices, and variations to defend against liquidated damages and justify time extension.
+            </p>
+          </div>
+
+          <ContractTimelineView
+            timelineNodes={timelineNodes}
+            onSelectNode={node => {
+              if (node.type === 'event') {
+                const ev = contractEvents.find(e => e.id === node.sourceId)
+                if (ev) setSelectedEventDetail(ev)
+              } else {
+                const h = hindrances.find(item => item.id === node.sourceId)
+                if (h) handleOpenNoticeModal(h)
+              }
+            }}
+          />
+        </div>
+      )}
+
+      {/* TAB 4: EOT CLAIMS & FORM 27 ENGINE */}
+      {activeTab === 'eot' && (
+        <EOTMasterView
+          initialCases={eotCasesList}
+          projects={projects}
+          contracts={contracts}
+          contractEvents={contractEvents}
+          hindrances={hindrances}
+          evidenceList={evidenceList}
+          correspondenceList={correspondenceList}
+          selectedProjectId={selectedProjectId}
+        />
+      )}
+
+      {/* TAB 5: EVIDENCE VAULT */}
+      {activeTab === 'evidence' && (
+        <EvidenceVaultView
+          initialEvidence={filteredEvidence}
+          projects={projects}
+          contracts={contracts}
+          boqItems={boqItems}
+          contractEvents={contractEvents}
+          hindrances={hindrances}
+          eotApplications={eotApps}
+          selectedProjectId={selectedProjectId}
+        />
+      )}
+
+      {/* TABS 6 & 7: CORRESPONDENCE VAULT & NOTICES ENGINE */}
+      {activeTab === 'correspondence' && (
+        <CorrespondenceVaultView
+          initialRecords={correspondenceList}
+          noticeRules={noticeRules || []}
+          projects={projects}
+          contracts={contracts}
+          boqItems={boqItems}
+          contractEvents={contractEvents}
+          hindrances={hindrances}
+          eotApplications={eotApps}
+          selectedProjectId={selectedProjectId}
+          initialTab="all"
+        />
+      )}
+
+      {activeTab === 'notices' && (
+        <CorrespondenceVaultView
+          initialRecords={correspondenceList}
+          noticeRules={noticeRules || []}
+          projects={projects}
+          contracts={contracts}
+          boqItems={boqItems}
+          contractEvents={contractEvents}
+          hindrances={hindrances}
+          eotApplications={eotApps}
+          selectedProjectId={selectedProjectId}
+          initialTab="notices"
+        />
+      )}
+
+      {activeTab === 'variations' && (
+        <VariationsMasterView
+          initialVariations={variationsList}
+          projects={projects}
+          contracts={contracts}
+          boqItems={boqItems}
+          selectedProjectId={selectedProjectId}
+        />
+      )}
+
+      {activeTab === 'claims' && (
+        <ClaimsMasterView
+          initialClaims={claimsList}
+          projects={projects}
+          contracts={contracts}
+          contractEvents={contractEvents}
+          hindrances={hindrances}
+          eotCases={eotCasesList}
+          evidenceList={evidenceList}
+          correspondenceList={correspondenceList}
+          boqItems={boqItems}
+          selectedProjectId={selectedProjectId}
+        />
+      )}
+
       {activeTab === 'timeline' && (
         <div className="space-y-4">
           <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-1">
