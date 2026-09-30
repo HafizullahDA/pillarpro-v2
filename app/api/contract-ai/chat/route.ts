@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       throw new AppError('Project not found or you do not have permission to view it.', 404)
     }
 
-    // 6. Execute Gemini 1.5 Pro with 4-Layer Zero-Hallucination Shield
+    // 6. Execute Gemini with 4-Layer Zero-Hallucination Shield
     const result = await runContractAiQuery({
       userQuery: query,
       context,

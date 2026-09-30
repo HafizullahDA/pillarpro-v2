@@ -145,13 +145,25 @@ Do NOT wrap the output in markdown fences or backticks. Return raw valid JSON on
       ]
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents,
-      config: {
-        responseMimeType: 'application/json',
-      },
-    })
+    let response: any
+    try {
+      response = await ai.models.generateContent({
+        model: 'gemini-3.6-flash',
+        contents,
+        config: {
+          responseMimeType: 'application/json',
+        },
+      })
+    } catch (primaryErr: any) {
+      console.warn('gemini-3.6-flash failed for contract extraction, falling back to gemini-3.5-flash:', primaryErr?.message)
+      response = await ai.models.generateContent({
+        model: 'gemini-3.5-flash',
+        contents,
+        config: {
+          responseMimeType: 'application/json',
+        },
+      })
+    }
 
     const responseText = response.text?.trim() ?? ''
     const cleanJsonStr = responseText
