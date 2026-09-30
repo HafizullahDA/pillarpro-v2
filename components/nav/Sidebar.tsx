@@ -36,7 +36,7 @@ export function Sidebar({
           <Logo theme="dark" href="/dashboard" size="md" />
         </div>
 
-        {/* Contract Copilot Featured Card */}
+        {/* ContractIQ Featured Card */}
         <div className="px-3 pt-3 pb-1">
           <Link
             href="/contract-ai"
@@ -52,7 +52,7 @@ export function Sidebar({
                 {Icons.copilot}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold truncate group-hover:text-white transition-colors">Contract Copilot</p>
+                <p className="text-xs font-bold truncate group-hover:text-white transition-colors">ContractIQ</p>
                 <p className="text-[10px] text-slate-400 truncate">Claims & Delay Defense</p>
               </div>
             </div>

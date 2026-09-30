@@ -4,14 +4,14 @@ import { PricingClient } from '@/components/pricing/PricingClient'
 export const metadata: Metadata = {
   title: 'Pricing & Plans — Transparent Active-Site Subscriptions',
   description:
-    'PillarPro pricing for Indian civil contractors: Active Sites + Unlimited Users. No per-seat penalties. 14-day free trial. Bootstrap (₹999/mo), Growth Contractor (₹2,499/mo with Contract Copilot AI), and Enterprise Infra (₹4,599/mo).',
+    'PillarPro pricing for Indian civil contractors: Active Sites + Unlimited Users. No per-seat penalties. 14-day free trial. Bootstrap (₹999/mo), Growth Contractor (₹2,499/mo with ContractIQ AI), and Enterprise Infra (₹4,599/mo).',
   keywords: [
     'pillarpro pricing',
     'civil contractor software pricing',
     'construction erp cost india',
     'cpwd billing software price',
     'delay defense software cost',
-    'contract copilot civil engineering',
+    'contractiq civil engineering',
     'powerplay alternative',
     'onsite alternative',
     'pwd contractor software',
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'PillarPro Pricing — Active Sites + Unlimited Users',
     description:
-      'Fair, predictable civil contractor ERP pricing with Contract Copilot AI. Unlimited site supervisors and munshis with zero per-seat fees. Starting at ₹999/mo with 14-day free trial.',
+      'Fair, predictable civil contractor ERP pricing with ContractIQ AI. Unlimited site supervisors and munshis with zero per-seat fees. Starting at ₹999/mo with 14-day free trial.',
     url: 'https://pillarprojk.com/pricing',
     type: 'website',
   },
@@ -32,7 +32,7 @@ export default function PricingPage() {
     name: 'PillarPro Civil Contractor Operating System',
     image: 'https://pillarprojk.com/icon-512.png',
     description:
-      'Financial and Operations OS for Indian civil infrastructure contractors. RA Billing, statutory deductions, Delay Defense, Contract Copilot AI, Form 26 e-MB, and muster roll attendance.',
+      'Financial and Operations OS for Indian civil infrastructure contractors. RA Billing, statutory deductions, Delay Defense, ContractIQ AI, Form 26 e-MB, and muster roll attendance.',
     brand: {
       '@type': 'Brand',
       name: 'PillarPro',
@@ -54,7 +54,7 @@ export default function PricingPage() {
         priceCurrency: 'INR',
         billingDuration: 'P1Y',
         description:
-          'Up to 6 Active Sites, Unlimited Users, Form 26 MB, Delay Defense, Contract Copilot AI Assistant',
+          'Up to 6 Active Sites, Unlimited Users, Form 26 MB, Delay Defense, ContractIQ AI Assistant',
         url: 'https://pillarprojk.com/pricing',
       },
       {
@@ -64,7 +64,7 @@ export default function PricingPage() {
         priceCurrency: 'INR',
         billingDuration: 'P1Y',
         description:
-          'Up to 15 Active Sites, Unlimited Users, Comprehensive Form 27 Legal Dossier, Priority Contract Copilot AI',
+          'Up to 15 Active Sites, Unlimited Users, Comprehensive Form 27 Legal Dossier, Priority ContractIQ AI',
         url: 'https://pillarprojk.com/pricing',
       },
     ],

@@ -121,7 +121,7 @@ export function ContractDetailClient({
             <svg className="w-3.5 h-3.5 text-blue-200 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <span>Ask Contract Copilot</span>
+            <span>Ask ContractIQ</span>
             <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-mono font-bold">AI</span>
           </Button>
 
@@ -689,7 +689,7 @@ export function ContractDetailClient({
         />
       )}
 
-      {/* Contract AI Intelligence Drawer (Gemini 1.5 Pro) */}
+      {/* ContractIQ Intelligence Drawer */}
       <ContractAiDrawer
         isOpen={aiDrawerOpen}
         onClose={() => setAiDrawerOpen(false)}

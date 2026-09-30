@@ -18,13 +18,13 @@ export interface ContractAiResponse {
 }
 
 const STATUTORY_LEGAL_DISCLAIMER =
-  '\n\n---\n> **Statutory Disclaimer**: *PillarPro Contract AI is an analytical documentation assistant. This report does not constitute definitive legal advice, contractual dispute representation, or a guarantee that an Extension of Time (EOT) or financial claim will succeed. All submissions must be vetted by your project director and legal counsel against the official signed tender agreement.*'
+  '\n\n---\n> **Statutory Disclaimer**: *PillarPro ContractIQ is an analytical documentation assistant. This report does not constitute definitive legal advice, contractual dispute representation, or a guarantee that an Extension of Time (EOT) or financial claim will succeed. All submissions must be vetted by your project director and legal counsel against the official signed tender agreement.*'
 
 /**
  * Builds the strict closed-world prompt (Layer 2 & 3 of the Zero-Hallucination Shield).
  */
 export function buildSystemPrompt(context: ProjectContractContext): string {
-  return `You are the PillarPro Contract AI, an expert Senior Indian Government Construction Contract Specialist (CPWD, State PWD, NHAI, MoRTH, MES, Railways, PSUs).
+  return `You are PillarPro ContractIQ, an expert Senior Indian Government Construction Contract Specialist (CPWD, State PWD, NHAI, MoRTH, MES, Railways, PSUs).
 
 MISSION & OPERATIONAL SCOPE:
 You assist contractors, billing engineers, and project managers in auditing their contract records, identifying delays, tracking notice deadlines, evaluating clause requirements, and spotting missing evidence.
@@ -158,7 +158,7 @@ export async function runContractAiQuery(
 
   if (!rawText) {
     throw new AppError(
-      `PillarPro Contract AI service is temporarily unavailable: ${lastError?.message || 'Empty response'}`,
+      `PillarPro ContractIQ service is temporarily unavailable: ${lastError?.message || 'Empty response'}`,
       503
     )
   }

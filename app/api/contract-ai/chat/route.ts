@@ -44,17 +44,17 @@ export async function POST(req: NextRequest) {
     // 2a. Check if active/valid subscription
     if (orgData && !isSubscriptionActive(orgData)) {
       throw new ForbiddenError(
-        'Subscription required. Your workspace is currently in Read-Only mode. Please reactivate your plan to access PillarPro Contract Copilot.'
+        'Subscription required. Your workspace is currently in Read-Only mode. Please reactivate your plan to access PillarPro ContractIQ.'
       )
     }
 
-    // 2b. Strictly gate Contract Copilot to Growth and Enterprise tiers (Bootstrap is blocked!)
+    // 2b. Strictly gate ContractIQ to Growth and Enterprise tiers (Bootstrap is blocked!)
     const featureCheck = canAccessFeature('hasContractAi', orgData)
     if (!featureCheck.allowed) {
       return NextResponse.json(
         {
           error:
-            'Contract Copilot is an exclusive feature of the Growth Contractor (₹2,499/mo) and Enterprise Infra (₹4,599/mo) plans. Upgrade your subscription to unlock automated delay analysis, clause radar, and notice compliance audits.',
+            'ContractIQ is an exclusive feature of the Growth Contractor (₹2,499/mo) and Enterprise Infra (₹4,599/mo) plans. Upgrade your subscription to unlock automated delay analysis, clause radar, and notice compliance audits.',
           code: 'FEATURE_GATED',
           requiredPlan: featureCheck.requiredPlan,
         },
@@ -64,11 +64,11 @@ export async function POST(req: NextRequest) {
 
     // 3. Sliding-window rate limit
     const clientIp = getClientIp(req)
-    const rateLimitKey = `contract-copilot:${user.id || clientIp}`
+    const rateLimitKey = `contract-iq:${user.id || clientIp}`
     const rateLimit = checkRateLimit(rateLimitKey, RATE_LIMIT_CONFIG)
     if (!rateLimit.success) {
       throw new RateLimitError(
-        `Contract Copilot query limit reached. Please wait ${rateLimit.resetSeconds}s before sending another question.`,
+        `ContractIQ query limit reached. Please wait ${rateLimit.resetSeconds}s before sending another question.`,
         rateLimit.resetSeconds
       )
     }

@@ -137,7 +137,7 @@ export function ContractAiClient({
         if (data?.code === 'FEATURE_GATED') {
           setErrorMsg(
             data.error ||
-              'Contract Copilot is an exclusive feature of Growth Contractor and Enterprise Infra plans.'
+              'ContractIQ is an exclusive feature of Growth Contractor and Enterprise Infra plans.'
           )
         } else {
           setErrorMsg(data?.error || 'Failed to process contract query. Please try again.')
@@ -156,7 +156,7 @@ export function ContractAiClient({
         },
       ])
     } catch (err: any) {
-      setErrorMsg(err.message || 'Network error occurred while contacting Contract Copilot.')
+      setErrorMsg(err.message || 'Network error occurred while contacting ContractIQ.')
     } finally {
       setLoading(false)
     }
@@ -272,7 +272,7 @@ export function ContractAiClient({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-extrabold tracking-tight text-white">
-                  PillarPro Contract Copilot
+                  PillarPro ContractIQ
                 </h1>
                 <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded-full bg-blue-500/30 text-blue-300 border border-blue-400/40">
                   AI
@@ -364,9 +364,9 @@ export function ContractAiClient({
             <span className="px-3 py-1 rounded-full text-xs font-extrabold uppercase bg-amber-200/70 text-amber-900 border border-amber-300 mb-2">
               Growth &amp; Enterprise Feature
             </span>
-            <h3 className="text-xl font-bold text-slate-900">Contract Copilot is Locked on Bootstrap Plan</h3>
+            <h3 className="text-xl font-bold text-slate-900">ContractIQ is Locked on Bootstrap Plan</h3>
             <p className="mt-2 text-sm text-slate-600 max-w-lg leading-relaxed">
-              Automated delay root-cause analysis, contractual clause radar, and CPWD Clause 5 notice audits in <strong>Contract Copilot</strong> are available exclusively on the <strong>Growth Contractor (₹2,499/mo)</strong> and <strong>Enterprise Infra (₹4,599/mo)</strong> plans.
+              Automated delay root-cause analysis, contractual clause radar, and CPWD Clause 5 notice audits in <strong>ContractIQ</strong> are available exclusively on the <strong>Growth Contractor (₹2,499/mo)</strong> and <strong>Enterprise Infra (₹4,599/mo)</strong> plans.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
               <Link
@@ -475,7 +475,7 @@ export function ContractAiClient({
                 <div className="flex items-center gap-3 p-3.5 rounded-xl bg-blue-50/60 border border-blue-200/60 text-xs text-blue-900 w-fit">
                   <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                   <span className="font-medium">
-                    Inspecting live PostgreSQL project records &amp; tender clauses with Zero-Hallucination Shield...
+                    Inspecting verified project records &amp; tender clauses with Zero-Hallucination Shield...
                   </span>
                 </div>
               )}
@@ -511,7 +511,7 @@ export function ContractAiClient({
                   disabled={loading || !inputQuery.trim()}
                   className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-xs"
                 >
-                  {loading ? 'Auditing...' : 'Ask Copilot'}
+                  {loading ? 'Auditing...' : 'Ask ContractIQ'}
                 </button>
                 {messages.length > 0 && (
                   <button
@@ -525,7 +525,7 @@ export function ContractAiClient({
                 )}
               </form>
               <p className="text-[10px] text-slate-400 mt-2 text-center">
-                PillarPro Contract Copilot references live project ERP records and uploaded contract documents. Always verify tender terms before formal submission. Not legal counsel.
+                PillarPro ContractIQ references live project ERP records and uploaded contract documents. Always verify tender terms before formal submission. Not legal counsel.
               </p>
             </div>
           </div>
@@ -534,3 +534,4 @@ export function ContractAiClient({
     </div>
   )
 }
+

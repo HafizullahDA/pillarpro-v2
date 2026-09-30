@@ -48,7 +48,7 @@ export function GlobalContractCopilot({
           type="button"
           onClick={() => setDrawerOpen(true)}
           className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 border border-blue-400/40 ring-4 ring-blue-500/10 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          aria-label="Open Contract Copilot Assistant"
+          aria-label="Open ContractIQ Assistant"
         >
           <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
             <svg
@@ -65,14 +65,14 @@ export function GlobalContractCopilot({
               />
             </svg>
           </div>
-          <span className="text-xs font-bold tracking-tight shadow-xs">Contract Copilot</span>
+          <span className="text-xs font-bold tracking-tight shadow-xs">ContractIQ</span>
           <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-white/20 text-white font-mono">
             AI
           </span>
         </button>
       </div>
 
-      {/* Global Contract Copilot Drawer */}
+      {/* Global ContractIQ Drawer */}
       <ContractAiDrawer
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -88,3 +88,4 @@ export function GlobalContractCopilot({
     </>
   )
 }
+

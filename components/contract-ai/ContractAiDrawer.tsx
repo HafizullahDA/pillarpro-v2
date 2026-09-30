@@ -114,7 +114,7 @@ export function ContractAiDrawer({
         if (data?.code === 'FEATURE_GATED') {
           setErrorMsg(
             data.error ||
-              'Contract Copilot is available on Growth Contractor and Enterprise Infra plans.'
+              'ContractIQ is available on Growth Contractor and Enterprise Infra plans.'
           )
         } else {
           setErrorMsg(data?.error || 'Failed to process contract query. Please try again.')
@@ -246,7 +246,7 @@ export function ContractAiDrawer({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold tracking-tight text-white">Contract Copilot</h3>
+                <h3 className="text-sm font-bold tracking-tight text-white">ContractIQ</h3>
                 <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-blue-500/30 text-blue-300 border border-blue-400/40">
                   AI • Zero-Hallucination
                 </span>
@@ -289,7 +289,7 @@ export function ContractAiDrawer({
               type="button"
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-              aria-label="Close Contract Copilot Drawer"
+              aria-label="Close ContractIQ Drawer"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -319,9 +319,9 @@ export function ContractAiDrawer({
             <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase bg-amber-200/60 text-amber-900 border border-amber-300 mb-2">
               Plan Upgrade Required
             </span>
-            <h4 className="text-lg font-bold text-slate-900">Contract Copilot is Locked on Bootstrap</h4>
+            <h4 className="text-lg font-bold text-slate-900">ContractIQ is Locked on Bootstrap</h4>
             <p className="mt-2 text-xs text-slate-600 max-w-md leading-relaxed">
-              Automated delay root-cause analysis, contractual clause radar, and CPWD Clause 5 notice audits in <strong>Contract Copilot</strong> are available exclusively on the <strong>Growth Contractor (₹2,499/mo)</strong> and <strong>Enterprise Infra (₹4,599/mo)</strong> plans.
+              Automated delay root-cause analysis, contractual clause radar, and CPWD Clause 5 notice audits in <strong>ContractIQ</strong> are available exclusively on the <strong>Growth Contractor (₹2,499/mo)</strong> and <strong>Enterprise Infra (₹4,599/mo)</strong> plans.
             </p>
 
             <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
@@ -417,7 +417,7 @@ export function ContractAiDrawer({
               {loading && (
                 <div className="flex items-center gap-2 p-3 text-xs text-slate-500">
                   <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                  <span>Inspecting live project records &amp; tender clauses with Zero-Hallucination Shield...</span>
+                  <span>Inspecting verified project records &amp; contract clauses with Zero-Hallucination Shield...</span>
                 </div>
               )}
 
@@ -452,11 +452,11 @@ export function ContractAiDrawer({
                   disabled={loading || !inputQuery.trim()}
                   className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-semibold transition-colors"
                 >
-                  Send
+                  {loading ? 'Auditing...' : 'Ask ContractIQ'}
                 </button>
               </form>
               <div className="mt-2 text-[10px] text-slate-400 text-center flex items-center justify-center gap-1">
-                <span>Answers cite verified ERP records &amp; tender documents. Not legal advice.</span>
+                <span>PillarPro ContractIQ references verified ERP records &amp; tender clauses. Not legal advice.</span>
               </div>
             </div>
           </div>

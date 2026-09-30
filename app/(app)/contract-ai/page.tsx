@@ -8,9 +8,9 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export const metadata: Metadata = {
-  title: 'Contract Copilot — AI Contract Defense & Claims Intelligence',
+  title: 'ContractIQ — AI Contract Defense & Claims Intelligence Engine',
   description:
-    'Audit project delays, analyze CPWD/NHAI contract clauses, verify 14-day notice compliance, and prepare claim defense dossiers with PillarPro Contract Copilot.',
+    'Audit project delays, analyze CPWD/NHAI contract clauses, verify 14-day notice compliance, and prepare claim defense dossiers with PillarPro ContractIQ.',
 }
 
 export default async function ContractAiPage() {
@@ -27,9 +27,9 @@ export default async function ContractAiPage() {
         .eq('archived', false)
         .order('created_at', { ascending: false }),
       supabase
-        .from('project_contracts')
+        .from('contracts')
         .select(
-          'id, project_id, contract_number, agreement_number, tender_number, employer_name, stipulated_completion_date, extended_completion_date'
+          'id, project_id, agreement_number, work_order_number, nit_number, employer_name, original_completion_date, current_completion_date'
         ),
       supabase
         .from('organizations')
@@ -40,10 +40,21 @@ export default async function ContractAiPage() {
 
   const effectiveSub = getEffectiveSubscription(orgData)
 
+  const mappedContracts = (contracts ?? []).map((c: any) => ({
+    id: c.id,
+    project_id: c.project_id,
+    contract_number: c.agreement_number || c.work_order_number || null,
+    agreement_number: c.agreement_number || null,
+    tender_number: c.nit_number || null,
+    employer_name: c.employer_name || null,
+    stipulated_completion_date: c.original_completion_date || null,
+    extended_completion_date: c.current_completion_date || null,
+  }))
+
   return (
     <ContractAiClient
       projects={projects ?? []}
-      contracts={contracts ?? []}
+      contracts={mappedContracts}
       userPlanTier={effectiveSub.planTier}
       userRole={(userRole as string) ?? 'owner'}
     />
