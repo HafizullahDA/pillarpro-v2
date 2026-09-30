@@ -417,7 +417,7 @@ export function ContractAiDrawer({
               {loading && (
                 <div className="flex items-center gap-2 p-3 text-xs text-slate-500">
                   <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                  <span>Inspecting verified project records &amp; contract clauses with Zero-Hallucination Shield...</span>
+                  <span>Inspecting verified project records &amp; contract clauses...</span>
                 </div>
               )}
 
