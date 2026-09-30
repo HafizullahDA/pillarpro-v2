@@ -1,32 +1,128 @@
 -- ============================================================
--- PillarPro v2 — Migration 064: Full-Featured Sample Highway Project & Security Deposit RLS Isolation
+-- PillarPro v2 — Migration 064: Fix Sample Project Seeding & Security Deposit RLS Isolation
 --
+-- 0. FIX RA BILL AUDIT TRIGGER ENUM COERCION (Prevents 22P02 error)
+--    Redefines trg_audit_ra_bills() with safe text-casting BEFORE any table updates run.
 -- 1. Drops legacy un-scoped security_deposits policies ("sec_dep_all_owner_partner", "sec_dep_select_supervisor")
 --    that leaked Bank Guarantees across tenant organizations.
 -- 2. Ensures organization_id exists on public.security_deposits and public.ra_bill_payments.
 -- 3. Enforces strict organization-scoped RLS policies on security_deposits.
 -- 4. Fixes trg_audit_ra_bill_payments() to safely resolve organization_id from projects.
--- 5. Upgrades public.onboard_contractor() with a complete, 21-domain sample infrastructure dataset:
---    - Contract Master (CA-02 Agreement, ₹1.78 Cr)
---    - BOQ Schedule (Earthwork, GSB, WMM, RCC Box Culvert)
---    - Electronic Measurement Book (e-MB Volume 441, L x B x D dimensional entries & certification)
---    - RA Bill 01 & e-MB Measurement cross-links
---    - Treasury payment voucher & statutory deductions (IT TDS, GST TDS, Cess)
---    - Approved Contract Clauses (Clause 2 LD, Clause 5 EOT, Clause 10CC Escalation, Clause 12 Variations)
---    - Digital Hindrance Register (Utility shift & Drawing delay)
---    - Statutory Notice Radar & Correspondence Dak (Speed Post delivery)
---    - Form 27 Extension of Time (EOT) Application with linked hindrances
---    - Contract Variations / Extra Items (VO-01 with proposed vs approved amounts)
---    - Contractual Claims (Claim for idle plant & unabsorbed site overheads)
---    - Daily Progress Reports (DPR #42 with weather, manpower, and photo diary)
---    - Digital Evidence Vault (Geotagged site photos & speed post receipts)
---    - Store Inventory & Materials Stock Register (OPC Cement, TMT Steel, Aggregates + GRN/Issue slips)
---    - Machinery & Fleet Logbook with Diesel POL tracking (Hitachi EX200, JCB 3DX, Roller)
---    - Labour Muster Roll Attendance with Overtime
---    - Partner Equity & Capital Parity (60/40 profit split)
---    - Performance Bank Guarantee (PBG ₹8.90L) strictly isolated to this organization
---    - Supplier Khata & Petty Cash Vouchers
+-- 5. Upgrades public.onboard_contractor() with comprehensive coverage of all 21 ERP modules:
+--    - Contracts Master (Migration 051)
+--    - Approved Contract Clauses (Migration 058)
+--    - Electronic Measurement Book (e-MB: Vol 441 & L×B×D calculations) (Migration 053/054)
+--    - Form 23 Interim Measurement Certificate
+--    - RA Bill 01 & Form 26 Measurement items
+--    - Treasury Payment & Deductions (TDS, GST TDS, Cess)
+--    - Clause 5 Hindrance Register (Site Handover & GAD Drawing delay)
+--    - Form 27 EOT Delay Case (50 days claimed) (Migration 059)
+--    - Sanctioned Variation Order VO-01 (Migration 060)
+--    - Contemporaneous Plant Idle Claim CLM-01 (Migration 061)
+--    - Daily Progress Report DPR #42 (Migration 031)
+--    - Contract Correspondence & Formal Delay Notice (Migration 057)
+--    - Evidence Vault EV-001 & EV-002 (Migration 056)
+--    - Partner Equity & Capital Accounts (Migration 021)
+--    - Machinery Fleet & Diesel POL logs (Migration 030)
+--    - Store Inventory & Materials Ledger (Migration 033)
+--    - Workers Muster Roll & Overtime Attendance (Migration 018/042)
+--    - Performance Bank Guarantee PBG (Strictly Scoped) (Migration 008/020)
+--    - Suppliers Khata & Procurement Ledgers (Migration 007/013)
+--    - Site Cash & Emergency Fuel Voucher (Migration 003/012)
 -- ============================================================
+
+-- 0. FIX RA BILL AUDIT TRIGGER ENUM COERCION (Prevents 22P02 error)
+-- If migration 062 or an earlier script installed trg_audit_ra_bills with invalid enum comparison ('passed'),
+-- any subsequent table updates on ra_bill_payments or ra_bills trigger sync_ra_bill_from_payments() which fires
+-- trg_audit_ra_bills() and aborts with: ERROR: 22P02 invalid input value for enum ra_bill_status: "passed".
+-- We redefine get_audit_actor() and trg_audit_ra_bills() here with safe text casting first.
+
+CREATE OR REPLACE FUNCTION public.get_audit_actor()
+RETURNS TABLE (
+  actor_id UUID,
+  actor_email TEXT,
+  actor_name TEXT,
+  actor_role TEXT,
+  actor_org_id UUID
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid UUID;
+BEGIN
+  v_uid := auth.uid();
+  IF v_uid IS NULL THEN
+    RETURN QUERY SELECT
+      NULL::UUID,
+      'system'::TEXT,
+      'System Automation'::TEXT,
+      'system'::TEXT,
+      public.get_user_organization_id();
+  ELSE
+    RETURN QUERY
+    SELECT
+      v_uid,
+      COALESCE(p.email, u.email, 'unknown@contractor.in')::TEXT,
+      COALESCE(p.display_name, 'Staff Member')::TEXT,
+      COALESCE(r.role::TEXT, 'staff')::TEXT,
+      COALESCE(p.organization_id, public.get_user_organization_id())
+    FROM auth.users u
+    LEFT JOIN public.user_profiles p ON p.id = u.id
+    LEFT JOIN public.roles r ON r.user_id = u.id
+    WHERE u.id = v_uid;
+  END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.trg_audit_ra_bills()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_actor RECORD;
+BEGIN
+  -- Safe check for audit_logs table presence
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'audit_logs') THEN
+    SELECT * INTO v_actor FROM public.get_audit_actor();
+
+    -- Use TEXT casting to avoid invalid input value for enum ra_bill_status
+    IF (NEW.status::TEXT IN ('submitted', 'partially_paid', 'fully_paid')) AND (OLD.status IS NULL OR OLD.status::TEXT != NEW.status::TEXT) THEN
+      INSERT INTO public.audit_logs (
+        organization_id, project_id, user_id, user_email, user_name, user_role,
+        action, entity_type, entity_id, entity_identifier,
+        previous_values, new_values, diff_summary, notes
+      ) VALUES (
+        COALESCE(NEW.organization_id, v_actor.actor_org_id),
+        NEW.project_id,
+        v_actor.actor_id,
+        v_actor.actor_email,
+        v_actor.actor_name,
+        v_actor.actor_role,
+        'RA_BILL_STATUS_CHANGED',
+        'ra_bills',
+        NEW.id::TEXT,
+        'RA Bill #' || COALESCE(NEW.bill_number, NEW.id::TEXT),
+        json_build_object('status', OLD.status::TEXT),
+        json_build_object('status', NEW.status::TEXT, 'work_certified', NEW.work_certified_amount, 'net_payable', NEW.net_payable_amount),
+        json_build_object('status_change', COALESCE(OLD.status::TEXT, 'draft') || ' -> ' || NEW.status::TEXT, 'net_amount', NEW.net_payable_amount),
+        'Government running account bill status updated.'
+      );
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_audit_ra_bills ON public.ra_bills;
+CREATE TRIGGER trg_audit_ra_bills
+  AFTER UPDATE ON public.ra_bills
+  FOR EACH ROW EXECUTE FUNCTION public.trg_audit_ra_bills();
+
 
 -- 1. FIX SECURITY DEPOSITS RLS LEAKAGE
 ALTER TABLE IF EXISTS public.security_deposits 
@@ -94,6 +190,7 @@ CREATE POLICY "security_deposits_delete_org" ON public.security_deposits
     )
   );
 
+
 -- 2. ENSURE organization_id ON ra_bill_payments & FIX AUDIT TRIGGER
 ALTER TABLE IF EXISTS public.ra_bill_payments 
   ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id);
@@ -116,35 +213,38 @@ DECLARE
   v_bill_num TEXT;
   v_resolved_org_id UUID;
 BEGIN
-  SELECT * INTO v_actor FROM public.get_audit_actor();
-  SELECT bill_number INTO v_bill_num FROM public.ra_bills WHERE id = NEW.bill_id;
-  
-  -- Safely resolve organization_id from project if not set on row
-  SELECT organization_id INTO v_resolved_org_id FROM public.projects WHERE id = NEW.project_id;
-  IF v_resolved_org_id IS NULL THEN
-    v_resolved_org_id := v_actor.actor_org_id;
-  END IF;
+  -- Safe check for audit_logs table presence
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'audit_logs') THEN
+    SELECT * INTO v_actor FROM public.get_audit_actor();
+    SELECT bill_number INTO v_bill_num FROM public.ra_bills WHERE id = NEW.bill_id;
+    
+    -- Safely resolve organization_id from project if not set on row
+    SELECT organization_id INTO v_resolved_org_id FROM public.projects WHERE id = NEW.project_id;
+    IF v_resolved_org_id IS NULL THEN
+      v_resolved_org_id := v_actor.actor_org_id;
+    END IF;
 
-  INSERT INTO public.audit_logs (
-    organization_id, project_id, user_id, user_email, user_name, user_role,
-    action, entity_type, entity_id, entity_identifier,
-    previous_values, new_values, diff_summary, notes
-  ) VALUES (
-    COALESCE(v_resolved_org_id, v_actor.actor_org_id),
-    NEW.project_id,
-    v_actor.actor_id,
-    v_actor.actor_email,
-    v_actor.actor_name,
-    v_actor.actor_role,
-    'PAYMENT_RECORDED',
-    'ra_bill_payments',
-    NEW.id::TEXT,
-    'Payment for RA Bill #' || COALESCE(v_bill_num, 'Direct Voucher'),
-    '{}'::jsonb,
-    json_build_object('gross_amount', NEW.gross_amount, 'net_bank_amount', NEW.net_bank_amount, 'voucher_reference', NEW.voucher_reference, 'payment_date', NEW.payment_date),
-    json_build_object('net_bank_credited', NEW.net_bank_amount, 'gross_released', NEW.gross_amount),
-    'Treasury bank payment credited against certified running bill.'
-  );
+    INSERT INTO public.audit_logs (
+      organization_id, project_id, user_id, user_email, user_name, user_role,
+      action, entity_type, entity_id, entity_identifier,
+      previous_values, new_values, diff_summary, notes
+    ) VALUES (
+      COALESCE(v_resolved_org_id, v_actor.actor_org_id),
+      NEW.project_id,
+      v_actor.actor_id,
+      v_actor.actor_email,
+      v_actor.actor_name,
+      v_actor.actor_role,
+      'PAYMENT_RECORDED',
+      'ra_bill_payments',
+      NEW.id::TEXT,
+      'Payment for RA Bill #' || COALESCE(v_bill_num, 'Direct Voucher'),
+      '{}'::jsonb,
+      json_build_object('gross_amount', NEW.gross_amount, 'net_bank_amount', NEW.net_bank_amount, 'voucher_reference', NEW.voucher_reference, 'payment_date', NEW.payment_date),
+      json_build_object('net_bank_credited', NEW.net_bank_amount, 'gross_released', NEW.gross_amount),
+      'Treasury bank payment credited against certified running bill.'
+    );
+  END IF;
 
   RETURN NEW;
 END;
@@ -155,7 +255,9 @@ CREATE TRIGGER trg_audit_payments
   AFTER INSERT ON public.ra_bill_payments
   FOR EACH ROW EXECUTE FUNCTION public.trg_audit_ra_bill_payments();
 
+
 -- 3. UPGRADED & HARDENED onboard_contractor() RPC
+-- Covers all 21 civil contracting modules with resilient per-entity isolation
 CREATE OR REPLACE FUNCTION public.onboard_contractor(
   p_firm_name TEXT,
   p_display_name TEXT DEFAULT NULL,
@@ -196,24 +298,23 @@ DECLARE
   v_inv1_id      UUID;
   v_inv2_id      UUID;
   v_inv3_id      UUID;
-  v_mb_book_id   UUID;
-  v_mb1_id       UUID;
-  v_mb2_id       UUID;
-  v_mb3_id       UUID;
-  v_mb4_id       UUID;
-  v_mb5_id       UUID;
-  v_hind1_id     UUID;
-  v_hind2_id     UUID;
+
+  -- New Module Entity UUIDs
+  v_mb_id        UUID;
+  v_entry1_id    UUID;
+  v_entry2_id    UUID;
+  v_entry3_id    UUID;
+  v_entry4_id    UUID;
+  v_cert_id      UUID;
   v_eot_id       UUID;
-  v_var_id       UUID;
+  v_vo_id        UUID;
   v_claim_id     UUID;
   v_dpr_id       UUID;
+  v_corr_id      UUID;
   v_ev1_id       UUID;
   v_ev2_id       UUID;
-  v_cl1_id       UUID;
-  v_cl2_id       UUID;
-  v_cl3_id       UUID;
-  v_cl4_id       UUID;
+  v_hind1_id     UUID;
+  v_hind2_id     UUID;
 BEGIN
   -- 1. Verify caller authentication
   v_user_id := auth.uid();
@@ -310,7 +411,7 @@ BEGIN
     role = 'owner'::public.user_role,
     project_id = NULL;
 
-  -- 6. Seed Full-Featured Civil Project (Showcases all 21 ERP modules)
+  -- 6. Seed Full-Featured Civil Project (Showcasing all 21 Modules)
   IF p_seed_starter IS TRUE THEN
     v_project_id   := gen_random_uuid();
     v_contract_id  := gen_random_uuid();
@@ -334,24 +435,22 @@ BEGIN
     v_inv1_id      := gen_random_uuid();
     v_inv2_id      := gen_random_uuid();
     v_inv3_id      := gen_random_uuid();
-    v_mb_book_id   := gen_random_uuid();
-    v_mb1_id       := gen_random_uuid();
-    v_mb2_id       := gen_random_uuid();
-    v_mb3_id       := gen_random_uuid();
-    v_mb4_id       := gen_random_uuid();
-    v_mb5_id       := gen_random_uuid();
-    v_hind1_id     := gen_random_uuid();
-    v_hind2_id     := gen_random_uuid();
+
+    v_mb_id        := gen_random_uuid();
+    v_entry1_id    := gen_random_uuid();
+    v_entry2_id    := gen_random_uuid();
+    v_entry3_id    := gen_random_uuid();
+    v_entry4_id    := gen_random_uuid();
+    v_cert_id      := gen_random_uuid();
     v_eot_id       := gen_random_uuid();
-    v_var_id       := gen_random_uuid();
+    v_vo_id        := gen_random_uuid();
     v_claim_id     := gen_random_uuid();
     v_dpr_id       := gen_random_uuid();
+    v_corr_id      := gen_random_uuid();
     v_ev1_id       := gen_random_uuid();
     v_ev2_id       := gen_random_uuid();
-    v_cl1_id       := gen_random_uuid();
-    v_cl2_id       := gen_random_uuid();
-    v_cl3_id       := gen_random_uuid();
-    v_cl4_id       := gen_random_uuid();
+    v_hind1_id     := gen_random_uuid();
+    v_hind2_id     := gen_random_uuid();
 
     -- 6.1 Starter Highway Project
     BEGIN
@@ -382,79 +481,80 @@ BEGIN
       RAISE NOTICE 'Project insert notice: %', SQLERRM;
     END;
 
-    -- 6.1b Contract Master Record (Migration 051 bridge for ContractIQ & Legal Defense)
-    BEGIN
-      INSERT INTO public.contracts (
-        id,
-        organization_id,
-        project_id,
-        agreement_number,
-        contract_number,
-        work_name,
-        contract_title,
-        authority_name,
-        contractor_legal_name,
-        contract_type,
-        awarded_amount,
-        contract_value,
-        stipulated_start_date,
-        stipulated_completion_date,
-        original_completion_date,
-        current_completion_date,
-        dlp_months,
-        performance_security_amount,
-        security_deposit_amount,
-        eot_clause,
-        variation_clause,
-        escalation_clause,
-        status,
-        created_by
-      ) VALUES (
-        v_contract_id,
-        v_org_id,
-        v_project_id,
-        'CA-02 of 2025-26',
-        'EE/PMGSY/DIV-II/2025/CA-02',
-        'PMGSY Highway Widening & Culverts (Pkg-02)',
-        'Widening & Strengthening of PMGSY Road Pkg-02',
-        'Executive Engineer, PWD (R&B) PMGSY Division',
-        v_firm_clean,
-        'item_rate',
-        17800000.00,
-        17800000.00,
-        CURRENT_DATE - INTERVAL '60 days',
-        CURRENT_DATE + INTERVAL '300 days',
-        CURRENT_DATE + INTERVAL '300 days',
-        CURRENT_DATE + INTERVAL '300 days',
-        24,
-        890000.00,
-        445000.00,
-        'Clause 5',
-        'Clause 12',
-        'Clause 10CC',
-        'active',
-        v_user_id
-      ) ON CONFLICT DO NOTHING;
-    EXCEPTION WHEN OTHERS THEN
-      RAISE NOTICE 'Contract master insert notice: %', SQLERRM;
-    END;
+    -- 6.2 Contract Master Record (Migration 051 bridge for ContractIQ & Legal Defense)
+    IF to_regclass('public.contracts') IS NOT NULL THEN
+      BEGIN
+        EXECUTE $dyn$
+          INSERT INTO public.contracts (
+            id, organization_id, project_id, agreement_number, contract_number,
+            work_name, contract_title, authority_name, contractor_legal_name,
+            contract_type, awarded_amount, contract_value, stipulated_start_date,
+            stipulated_completion_date, original_completion_date, current_completion_date,
+            dlp_months, performance_security_amount, security_deposit_amount,
+            eot_clause, variation_clause, escalation_clause, status, created_by
+          ) VALUES (
+            $1, $2, $3, 'CA-02 of 2025-26', 'EE/PMGSY/DIV-II/2025/CA-02',
+            'PMGSY Highway Widening & Culverts (Pkg-02)', 'Widening & Strengthening of PMGSY Road Pkg-02',
+            'Executive Engineer, PWD (R&B) PMGSY Division', $4, 'item_rate',
+            17800000.00, 17800000.00, CURRENT_DATE - INTERVAL '60 days',
+            CURRENT_DATE + INTERVAL '300 days', CURRENT_DATE + INTERVAL '300 days', CURRENT_DATE + INTERVAL '300 days',
+            24, 890000.00, 445000.00,
+            'Clause 5', 'Clause 12', 'Clause 10CC', 'active', $5
+          ) ON CONFLICT DO NOTHING;
+        $dyn$ USING v_contract_id, v_org_id, v_project_id, v_firm_clean, v_user_id;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Contract master insert notice: %', SQLERRM;
+      END;
+    END IF;
 
-    -- 6.2 Project Membership
+    -- 6.3 Approved Contract Clauses (Migration 058 for Clause Automation)
+    IF to_regclass('public.contract_clauses') IS NOT NULL THEN
+      BEGIN
+        EXECUTE $dyn$
+          INSERT INTO public.contract_clauses (
+            id, organization_id, contract_id, clause_number, clause_title, clause_text,
+            category, notice_period_days, eot_relevance, variation_relevance,
+            escalation_relevance, ld_relevance, status, created_by
+          ) VALUES
+          (
+            gen_random_uuid(), $1, $2, 'Clause 5', 'Time and Extension for Delay',
+            'The time allowed for execution of the works shall be the essence of the Contract. If the contractor shall desire an extension of time for completion of the work on the grounds of his having been unavoidably hindered in its execution, he shall apply in writing to the Engineer within 14 days of the date of the hindrance on account of which he desires such extension.',
+            'EOT'::clause_category, 14, TRUE, FALSE, FALSE, FALSE, 'APPROVED'::clause_status, $3
+          ),
+          (
+            gen_random_uuid(), $1, $2, 'Clause 12', 'Deviations, Variations, Extent and Pricing',
+            'The Engineer shall have power to make alteration in, omissions from, additions to, or substitutions for, the original specifications, drawings, designs and instructions that may appear to him to be necessary or advisable during the progress of the work.',
+            'VARIATION'::clause_category, 14, FALSE, TRUE, FALSE, FALSE, 'APPROVED'::clause_status, $3
+          ),
+          (
+            gen_random_uuid(), $1, $2, 'Clause 10CC', 'Payment due to Increase/Decrease in Prices of Materials/Labour',
+            'If the prices of materials and/or wages of labour required for execution of the work increase/decrease, the contractor shall be compensated for such increase or as the case may be, the department shall be entitled to deduct such decrease.',
+            'ESCALATION'::clause_category, NULL, FALSE, FALSE, TRUE, FALSE, 'APPROVED'::clause_status, $3
+          ),
+          (
+            gen_random_uuid(), $1, $2, 'Clause 2', 'Compensation for Delay / Liquidated Damages',
+            'If the contractor fails to maintain the required progress in terms of the agreed programme or to complete the work and clear the site on or before the contract or extended date of completion, he shall pay compensation at 1.5% per month of delay.',
+            'LD'::clause_category, NULL, TRUE, FALSE, FALSE, TRUE, 'APPROVED'::clause_status, $3
+          )
+          ON CONFLICT DO NOTHING;
+        $dyn$ USING v_org_id, v_contract_id, v_user_id;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Contract clauses insert notice: %', SQLERRM;
+      END;
+    END IF;
+
+    -- 6.4 Project Membership
     BEGIN
       INSERT INTO public.project_members (
-        project_id,
-        user_id,
-        role
+        project_id, user_id, role
       ) VALUES (
-        v_project_id,
-        v_user_id,
-        'owner'
+        v_project_id, v_user_id, 'owner'
       ) ON CONFLICT DO NOTHING;
     EXCEPTION WHEN OTHERS THEN
       NULL;
     END;
 
-    -- 6.3 BOQ Schedule of Quantities (DSR Item Rate Schedule)
+    -- 6.5 BOQ Schedule of Quantities
     BEGIN
       INSERT INTO public.boq_items (
         id, project_id, organization_id, contract_id, item_number, description, unit, tender_quantity, awarded_rate
@@ -468,78 +568,101 @@ BEGIN
       RAISE NOTICE 'BOQ insert notice: %', SQLERRM;
     END;
 
-    -- 6.3b Electronic Measurement Book (e-MB: Volumes, L x B x D Calculations & Certification)
-    BEGIN
-      INSERT INTO public.measurement_books (
-        id, organization_id, project_id, contract_id, book_number, title, financial_year,
-        issued_to_name, issued_to_designation, division, subdivision, total_pages, current_page, status, remarks, created_by
-      ) VALUES (
-        v_mb_book_id, v_org_id, v_project_id, v_contract_id, 'e-MB #441', 'PMGSY Package 02 Main Highway Alignment',
-        '2025-2026', 'Er. Sajad Hussain', 'Assistant Engineer (AE)', 'PWD (R&B) National Highway Division', 'Sub-Division I',
-        100, 26, 'ACTIVE', 'Official Electronic Measurement Book issued under CPWD Works Manual Form 21 rules.', v_user_id
-      ) ON CONFLICT DO NOTHING;
+    -- 6.6 Electronic Measurement Book (e-MB: Vol 441 & L×B×D calculations)
+    IF to_regclass('public.measurement_books') IS NOT NULL AND to_regclass('public.measurement_entries') IS NOT NULL THEN
+      BEGIN
+        EXECUTE $dyn$
+          INSERT INTO public.measurement_books (
+            id, organization_id, project_id, contract_id, book_number, title,
+            financial_year, issued_to_name, issued_to_designation, division,
+            subdivision, total_pages, current_page, status, remarks, created_by
+          ) VALUES (
+            $1, $2, $3, $4, 'MB-441', 'Electronic Measurement Book Vol 01 - Earthwork & Sub-base',
+            '2025-2026', 'Er. Bilal Ahmad', 'Assistant Executive Engineer',
+            'PWD (R&B) PMGSY Division', 'Sub-Division I', 100, 26, 'ACTIVE',
+            'Official e-MB for Package-02 highway widening and culverts.', $5
+          ) ON CONFLICT DO NOTHING;
+        $dyn$ USING v_mb_id, v_org_id, v_project_id, v_contract_id, v_user_id;
 
-      -- Certified & Billed entries (L x B x D dimensions)
-      INSERT INTO public.measurement_entries (
-        id, organization_id, project_id, contract_id, measurement_book_id, boq_item_id, entry_number,
-        page_number, measurement_date, location, chainage_km, chainage_m, chainage_end_km, chainage_end_m,
-        description, calculation_mode, number_of_units, length, breadth, depth_height, calculated_quantity,
-        unit, previous_quantity, current_quantity, cumulative_quantity, boq_balance_quantity, status,
-        entered_by, checked_by, certified_by, billed_in_ra_bill_id, created_by
-      ) VALUES
-      (
-        v_mb1_id, v_org_id, v_project_id, v_contract_id, v_mb_book_id, v_boq1_id, 'ME-01', 12,
-        CURRENT_DATE - INTERVAL '25 days', 'Km 0+000 to Km 2+500', 0, 0, 2, 500,
-        'Earthwork excavation in cutting for roadway widening and hillside slope benching', 'l_b_d',
-        1, 2500.000, 7.000, 0.240, 4200.000, 'Cum', 0, 4200.000, 4200.000, 1200.000, 'CERTIFIED',
-        'Er. Sajad Hussain (AE)', 'Er. Bilal Ahmad (AEE)', 'Er. M. Shafi (EE)', v_bill_id, v_user_id
-      ),
-      (
-        v_mb2_id, v_org_id, v_project_id, v_contract_id, v_mb_book_id, v_boq2_id, 'ME-02', 19,
-        CURRENT_DATE - INTERVAL '20 days', 'Km 0+000 to Km 1+400', 0, 0, 1, 400,
-        'Granular Sub-base (GSB) compacted layer laid mechanically with vibratory roller', 'l_b_d',
-        1, 1400.000, 7.000, 0.143, 1400.000, 'Cum', 0, 1400.000, 1400.000, 450.000, 'CERTIFIED',
-        'Er. Sajad Hussain (AE)', 'Er. Bilal Ahmad (AEE)', 'Er. M. Shafi (EE)', v_bill_id, v_user_id
-      ),
-      (
-        v_mb3_id, v_org_id, v_project_id, v_contract_id, v_mb_book_id, v_boq3_id, 'ME-03', 22,
-        CURRENT_DATE - INTERVAL '18 days', 'Km 0+000 to Km 0+650', 0, 0, 0, 650,
-        'Wet Mix Macadam (WMM) compacted course with paver finisher', 'l_b_d',
-        1, 650.000, 7.000, 0.143, 650.000, 'Cum', 0, 650.000, 650.000, 550.000, 'CERTIFIED',
-        'Er. Sajad Hussain (AE)', 'Er. Bilal Ahmad (AEE)', 'Er. M. Shafi (EE)', v_bill_id, v_user_id
-      ),
-      (
-        v_mb4_id, v_org_id, v_project_id, v_contract_id, v_mb_book_id, v_boq4_id, 'ME-04', 24,
-        CURRENT_DATE - INTERVAL '16 days', 'Ch 2+100 (Culvert 01)', 2, 100, 2, 100,
-        'M-25 RCC concrete for box culvert raft slab, barrel walls and top deck slab complete', 'l_b_d',
-        2, 20.000, 4.000, 1.187, 190.000, 'Cum', 0, 190.000, 190.000, 50.000, 'CERTIFIED',
-        'Er. Sajad Hussain (AE)', 'Er. Bilal Ahmad (AEE)', 'Er. M. Shafi (EE)', v_bill_id, v_user_id
-      ),
-      -- Fresh Unbilled Entry (SUBMITTED, ready for RA Bill 02)
-      (
-        v_mb5_id, v_org_id, v_project_id, v_contract_id, v_mb_book_id, v_boq1_id, 'ME-05', 26,
-        CURRENT_DATE - INTERVAL '2 days', 'Km 2+500 to Km 2+850', 2, 500, 2, 850,
-        'Earthwork excavation in road widening (Unbilled work ready for next RA bill)', 'l_b_d',
-        1, 350.000, 7.000, 0.143, 350.000, 'Cum', 4200.000, 350.000, 4550.000, 850.000, 'SUBMITTED',
-        'Er. Sajad Hussain (AE)', NULL, NULL, NULL, v_user_id
-      )
-      ON CONFLICT DO NOTHING;
+        EXECUTE $dyn$
+          INSERT INTO public.measurement_entries (
+            id, organization_id, project_id, contract_id, measurement_book_id,
+            boq_item_id, entry_number, page_number, measurement_date, location,
+            chainage_km, chainage_m, description, calculation_mode, number_of_units,
+            length, breadth, depth_height, calculated_quantity, unit, previous_quantity,
+            current_quantity, cumulative_quantity, boq_balance_quantity, remarks,
+            entered_by, checked_by, certified_by, certified_at, status, created_by
+          ) VALUES
+          (
+            $1, $2, $3, $4, $5, $6, 'ENT-001', 12, CURRENT_DATE - INTERVAL '16 days',
+            'Km 0+000 to Km 2+500', 0.000, 2500.00,
+            'Earthwork excavation in road embankment cutting as per cross-sections', 'l_b_d',
+            1.000, 2500.000, 7.000, 0.240, 4200.000, 'Cum', 0.000, 4200.000, 4200.000, 1200.000,
+            'Test checked 100% by Junior Engineer and 50% by Assistant Executive Engineer',
+            'Er. Tariq Ahmad (JE)', 'Er. Bilal Ahmad (AEE)', 'Er. Bilal Ahmad (AEE)', NOW() - INTERVAL '14 days',
+            'CERTIFIED', $7
+          ),
+          (
+            $8, $2, $3, $4, $5, $9, 'ENT-002', 19, CURRENT_DATE - INTERVAL '15 days',
+            'Km 0+000 to Km 2+000', 0.000, 2000.00,
+            'Providing and laying Granular Sub-base (GSB) Grading-I (100mm compacted layer)', 'l_b_d',
+            1.000, 2000.000, 7.000, 0.100, 1400.000, 'Cum', 0.000, 1400.000, 1400.000, 450.000,
+            'Field density test pass (MDD 98.4%) recorded in Quality Register Vol-II',
+            'Er. Tariq Ahmad (JE)', 'Er. Bilal Ahmad (AEE)', 'Er. Bilal Ahmad (AEE)', NOW() - INTERVAL '14 days',
+            'CERTIFIED', $7
+          ),
+          (
+            $10, $2, $3, $4, $5, $11, 'ENT-003', 22, CURRENT_DATE - INTERVAL '14 days',
+            'Km 0+000 to Km 0+900', 0.000, 900.00,
+            'Providing, laying, spreading and compacting Wet Mix Macadam (WMM)', 'l_b_d',
+            1.000, 900.000, 7.000, 0.103, 650.000, 'Cum', 0.000, 650.000, 650.000, 550.000,
+            'Camber 2.5% verified with template',
+            'Er. Tariq Ahmad (JE)', 'Er. Bilal Ahmad (AEE)', 'Er. Bilal Ahmad (AEE)', NOW() - INTERVAL '14 days',
+            'CERTIFIED', $7
+          ),
+          (
+            $12, $2, $3, $4, $5, $13, 'ENT-004', 25, CURRENT_DATE - INTERVAL '14 days',
+            'Km 2+100 (Culvert #1)', 2.000, 100.00,
+            'Design mix cement concrete M-25 grade for 2x2m R.C.C. box culvert barrel & raft', 'l_b_d',
+            1.000, 10.000, 4.750, 4.000, 190.000, 'Cum', 0.000, 190.000, 190.000, 50.000,
+            '28-day cube strength 31.5 MPa against 25 MPa specified',
+            'Er. Tariq Ahmad (JE)', 'Er. Bilal Ahmad (AEE)', 'Er. Bilal Ahmad (AEE)', NOW() - INTERVAL '14 days',
+            'CERTIFIED', $7
+          )
+          ON CONFLICT DO NOTHING;
+        $dyn$ USING
+          v_entry1_id, v_org_id, v_project_id, v_contract_id, v_mb_id, v_boq1_id, v_user_id,
+          v_entry2_id, v_boq2_id,
+          v_entry3_id, v_boq3_id,
+          v_entry4_id, v_boq4_id;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Measurement entries insert notice: %', SQLERRM;
+      END;
+    END IF;
 
-      -- Form 23 Certificate of Measurements issued by Executive Engineer
-      INSERT INTO public.measurement_certificates (
-        id, organization_id, project_id, contract_id, measurement_book_id, certificate_number,
-        certificate_date, period_from, period_to, total_items_measured, total_certified_value,
-        certified_by_name, certified_by_designation, status
-      ) VALUES (
-        gen_random_uuid(), v_org_id, v_project_id, v_contract_id, v_mb_book_id, 'MC/PMGSY/2025/01',
-        CURRENT_DATE - INTERVAL '15 days', CURRENT_DATE - INTERVAL '60 days', CURRENT_DATE - INTERVAL '15 days',
-        4, 4200000.00, 'Er. M. Shafi', 'Executive Engineer, PWD (R&B)', 'ISSUED'
-      ) ON CONFLICT DO NOTHING;
-    EXCEPTION WHEN OTHERS THEN
-      RAISE NOTICE 'Measurement entries notice: %', SQLERRM;
-    END;
+    -- 6.7 Form 23 Interim Measurement Certificate (Migration 053)
+    IF to_regclass('public.measurement_certificates') IS NOT NULL THEN
+      BEGIN
+        EXECUTE $dyn$
+          INSERT INTO public.measurement_certificates (
+            id, organization_id, project_id, contract_id, measurement_book_id,
+            certificate_number, certificate_date, period_from, period_to,
+            total_items_measured, total_certified_value, certified_by_name,
+            certified_by_designation, status
+          ) VALUES (
+            $1, $2, $3, $4, $5,
+            'MC-2026/01', CURRENT_DATE - INTERVAL '15 days',
+            CURRENT_DATE - INTERVAL '60 days', CURRENT_DATE - INTERVAL '16 days',
+            4, 4200000.00, 'Er. Bilal Ahmad',
+            'Assistant Executive Engineer (AEE), PWD (R&B)', 'ISSUED'
+          ) ON CONFLICT DO NOTHING;
+        $dyn$ USING v_cert_id, v_org_id, v_project_id, v_contract_id, v_mb_id;
+      EXCEPTION WHEN OTHERS THEN
+        NULL;
+      END;
+    END IF;
 
-    -- 6.4 Sample RA Bill 01 (Form 26 Running Account Bill)
+    -- 6.8 Sample RA Bill 01
     BEGIN
       INSERT INTO public.ra_bills (
         id,
@@ -586,31 +709,44 @@ BEGIN
       RAISE NOTICE 'RA Bill insert notice: %', SQLERRM;
     END;
 
-    -- 6.5 Form 26 Measurement Book Entries & e-MB Traceability Links
+    -- 6.9 Form 26 Measurement Book Entries (ra_bill_items)
     BEGIN
       INSERT INTO public.ra_bill_items (
         id, ra_bill_id, boq_item_id, organization_id, previous_quantity, current_quantity, rate, remarks
       ) VALUES
-      (gen_random_uuid(), v_bill_id, v_boq1_id, v_org_id, 0.000, 4200.000, 185.00, 'Recorded in MB #441, Page 12-18 (Km 0+000 to 2+500)'),
-      (gen_random_uuid(), v_bill_id, v_boq2_id, v_org_id, 0.000, 1400.000, 840.00, 'Recorded in MB #441, Page 19-25 (GSB Compaction Pass)'),
-      (gen_random_uuid(), v_bill_id, v_boq3_id, v_org_id, 0.000, 650.000, 1450.00, 'Recorded in MB #442, Page 02-08 (WMM Sub-grade)'),
-      (gen_random_uuid(), v_bill_id, v_boq4_id, v_org_id, 0.000, 190.000, 6800.00, 'Recorded in MB #442, Page 09-14 (Box Culvert #1 Ch 2+100)')
-      ON CONFLICT DO NOTHING;
-
-      -- Relational join table: ra_bill_measurement_entries
-      INSERT INTO public.ra_bill_measurement_entries (
-        organization_id, ra_bill_id, boq_item_id, measurement_entry_id, billed_quantity
-      ) VALUES
-      (v_org_id, v_bill_id, v_boq1_id, v_mb1_id, 4200.000),
-      (v_org_id, v_bill_id, v_boq2_id, v_mb2_id, 1400.000),
-      (v_org_id, v_bill_id, v_boq3_id, v_mb3_id, 650.000),
-      (v_org_id, v_bill_id, v_boq4_id, v_mb4_id, 190.000)
+      (gen_random_uuid(), v_bill_id, v_boq1_id, v_org_id, 0.000, 4200.000, 185.00, 'Recorded in MB #441, Page 12 (Km 0+000 to 2+500)'),
+      (gen_random_uuid(), v_bill_id, v_boq2_id, v_org_id, 0.000, 1400.000, 840.00, 'Recorded in MB #441, Page 19 (GSB Compaction Pass)'),
+      (gen_random_uuid(), v_bill_id, v_boq3_id, v_org_id, 0.000, 650.000, 1450.00, 'Recorded in MB #441, Page 22 (WMM Sub-grade)'),
+      (gen_random_uuid(), v_bill_id, v_boq4_id, v_org_id, 0.000, 190.000, 6800.00, 'Recorded in MB #441, Page 25 (Box Culvert #1 Ch 2+100)')
       ON CONFLICT DO NOTHING;
     EXCEPTION WHEN OTHERS THEN
       NULL;
     END;
 
-    -- 6.6 Treasury Payment Record & Bill Deductions
+    -- 6.10 e-MB RA Bill Traceability Links (Migration 054)
+    IF to_regclass('public.ra_bill_measurement_entries') IS NOT NULL THEN
+      BEGIN
+        EXECUTE $dyn$
+          INSERT INTO public.ra_bill_measurement_entries (
+            organization_id, ra_bill_id, boq_item_id, measurement_entry_id, billed_quantity
+          ) VALUES
+          ($1, $2, $3, $4, 4200.000),
+          ($1, $2, $5, $6, 1400.000),
+          ($1, $2, $7, $8, 650.000),
+          ($1, $2, $9, $10, 190.000)
+          ON CONFLICT DO NOTHING;
+        $dyn$ USING
+          v_org_id, v_bill_id,
+          v_boq1_id, v_entry1_id,
+          v_boq2_id, v_entry2_id,
+          v_boq3_id, v_entry3_id,
+          v_boq4_id, v_entry4_id;
+      EXCEPTION WHEN OTHERS THEN
+        NULL;
+      END;
+    END IF;
+
+    -- 6.11 Treasury Payment Record & Bill Deductions
     BEGIN
       INSERT INTO public.ra_bill_payments (
         id,
@@ -651,7 +787,7 @@ BEGIN
       RAISE NOTICE 'Payment record insert notice: %', SQLERRM;
     END;
 
-    -- 6.7 CPWD Clause 5 Delay Defense & Digital Hindrance Register
+    -- 6.12 CPWD Clause 5 Delay Defense & Digital Hindrance Register
     BEGIN
       INSERT INTO public.hindrances (
         id, organization_id, project_id, contract_id, hindrance_number, category, description,
@@ -705,166 +841,152 @@ BEGIN
       RAISE NOTICE 'Hindrance insert notice: %', SQLERRM;
     END;
 
-    -- 6.7b Approved Contract Clauses (Migration 058 - Powers ContractIQ Grounding)
-    BEGIN
-      INSERT INTO public.contract_clauses (
-        id, organization_id, contract_id, clause_number, clause_title, clause_text, category,
-        notice_period_days, source_document_title, source_page_ref, eot_relevance, variation_relevance, claim_relevance, status
-      ) VALUES
-      (
-        v_cl1_id, v_org_id, v_contract_id, 'Clause 5', 'Extension of Time for Delay',
-        'The contractor shall give notice to the Engineer-in-Charge in writing within 14 days of the date of occurrence of any hindrance on site. An application for extension of time shall be made in Form 27 before the stipulated date of completion.',
-        'EOT', 14, 'CPWD General Conditions of Contract (GCC)', 'Page 28, Section IV', TRUE, FALSE, TRUE, 'APPROVED'
-      ),
-      (
-        v_cl2_id, v_org_id, v_contract_id, 'Clause 2', 'Compensation for Delay (Liquidated Damages)',
-        'If the contractor fails to maintain the required progress, compensation shall be leviable at 1.5% per month of delay computed on per day basis, subject to a maximum of 10% of the tendered contract value.',
-        'LD', NULL, 'CPWD General Conditions of Contract (GCC)', 'Page 19, Section IV', FALSE, FALSE, FALSE, 'APPROVED'
-      ),
-      (
-        v_cl3_id, v_org_id, v_contract_id, 'Clause 10CC', 'Price Escalation on Labour, Material & POL',
-        'Price escalation shall be payable for work done during extended period provided delay is not attributable to the contractor based on RBI Wholesale Price Indices and Labour Bureau indices.',
-        'ESCALATION', 30, 'CPWD General Conditions of Contract (GCC)', 'Page 52, Section IV', TRUE, FALSE, TRUE, 'APPROVED'
-      ),
-      (
-        v_cl4_id, v_org_id, v_contract_id, 'Clause 12', 'Deviations, Variations & Extra Items',
-        'The Engineer-in-Charge shall have power to make any alterations in, omissions from, additions to, or substitutions for the original specifications. Deviation limit is 30% beyond which market rate analysis applies.',
-        'VARIATION', 7, 'CPWD General Conditions of Contract (GCC)', 'Page 61, Section IV', FALSE, TRUE, TRUE, 'APPROVED'
-      ) ON CONFLICT DO NOTHING;
-    EXCEPTION WHEN OTHERS THEN
-      RAISE NOTICE 'Contract clauses notice: %', SQLERRM;
-    END;
+    -- 6.13 Form 27 Extension of Time (EOT) Application (Migration 059)
+    IF to_regclass('public.contract_eot_cases') IS NOT NULL THEN
+      BEGIN
+        EXECUTE $dyn$
+          INSERT INTO public.contract_eot_cases (
+            id, organization_id, project_id, contract_id, eot_reference, cause,
+            start_date, end_date, claimed_days, approved_days, pending_days,
+            submission_date, current_completion_date, revised_completion_date,
+            status, remarks, created_by
+          ) VALUES (
+            $1, $2, $3, $4, 'EOT/PKG-02/01',
+            'Delay in handing over encumbrance-free ROW between Km 3+200 to 4+100 due to un-shifted 33kV electric HT transmission poles & CE design delay for Box Culvert at Ch 4+350.',
+            CURRENT_DATE - INTERVAL '45 days', NULL, 50, 0, 50,
+            CURRENT_DATE - INTERVAL '10 days', CURRENT_DATE + INTERVAL '300 days', CURRENT_DATE + INTERVAL '350 days',
+            'SUBMITTED'::eot_case_status,
+            'Submitted under Clause 5 with contemporaneous hindrance register extracts and photographs.', $5
+          ) ON CONFLICT DO NOTHING;
+        $dyn$ USING v_eot_id, v_org_id, v_project_id, v_contract_id, v_user_id;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'EOT case insert notice: %', SQLERRM;
+      END;
+    END IF;
 
-    -- 6.7c Statutory Notice Radar (Migration 057)
-    BEGIN
-      INSERT INTO public.contract_notices (
-        id, organization_id, project_id, contract_id, clause_reference, clause_name,
-        trigger_date, deadline_date, status, description
-      ) VALUES (
-        gen_random_uuid(), v_org_id, v_project_id, v_contract_id, 'Clause 5', '14-Day Statutory Delay Notice',
-        CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE - INTERVAL '31 days', 'SERVED',
-        'Formal notice served for 33kV electric HT utility obstruction at Km 3+200'
-      ) ON CONFLICT DO NOTHING;
-    EXCEPTION WHEN OTHERS THEN
-      NULL;
-    END;
+    -- 6.14 Contract Variations & Deviations (Migration 060)
+    IF to_regclass('public.contract_variations') IS NOT NULL THEN
+      BEGIN
+        EXECUTE $dyn$
+          INSERT INTO public.contract_variations (
+            id, organization_id, project_id, contract_id, reference_number, type,
+            instruction_date, instruction_authority, original_boq_item_id,
+            proposed_item_code, proposed_item_description, proposed_unit,
+            original_quantity, proposed_quantity, difference_quantity,
+            original_rate, proposed_rate, proposed_amount, is_deletion, reason,
+            status, approved_amount, approved_quantity, approved_rate,
+            approved_order_number, approval_date, created_by
+          ) VALUES (
+            $1, $2, $3, $4, 'VO/PKG-02/001', 'VARIATION'::contract_variation_type,
+            CURRENT_DATE - INTERVAL '25 days', 'Superintending Engineer, PWD Circle-I', $5,
+            'Item 3.4', 'Providing and laying Granular Sub-base (GSB) Grading-I material (Additional crust depth)', 'Cum',
+            1850.000, 2350.000, 500.000, 840.00, 840.00, 420000.00, FALSE,
+            'Subgrade CBR found less than 3% during field testing between Ch 1+200 and 1+700 requiring additional 100mm GSB crust thickness.',
+            'APPROVED'::contract_variation_status, 420000.00, 500.000, 840.00,
+            'SE/PWD/R&B/VAR/2026/18', CURRENT_DATE - INTERVAL '10 days', $6
+          ) ON CONFLICT DO NOTHING;
+        $dyn$ USING v_vo_id, v_org_id, v_project_id, v_contract_id, v_boq2_id, v_user_id;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Variation insert notice: %', SQLERRM;
+      END;
+    END IF;
 
-    -- 6.7d Official Correspondence / Dak Register (Migration 057)
-    BEGIN
-      INSERT INTO public.contract_correspondence (
-        id, organization_id, project_id, contract_id, reference_number, letter_number,
-        date, direction, category, sender, recipient, subject, response_required, response_deadline, status
-      ) VALUES
-      (
-        gen_random_uuid(), v_org_id, v_project_id, v_contract_id, 'CORR-OUT-01', 'INF/PMGSY/2025/112',
-        CURRENT_DATE - INTERVAL '40 days', 'outward', 'notice', v_firm_clean, 'Executive Engineer, PWD PMGSY Div',
-        'Statutory Notice of Delay under GCC Clause 5 due to unshifted 33kV HT Electric Transmission Poles (Km 3+200 to 4+100)',
-        TRUE, CURRENT_DATE - INTERVAL '25 days', 'closed'
-      ),
-      (
-        gen_random_uuid(), v_org_id, v_project_id, v_contract_id, 'CORR-IN-01', 'EE/PMGSY/DIV/2025/409',
-        CURRENT_DATE - INTERVAL '32 days', 'inward', 'instruction', 'Executive Engineer, PWD PMGSY Div', v_firm_clean,
-        'Joint site inspection with PDD Electric Dept regarding pole relocation and revised work sequencing',
-        FALSE, NULL, 'acknowledged'
-      ) ON CONFLICT DO NOTHING;
-    EXCEPTION WHEN OTHERS THEN
-      NULL;
-    END;
+    -- 6.15 Contractual Claim for Idle Plant & Machinery (Migration 061)
+    IF to_regclass('public.contract_claims') IS NOT NULL THEN
+      BEGIN
+        EXECUTE $dyn$
+          INSERT INTO public.contract_claims (
+            id, organization_id, project_id, contract_id, claim_number, claim_type,
+            title, claim_date, description, basis_of_claim, claimed_amount,
+            approved_amount, paid_amount, outstanding_amount, status, submission_date, created_by
+          ) VALUES (
+            $1, $2, $3, $4, 'CLM/PKG-02/01', 'IDLE_MACHINERY'::contract_claim_type,
+            'Contemporaneous Claim for Idle Plant & Heavy Machinery at Km 3+200',
+            CURRENT_DATE - INTERVAL '12 days',
+            'Claim for idle hydraulic excavator and roller standing unproductive for 14 working days between Km 3+200 to 4+100 awaiting utility pole shifting.',
+            'GCC Clause 10CC / Clause 2 & IRC:SP:72 Guidelines', 185000.00,
+            0.00, 0.00, 185000.00, 'SUBMITTED'::contract_claim_status, CURRENT_DATE - INTERVAL '12 days', $5
+          ) ON CONFLICT DO NOTHING;
+        $dyn$ USING v_claim_id, v_org_id, v_project_id, v_contract_id, v_user_id;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Contract claim insert notice: %', SQLERRM;
+      END;
+    END IF;
 
-    -- 6.7e Form 27 Extension of Time (EOT) Application (Migration 059)
-    BEGIN
-      INSERT INTO public.eot_applications (
-        id, organization_id, project_id, contract_id, application_number, application_date,
-        original_completion_date, applied_extended_date, net_delay_days, status, reason
-      ) VALUES (
-        v_eot_id, v_org_id, v_project_id, v_contract_id, 'PMGSY/EOT/01', CURRENT_DATE - INTERVAL '10 days',
-        CURRENT_DATE + INTERVAL '300 days', CURRENT_DATE + INTERVAL '332 days', 32.00, 'submitted',
-        'Extension of time claimed under CPWD Clause 5 on account of non-shifting of 33kV transmission utility line by PDD.'
-      ) ON CONFLICT DO NOTHING;
+    -- 6.16 Daily Progress Report (DPR #42) (Migration 031)
+    IF to_regclass('public.daily_progress_reports') IS NOT NULL THEN
+      BEGIN
+        EXECUTE $dyn$
+          INSERT INTO public.daily_progress_reports (
+            id, organization_id, project_id, report_date, weather, work_completed_notes,
+            impediments_delays, total_manpower_count, masons_count, labourers_count,
+            machinery_active_count, status, submitted_by, verified_by
+          ) VALUES (
+            $1, $2, $3, CURRENT_DATE - INTERVAL '1 day', 'sunny_clear'::weather_condition,
+            'Embankment compaction from Km 1+200 to 1+600 completed. Shuttering and steel binding for Culvert #1 barrel casting in progress.',
+            '33kV HT line clearance pending at Km 3+400.', 18, 2, 14, 3,
+            'verified'::dpr_status, $4, $4
+          ) ON CONFLICT (project_id, report_date) DO NOTHING;
+        $dyn$ USING v_dpr_id, v_org_id, v_project_id, v_user_id;
+      EXCEPTION WHEN OTHERS THEN
+        NULL;
+      END;
+    END IF;
 
-      INSERT INTO public.eot_hindrance_links (
-        id, organization_id, eot_application_id, hindrance_id, delay_days_claimed
-      ) VALUES (
-        gen_random_uuid(), v_org_id, v_eot_id, v_hind1_id, 32.00
-      ) ON CONFLICT DO NOTHING;
-    EXCEPTION WHEN OTHERS THEN
-      NULL;
-    END;
+    -- 6.17 Contract Correspondence & Delay Notice (Migration 057)
+    IF to_regclass('public.contract_correspondence') IS NOT NULL THEN
+      BEGIN
+        EXECUTE $dyn$
+          INSERT INTO public.contract_correspondence (
+            id, organization_id, project_id, contract_id, reference_number,
+            letter_number, date, direction, category, sender, recipient,
+            subject, description, related_hindrance_id, created_by
+          ) VALUES (
+            $1, $2, $3, $4, 'NOT-2026-0042', 'INF/PMGSY/DIV-II/NOT/2026/04',
+            CURRENT_DATE - INTERVAL '40 days', 'OUTGOING', 'NOTICE',
+            $5, 'Executive Engineer, PWD (R&B) PMGSY Division',
+            'Notice of Hindrance under Clause 5.2 - Overhead 33kV HT Electrical Cable Obstruction',
+            'Formal statutory notice served within 14 days of impediment under Clause 5 intimating delay to critical path and reserving right to seek EOT and prolongation cost compensation.',
+            $6, $7
+          ) ON CONFLICT DO NOTHING;
+        $dyn$ USING v_corr_id, v_org_id, v_project_id, v_contract_id, v_firm_clean, v_hind1_id, v_user_id;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Correspondence insert notice: %', SQLERRM;
+      END;
+    END IF;
 
-    -- 6.7f Contract Variations / Deviations / Extra Items (Migration 060)
-    BEGIN
-      INSERT INTO public.contract_variations (
-        id, organization_id, project_id, contract_id, reference_number, type, title,
-        description, proposed_amount, approved_amount, status, approval_date
-      ) VALUES (
-        v_var_id, v_org_id, v_project_id, v_contract_id, 'VO-01', 'extra_item',
-        'Additional 2x2m R.C.C. Box Culvert at Ch 4+350 with wing walls',
-        'Construction of additional box culvert necessitated by unforeseen agricultural runoff and natural nallah discharge during monsoon.',
-        1450000.00, 1380000.00, 'APPROVED', CURRENT_DATE - INTERVAL '12 days'
-      ) ON CONFLICT DO NOTHING;
-    EXCEPTION WHEN OTHERS THEN
-      NULL;
-    END;
+    -- 6.18 Evidence Vault (Migration 056)
+    IF to_regclass('public.evidence_vault') IS NOT NULL THEN
+      BEGIN
+        EXECUTE $dyn$
+          INSERT INTO public.evidence_vault (
+            id, organization_id, project_id, contract_id, evidence_number, type,
+            title, description, document_date, source, file_url, original_filename,
+            file_type, related_hindrance_id, status, created_by
+          ) VALUES
+          (
+            $1, $2, $3, $4, 'EV-2026-001', 'PHOTO',
+            'High Voltage 33kV Utility Poles Obstructing Alignment at Km 3+400',
+            'Contemporaneous geo-tagged site photographic evidence showing un-shifted electrical poles within road formation width.',
+            CURRENT_DATE - INTERVAL '45 days', 'Field Engineer Mobile Upload',
+            'https://images.unsplash.com/photo-1541888946425-d0fbb1861593?auto=format&fit=crop&w=1200&q=80',
+            'HT_Poles_Ch3400.jpg', 'image/jpeg', $5, 'ACTIVE', $6
+          ),
+          (
+            $7, $2, $3, $4, 'EV-2026-002', 'SITE_ORDER',
+            'Site Order Book Page 28 - AEE Instruction for Culvert Bed Concrete',
+            'Assistant Executive Engineer site instruction directing 100mm PCC M-10 bed leveling course before culvert raft casting.',
+            CURRENT_DATE - INTERVAL '20 days', 'Executive Engineer Inspection',
+            'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80',
+            'Site_Order_Pg28.pdf', 'application/pdf', NULL, 'ACTIVE', $6
+          ) ON CONFLICT DO NOTHING;
+        $dyn$ USING v_ev1_id, v_org_id, v_project_id, v_contract_id, v_hind1_id, v_user_id, v_ev2_id;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Evidence vault insert notice: %', SQLERRM;
+      END;
+    END IF;
 
-    -- 6.7g Contractual Financial Claims (Migration 061)
-    BEGIN
-      INSERT INTO public.contract_claims (
-        id, organization_id, project_id, contract_id, claim_number, claim_type, title,
-        claim_date, claimed_amount, approved_amount, status, description
-      ) VALUES (
-        v_claim_id, v_org_id, v_project_id, v_contract_id, 'CLM-01', 'idle_machinery',
-        'Compensation for Idle Hydraulic Excavator and Extended Site Overheads during 33kV line delay',
-        CURRENT_DATE - INTERVAL '8 days', 485000.00, 0.00, 'SUBMITTED',
-        'Claim filed under Clause 10CC for 120 hours unutilized excavator plant and site supervision staff maintained on standby.'
-      ) ON CONFLICT DO NOTHING;
-    EXCEPTION WHEN OTHERS THEN
-      NULL;
-    END;
-
-    -- 6.7h Daily Progress Reports (DPR & Site Photo Diary - Migration 031)
-    BEGIN
-      INSERT INTO public.daily_progress_reports (
-        id, organization_id, project_id, report_date, weather, work_completed_notes,
-        impediments_delays, total_manpower_count, masons_count, labourers_count, machinery_active_count,
-        photos, status, submitted_by
-      ) VALUES (
-        v_dpr_id, v_org_id, v_project_id, CURRENT_DATE - INTERVAL '1 day', 'sunny_clear',
-        '1. GSB spreading and rolling completed from Ch 1+800 to 2+500 (700m length). 2. Box culvert shuttering struck off at Ch 2+100 and curing started.',
-        '33kV transmission utility line shifting completed by PDD yesterday. Site fully clear between Km 3+200 and 4+100.',
-        18, 3, 13, 2,
-        '[{"url": "https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8", "caption": "Vibratory compaction of GSB layer at Ch 2+200"}]'::jsonb,
-        'submitted', v_user_id
-      ) ON CONFLICT (project_id, report_date) DO NOTHING;
-    EXCEPTION WHEN OTHERS THEN
-      NULL;
-    END;
-
-    -- 6.7i Digital Evidence Vault (Migration 056)
-    BEGIN
-      INSERT INTO public.evidence_vault (
-        id, organization_id, project_id, contract_id, evidence_number, type, title,
-        description, document_date, source, related_hindrance_id, related_measurement_id,
-        related_ra_bill_id, file_url, original_filename, file_type
-      ) VALUES
-      (
-        v_ev1_id, v_org_id, v_project_id, v_contract_id, 'EV-2025-001', 'PHOTO',
-        'Geotagged site photograph showing 33kV HT utility pole obstructing highway carriage width at Km 3+250',
-        'GPS Coordinates: 34.0836 N, 74.7973 E. Photo captured during joint inspection with Assistant Executive Engineer.',
-        CURRENT_DATE - INTERVAL '45 days', 'Site Engineer Mobile App', v_hind1_id, v_mb1_id,
-        v_bill_id, 'https://images.unsplash.com/photo-1504307651254-35680f356dfd', 'pole_obstruction_km3_250.jpg', 'image/jpeg'
-      ),
-      (
-        v_ev2_id, v_org_id, v_project_id, v_contract_id, 'EV-2025-002', 'RECEIPT',
-        'India Post Registered AD Speed Post Tracking & Delivery Acknowledgment Receipt for Clause 5 Notice',
-        'Speed Post Consignment #EJ94182910IN delivered to Executive Engineer PWD PMGSY Division office on June 18, 2025.',
-        CURRENT_DATE - INTERVAL '40 days', 'Postal Department', v_hind1_id, NULL,
-        NULL, 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d', 'speed_post_ad_receipt.pdf', 'application/pdf'
-      ) ON CONFLICT DO NOTHING;
-    EXCEPTION WHEN OTHERS THEN
-      NULL;
-    END;
-
-    -- 6.8 Partner Equity & Capital Parity (60% / 40% Splits)
+    -- 6.19 Partner Equity & Capital Parity
     BEGIN
       INSERT INTO public.partners (
         id, organization_id, name, opening_balance, notes
@@ -890,7 +1012,7 @@ BEGIN
       NULL;
     END;
 
-    -- 6.9 Machinery & Fleet Management with Diesel POL Tracking
+    -- 6.20 Machinery & Fleet Management with Diesel POL Tracking
     BEGIN
       INSERT INTO public.machinery_assets (
         id, organization_id, project_id, asset_name, asset_type, registration_number, model_year, ownership, meter_tracking, hourly_rate, current_meter, status, notes
@@ -910,7 +1032,7 @@ BEGIN
       NULL;
     END;
 
-    -- 6.10 Store Inventory & Materials Stock Register
+    -- 6.21 Store Inventory & Materials Stock Register
     BEGIN
       INSERT INTO public.inventory_items (
         id, organization_id, project_id, item_name, item_code, category, unit, current_stock, minimum_stock_alert, notes
@@ -930,7 +1052,7 @@ BEGIN
       NULL;
     END;
 
-    -- 6.11 Workers, Project Assignments & Muster Roll Attendance
+    -- 6.22 Workers, Project Assignments & Muster Roll Attendance
     BEGIN
       INSERT INTO public.workers (
         id, organization_id, name, trade, daily_wage_rate, phone
@@ -961,7 +1083,7 @@ BEGIN
       NULL;
     END;
 
-    -- 6.12 Performance Bank Guarantee (PBG) - STRICTLY SCOPED TO THIS ORGANIZATION
+    -- 6.23 Performance Bank Guarantee (PBG) - STRICTLY SCOPED TO THIS ORGANIZATION
     BEGIN
       INSERT INTO public.security_deposits (
         id,
@@ -996,7 +1118,7 @@ BEGIN
       RAISE NOTICE 'Security deposit insert notice: %', SQLERRM;
     END;
 
-    -- 6.13 Supplier Khata & Procurement Ledgers
+    -- 6.24 Supplier Khata & Procurement Ledgers
     BEGIN
       INSERT INTO public.suppliers (
         id,
@@ -1048,7 +1170,8 @@ BEGIN
       NULL;
     END;
 
-    -- 6.14 Site Cash & Expense Voucher
+    -- 6.25 Site Cash & Expense Voucher
+
     BEGIN
       INSERT INTO public.expenses (
         id,

@@ -406,7 +406,7 @@ DECLARE
 BEGIN
   SELECT * INTO v_actor FROM public.get_audit_actor();
 
-  IF (NEW.status IN ('submitted', 'passed')) AND (OLD.status IS NULL OR OLD.status != NEW.status) THEN
+  IF (NEW.status::TEXT IN ('submitted', 'partially_paid', 'fully_paid')) AND (OLD.status IS NULL OR OLD.status::TEXT != NEW.status::TEXT) THEN
     INSERT INTO public.audit_logs (
       organization_id, project_id, user_id, user_email, user_name, user_role,
       action, entity_type, entity_id, entity_identifier,
@@ -418,14 +418,14 @@ BEGIN
       v_actor.actor_email,
       v_actor.actor_name,
       v_actor.actor_role,
-      'RA_BILL_SUBMITTED',
+      'RA_BILL_STATUS_CHANGED',
       'ra_bills',
       NEW.id::TEXT,
       'RA Bill #' || COALESCE(NEW.bill_number, NEW.id::TEXT),
-      json_build_object('status', OLD.status),
-      json_build_object('status', NEW.status, 'work_certified', NEW.work_certified_amount, 'net_payable', NEW.net_payable_amount),
-      json_build_object('status_change', COALESCE(OLD.status, 'draft') || ' -> ' || NEW.status, 'net_amount', NEW.net_payable_amount),
-      'Government running account bill officially submitted to department.'
+      json_build_object('status', OLD.status::TEXT),
+      json_build_object('status', NEW.status::TEXT, 'work_certified', NEW.work_certified_amount, 'net_payable', NEW.net_payable_amount),
+      json_build_object('status_change', COALESCE(OLD.status::TEXT, 'draft') || ' -> ' || NEW.status::TEXT, 'net_amount', NEW.net_payable_amount),
+      'Government running account bill status updated.'
     );
   END IF;
 
