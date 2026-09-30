@@ -12,6 +12,8 @@ import { UploadContractDocumentModal } from '@/components/contracts/UploadContra
 import { canManageContracts } from '@/lib/permissions'
 import { ContractClause, ContractObligation } from '@/lib/types/contractClauses'
 import { ContractClausesMasterView } from '@/components/contracts/ContractClausesMasterView'
+import { ContractAiDrawer } from '@/components/contract-ai/ContractAiDrawer'
+import { PlanTier } from '@/lib/subscription'
 
 interface ContractDetailClientProps {
   project: {
@@ -25,6 +27,7 @@ interface ContractDetailClientProps {
   initialClauses?: ContractClause[]
   initialObligations?: ContractObligation[]
   userRole?: string | null
+  userPlanTier?: PlanTier
 }
 
 export function ContractDetailClient({
@@ -34,6 +37,7 @@ export function ContractDetailClient({
   initialClauses = [],
   initialObligations = [],
   userRole,
+  userPlanTier = 'growth',
 }: ContractDetailClientProps) {
   const [contract, setContract] = useState<ContractRecord | null>(initialContract)
   const [documents, setDocuments] = useState<ContractDocument[]>(initialDocuments)
@@ -43,6 +47,7 @@ export function ContractDetailClient({
 
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
 
   const isEditable = canManageContracts(userRole)
 
@@ -107,7 +112,19 @@ export function ContractDetailClient({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <Button
+            size="sm"
+            onClick={() => setAiDrawerOpen(true)}
+            className="text-xs gap-1.5 bg-gradient-to-r from-blue-700 to-indigo-800 text-white hover:from-blue-800 hover:to-indigo-900 border-none shadow-xs"
+          >
+            <svg className="w-3.5 h-3.5 text-blue-200 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>Ask Contract AI</span>
+            <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-mono font-bold">1.5 Pro</span>
+          </Button>
+
           <Button
             size="sm"
             variant="secondary"
@@ -671,6 +688,16 @@ export function ContractDetailClient({
           onUploaded={newDoc => setDocuments(prev => [newDoc, ...prev])}
         />
       )}
+
+      {/* Contract AI Intelligence Drawer (Gemini 1.5 Pro) */}
+      <ContractAiDrawer
+        isOpen={aiDrawerOpen}
+        onClose={() => setAiDrawerOpen(false)}
+        projectId={project.id}
+        projectName={project.name}
+        contractNumber={contract?.agreement_number}
+        userPlanTier={userPlanTier}
+      />
     </div>
   )
 }

@@ -19,13 +19,14 @@ export default async function ProjectContractPage({ params }: { params: { id: st
 
   if (!project) notFound()
 
-  // 2. Fetch contract, documents, clauses & obligations in parallel
+  // 2. Fetch contract, documents, clauses, obligations & org plan in parallel
   const [
     { data: userRole },
     { data: contractData },
     { data: documentsData },
     { data: clausesData },
     { data: obligationsData },
+    { data: orgData },
   ] = await Promise.all([
     supabase.rpc('get_user_role'),
     supabase
@@ -48,6 +49,12 @@ export default async function ProjectContractPage({ params }: { params: { id: st
       .from('contract_obligations')
       .select('*, contract_clauses(id, clause_number, clause_title, category)')
       .order('due_date', { ascending: true }),
+    supabase
+      .from('organizations')
+      .select('plan_tier')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   // Fallback initial contract if table hasn't been migrated or seeded yet
@@ -132,6 +139,7 @@ export default async function ProjectContractPage({ params }: { params: { id: st
       initialClauses={clauses}
       initialObligations={obligations}
       userRole={userRole as string | null}
+      userPlanTier={(orgData?.plan_tier as any) || 'growth'}
     />
   )
 }

@@ -156,5 +156,32 @@ describe('Subscription & Entitlement Engine', () => {
       const checkEnterprise = canAccessFeature('hasForm27Dossier', enterpriseOrg, referenceNow)
       expect(checkEnterprise.allowed).toBe(true)
     })
+
+    it('blocks Contract AI on Bootstrap tier but allows on Growth and Enterprise', () => {
+      const bootstrapOrg = {
+        plan_tier: 'bootstrap',
+        subscription_status: 'trialing',
+        trial_ends_at: '2026-10-01T12:00:00Z',
+      }
+      const checkBootstrap = canAccessFeature('hasContractAi', bootstrapOrg, referenceNow)
+      expect(checkBootstrap.allowed).toBe(false)
+      expect(checkBootstrap.requiredPlan).toBe('growth')
+
+      const growthOrg = {
+        plan_tier: 'growth',
+        subscription_status: 'trialing',
+        trial_ends_at: '2026-10-01T12:00:00Z',
+      }
+      const checkGrowth = canAccessFeature('hasContractAi', growthOrg, referenceNow)
+      expect(checkGrowth.allowed).toBe(true)
+
+      const enterpriseOrg = {
+        plan_tier: 'enterprise',
+        subscription_status: 'trialing',
+        trial_ends_at: '2026-10-01T12:00:00Z',
+      }
+      const checkEnterprise = canAccessFeature('hasContractAi', enterpriseOrg, referenceNow)
+      expect(checkEnterprise.allowed).toBe(true)
+    })
   })
 })

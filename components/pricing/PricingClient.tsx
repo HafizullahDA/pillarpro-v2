@@ -58,18 +58,18 @@ export function PricingClient() {
   const competitorMonthlyPerUser = 700
   const competitorAnnualCost = calcTeamMembers * competitorMonthlyPerUser * 12
 
-  // PillarPro Option B Pricing:
+  // PillarPro Pricing:
   // Bootstrap: ₹999/mo or ₹9,999/yr
-  // Growth: ₹1,999/mo or ₹19,999/yr
-  // Enterprise: ₹3,999/mo or ₹39,999/yr (+₹300/site/mo for sites beyond 15)
+  // Growth: ₹2,499/mo or ₹24,999/yr
+  // Enterprise: ₹4,599/mo or ₹45,999/yr (+₹300/site/mo for sites beyond 15)
   const pillarProAnnualCost =
     calcSites <= 2
       ? (billingCycle === 'annual' ? 9999 : 999 * 12)
       : calcSites <= 6
-      ? (billingCycle === 'annual' ? 19999 : 1999 * 12)
+      ? (billingCycle === 'annual' ? 24999 : 2499 * 12)
       : (billingCycle === 'annual'
-          ? 39999 + Math.max(0, calcSites - 15) * 300 * 12
-          : (3999 + Math.max(0, calcSites - 15) * 300) * 12)
+          ? 45999 + Math.max(0, calcSites - 15) * 300 * 12
+          : (4599 + Math.max(0, calcSites - 15) * 300) * 12)
 
   const pillarProTierName =
     calcSites <= 2 ? 'Bootstrap Plan' : calcSites <= 6 ? 'Growth Contractor' : 'Enterprise Infra'
@@ -287,6 +287,10 @@ export function PricingClient() {
                     <IconCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                     <span>Standard Email & Helpdesk Support</span>
                   </li>
+                  <li className="flex items-start gap-2.5 text-slate-400">
+                    <IconMinus className="w-4 h-4 text-slate-300 shrink-0 mt-0.5" />
+                    <span>No Contract AI Bot (Growth & Enterprise exclusive)</span>
+                  </li>
                 </ul>
               </div>
 
@@ -322,7 +326,7 @@ export function PricingClient() {
               <div className="mb-6 pb-6 border-b border-slate-800">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl sm:text-4xl font-extrabold text-white">
-                    {billingCycle === 'annual' ? '₹19,999' : '₹1,999'}
+                    {billingCycle === 'annual' ? '₹24,999' : '₹2,499'}
                   </span>
                   <span className="text-xs font-semibold text-slate-400">
                     {billingCycle === 'annual' ? '/ year' : '/ month'}
@@ -330,11 +334,11 @@ export function PricingClient() {
                 </div>
                 {billingCycle === 'annual' ? (
                   <p className="mt-1 text-[11px] text-emerald-400 font-medium">
-                    Equivalent to ₹1,666 / month (excl. GST)
+                    Equivalent to ₹2,083 / month (excl. GST)
                   </p>
                 ) : (
                   <p className="mt-1 text-[11px] text-emerald-400 font-medium">
-                    or ₹19,999 / year billed annually (Save ~17%)
+                    or ₹24,999 / year billed annually (Save ~17%)
                   </p>
                 )}
               </div>
@@ -359,6 +363,10 @@ export function PricingClient() {
               <div className="flex-1 space-y-3 mb-8">
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Everything in Bootstrap, plus:</p>
                 <ul className="space-y-2.5 text-xs text-slate-200">
+                  <li className="flex items-start gap-2.5">
+                    <IconCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <span><strong>Gemini 1.5 Pro Contract AI Bot</strong> (delay root-cause, clause radar & 14-day notice clock)</span>
+                  </li>
                   <li className="flex items-start gap-2.5">
                     <IconCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                     <span><strong>Full SOR BOQ & e-MB Measurement Book</strong> with chainage & structural dimensions</span>
@@ -418,7 +426,7 @@ export function PricingClient() {
               <div className="mb-6 pb-6 border-b border-slate-100">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl sm:text-4xl font-extrabold text-slate-900">
-                    {billingCycle === 'annual' ? '₹39,999' : '₹3,999'}
+                    {billingCycle === 'annual' ? '₹45,999' : '₹4,599'}
                   </span>
                   <span className="text-xs font-semibold text-slate-500">
                     {billingCycle === 'annual' ? '/ year' : '/ month'}
@@ -426,11 +434,11 @@ export function PricingClient() {
                 </div>
                 {billingCycle === 'annual' ? (
                   <p className="mt-1 text-[11px] text-emerald-700 font-medium">
-                    Equivalent to ₹3,333 / month (excl. GST)
+                    Equivalent to ₹3,833 / month (excl. GST)
                   </p>
                 ) : (
                   <p className="mt-1 text-[11px] text-slate-500 font-medium">
-                    or ₹39,999 / year billed annually (Save ~17%)
+                    or ₹45,999 / year billed annually (Save ~17%)
                   </p>
                 )}
               </div>
@@ -703,9 +711,9 @@ export function PricingClient() {
                   <th className="py-4 px-6 font-bold text-slate-900 w-2/5">Capabilities & Specifications</th>
                   <th className="py-4 px-4 font-bold text-slate-900 text-center w-1/5">Bootstrap (₹999/mo)</th>
                   <th className="py-4 px-4 font-bold text-emerald-700 text-center w-1/5 bg-emerald-50/40 border-x border-emerald-100">
-                    Growth (₹1,999/mo)
+                    Growth (₹2,499/mo)
                   </th>
-                  <th className="py-4 px-4 font-bold text-slate-900 text-center w-1/5">Enterprise (₹3,999/mo)</th>
+                  <th className="py-4 px-4 font-bold text-slate-900 text-center w-1/5">Enterprise (₹4,599/mo)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -807,6 +815,12 @@ export function PricingClient() {
                   <td className="py-3 px-4 text-center"><IconMinus className="w-4 h-4 text-slate-300 mx-auto" /></td>
                   <td className="py-3 px-4 text-center text-slate-500 bg-emerald-50/20 border-x border-emerald-100">Standard Summary</td>
                   <td className="py-3 px-4 text-center font-bold text-slate-900">Comprehensive Dossier</td>
+                </tr>
+                <tr>
+                  <td className="py-3 px-6 font-medium">PillarPro Contract AI (Powered by Gemini 1.5 Pro)</td>
+                  <td className="py-3 px-4 text-center text-slate-400 font-medium">Unavailable</td>
+                  <td className="py-3 px-4 text-center font-bold text-emerald-700 bg-emerald-50/20 border-x border-emerald-100">Included (Standard)</td>
+                  <td className="py-3 px-4 text-center font-bold text-slate-900">Included (Priority Deep)</td>
                 </tr>
 
                 {/* Group 4: Operations & Management */}

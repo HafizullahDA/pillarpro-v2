@@ -20,6 +20,7 @@ export interface PlanConfig {
   hasForm27Dossier: boolean
   aiOcrMonthlyLimit: number
   hasTallySync: boolean
+  hasContractAi: boolean
 }
 
 export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
@@ -35,12 +36,13 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     hasForm27Dossier: false,
     aiOcrMonthlyLimit: 0,
     hasTallySync: false,
+    hasContractAi: false,
   },
   growth: {
     id: 'growth',
     name: 'Growth Contractor',
-    monthlyPrice: 1999,
-    annualPrice: 19999,
+    monthlyPrice: 2499,
+    annualPrice: 24999,
     maxActiveSites: 6,
     hasForm26MB: true,
     hasDelayDefense: true,
@@ -48,12 +50,13 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     hasForm27Dossier: false,
     aiOcrMonthlyLimit: 150,
     hasTallySync: false,
+    hasContractAi: true,
   },
   enterprise: {
     id: 'enterprise',
     name: 'Enterprise Infra',
-    monthlyPrice: 3999,
-    annualPrice: 39999,
+    monthlyPrice: 4599,
+    annualPrice: 45999,
     maxActiveSites: 15,
     hasForm26MB: true,
     hasDelayDefense: true,
@@ -61,6 +64,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     hasForm27Dossier: true,
     aiOcrMonthlyLimit: 99999, // Unlimited
     hasTallySync: true,
+    hasContractAi: true,
   },
 }
 
@@ -241,7 +245,7 @@ export function canCreateActiveSite(
 export function canAccessFeature(
   feature: keyof Pick<
     PlanConfig,
-    'hasForm26MB' | 'hasDelayDefense' | 'hasPartnerEquity' | 'hasForm27Dossier' | 'hasTallySync'
+    'hasForm26MB' | 'hasDelayDefense' | 'hasPartnerEquity' | 'hasForm27Dossier' | 'hasTallySync' | 'hasContractAi'
   >,
   org?: SubscriptionOrgData | null,
   referenceDate: Date = new Date()

@@ -41,8 +41,22 @@ export const logErrorRequestSchema = z.object({
   timestamp: z.string().optional(),
 })
 
+export const contractAiChatRequestSchema = z.object({
+  projectId: z.string().uuid('Invalid project ID'),
+  query: z.string().min(1, 'Query cannot be empty').max(2000, 'Query exceeds maximum 2000 characters'),
+  conversationHistory: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'model']),
+        content: z.string().max(4000),
+      })
+    )
+    .optional(),
+})
+
 export type ScanImageRequest = z.infer<typeof scanImageRequestSchema>
 export type ScanDocumentRequest = z.infer<typeof scanDocumentRequestSchema>
 export type AuthRateLimitRequest = z.infer<typeof authRateLimitRequestSchema>
 export type LogErrorRequest = z.infer<typeof logErrorRequestSchema>
+export type ContractAiChatRequest = z.infer<typeof contractAiChatRequestSchema>
 

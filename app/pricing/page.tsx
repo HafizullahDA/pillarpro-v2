@@ -4,13 +4,14 @@ import { PricingClient } from '@/components/pricing/PricingClient'
 export const metadata: Metadata = {
   title: 'Pricing & Plans — Transparent Active-Site Subscriptions',
   description:
-    'PillarPro pricing for Indian civil contractors: Active Sites + Unlimited Users. No per-seat penalties. 14-day free trial. Bootstrap (₹999/mo), Growth Contractor (₹1,999/mo), and Enterprise Infra (₹3,999/mo).',
+    'PillarPro pricing for Indian civil contractors: Active Sites + Unlimited Users. No per-seat penalties. 14-day free trial. Bootstrap (₹999/mo), Growth Contractor (₹2,499/mo with Gemini 1.5 Pro Contract AI), and Enterprise Infra (₹4,599/mo).',
   keywords: [
     'pillarpro pricing',
     'civil contractor software pricing',
     'construction erp cost india',
     'cpwd billing software price',
     'delay defense software cost',
+    'contract ai civil engineering',
     'powerplay alternative',
     'onsite alternative',
     'pwd contractor software',
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'PillarPro Pricing — Active Sites + Unlimited Users',
     description:
-      'Fair, predictable civil contractor ERP pricing. Unlimited site supervisors and munshis with zero per-seat fees. Starting at ₹999/mo with 14-day free trial.',
+      'Fair, predictable civil contractor ERP pricing with Gemini 1.5 Pro Contract AI. Unlimited site supervisors and munshis with zero per-seat fees. Starting at ₹999/mo with 14-day free trial.',
     url: 'https://pillarprojk.com/pricing',
     type: 'website',
   },
@@ -31,7 +32,7 @@ export default function PricingPage() {
     name: 'PillarPro Civil Contractor Operating System',
     image: 'https://pillarprojk.com/icon-512.png',
     description:
-      'Financial and Operations OS for Indian civil infrastructure contractors. RA Billing, statutory deductions, Delay Defense, Form 26 e-MB, and muster roll attendance.',
+      'Financial and Operations OS for Indian civil infrastructure contractors. RA Billing, statutory deductions, Delay Defense, Gemini 1.5 Pro Contract AI, Form 26 e-MB, and muster roll attendance.',
     brand: {
       '@type': 'Brand',
       name: 'PillarPro',
@@ -49,21 +50,21 @@ export default function PricingPage() {
       {
         '@type': 'Offer',
         name: 'Growth Contractor Plan',
-        price: '19999',
+        price: '24999',
         priceCurrency: 'INR',
         billingDuration: 'P1Y',
         description:
-          'Up to 6 Active Sites, Unlimited Users, Form 26 MB, Delay Defense & Hindrance Register, AI OCR',
+          'Up to 6 Active Sites, Unlimited Users, Form 26 MB, Delay Defense, Gemini 1.5 Pro Contract AI Bot',
         url: 'https://pillarprojk.com/pricing',
       },
       {
         '@type': 'Offer',
         name: 'Enterprise Infra Plan',
-        price: '39999',
+        price: '45999',
         priceCurrency: 'INR',
         billingDuration: 'P1Y',
         description:
-          'Up to 15 Active Sites, Unlimited Users, Comprehensive Form 27 Legal Dossier, Multi-Firm Consolidation',
+          'Up to 15 Active Sites, Unlimited Users, Comprehensive Form 27 Legal Dossier, Priority Gemini 1.5 Pro Contract AI',
         url: 'https://pillarprojk.com/pricing',
       },
     ],
