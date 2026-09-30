@@ -35,9 +35,36 @@ export function Sidebar({
         <div className="px-5 py-5 border-b border-slate-800">
           <Logo theme="dark" href="/dashboard" size="md" />
         </div>
+
+        {/* Contract Copilot Featured Card */}
+        <div className="px-3 pt-3 pb-1">
+          <Link
+            href="/contract-ai"
+            className={cn(
+              'w-full flex items-center justify-between p-2.5 rounded-xl border transition-all group',
+              pathname.startsWith('/contract-ai')
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-blue-400 shadow-md ring-1 ring-blue-400/40'
+                : 'bg-gradient-to-r from-slate-800/90 to-blue-950/70 text-slate-200 border-blue-500/30 hover:border-blue-400/60 hover:bg-slate-800'
+            )}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                {Icons.copilot}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold truncate group-hover:text-white transition-colors">Contract Copilot</p>
+                <p className="text-[10px] text-slate-400 truncate">Claims & Delay Defense</p>
+              </div>
+            </div>
+            <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-500 text-white shadow-xs">
+              AI
+            </span>
+          </Link>
+        </div>
+
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {visibleNavItems.map(item => {
+          {visibleNavItems.filter(item => item.href !== '/contract-ai').map(item => {
             const active =
               item.href === '/ledgers/suppliers'
                 ? pathname.startsWith('/ledgers/suppliers') || pathname.startsWith('/suppliers')
@@ -61,7 +88,12 @@ export function Sidebar({
                 <span className={active ? 'text-white' : 'text-slate-500'}>
                   {Icons[item.icon as keyof typeof Icons]}
                 </span>
-                {label}
+                <span className="flex-1 truncate">{label}</span>
+                {'badge' in item && (item as any).badge && (
+                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                    {(item as any).badge}
+                  </span>
+                )}
               </Link>
             )
           })}

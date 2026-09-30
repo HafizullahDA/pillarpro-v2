@@ -107,7 +107,7 @@ export function RABillActions({
       setUpgradeContent({
         title: 'Subscription Required for AI RA Bill Scanner',
         description:
-          'Your workspace is currently in Read-Only mode. Please reactivate your subscription to use the Gemini AI OCR Scanner on physical bills and measurement books.',
+          'Your workspace is currently in Read-Only mode. Please reactivate your subscription to use the Smart AI OCR Scanner on physical bills and measurement books.',
       })
       setUpgradeModalOpen(true)
       return
@@ -186,7 +186,6 @@ export function RABillActions({
 
       setScannedBillData(json.data)
       setScanModalOpen(true)
-      toast.success('RA Bill analyzed with Gemini 3.6 Flash! Please review.')
       toast.success('RA Bill analyzed by PillarVision™ Intelligence! Please review.')
     } catch (err: any) {
       setScanning(false)

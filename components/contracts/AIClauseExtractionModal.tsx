@@ -286,7 +286,7 @@ export function AIClauseExtractionModal({
                 disabled={analyzing}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
               >
-                {analyzing ? 'Analyzing with Gemini AI...' : 'Scan & Extract Clauses'}
+                {analyzing ? 'Analyzing Contract Clauses...' : 'Scan & Extract Clauses'}
               </Button>
             </div>
           </div>

@@ -10,6 +10,8 @@ import { SubscriptionStatusBanner } from '@/components/subscription/Subscription
 import { IdleTimeoutProvider } from '@/components/auth/IdleTimeoutProvider'
 import { ToastProvider } from '@/components/ui/Toast'
 import { LanguageProvider } from '@/lib/i18n/LanguageContext'
+import { GlobalContractCopilot } from '@/components/contract-ai/GlobalContractCopilot'
+import { getEffectiveSubscription } from '@/lib/subscription'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -19,10 +21,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: userStatus } = await supabase.rpc('get_user_status')
   if (!userStatus || userStatus !== 'active') redirect('/pending')
 
-  const { data: roleData } = await supabase.rpc('get_user_role')
+  const [{ data: roleData }, { data: rawProjects }, { data: orgData }] = await Promise.all([
+    supabase.rpc('get_user_role'),
+    supabase
+      .from('projects')
+      .select('id, name')
+      .eq('archived', false)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('organizations')
+      .select('plan_tier, subscription_status, trial_ends_at, current_period_end, created_at')
+      .limit(1)
+      .maybeSingle(),
+  ])
+
   const displayName = (user.user_metadata?.display_name as string | undefined) ?? user.email ?? 'User'
   const userRole = (roleData as string | null) ?? 'pending'
   const isSuperAdmin = await isPlatformAdmin(supabase, user.email)
+  const effectiveSub = getEffectiveSubscription(orgData)
 
   return (
     <IdleTimeoutProvider>
@@ -42,6 +58,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               </div>
               <BottomNav userName={displayName} userRole={userRole} userEmail={user.email} />
             </div>
+            <GlobalContractCopilot
+              projects={rawProjects ?? []}
+              userPlanTier={effectiveSub.planTier}
+            />
           </div>
         </LanguageProvider>
       </ToastProvider>

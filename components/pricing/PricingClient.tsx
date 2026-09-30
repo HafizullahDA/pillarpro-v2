@@ -365,7 +365,7 @@ export function PricingClient() {
                 <ul className="space-y-2.5 text-xs text-slate-200">
                   <li className="flex items-start gap-2.5">
                     <IconCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span><strong>Gemini 1.5 Pro Contract AI Bot</strong> (delay root-cause, clause radar & 14-day notice clock)</span>
+                    <span><strong>Contract Copilot AI Assistant</strong> (delay root-cause, clause radar & 14-day notice clock)</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <IconCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
@@ -817,7 +817,7 @@ export function PricingClient() {
                   <td className="py-3 px-4 text-center font-bold text-slate-900">Comprehensive Dossier</td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-6 font-medium">PillarPro Contract AI (Powered by Gemini 1.5 Pro)</td>
+                  <td className="py-3 px-6 font-medium">Contract Copilot (Zero-Hallucination Defense Shield)</td>
                   <td className="py-3 px-4 text-center text-slate-400 font-medium">Unavailable</td>
                   <td className="py-3 px-4 text-center font-bold text-emerald-700 bg-emerald-50/20 border-x border-emerald-100">Included (Standard)</td>
                   <td className="py-3 px-4 text-center font-bold text-slate-900">Included (Priority Deep)</td>

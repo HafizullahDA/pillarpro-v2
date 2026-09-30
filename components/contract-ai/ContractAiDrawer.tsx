@@ -11,13 +11,21 @@ interface Message {
   modelUsed?: string
 }
 
+export interface ProjectOption {
+  id: string
+  name: string
+  contract_number?: string | null
+}
+
 interface ContractAiDrawerProps {
   isOpen: boolean
   onClose: () => void
-  projectId: string
+  projectId?: string
   projectName?: string
   contractNumber?: string
   userPlanTier?: PlanTier
+  projects?: ProjectOption[]
+  onSelectProject?: (projectId: string) => void
 }
 
 const QUICK_PROMPTS = [
@@ -32,17 +40,34 @@ const QUICK_PROMPTS = [
 export function ContractAiDrawer({
   isOpen,
   onClose,
-  projectId,
-  projectName = 'Current Project',
-  contractNumber,
+  projectId: initialProjectId,
+  projectName: initialProjectName = 'Current Project',
+  contractNumber: initialContractNumber,
   userPlanTier = 'growth',
+  projects = [],
+  onSelectProject,
 }: ContractAiDrawerProps) {
+  const [activeProjectId, setActiveProjectId] = useState<string>(
+    initialProjectId || projects[0]?.id || ''
+  )
   const isBootstrap = userPlanTier === 'bootstrap'
   const [messages, setMessages] = useState<Message[]>([])
   const [inputQuery, setInputQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (initialProjectId && initialProjectId !== activeProjectId) {
+      setActiveProjectId(initialProjectId)
+    } else if (!activeProjectId && projects.length > 0) {
+      setActiveProjectId(projects[0].id)
+    }
+  }, [initialProjectId, projects, activeProjectId])
+
+  const currentProject = projects.find((p) => p.id === activeProjectId)
+  const displayName = currentProject?.name || initialProjectName
+  const displayContractNo = currentProject?.contract_number || initialContractNumber
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -55,6 +80,11 @@ export function ContractAiDrawer({
   const handleSend = async (queryToSend?: string) => {
     const text = (queryToSend || inputQuery).trim()
     if (!text || loading) return
+
+    if (!activeProjectId) {
+      setErrorMsg('Please select a project to analyze.')
+      return
+    }
 
     setInputQuery('')
     setErrorMsg(null)
@@ -69,7 +99,7 @@ export function ContractAiDrawer({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          projectId,
+          projectId: activeProjectId,
           query: text,
           conversationHistory: messages.map((m) => ({
             role: m.role,
@@ -84,7 +114,7 @@ export function ContractAiDrawer({
         if (data?.code === 'FEATURE_GATED') {
           setErrorMsg(
             data.error ||
-              'Contract AI is available on Growth Contractor and Enterprise Infra plans.'
+              'Contract Copilot is available on Growth Contractor and Enterprise Infra plans.'
           )
         } else {
           setErrorMsg(data?.error || 'Failed to process contract query. Please try again.')
@@ -103,74 +133,90 @@ export function ContractAiDrawer({
         },
       ])
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Network error communicating with Contract AI service.')
+      setErrorMsg(err.message || 'Network error occurred while fetching contract analysis.')
     } finally {
       setLoading(false)
     }
   }
 
-  // Renders the 4-tier taxonomy tags with distinctive visual pills
-  const formatReportContent = (text: string) => {
-    const paragraphs = text.split('\n')
-
+  const formatReportContent = (content: string) => {
+    const lines = content.split('\n')
     return (
-      <div className="space-y-2 text-xs leading-relaxed text-slate-800">
-        {paragraphs.map((p, idx) => {
-          const line = p.trim()
-          if (!line) return <div key={idx} className="h-1.5" />
+      <div className="space-y-2 text-xs text-slate-800 leading-relaxed font-sans">
+        {lines.map((line, idx) => {
+          if (!line.trim()) return <div key={idx} className="h-1" />
 
-          if (line.startsWith('#')) {
+          // [FACT]
+          if (line.includes('[FACT]')) {
             return (
-              <h4 key={idx} className="font-bold text-slate-900 text-sm mt-3 mb-1 border-b border-slate-200 pb-1">
-                {line.replace(/^#+\s*/, '')}
+              <div key={idx} className="my-1.5 p-2 rounded-lg bg-emerald-50 border border-emerald-200">
+                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-600 text-white tracking-wider mr-2">
+                  FACT
+                </span>
+                <span className="text-emerald-950 font-medium">
+                  {line.replace(/\[FACT\]:?/, '').trim()}
+                </span>
+              </div>
+            )
+          }
+
+          // [USER-RECORDED DATA]
+          if (line.includes('[USER-RECORDED DATA]')) {
+            return (
+              <div key={idx} className="my-1.5 p-2 rounded-lg bg-blue-50 border border-blue-200">
+                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-blue-600 text-white tracking-wider mr-2">
+                  USER-RECORDED DATA
+                </span>
+                <span className="text-blue-950 font-medium">
+                  {line.replace(/\[USER-RECORDED DATA\]:?/, '').trim()}
+                </span>
+              </div>
+            )
+          }
+
+          // [CONTRACT TEXT]
+          if (line.includes('[CONTRACT TEXT]')) {
+            return (
+              <div key={idx} className="my-1.5 p-2.5 rounded-lg bg-purple-50 border border-purple-200 font-serif">
+                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-purple-700 text-white tracking-wider mr-2 font-sans">
+                  CONTRACT TEXT
+                </span>
+                <span className="text-purple-950 font-medium">
+                  {line.replace(/\[CONTRACT TEXT\]:?/, '').trim()}
+                </span>
+              </div>
+            )
+          }
+
+          // [AI INTERPRETATION]
+          if (line.includes('[AI INTERPRETATION]')) {
+            return (
+              <div key={idx} className="my-1.5 p-2 rounded-lg bg-amber-50 border border-amber-200">
+                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-600 text-white tracking-wider mr-2">
+                  AI INTERPRETATION
+                </span>
+                <span className="text-amber-950 font-medium">
+                  {line.replace(/\[AI INTERPRETATION\]:?/, '').trim()}
+                </span>
+              </div>
+            )
+          }
+
+          // Section headers
+          if (line.startsWith('### ') || line.startsWith('## ') || line.startsWith('1. ') || line.startsWith('2. ') || line.startsWith('3. ')) {
+            return (
+              <h4 key={idx} className="font-bold text-slate-900 mt-2 text-xs border-b border-slate-100 pb-1">
+                {line.replace(/^###?\s*/, '')}
               </h4>
             )
           }
 
-          // Taxonomies
-          const isFact = line.includes('[FACT]')
-          const isUserLogged = line.includes('[USER-RECORDED DATA]')
-          const isContractText = line.includes('[CONTRACT TEXT]')
-          const isAiInterp = line.includes('[AI INTERPRETATION]')
-
-          if (isFact || isUserLogged || isContractText || isAiInterp) {
-            let badgeClass = ''
-            let badgeLabel = ''
-            let cleanLine = line
-
-            if (isFact) {
-              badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300'
-              badgeLabel = 'FACT'
-              cleanLine = cleanLine.replace(/\[FACT\]:?/g, '').trim()
-            } else if (isUserLogged) {
-              badgeClass = 'bg-amber-100 text-amber-900 border-amber-300'
-              badgeLabel = 'USER-RECORDED DATA'
-              cleanLine = cleanLine.replace(/\[USER-RECORDED DATA\]:?/g, '').trim()
-            } else if (isContractText) {
-              badgeClass = 'bg-blue-100 text-blue-900 border-blue-300'
-              badgeLabel = 'CONTRACT TEXT'
-              cleanLine = cleanLine.replace(/\[CONTRACT TEXT\]:?/g, '').trim()
-            } else if (isAiInterp) {
-              badgeClass = 'bg-purple-100 text-purple-900 border-purple-300'
-              badgeLabel = 'AI INTERPRETATION'
-              cleanLine = cleanLine.replace(/\[AI INTERPRETATION\]:?/g, '').trim()
-            }
-
+          // Bullet points
+          if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
             return (
-              <div key={idx} className="my-1.5 p-2 rounded-lg bg-slate-50/80 border border-slate-200">
-                <span className={`inline-block px-1.5 py-0.5 text-[10px] font-extrabold uppercase rounded border tracking-wide mr-1.5 ${badgeClass}`}>
-                  {badgeLabel}
-                </span>
-                <span className="text-slate-800 font-medium">{cleanLine}</span>
-              </div>
-            )
-          }
-
-          if (line.startsWith('>') || line.toLowerCase().includes('statutory disclaimer')) {
-            return (
-              <div key={idx} className="p-2.5 rounded-lg bg-amber-50/80 border border-amber-200 text-amber-900 text-[11px] italic my-2">
-                {line.replace(/^>\s*/, '')}
-              </div>
+              <li key={idx} className="ml-4 list-disc text-slate-700">
+                {line.replace(/^[-*]\s*/, '')}
+              </li>
             )
           }
 
@@ -200,14 +246,33 @@ export function ContractAiDrawer({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold tracking-tight text-white">PillarPro Contract AI</h3>
-                <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  Gemini 1.5 Pro
+                <h3 className="text-sm font-bold tracking-tight text-white">Contract Copilot</h3>
+                <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-blue-500/30 text-blue-300 border border-blue-400/40">
+                  AI • Zero-Hallucination
                 </span>
               </div>
-              <p className="text-[11px] text-slate-300 truncate max-w-sm mt-0.5">
-                {projectName} {contractNumber ? `• ${contractNumber}` : ''}
-              </p>
+              {projects.length > 1 ? (
+                <div className="mt-1 flex items-center gap-1.5">
+                  <select
+                    value={activeProjectId}
+                    onChange={(e) => {
+                      setActiveProjectId(e.target.value)
+                      onSelectProject?.(e.target.value)
+                    }}
+                    className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[240px] truncate"
+                  >
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id} className="bg-slate-900 text-white">
+                        {p.name} {p.contract_number ? `(${p.contract_number})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-300 truncate max-w-sm mt-0.5">
+                  {displayName} {displayContractNo ? `• ${displayContractNo}` : ''}
+                </p>
+              )}
             </div>
           </div>
 
@@ -224,7 +289,7 @@ export function ContractAiDrawer({
               type="button"
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-              aria-label="Close Contract AI Drawer"
+              aria-label="Close Contract Copilot Drawer"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -254,9 +319,9 @@ export function ContractAiDrawer({
             <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase bg-amber-200/60 text-amber-900 border border-amber-300 mb-2">
               Plan Upgrade Required
             </span>
-            <h4 className="text-lg font-bold text-slate-900">Contract AI is Locked on Bootstrap</h4>
+            <h4 className="text-lg font-bold text-slate-900">Contract Copilot is Locked on Bootstrap</h4>
             <p className="mt-2 text-xs text-slate-600 max-w-md leading-relaxed">
-              Automated delay root-cause analysis, contractual clause radar, and CPWD Clause 5 notice audits powered by <strong>Gemini 1.5 Pro</strong> are available exclusively on the <strong>Growth Contractor (₹2,499/mo)</strong> and <strong>Enterprise Infra (₹4,599/mo)</strong> plans.
+              Automated delay root-cause analysis, contractual clause radar, and CPWD Clause 5 notice audits in <strong>Contract Copilot</strong> are available exclusively on the <strong>Growth Contractor (₹2,499/mo)</strong> and <strong>Enterprise Infra (₹4,599/mo)</strong> plans.
             </p>
 
             <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
@@ -269,52 +334,51 @@ export function ContractAiDrawer({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900"
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition-colors"
               >
                 Close
               </button>
             </div>
           </div>
         ) : (
-          /* Active Chat Interface */
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Messages Area */}
+          /* Active Chat Workspace */
+          <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50">
+            {/* Quick Prompts Strip */}
+            <div className="p-3 border-b border-slate-200 bg-white overflow-x-auto whitespace-nowrap scrollbar-thin">
+              <span className="text-[10px] uppercase font-bold text-slate-400 mr-2">Audit Prompts:</span>
+              <div className="inline-flex gap-1.5">
+                {QUICK_PROMPTS.map((prompt, pIdx) => (
+                  <button
+                    key={pIdx}
+                    type="button"
+                    onClick={() => handleSend(prompt)}
+                    disabled={loading}
+                    className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 hover:bg-blue-50 hover:text-blue-700 border border-slate-200 hover:border-blue-300 text-slate-700 transition-colors shrink-0 disabled:opacity-50"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Messages Scroll Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.length === 0 && (
-                <div className="py-6 text-center">
-                  <div className="h-10 w-10 mx-auto rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                <div className="text-center py-12 text-slate-400">
+                  <div className="h-10 w-10 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                     </svg>
                   </div>
-                  <h4 className="text-xs font-bold text-slate-900">Ask any question about this contract</h4>
-                  <p className="text-[11px] text-slate-500 max-w-xs mx-auto mt-1">
-                    Operates strictly on your verified project data and uploaded tender clauses. Zero guessing.
+                  <p className="text-xs font-medium text-slate-600">
+                    Ask questions about {displayName}.
                   </p>
-
-                  {/* Pre-built Prompt Chips */}
-                  <div className="mt-5 grid grid-cols-1 gap-2 text-left max-w-md mx-auto">
-                    <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                      Recommended Audit Queries:
-                    </p>
-                    {QUICK_PROMPTS.map((prompt, pIdx) => (
-                      <button
-                        key={pIdx}
-                        type="button"
-                        onClick={() => handleSend(prompt)}
-                        className="text-left px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50/70 hover:border-blue-300 text-slate-700 text-xs font-medium transition-colors flex items-center justify-between"
-                      >
-                        <span>{prompt}</span>
-                        <svg className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    ))}
-                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
+                    Try &ldquo;What is delaying this project?&rdquo; or &ldquo;Check 14-day notice compliance for open hindrances&rdquo;.
+                  </p>
                 </div>
               )}
 
-              {/* Conversation Messages */}
               {messages.map((m, mIdx) => (
                 <div
                   key={mIdx}
@@ -338,11 +402,9 @@ export function ContractAiDrawer({
                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                               Grounding: {m.groundingStatus}
                             </span>
-                            {m.modelUsed && (
-                              <span className="text-[10px] font-mono text-slate-400 ml-auto">
-                                {m.modelUsed}
-                              </span>
-                            )}
+                            <span className="text-[10px] font-mono text-slate-400 ml-auto">
+                              Zero-Hallucination Shield
+                            </span>
                           </div>
                         )}
                         {formatReportContent(m.content)}
@@ -355,7 +417,7 @@ export function ContractAiDrawer({
               {loading && (
                 <div className="flex items-center gap-2 p-3 text-xs text-slate-500">
                   <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                  <span>Inspecting live PostgreSQL project records & tender clauses with Gemini 1.5 Pro...</span>
+                  <span>Inspecting live project records &amp; tender clauses with Zero-Hallucination Shield...</span>
                 </div>
               )}
 
@@ -388,11 +450,14 @@ export function ContractAiDrawer({
                 <button
                   type="submit"
                   disabled={loading || !inputQuery.trim()}
-                  className="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold uppercase tracking-wider hover:bg-slate-800 disabled:opacity-40 transition-colors shadow-sm shrink-0"
+                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-semibold transition-colors"
                 >
                   Send
                 </button>
               </form>
+              <div className="mt-2 text-[10px] text-slate-400 text-center flex items-center justify-center gap-1">
+                <span>Answers cite verified ERP records &amp; tender documents. Not legal advice.</span>
+              </div>
             </div>
           </div>
         )}
