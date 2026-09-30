@@ -19,14 +19,7 @@ export async function POST() {
       .eq('id', user.id)
       .maybeSingle()
 
-    let orgName = 'My Contracting Firm'
-    if (profile?.organizations) {
-      if (Array.isArray(profile.organizations)) {
-        orgName = (profile.organizations[0] as { name?: string })?.name || orgName
-      } else if (typeof profile.organizations === 'object') {
-        orgName = (profile.organizations as { name?: string }).name || orgName
-      }
-    }
+    const orgName = (profile?.organizations as { name?: string } | null)?.name || 'My Contracting Firm'
     const displayName = profile?.display_name || user.email?.split('@')[0]
 
     // Invoke onboard_contractor RPC with p_seed_starter = true
@@ -41,15 +34,9 @@ export async function POST() {
       return NextResponse.json({ error: rpcError.message || 'Failed to seed sample project' }, { status: 500 })
     }
 
-    // Verify project was created
-    const { count } = await supabase
-      .from('projects')
-      .select('id', { count: 'exact', head: true })
-
     return NextResponse.json({
       success: true,
       message: 'Sample Highway Project & RA Bill loaded successfully',
-      projectCount: count ?? 0,
       data,
     })
   } catch (err) {
