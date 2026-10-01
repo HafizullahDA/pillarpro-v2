@@ -11,6 +11,8 @@ import { DeleteSupplierModal } from './DeleteSupplierModal'
 import { canDeleteSupplier, canCreateSupplier } from '@/lib/permissions'
 import { exportSuppliersSummary } from '@/lib/export/csv'
 import { saveOfflineSnapshot } from '@/lib/offline/db'
+import { StitchMetric } from '@/components/ui/StitchMetric'
+import { StitchTable, StitchTableHead, StitchTableBody, StitchTableRow, StitchTableCell } from '@/components/ui/StitchTable'
 
 export type SupplierSummaryRow = {
   id: string
@@ -100,33 +102,53 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
       {/* Header & Drawers */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Supplier Accounts</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Manage material suppliers, track site procurements, and record payments
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Supplier Khata &amp; Accounts</h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/80 tabular-nums">
+              {suppliers.length} Suppliers
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Material suppliers, site procurements, credit tracking, and settlement payments
           </p>
         </div>
         {canCreate && <SupplierActions projects={projects} suppliers={supplierOptions} />}
       </div>
 
-      {/* KPI Tiles */}
+      {/* Stitch KPI Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <SummaryTile
+        <StitchMetric
           label="Total Procured"
           value={formatINR(totals.procured)}
           sub="Materials bought on credit/cash"
-          accent="blue"
+          tone="indigo"
+          icon={
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          }
         />
-        <SummaryTile
+        <StitchMetric
           label="Total Paid"
           value={formatINR(totals.paid)}
           sub="Settlements to suppliers"
-          accent="emerald"
+          tone="emerald"
+          icon={
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
         />
-        <SummaryTile
-          label="Outstanding Balance"
+        <StitchMetric
+          label="Outstanding Balance Due"
           value={formatINR(totals.balance)}
-          sub="Net payable balance"
-          accent={totals.balance > 0 ? 'red' : 'slate'}
+          sub={totals.balance > 0 ? 'Net payable to suppliers' : 'All accounts settled'}
+          tone={totals.balance > 0 ? 'rose' : 'default'}
+          icon={
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
         />
       </div>
 
@@ -137,10 +159,10 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
           description="Add your material suppliers to track procurement bills and payments against sites or central stock."
         />
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          {/* Search bar */}
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between gap-3 bg-slate-50/50">
-            <div className="relative flex-1 max-w-sm">
+        <div className="space-y-3">
+          {/* Search bar & Export */}
+          <div className="bg-white p-2.5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-md">
               <svg
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
                 fill="none"
@@ -155,7 +177,7 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search by supplier name, GSTIN, phone..."
-                className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder-slate-400"
+                className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50/80 border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
               />
             </div>
             <div className="flex items-center gap-3">
@@ -163,7 +185,7 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
                 type="button"
                 onClick={() => exportSuppliersSummary(filtered)}
                 title="Export Supplier Directory & Balances for CA Audit / GSTR-2B (Excel & CSV)"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 transition-colors shadow-xs"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-300/80 hover:bg-emerald-100/70 hover:border-emerald-400 transition-all shadow-2xs"
               >
                 <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -171,82 +193,82 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
                 Export Directory (CSV)
               </button>
               <div className="text-xs text-slate-500 hidden sm:block">
-                Showing <span className="font-medium text-slate-700">{filtered.length}</span> of{' '}
-                {suppliers.length} suppliers
+                Showing <span className="font-bold text-slate-700 tabular-nums">{filtered.length}</span> of{' '}
+                <span className="tabular-nums">{suppliers.length}</span>
               </div>
             </div>
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto">
+          <StitchTable>
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  <th className="px-4 py-3">Supplier Name</th>
-                  <th className="px-4 py-3 hidden md:table-cell">GSTIN</th>
-                  <th className="px-4 py-3 hidden sm:table-cell">Contact</th>
+              <StitchTableHead>
+                <tr>
+                  <th className="px-4 py-3 text-left">Supplier Name</th>
+                  <th className="px-4 py-3 text-left hidden md:table-cell">GSTIN</th>
+                  <th className="px-4 py-3 text-left hidden sm:table-cell">Contact</th>
                   <th className="px-4 py-3 text-right">Procured</th>
                   <th className="px-4 py-3 text-right">Paid</th>
                   <th className="px-4 py-3 text-right">Balance Due</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+              </StitchTableHead>
+              <StitchTableBody>
                 {filtered.map(s => {
                   const balance = Number(s.outstanding_balance) || 0
                   return (
-                    <tr key={s.id} className="hover:bg-slate-50/75 transition-colors">
-                      <td className="px-4 py-3.5">
+                    <StitchTableRow key={s.id}>
+                      <StitchTableCell>
                         <Link
                           href={`/suppliers/${s.id}`}
-                          className="font-medium text-slate-900 hover:text-blue-600 block"
+                          className="font-bold text-slate-900 hover:text-blue-600 transition-colors block"
                         >
                           {s.name}
                         </Link>
                         {s.address && (
                           <span className="text-xs text-slate-400 line-clamp-1 mt-0.5">{s.address}</span>
                         )}
-                      </td>
+                      </StitchTableCell>
 
-                      <td className="px-4 py-3.5 hidden md:table-cell">
+                      <StitchTableCell className="hidden md:table-cell">
                         {s.gst_number ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-slate-100 text-slate-700">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200/60">
                             {s.gst_number}
                           </span>
                         ) : (
                           <span className="text-xs text-slate-400 italic">Not specified</span>
                         )}
-                      </td>
+                      </StitchTableCell>
 
-                      <td className="px-4 py-3.5 hidden sm:table-cell text-slate-600 tabular-nums">
+                      <StitchTableCell className="hidden sm:table-cell text-slate-600 tabular-nums">
                         {s.contact_number || <span className="text-slate-400 italic text-xs">—</span>}
-                      </td>
+                      </StitchTableCell>
 
-                      <td className="px-4 py-3.5 text-right tabular-nums text-slate-700">
+                      <StitchTableCell align="right" className="font-mono text-slate-700">
                         {formatINR(s.total_procured)}
-                      </td>
+                      </StitchTableCell>
 
-                      <td className="px-4 py-3.5 text-right tabular-nums text-slate-700">
+                      <StitchTableCell align="right" className="font-mono text-slate-700">
                         {formatINR(s.total_paid)}
-                      </td>
+                      </StitchTableCell>
 
-                      <td className="px-4 py-3.5 text-right tabular-nums font-semibold">
+                      <StitchTableCell align="right" className="font-semibold">
                         <span
-                          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold font-mono tabular-nums ${
                             balance > 0
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              ? 'bg-rose-50 text-rose-700 border border-rose-200/80'
+                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
                           }`}
                         >
                           {formatINR(balance)}
                         </span>
-                      </td>
+                      </StitchTableCell>
 
-                      <td className="px-4 py-3.5 text-right">
+                      <StitchTableCell align="right">
                         <div className="flex items-center justify-end gap-2.5">
                           <Link
                             href={`/suppliers/${s.id}`}
-                            className="inline-flex items-center text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                            className="inline-flex items-center text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
                           >
                             Statement
                             <svg className="h-3.5 w-3.5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -268,13 +290,13 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
                             </button>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                      </StitchTableCell>
+                    </StitchTableRow>
                   )
                 })}
-              </tbody>
+              </StitchTableBody>
             </table>
-          </div>
+          </StitchTable>
         </div>
       )}
 

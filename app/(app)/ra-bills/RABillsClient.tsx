@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
+import { SummaryTile } from '@/components/ui/SummaryTile'
 import { formatINR, formatDate } from '@/lib/format'
 import { RABillActions, ProjectOption, RABillOption } from './RABillActions'
 import { canCreateRaBill, canEditRaBill } from '@/lib/permissions'
@@ -580,94 +581,95 @@ export function RABillsClient({
         {/* Top Tier: Primary Focus Cards (Outstanding, Net Bank Cash, & Retention) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* UNBILLED CERTIFIED WORK (e-MB Intake Hero) */}
-          <div className="bg-gradient-to-br from-white to-indigo-50/50 rounded-2xl border-2 border-indigo-300 p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -mr-6 -mt-6 pointer-events-none" />
+          <div className="relative bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs overflow-hidden flex flex-col justify-between hover:border-slate-300/90 transition-all duration-200">
+            <div className="absolute top-0 left-5 right-5 h-[2px] rounded-full bg-indigo-600 opacity-80" />
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-indigo-900 flex items-center gap-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-indigo-600" />
                   Unbilled Certified Work
                 </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/70">
                   Ready to Bill
                 </span>
               </div>
-              <p className="text-3xl font-black text-slate-900 tabular-nums tracking-tight">
+              <p className="text-3xl font-extrabold text-slate-900 font-mono tabular-nums tracking-tight">
                 {formatINR(unbilledWorkSummary.unbilledCertifiedWorkValue)}
               </p>
-              <div className="text-[11px] text-slate-500 mt-1 flex flex-col gap-0.5 font-medium">
-                <span>Certified: <strong className="text-emerald-700">{formatINR(unbilledWorkSummary.totalCertifiedWorkValue)}</strong></span>
-                <span>Billed: <strong className="text-slate-700">{formatINR(unbilledWorkSummary.totalBilledWorkValue)}</strong></span>
+              <div className="text-[11px] text-slate-500 mt-2 pt-2 border-t border-slate-100 flex flex-col gap-0.5 font-medium">
+                <span>Certified: <strong className="text-emerald-700 font-mono">{formatINR(unbilledWorkSummary.totalCertifiedWorkValue)}</strong></span>
+                <span>Billed: <strong className="text-slate-700 font-mono">{formatINR(unbilledWorkSummary.totalBilledWorkValue)}</strong></span>
               </div>
             </div>
             {canCreate && unbilledWorkSummary.unbilledCertifiedWorkValue > 0 && (
-              <div className="pt-3 mt-2 border-t border-indigo-100">
+              <div className="pt-3 mt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setWizardOpen(true)}
-                  className="w-full py-1.5 px-3 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors text-center shadow-xs flex items-center justify-center gap-1"
+                  className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white transition-all text-center shadow-2xs flex items-center justify-center gap-1"
                 >
                   Prepare RA Bill &rarr;
                 </button>
               </div>
             )}
           </div>
+
           {/* 1. OUTSTANDING RA BALANCE (Hero Focus #1) */}
-          <div className="bg-gradient-to-br from-white to-rose-50/40 rounded-2xl border-2 border-rose-300/80 p-5 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full -mr-6 -mt-6 pointer-events-none" />
+          <div className="relative bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs overflow-hidden hover:border-slate-300/90 transition-all duration-200">
+            <div className="absolute top-0 left-5 right-5 h-[2px] rounded-full bg-rose-500 opacity-80" />
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-rose-500" />
                 Outstanding RA Balance
               </span>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">
-                Primary Receivable
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200/70">
+                Receivable
               </span>
             </div>
-            <p className="text-3xl font-black text-slate-900 tabular-nums tracking-tight">
+            <p className="text-3xl font-extrabold text-slate-900 font-mono tabular-nums tracking-tight">
               {formatINR(metrics.totalOutstanding)}
             </p>
-            <p className="text-xs text-rose-600/90 font-medium mt-1.5">
+            <p className="text-xs text-rose-700 font-medium mt-2 pt-2 border-t border-slate-100">
               Net pending payment from government treasury across submitted bills
             </p>
           </div>
 
           {/* 2. NET BANK CASH RECEIVED (Hero Focus #2 - Real Liquidity) */}
-          <div className="bg-gradient-to-br from-white to-emerald-50/40 rounded-2xl border-2 border-emerald-300/80 p-5 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-6 -mt-6 pointer-events-none" />
+          <div className="relative bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs overflow-hidden hover:border-slate-300/90 transition-all duration-200">
+            <div className="absolute top-0 left-5 right-5 h-[2px] rounded-full bg-emerald-500 opacity-80" />
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 Net Bank Cash in Hand
               </span>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/70">
                 Real Liquidity
               </span>
             </div>
-            <p className="text-3xl font-black text-slate-900 tabular-nums tracking-tight">
+            <p className="text-3xl font-extrabold text-slate-900 font-mono tabular-nums tracking-tight">
               {formatINR(metrics.totalNetBankCash)}
             </p>
-            <p className="text-xs text-emerald-700/90 font-medium mt-1.5">
-              Actual liquid funds credited to bank account after all statutory deductions
+            <p className="text-xs text-emerald-700 font-medium mt-2 pt-2 border-t border-slate-100">
+              Actual liquid funds credited to bank account after all deductions
             </p>
           </div>
 
           {/* 3. RETENTION MONEY WITHHELD (Hero Focus #3) */}
-          <div className="bg-gradient-to-br from-white to-amber-50/40 rounded-2xl border-2 border-amber-300/80 p-5 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -mr-6 -mt-6 pointer-events-none" />
+          <div className="relative bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs overflow-hidden hover:border-slate-300/90 transition-all duration-200">
+            <div className="absolute top-0 left-5 right-5 h-[2px] rounded-full bg-amber-500 opacity-80" />
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-amber-500" />
                 Retention Money Withheld
               </span>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                Locked Govt Deposit
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/70">
+                Govt Deposit
               </span>
             </div>
-            <p className="text-3xl font-black text-slate-900 tabular-nums tracking-tight">
+            <p className="text-3xl font-extrabold text-slate-900 font-mono tabular-nums tracking-tight">
               {formatINR(metrics.totalRetention)}
             </p>
-            <p className="text-xs text-amber-700/90 font-medium mt-1.5">
+            <p className="text-xs text-amber-800 font-medium mt-2 pt-2 border-t border-slate-100">
               Cumulative retention held back (releaseable post-completion / DLP)
             </p>
           </div>
@@ -675,29 +677,30 @@ export function RABillsClient({
 
         {/* Bottom Tier: Secondary Context Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-blue-500 p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Work Certified</p>
-            <p className="text-xl font-bold text-slate-900 tabular-nums mt-0.5">{formatINR(metrics.totalCertified)}</p>
-            <p className="text-[11px] text-slate-400 mt-1">Approved gross work value</p>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-teal-500 p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Gross Treasury Released</p>
-            <p className="text-xl font-bold text-teal-700 tabular-nums mt-0.5">{formatINR(metrics.totalGrossReceived)}</p>
-            <p className="text-[11px] text-slate-400 mt-1">Gross disbursed by treasury</p>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-purple-500 p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Tax & Cess Deductions</p>
-            <p className="text-xl font-bold text-purple-700 tabular-nums mt-0.5">{formatINR(metrics.totalTaxDeductions)}</p>
-            <p className="text-[11px] text-slate-400 mt-1">TDS, GST-TDS & Cess with tax portal</p>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-indigo-500 p-4">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Active Guarantees (PBG / SD)</p>
-            <p className="text-xl font-bold text-indigo-700 tabular-nums mt-0.5">{formatINR(metrics.activeDepositsAmount)}</p>
-            <p className="text-[11px] text-slate-400 mt-1">{kpiScopeDeposits.filter(d => d.status === 'active').length} active bank instruments</p>
-          </div>
+          <SummaryTile
+            label="Total Work Certified"
+            value={formatINR(metrics.totalCertified)}
+            sub="Approved gross work value"
+            accent="blue"
+          />
+          <SummaryTile
+            label="Gross Treasury Released"
+            value={formatINR(metrics.totalGrossReceived)}
+            sub="Gross disbursed by treasury"
+            accent="emerald"
+          />
+          <SummaryTile
+            label="Tax & Cess Deductions"
+            value={formatINR(metrics.totalTaxDeductions)}
+            sub="TDS, GST-TDS & Cess with tax portal"
+            accent="amber"
+          />
+          <SummaryTile
+            label="Active Guarantees (PBG / SD)"
+            value={formatINR(metrics.activeDepositsAmount)}
+            sub={`${kpiScopeDeposits.filter(d => d.status === 'active').length} active bank instruments`}
+            accent="slate"
+          />
         </div>
       </div>
 

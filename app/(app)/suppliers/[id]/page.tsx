@@ -8,6 +8,8 @@ import { calculateSupplierLedger, calculateSupplierTotals } from '@/lib/calculat
 import { SupplierActions } from '../SupplierActions'
 import { SupplierStatementButton } from './SupplierStatementButton'
 import { DeleteSupplierDetailButton } from './DeleteSupplierDetailButton'
+import { StitchMetric } from '@/components/ui/StitchMetric'
+import { StitchTable, StitchTableHead, StitchTableBody, StitchTableRow, StitchTableCell } from '@/components/ui/StitchTable'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -135,37 +137,52 @@ export default async function SupplierDetailPage({ params }: Props) {
 
       {/* KPI Tiles */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <SummaryTile
+        <StitchMetric
           label="Total Procured"
           value={formatINR(totalProcured)}
           sub={`${txWithBalance.filter(t => t.transaction_type === 'procurement').length} procurement deliveries`}
-          accent="blue"
+          tone="indigo"
+          icon={
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          }
         />
-        <SummaryTile
+        <StitchMetric
           label="Total Paid"
           value={formatINR(totalPaid)}
           sub={`${txWithBalance.filter(t => t.transaction_type === 'payment').length} settlement transactions`}
-          accent="emerald"
+          tone="emerald"
+          icon={
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
         />
-        <SummaryTile
+        <StitchMetric
           label="Outstanding Balance Owed"
           value={formatINR(balanceOwed)}
           sub={balanceOwed > 0 ? 'Amount payable to supplier' : 'All accounts settled'}
-          accent={balanceOwed > 0 ? 'red' : 'slate'}
+          tone={balanceOwed > 0 ? 'rose' : 'default'}
+          icon={
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
         />
       </div>
 
       {/* Transaction Ledger Statement */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+      <div className="space-y-3">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">Account Statement & Ledger</h2>
+            <h2 className="text-sm font-bold text-slate-900 tracking-tight">Account Statement &amp; Ledger</h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Complete history of materials procured and payments made
             </p>
           </div>
           <div className="text-xs text-slate-500">
-            Total entries: <span className="font-semibold text-slate-700">{displayTransactions.length}</span>
+            Total entries: <span className="font-bold text-slate-800 tabular-nums">{displayTransactions.length}</span>
           </div>
         </div>
 
@@ -177,7 +194,7 @@ export default async function SupplierDetailPage({ params }: Props) {
         ) : (
           <>
             {/* Mobile View: Stacked Cards */}
-            <div className="block md:hidden divide-y divide-slate-100">
+            <div className="block md:hidden space-y-3">
               {displayTransactions.map(tx => {
                 const isProc = tx.transaction_type === 'procurement'
                 const projObj = (Array.isArray(tx.projects) ? tx.projects[0] : tx.projects) as { name?: string } | null
@@ -186,23 +203,23 @@ export default async function SupplierDetailPage({ params }: Props) {
                 const receiptUrl = expenseObj?.receipt_url
 
                 return (
-                  <div key={tx.id} className="p-4 space-y-2">
+                  <div key={tx.id} className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-semibold text-slate-500 tabular-nums">
                         {formatDate(tx.date)}
                       </span>
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
                           isProc
-                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            ? 'bg-amber-50 text-amber-800 border-amber-200/80'
+                            : 'bg-emerald-50 text-emerald-800 border-emerald-200/80'
                         }`}
                       >
                         {isProc ? 'Procurement' : 'Payment'}
                       </span>
                     </div>
 
-                    <div className="font-semibold text-slate-900 text-sm">{tx.description}</div>
+                    <div className="font-bold text-slate-900 text-sm tracking-tight">{tx.description}</div>
 
                     {((tx as any).quantity != null && (tx as any).rate != null) && (
                       <div className="text-xs font-mono text-slate-500">
@@ -217,20 +234,20 @@ export default async function SupplierDetailPage({ params }: Props) {
 
                     {projName && (
                       <div className="text-xs text-slate-600">
-                        Site: <span className="font-medium text-slate-800">{projName}</span>
+                        Site: <span className="font-semibold text-slate-800">{projName}</span>
                       </div>
                     )}
 
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
                       <div>
                         <span className="text-slate-500 mr-1">Amount:</span>
-                        <span className={`font-bold ${isProc ? 'text-slate-900' : 'text-emerald-700'}`}>
+                        <span className={`font-mono font-bold ${isProc ? 'text-slate-900' : 'text-emerald-700'}`}>
                           {isProc ? '+' : '-'}{formatINR(tx.amount)}
                         </span>
                       </div>
                       <div className="text-right">
                         <span className="text-slate-500 mr-1">Balance:</span>
-                        <span className={`font-bold ${tx.runningBalance > 0 ? 'text-red-600' : 'text-slate-700'}`}>
+                        <span className={`font-mono font-bold ${tx.runningBalance > 0 ? 'text-rose-700' : 'text-slate-700'}`}>
                           {formatINR(tx.runningBalance)}
                         </span>
                       </div>
@@ -242,7 +259,7 @@ export default async function SupplierDetailPage({ params }: Props) {
                           href={receiptUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-blue-600 font-medium hover:underline"
+                          className="inline-flex items-center gap-1 text-blue-600 font-semibold hover:underline"
                         >
                           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -257,118 +274,120 @@ export default async function SupplierDetailPage({ params }: Props) {
             </div>
 
             {/* Desktop View: Full Table */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Item / Description</th>
-                  <th className="px-4 py-3 hidden md:table-cell">Site (Project)</th>
-                  <th className="px-4 py-3 hidden lg:table-cell">Ref / Mode</th>
-                  <th className="px-4 py-3 text-right">Procurement (+)</th>
-                  <th className="px-4 py-3 text-right">Payment (-)</th>
-                  <th className="px-4 py-3 text-right">Running Balance</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {displayTransactions.map(tx => {
-                  const isProc = tx.transaction_type === 'procurement'
-                  const projObj = (Array.isArray(tx.projects) ? tx.projects[0] : tx.projects) as { name?: string } | null
-                  const projName = projObj?.name ?? null
-                  const expenseObj = (Array.isArray(tx.expenses) ? tx.expenses[0] : tx.expenses) as { receipt_url?: string } | null
-                  const receiptUrl = expenseObj?.receipt_url
-
-                  return (
-                    <tr key={tx.id} className="hover:bg-slate-50/75 transition-colors">
-                      {/* Date */}
-                      <td className="px-4 py-3.5 text-xs text-slate-600 whitespace-nowrap tabular-nums font-medium">
-                        {formatDate(tx.date)}
-                      </td>
-
-                      {/* Type Badge */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
-                            isProc
-                              ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                              : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                          }`}
-                        >
-                          {isProc ? 'Procurement' : 'Payment'}
-                        </span>
-                      </td>
-
-                      {/* Description & Notes */}
-                      <td className="px-4 py-3.5">
-                        <div className="font-medium text-slate-900">{tx.description}</div>
-                        {((tx as any).quantity != null && (tx as any).rate != null) && (
-                          <div className="text-xs font-mono text-slate-500 mt-0.5">
-                            {Number((tx as any).quantity).toLocaleString()} {(tx as any).unit || 'nos'} @ {formatINR(Number((tx as any).rate))}/{(tx as any).unit || 'nos'}
-                            {(Number((tx as any).carriage_amount) || 0) > 0 && (
-                              <span className="text-blue-700 font-semibold ml-1.5">
-                                (+ {formatINR(Number((tx as any).carriage_amount))} carriage)
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        {tx.notes && <div className="text-xs text-slate-400 mt-0.5">{tx.notes}</div>}
-                        {receiptUrl && (
-                          <a
-                            href={receiptUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-0.5"
-                          >
-                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                            View Attached Receipt
-                          </a>
-                        )}
-                      </td>
-
-                      {/* Project Site */}
-                      <td className="px-4 py-3.5 hidden md:table-cell whitespace-nowrap">
-                        {projName ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                            {projName}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-slate-400 italic">General / Central</span>
-                        )}
-                      </td>
-
-                      {/* Reference & Mode */}
-                      <td className="px-4 py-3.5 hidden lg:table-cell text-xs text-slate-600 whitespace-nowrap">
-                        {tx.reference && <div className="font-mono">{tx.reference}</div>}
-                        {tx.mode && (
-                          <div className="text-slate-400 capitalize">{tx.mode.replace('_', ' ')}</div>
-                        )}
-                        {!tx.reference && !tx.mode && <span className="text-slate-400">—</span>}
-                      </td>
-
-                      {/* Procurement Amount */}
-                      <td className="px-4 py-3.5 text-right tabular-nums font-medium text-slate-900 whitespace-nowrap">
-                        {isProc ? formatINR(tx.amount) : '—'}
-                      </td>
-
-                      {/* Payment Amount */}
-                      <td className="px-4 py-3.5 text-right tabular-nums font-medium text-emerald-600 whitespace-nowrap">
-                        {!isProc ? formatINR(tx.amount) : '—'}
-                      </td>
-
-                      {/* Running Balance */}
-                      <td className="px-4 py-3.5 text-right tabular-nums font-semibold text-slate-900 whitespace-nowrap">
-                        <span className={tx.runningBalance > 0 ? 'text-red-600' : 'text-slate-700'}>
-                          {formatINR(tx.runningBalance)}
-                        </span>
-                      </td>
+            <div className="hidden md:block">
+              <StitchTable>
+                <table className="w-full text-sm">
+                  <StitchTableHead>
+                    <tr>
+                      <th className="px-4 py-3 text-left">Date</th>
+                      <th className="px-4 py-3 text-left">Type</th>
+                      <th className="px-4 py-3 text-left">Item / Description</th>
+                      <th className="px-4 py-3 text-left hidden md:table-cell">Site (Project)</th>
+                      <th className="px-4 py-3 text-left hidden lg:table-cell">Ref / Mode</th>
+                      <th className="px-4 py-3 text-right">Procurement (+)</th>
+                      <th className="px-4 py-3 text-right">Payment (-)</th>
+                      <th className="px-4 py-3 text-right">Running Balance</th>
                     </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                  </StitchTableHead>
+                  <StitchTableBody>
+                    {displayTransactions.map(tx => {
+                      const isProc = tx.transaction_type === 'procurement'
+                      const projObj = (Array.isArray(tx.projects) ? tx.projects[0] : tx.projects) as { name?: string } | null
+                      const projName = projObj?.name ?? null
+                      const expenseObj = (Array.isArray(tx.expenses) ? tx.expenses[0] : tx.expenses) as { receipt_url?: string } | null
+                      const receiptUrl = expenseObj?.receipt_url
+
+                      return (
+                        <StitchTableRow key={tx.id}>
+                          {/* Date */}
+                          <StitchTableCell className="text-xs text-slate-600 whitespace-nowrap tabular-nums font-medium">
+                            {formatDate(tx.date)}
+                          </StitchTableCell>
+
+                          {/* Type Badge */}
+                          <StitchTableCell className="whitespace-nowrap">
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${
+                                isProc
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200/80'
+                                  : 'bg-emerald-50 text-emerald-800 border-emerald-200/80'
+                              }`}
+                            >
+                              {isProc ? 'Procurement' : 'Payment'}
+                            </span>
+                          </StitchTableCell>
+
+                          {/* Description & Notes */}
+                          <StitchTableCell>
+                            <div className="font-semibold text-slate-900">{tx.description}</div>
+                            {((tx as any).quantity != null && (tx as any).rate != null) && (
+                              <div className="text-xs font-mono text-slate-500 mt-0.5">
+                                {Number((tx as any).quantity).toLocaleString()} {(tx as any).unit || 'nos'} @ {formatINR(Number((tx as any).rate))}/{(tx as any).unit || 'nos'}
+                                {(Number((tx as any).carriage_amount) || 0) > 0 && (
+                                  <span className="text-blue-700 font-semibold ml-1.5">
+                                    (+ {formatINR(Number((tx as any).carriage_amount))} carriage)
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {tx.notes && <div className="text-xs text-slate-400 mt-0.5">{tx.notes}</div>}
+                            {receiptUrl && (
+                              <a
+                                href={receiptUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-0.5 font-medium"
+                              >
+                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                View Attached Receipt
+                              </a>
+                            )}
+                          </StitchTableCell>
+
+                          {/* Project Site */}
+                          <StitchTableCell className="hidden md:table-cell whitespace-nowrap">
+                            {projName ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/80">
+                                {projName}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-slate-400 italic">General / Central</span>
+                            )}
+                          </StitchTableCell>
+
+                          {/* Reference & Mode */}
+                          <StitchTableCell className="hidden lg:table-cell text-xs text-slate-600 whitespace-nowrap">
+                            {tx.reference && <div className="font-mono">{tx.reference}</div>}
+                            {tx.mode && (
+                              <div className="text-slate-400 capitalize">{tx.mode.replace('_', ' ')}</div>
+                            )}
+                            {!tx.reference && !tx.mode && <span className="text-slate-400">—</span>}
+                          </StitchTableCell>
+
+                          {/* Procurement Amount */}
+                          <StitchTableCell align="right" className="font-mono font-semibold text-slate-900 whitespace-nowrap">
+                            {isProc ? formatINR(tx.amount) : '—'}
+                          </StitchTableCell>
+
+                          {/* Payment Amount */}
+                          <StitchTableCell align="right" className="font-mono font-semibold text-emerald-700 whitespace-nowrap">
+                            {!isProc ? formatINR(tx.amount) : '—'}
+                          </StitchTableCell>
+
+                          {/* Running Balance */}
+                          <StitchTableCell align="right" className="font-mono font-bold whitespace-nowrap">
+                            <span className={tx.runningBalance > 0 ? 'text-rose-700' : 'text-slate-700'}>
+                              {formatINR(tx.runningBalance)}
+                            </span>
+                          </StitchTableCell>
+                        </StitchTableRow>
+                      )
+                    })}
+                  </StitchTableBody>
+                </table>
+              </StitchTable>
             </div>
           </>
         )}

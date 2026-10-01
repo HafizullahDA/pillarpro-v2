@@ -10,6 +10,8 @@ import { AddProjectButton } from './AddProjectButton'
 import { ArchiveProjectModal } from './ArchiveProjectModal'
 import { canArchiveProject, canCreateProject } from '@/lib/permissions'
 import { saveOfflineSnapshot } from '@/lib/offline/db'
+import { StitchCard } from '@/components/ui/StitchCard'
+import { StitchTable, StitchTableHead, StitchTableBody, StitchTableRow, StitchTableCell } from '@/components/ui/StitchTable'
 
 export interface ProjectRow {
   id: string
@@ -98,38 +100,43 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Projects</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Manage contract sites, work orders, and client agency records
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Contract Projects</h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/80 tabular-nums">
+              {projects.length} Total
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Contract sites, work orders, delay claims, and client department accounts
           </p>
         </div>
         {canCreate && <AddProjectButton />}
       </div>
 
       {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-2 rounded-xl border border-slate-200">
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-2.5 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="inline-flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/60">
           <button
             type="button"
             onClick={() => setTab('active')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 ${
               tab === 'active'
-                ? 'bg-white text-slate-900 shadow-2xs'
+                ? 'bg-white text-slate-900 shadow-2xs border border-slate-200/70'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Active Projects ({activeProjects.length})
+            Active Sites ({activeProjects.length})
           </button>
           <button
             type="button"
             onClick={() => setTab('archived')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-150 ${
               tab === 'archived'
-                ? 'bg-white text-slate-900 shadow-2xs'
+                ? 'bg-white text-slate-900 shadow-2xs border border-slate-200/70'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -138,7 +145,7 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
         </div>
 
         {/* Search */}
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full sm:w-72">
           <svg
             className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
             fill="none"
@@ -151,8 +158,8 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search projects..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            placeholder="Search projects by name or agency..."
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50/80 border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
           />
         </div>
       </div>
@@ -169,7 +176,7 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
             }
           />
           {tab === 'active' && (
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-blue-50/90 border border-blue-200/90 shadow-2xs text-center max-w-lg mx-auto space-y-3">
+            <div className="p-6 rounded-2xl bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-blue-50/90 border border-blue-200/80 shadow-2xs text-center max-w-lg mx-auto space-y-3">
               <div className="flex items-center justify-center gap-2">
                 <span className="text-xs font-bold text-blue-950">
                   New to PillarPro? Explore with pre-loaded civil data
@@ -213,111 +220,110 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  <th className="text-left px-4 py-3">Project</th>
-                  <th className="text-left px-4 py-3 hidden md:table-cell">Agency</th>
-                  <th className="text-right px-4 py-3 hidden lg:table-cell">Awarded Amount</th>
-                  <th className="text-left px-4 py-3 hidden md:table-cell">Start Date</th>
-                  <th className="text-center px-4 py-3">Status</th>
-                  {canArchive && <th className="text-right px-4 py-3">Action</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {displayedProjects.map(p => (
-                  <tr key={p.id} className="hover:bg-slate-50/75 transition-colors">
-                    {/* Project Name */}
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/projects/${p.id}`}
-                          className="font-bold text-slate-900 hover:text-blue-600 transition-colors"
-                        >
-                          {p.name}
-                        </Link>
-                        {p.archived && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-                            Archived
-                          </span>
-                        )}
-                      </div>
-                      {p.agency_name && (
-                        <p className="text-xs text-slate-400 md:hidden mt-0.5">{p.agency_name}</p>
+        <StitchTable>
+          <table className="w-full text-sm">
+            <StitchTableHead>
+              <tr>
+                <th className="text-left px-4 py-3">Project &amp; Work</th>
+                <th className="text-left px-4 py-3 hidden md:table-cell">Client Agency</th>
+                <th className="text-right px-4 py-3 hidden lg:table-cell">Awarded Amount</th>
+                <th className="text-left px-4 py-3 hidden md:table-cell">Start Date</th>
+                <th className="text-center px-4 py-3">Status</th>
+                {canArchive && <th className="text-right px-4 py-3">Action</th>}
+              </tr>
+            </StitchTableHead>
+            <StitchTableBody>
+              {displayedProjects.map(p => (
+                <StitchTableRow key={p.id}>
+                  {/* Project Name */}
+                  <StitchTableCell>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/projects/${p.id}`}
+                        className="font-bold text-slate-900 hover:text-blue-600 transition-colors tracking-tight"
+                      >
+                        {p.name}
+                      </Link>
+                      {p.archived && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80">
+                          Archived
+                        </span>
                       )}
-                      <div className="flex items-center gap-2 mt-1.5 text-[11px] font-semibold">
-                        <Link href={`/projects/${p.id}/hindrances`} className="text-blue-600 hover:underline flex items-center gap-1">
-                          <svg className="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                          </svg>
-                          <span>Delay Defense (EOT)</span>
-                        </Link>
-                        <span className="text-slate-300">&bull;</span>
-                        <Link href={`/projects/${p.id}/boq`} className="text-slate-500 hover:text-slate-800 hover:underline">
-                          e-MB
-                        </Link>
-                        <span className="text-slate-300">&bull;</span>
-                        <Link href={`/projects/${p.id}/dpr`} className="text-slate-500 hover:text-slate-800 hover:underline">
-                          DPR
-                        </Link>
-                      </div>
-                    </td>
-
-                    {/* Agency */}
-                    <td className="px-4 py-3.5 text-slate-600 hidden md:table-cell">
-                      {p.agency_name ?? '—'}
-                    </td>
-
-                    {/* Awarded */}
-                    <td className="px-4 py-3.5 text-right tabular-nums text-slate-800 font-medium hidden lg:table-cell">
-                      {formatINR(p.awarded_amount)}
-                    </td>
-
-                    {/* Start Date */}
-                    <td className="px-4 py-3.5 text-slate-500 text-xs tabular-nums hidden md:table-cell">
-                      {formatDate(p.start_date)}
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-4 py-3.5 text-center whitespace-nowrap">
-                      <Badge
-                        label={p.status?.replace('_', ' ') ?? 'active'}
-                        variant={statusVariant[p.status as keyof typeof statusVariant] ?? 'default'}
-                      />
-                    </td>
-
-                    {/* Action (Owner Only) */}
-                    {canArchive && (
-                      <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                        {!p.archived ? (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="text-xs py-1 px-2.5 h-auto text-rose-700 border-rose-200 hover:bg-rose-50"
-                            onClick={() => handleOpenArchive(p)}
-                          >
-                            Archive
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="text-xs py-1 px-2.5 h-auto text-blue-700 border-blue-200 hover:bg-blue-50"
-                            onClick={() => handleOpenUnarchive(p)}
-                          >
-                            Unarchive
-                          </Button>
-                        )}
-                      </td>
+                    </div>
+                    {p.agency_name && (
+                      <p className="text-xs text-slate-400 md:hidden mt-0.5">{p.agency_name}</p>
                     )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                    <div className="flex items-center gap-2 mt-1.5 text-[11px] font-semibold">
+                      <Link href={`/projects/${p.id}/hindrances`} className="text-blue-600 hover:underline flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <span>Delay Defense (EOT)</span>
+                      </Link>
+                      <span className="text-slate-300">&bull;</span>
+                      <Link href={`/projects/${p.id}/boq`} className="text-slate-500 hover:text-slate-800 hover:underline">
+                        e-MB
+                      </Link>
+                      <span className="text-slate-300">&bull;</span>
+                      <Link href={`/projects/${p.id}/dpr`} className="text-slate-500 hover:text-slate-800 hover:underline">
+                        DPR
+                      </Link>
+                    </div>
+                  </StitchTableCell>
+
+                  {/* Agency */}
+                  <StitchTableCell className="text-slate-600 hidden md:table-cell">
+                    {p.agency_name ?? '—'}
+                  </StitchTableCell>
+
+                  {/* Awarded */}
+                  <StitchTableCell align="right" className="font-mono text-slate-800 font-semibold hidden lg:table-cell">
+                    {formatINR(p.awarded_amount)}
+                  </StitchTableCell>
+
+                  {/* Start Date */}
+                  <StitchTableCell className="text-slate-500 text-xs tabular-nums hidden md:table-cell">
+                    {formatDate(p.start_date)}
+                  </StitchTableCell>
+
+                  {/* Status */}
+                  <StitchTableCell align="center" className="whitespace-nowrap">
+                    <Badge
+                      dot
+                      label={p.status?.replace('_', ' ') ?? 'active'}
+                      variant={statusVariant[p.status as keyof typeof statusVariant] ?? 'default'}
+                    />
+                  </StitchTableCell>
+
+                  {/* Action (Owner Only) */}
+                  {canArchive && (
+                    <StitchTableCell align="right" className="whitespace-nowrap">
+                      {!p.archived ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="text-xs py-1 px-2.5 h-auto text-rose-700 border-rose-200/80 hover:bg-rose-50"
+                          onClick={() => handleOpenArchive(p)}
+                        >
+                          Archive
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="text-xs py-1 px-2.5 h-auto text-blue-700 border-blue-200/80 hover:bg-blue-50"
+                          onClick={() => handleOpenUnarchive(p)}
+                        >
+                          Unarchive
+                        </Button>
+                      )}
+                    </StitchTableCell>
+                  )}
+                </StitchTableRow>
+              ))}
+            </StitchTableBody>
+          </table>
+        </StitchTable>
       )}
 
       {/* Confirmation Modal */}
