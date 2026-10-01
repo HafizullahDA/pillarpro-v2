@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 import { PlanTier } from '@/lib/subscription'
 
 interface Message {
@@ -227,39 +228,52 @@ export function ContractAiDrawer({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 overflow-hidden bg-slate-950/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200"
-      role="dialog"
-      aria-modal="true"
-    >
+    <>
+      {/* Mobile-only backdrop for easy tap-away dismissal */}
       <div
-        className="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col border-l border-slate-200"
+        className="sm:hidden fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-2xs animate-in fade-in duration-150"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Floating Card: Anchored bottom-right corner, compact sizing so it does NOT cover other things */}
+      <div
+        className={cn(
+          'fixed z-50 bg-white shadow-2xl border border-slate-200/90 rounded-2xl flex flex-col overflow-hidden ring-1 ring-slate-900/10',
+          'animate-in fade-in slide-in-from-bottom-2 duration-200',
+          // Mobile: sits right above bottom nav bar
+          'bottom-18 left-3 right-3 h-[490px] max-h-[calc(100vh-5.5rem)]',
+          // Tablet / Desktop / Laptop: anchored strictly at bottom right corner
+          'sm:left-auto sm:right-5 sm:bottom-5 sm:w-[380px] md:w-[400px] sm:h-[520px] sm:max-h-[calc(100vh-6rem)]'
+        )}
+        role="dialog"
+        aria-label="ContractIQ AI Assistant"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drawer Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center shrink-0">
-              <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        {/* Compact Widget Header */}
+        <div className="px-3.5 py-2.5 border-b border-slate-800 bg-slate-900 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="h-7 w-7 rounded-lg bg-blue-600/30 border border-blue-400/40 flex items-center justify-center shrink-0">
+              <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold tracking-tight text-white">ContractIQ</h3>
-                <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded bg-blue-500/30 text-blue-300 border border-blue-400/40">
-                  AI • Zero-Hallucination
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-xs font-bold tracking-tight text-white">ContractIQ</h3>
+                <span className="px-1.5 py-0.2 text-[9px] font-extrabold uppercase rounded bg-blue-500/30 text-blue-300 border border-blue-400/30">
+                  AI
                 </span>
               </div>
               {projects.length > 1 ? (
-                <div className="mt-1 flex items-center gap-1.5">
+                <div className="mt-0.5">
                   <select
                     value={activeProjectId}
                     onChange={(e) => {
                       setActiveProjectId(e.target.value)
                       onSelectProject?.(e.target.value)
                     }}
-                    className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[240px] truncate"
+                    className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[170px] truncate"
                   >
                     {projects.map((p) => (
                       <option key={p.id} value={p.id} className="bg-slate-900 text-white">
@@ -269,72 +283,75 @@ export function ContractAiDrawer({
                   </select>
                 </div>
               ) : (
-                <p className="text-[11px] text-slate-300 truncate max-w-sm mt-0.5">
-                  {displayName} {displayContractNo ? `• ${displayContractNo}` : ''}
+                <p className="text-[10px] text-slate-400 truncate max-w-[170px]">
+                  {displayName}
                 </p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setMessages([])}
-              className="px-2.5 py-1 text-[11px] font-medium text-slate-300 hover:text-white rounded hover:bg-slate-800 transition-colors"
-              title="Clear chat history"
-            >
-              Clear
-            </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {messages.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setMessages([])}
+                className="px-2 py-0.5 text-[10px] font-medium text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+                title="Clear chat"
+              >
+                Clear
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-              aria-label="Close ContractIQ Drawer"
+              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              aria-label="Close ContractIQ Assistant"
+              title="Close"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
         </div>
 
-        {/* Verification Guarantee Banner */}
-        <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-[11px] text-slate-600">
+        {/* Compact Verification Guarantee Banner */}
+        <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-[10px] text-slate-600 shrink-0">
           <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-semibold text-slate-700">4-Layer Zero-Hallucination Shield Active</span>
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-semibold text-slate-700">Zero-Hallucination Active</span>
           </div>
-          <span className="text-[10px] text-slate-400 font-mono">CPWD • NHAI • FIDIC Grounded</span>
+          <span className="text-[9px] text-slate-400 font-mono">CPWD • FIDIC Grounded</span>
         </div>
 
         {/* Body Content */}
         {isBootstrap ? (
           /* Bootstrap Upgrade Lock Screen */
-          <div className="flex-1 p-6 flex flex-col items-center justify-center text-center bg-slate-50">
-            <div className="h-14 w-14 rounded-2xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center mb-4 shadow-sm">
-              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="flex-1 p-5 flex flex-col items-center justify-center text-center bg-slate-50 overflow-y-auto">
+            <div className="h-12 w-12 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center mb-3 shadow-2xs">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase bg-amber-200/60 text-amber-900 border border-amber-300 mb-2">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-200/60 text-amber-900 border border-amber-300 mb-1.5">
               Plan Upgrade Required
             </span>
-            <h4 className="text-lg font-bold text-slate-900">ContractIQ is Locked on Bootstrap</h4>
-            <p className="mt-2 text-xs text-slate-600 max-w-md leading-relaxed">
-              Automated delay root-cause analysis, contractual clause radar, and CPWD Clause 5 notice audits in <strong>ContractIQ</strong> are available exclusively on the <strong>Growth Contractor (₹2,499/mo)</strong> and <strong>Enterprise Infra (₹4,599/mo)</strong> plans.
+            <h4 className="text-sm font-bold text-slate-900">ContractIQ Locked</h4>
+            <p className="mt-1 text-[11px] text-slate-600 max-w-xs leading-relaxed">
+              Delay root-cause analysis and notice audits in <strong>ContractIQ</strong> require the <strong>Growth Contractor (₹2,499/mo)</strong> plan.
             </p>
 
-            <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
+            <div className="mt-4 flex flex-col sm:flex-row items-center gap-2">
               <Link
                 href="/pricing"
-                className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold uppercase tracking-wider hover:bg-slate-800 transition-colors shadow-sm"
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold uppercase tracking-wider hover:bg-slate-800 transition-colors shadow-2xs"
               >
-                Upgrade to Growth (₹2,499/mo)
+                Upgrade Plan
               </Link>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition-colors"
+                className="px-3 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition-colors"
               >
                 Close
               </button>
@@ -344,8 +361,7 @@ export function ContractAiDrawer({
           /* Active Chat Workspace */
           <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50">
             {/* Quick Prompts Strip */}
-            <div className="p-3 border-b border-slate-200 bg-white overflow-x-auto whitespace-nowrap scrollbar-thin">
-              <span className="text-[10px] uppercase font-bold text-slate-400 mr-2">Audit Prompts:</span>
+            <div className="p-2 border-b border-slate-200 bg-white overflow-x-auto whitespace-nowrap scrollbar-thin shrink-0">
               <div className="inline-flex gap-1.5">
                 {QUICK_PROMPTS.map((prompt, pIdx) => (
                   <button
@@ -353,7 +369,7 @@ export function ContractAiDrawer({
                     type="button"
                     onClick={() => handleSend(prompt)}
                     disabled={loading}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 hover:bg-blue-50 hover:text-blue-700 border border-slate-200 hover:border-blue-300 text-slate-700 transition-colors shrink-0 disabled:opacity-50"
+                    className="px-2.5 py-0.5 rounded-full text-[10.5px] font-medium bg-slate-100 hover:bg-blue-50 hover:text-blue-700 border border-slate-200 text-slate-700 transition-colors shrink-0 disabled:opacity-50"
                   >
                     {prompt}
                   </button>
@@ -362,19 +378,19 @@ export function ContractAiDrawer({
             </div>
 
             {/* Messages Scroll Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0 custom-scrollbar">
               {messages.length === 0 && (
-                <div className="text-center py-12 text-slate-400">
-                  <div className="h-10 w-10 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="text-center py-8 text-slate-400">
+                  <div className="h-9 w-9 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                     </svg>
                   </div>
-                  <p className="text-xs font-medium text-slate-600">
-                    Ask questions about {displayName}.
+                  <p className="text-xs font-semibold text-slate-600">
+                    Ask questions about {displayName}
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
-                    Try &ldquo;What is delaying this project?&rdquo; or &ldquo;Check 14-day notice compliance for open hindrances&rdquo;.
+                  <p className="text-[11px] text-slate-400 mt-1 max-w-xs mx-auto">
+                    Try &ldquo;What is delaying this project?&rdquo; or &ldquo;Summarize uncertified RA bills&rdquo;.
                   </p>
                 </div>
               )}
@@ -385,10 +401,10 @@ export function ContractAiDrawer({
                   className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div
-                    className={`max-w-[90%] rounded-2xl p-3.5 ${
+                    className={`max-w-[90%] rounded-2xl p-3 ${
                       m.role === 'user'
                         ? 'bg-slate-900 text-white text-xs'
-                        : 'bg-white border border-slate-200 shadow-xs'
+                        : 'bg-white border border-slate-200 shadow-2xs text-xs'
                     }`}
                   >
                     {m.role === 'user' ? (
@@ -397,13 +413,13 @@ export function ContractAiDrawer({
                       <div>
                         {/* Status Tag */}
                         {m.groundingStatus && (
-                          <div className="mb-2 flex items-center gap-1.5 pb-2 border-b border-slate-100">
+                          <div className="mb-1.5 flex items-center gap-1.5 pb-1.5 border-b border-slate-100">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
                               Grounding: {m.groundingStatus}
                             </span>
-                            <span className="text-[10px] font-mono text-slate-400 ml-auto">
-                              Zero-Hallucination Shield
+                            <span className="text-[9px] font-mono text-slate-400 ml-auto">
+                              Zero-Hallucination
                             </span>
                           </div>
                         )}
@@ -415,14 +431,14 @@ export function ContractAiDrawer({
               ))}
 
               {loading && (
-                <div className="flex items-center gap-2 p-3 text-xs text-slate-500">
-                  <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                  <span>Inspecting verified project records &amp; contract clauses...</span>
+                <div className="flex items-center gap-2 p-2.5 text-xs text-slate-500 bg-white rounded-xl border border-slate-200 w-fit">
+                  <div className="h-3.5 w-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-[11px]">Inspecting ERP records &amp; clauses...</span>
                 </div>
               )}
 
               {errorMsg && (
-                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs">
+                <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs">
                   {errorMsg}
                 </div>
               )}
@@ -430,38 +446,46 @@ export function ContractAiDrawer({
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Form */}
-            <div className="p-3 border-t border-slate-200 bg-slate-50">
+            {/* Compact Input Form */}
+            <div className="p-2.5 border-t border-slate-200 bg-slate-50 shrink-0">
               <form
                 onSubmit={(e) => {
                   e.preventDefault()
                   handleSend()
                 }}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1.5"
               >
                 <input
                   type="text"
                   value={inputQuery}
                   onChange={(e) => setInputQuery(e.target.value)}
-                  placeholder="Ask a question about this contract, open delays, or RA bills..."
+                  placeholder="Ask a question about this contract, delays, bills..."
                   disabled={loading}
-                  className="flex-1 px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent disabled:opacity-50"
+                  className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-transparent disabled:opacity-50"
                 />
                 <button
                   type="submit"
                   disabled={loading || !inputQuery.trim()}
-                  className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-semibold transition-colors"
+                  className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white shrink-0 transition-colors"
+                  title="Send message"
+                  aria-label="Send message"
                 >
-                  {loading ? 'Auditing...' : 'Ask ContractIQ'}
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                    </svg>
+                  )}
                 </button>
               </form>
-              <div className="mt-2 text-[10px] text-slate-400 text-center flex items-center justify-center gap-1">
-                <span>PillarPro ContractIQ references verified ERP records &amp; tender clauses. Not legal advice.</span>
+              <div className="mt-1 text-[9px] text-slate-400 text-center">
+                References verified ERP records. Not legal advice.
               </div>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </>
   )
 }

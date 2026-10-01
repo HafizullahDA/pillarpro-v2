@@ -44,6 +44,32 @@ export function BottomNav({
   const [moreOpen, setMoreOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
 
+  // Collapsible group state for mobile More drawer
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {}
+    for (const group of NAV_GROUPS) {
+      const match = group.items.some(item =>
+        item.href === '/ledgers/suppliers'
+          ? pathname.startsWith('/ledgers/suppliers') || pathname.startsWith('/suppliers')
+          : item.href === '/ledgers/ra-bills'
+          ? pathname.startsWith('/ledgers/ra-bills') || pathname.startsWith('/ra-bills')
+          : pathname.startsWith(item.href)
+      )
+      if (match) initial[group.id] = true
+    }
+    return initial
+  })
+
+  const [ownerExpanded, setOwnerExpanded] = useState<boolean>(() => pathname.startsWith('/admin/visitors'))
+  const [utilitiesExpanded, setUtilitiesExpanded] = useState<boolean>(() => pathname.startsWith('/offline'))
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }))
+  }
+
   const moreItems = NAV_ITEMS
     .filter(item => !PRIMARY_HREFS.has(item.href))
     .filter(item => isNavVisible(item.href, userRole))
@@ -113,8 +139,8 @@ export function BottomNav({
               </span>
             </button>
 
-            {/* Grouped Modules */}
-            <div className="space-y-3.5 overflow-y-auto max-h-[50vh] pr-1 mb-3 custom-scrollbar">
+            {/* Collapsible Accordion Modules with Visual Tree Line (|) */}
+            <div className="space-y-2.5 overflow-y-auto max-h-[50vh] pr-1 mb-3 custom-scrollbar">
               {NAV_GROUPS.map(group => {
                 const groupItems = group.items
                   .filter(item => !PRIMARY_HREFS.has(item.href))
@@ -122,107 +148,227 @@ export function BottomNav({
 
                 if (groupItems.length === 0) return null
 
+                const isExpanded = !!expandedGroups[group.id]
+                const hasActiveChild = groupItems.some(item =>
+                  item.href === '/ledgers/suppliers'
+                    ? pathname.startsWith('/ledgers/suppliers') || pathname.startsWith('/suppliers')
+                    : item.href === '/ledgers/ra-bills'
+                    ? pathname.startsWith('/ledgers/ra-bills') || pathname.startsWith('/ra-bills')
+                    : pathname.startsWith(item.href)
+                )
+
                 return (
-                  <div key={group.id} className="space-y-1.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1">
-                      {t(group.i18nKey || '', group.label)}
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {groupItems.map(item => {
-                        const active = pathname.startsWith(item.href)
-                        const isAi = item.href === '/contract-ai'
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setMoreOpen(false)}
-                            className={cn(
-                              'flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-medium transition-all border',
-                              active
-                                ? 'bg-blue-50 border-blue-200 text-blue-700 font-semibold shadow-xs'
-                                : 'bg-slate-50/70 border-slate-200/70 text-slate-700 hover:bg-slate-100 hover:text-slate-900',
-                            )}
-                          >
-                            <span className={active ? 'text-blue-600' : isAi ? 'text-blue-500' : 'text-slate-500'}>
-                              {Icons[item.icon as keyof typeof Icons]}
-                            </span>
-                            <span className="truncate flex-1">
-                              {t((item as any).i18nKey || '', item.label)}
-                            </span>
-                            {'badge' in item && (item as any).badge && (
-                              <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-blue-100 text-blue-700 shrink-0">
-                                {(item as any).badge}
-                              </span>
-                            )}
-                          </Link>
-                        )
-                      })}
-                    </div>
+                  <div key={group.id} className="space-y-1">
+                    {/* Collapsible Cluster Heading */}
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.id)}
+                      aria-expanded={isExpanded}
+                      className={cn(
+                        'w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all border select-none',
+                        hasActiveChild
+                          ? 'bg-blue-50/80 border-blue-200 text-blue-900 shadow-2xs'
+                          : 'bg-slate-50 border-slate-200/80 text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                      )}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[11px] font-bold uppercase tracking-wider truncate">
+                          {t(group.i18nKey || '', group.label)}
+                        </span>
+                        {hasActiveChild && !isExpanded && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] text-slate-500 font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-slate-200/60">
+                          {groupItems.length}
+                        </span>
+                        <svg
+                          className={cn(
+                            'w-3.5 h-3.5 text-slate-400 transition-transform duration-200',
+                            isExpanded ? 'rotate-90 text-blue-600' : 'rotate-0'
+                          )}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </button>
+
+                    {/* Sub-cards Container with Visual Tree Line (|) */}
+                    {isExpanded && (
+                      <div className="relative ml-4 pl-3 border-l-2 border-slate-300 space-y-1.5 pt-1 pb-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                        {groupItems.map(item => {
+                          const active = pathname.startsWith(item.href)
+                          const isAi = item.href === '/contract-ai'
+                          return (
+                            <div key={item.href} className="relative flex items-center group">
+                              {/* Horizontal tree branch connector |─ */}
+                              <span className="absolute -left-3 top-1/2 w-2.5 h-px bg-slate-300 pointer-events-none" />
+
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => setMoreOpen(false)}
+                                className={cn(
+                                  'w-full flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-medium transition-all border shadow-2xs',
+                                  active
+                                    ? 'bg-blue-600 text-white font-semibold border-blue-600 shadow-xs'
+                                    : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                                )}
+                              >
+                                <span className={active ? 'text-white' : isAi ? 'text-blue-600' : 'text-slate-500'}>
+                                  {Icons[item.icon as keyof typeof Icons]}
+                                </span>
+                                <span className="truncate flex-1">
+                                  {t((item as any).i18nKey || '', item.label)}
+                                </span>
+                                {'badge' in item && (item as any).badge && (
+                                  <span
+                                    className={cn(
+                                      'text-[9px] font-extrabold px-1.5 py-0.2 rounded shrink-0',
+                                      active
+                                        ? 'bg-white/20 text-white'
+                                        : 'bg-blue-100 text-blue-700'
+                                    )}
+                                  >
+                                    {(item as any).badge}
+                                  </span>
+                                )}
+                              </Link>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )
               })}
 
-              {/* Platform Owner Telemetry Shortcut */}
+              {/* Exclusive Platform Owner Section */}
               {userEmail?.trim().toLowerCase() === 'pillarprojk@gmail.com' && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 px-1">
-                    Platform Owner
-                  </p>
-                  <Link
-                    href="/admin/visitors"
-                    onClick={() => setMoreOpen(false)}
-                    className="flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold bg-amber-50 border border-amber-200 text-amber-900 shadow-2xs hover:bg-amber-100/70 transition-colors"
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => setOwnerExpanded(prev => !prev)}
+                    aria-expanded={ownerExpanded}
+                    className={cn(
+                      'w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all border select-none',
+                      pathname.startsWith('/admin/visitors')
+                        ? 'bg-amber-50 border-amber-300 text-amber-900 shadow-2xs'
+                        : 'bg-amber-50/50 border-amber-200/80 text-amber-800 hover:bg-amber-100/70'
+                    )}
                   >
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      <span>Visitor Telemetry</span>
-                    </div>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">
-                      Live
+                    <span className="text-[11px] font-bold uppercase tracking-wider truncate">
+                      Platform Owner
                     </span>
-                  </Link>
+                    <svg
+                      className={cn(
+                        'w-3.5 h-3.5 text-amber-600 transition-transform duration-200',
+                        ownerExpanded ? 'rotate-90' : 'rotate-0'
+                      )}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+
+                  {ownerExpanded && (
+                    <div className="relative ml-4 pl-3 border-l-2 border-amber-300 space-y-1.5 pt-1 pb-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="relative flex items-center group">
+                        <span className="absolute -left-3 top-1/2 w-2.5 h-px bg-amber-300 pointer-events-none" />
+                        <Link
+                          href="/admin/visitors"
+                          onClick={() => setMoreOpen(false)}
+                          className="w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold bg-white border border-amber-200 text-amber-900 shadow-2xs hover:bg-amber-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span>Visitor Telemetry</span>
+                          </div>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200">
+                            Live
+                          </span>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Utilities & Offline */}
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-1">
-                  Utilities &amp; Sync
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Link
-                    href="/offline"
-                    onClick={() => setMoreOpen(false)}
+              {/* Utilities & Offline Collapsible */}
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setUtilitiesExpanded(prev => !prev)}
+                  aria-expanded={utilitiesExpanded}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide bg-slate-50 border border-slate-200/80 text-slate-700 hover:bg-slate-100 transition-all select-none"
+                >
+                  <span className="text-[11px] font-bold uppercase tracking-wider truncate">
+                    Utilities &amp; Sync
+                  </span>
+                  <svg
                     className={cn(
-                      'flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-medium transition-all border',
-                      pathname.startsWith('/offline')
-                        ? 'bg-blue-50 border-blue-200 text-blue-700 font-semibold shadow-xs'
-                        : 'bg-emerald-50/70 border-emerald-200/80 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900',
+                      'w-3.5 h-3.5 text-slate-400 transition-transform duration-200',
+                      utilitiesExpanded ? 'rotate-90 text-blue-600' : 'rotate-0'
                     )}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
                   >
-                    <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="truncate">Offline Hub</span>
-                  </Link>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMoreOpen(false)
-                      setProfileOpen(true)
-                    }}
-                    className="flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-medium transition-all border bg-slate-50/70 border-slate-200/70 text-slate-700 hover:bg-slate-100 hover:text-slate-900 text-left"
-                  >
-                    <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span className="truncate">{t('common.edit', 'Firm & Profile')}</span>
-                  </button>
-                </div>
+                {utilitiesExpanded && (
+                  <div className="relative ml-4 pl-3 border-l-2 border-slate-300 space-y-1.5 pt-1 pb-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="relative flex items-center group">
+                      <span className="absolute -left-3 top-1/2 w-2.5 h-px bg-slate-300 pointer-events-none" />
+                      <Link
+                        href="/offline"
+                        onClick={() => setMoreOpen(false)}
+                        className={cn(
+                          'w-full flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-medium transition-all border shadow-2xs',
+                          pathname.startsWith('/offline')
+                            ? 'bg-blue-600 text-white font-semibold border-blue-600 shadow-xs'
+                            : 'bg-white border-slate-200/90 text-emerald-800 hover:bg-emerald-50'
+                        )}
+                      >
+                        <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="truncate">Offline Hub</span>
+                      </Link>
+                    </div>
+
+                    <div className="relative flex items-center group">
+                      <span className="absolute -left-3 top-1/2 w-2.5 h-px bg-slate-300 pointer-events-none" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMoreOpen(false)
+                          setProfileOpen(true)
+                        }}
+                        className="w-full flex items-center gap-2.5 p-2.5 rounded-xl text-xs font-medium transition-all border bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 text-left shadow-2xs"
+                      >
+                        <svg className="w-4 h-4 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span className="truncate">{t('common.edit', 'Firm & Profile')}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
