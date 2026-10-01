@@ -72,8 +72,8 @@ export function VisitorTracker() {
       const dataStr = JSON.stringify(payload)
       if (useBeacon && typeof navigator !== 'undefined' && navigator.sendBeacon) {
         const blob = new Blob([dataStr], { type: 'application/json' })
-        navigator.sendBeacon('/api/analytics/track', blob)
-        return
+        const queued = navigator.sendBeacon('/api/analytics/track', blob)
+        if (queued) return
       }
 
       fetch('/api/analytics/track', {
@@ -125,8 +125,9 @@ export function VisitorTracker() {
       }
     }, 1000)
 
+    // Flush active dwell time every 10 seconds for real-time live telemetry
     const heartbeatTimer = setInterval(() => {
-      if (uncommittedSecondsRef.current >= 15) {
+      if (uncommittedSecondsRef.current >= 5) {
         sendTelemetry({
           visitor_id: visitorId,
           session_id: sessionId,
@@ -139,7 +140,7 @@ export function VisitorTracker() {
         })
         uncommittedSecondsRef.current = 0
       }
-    }, 20000)
+    }, 10000)
 
     const handleExit = () => {
       if (uncommittedSecondsRef.current > 0) {

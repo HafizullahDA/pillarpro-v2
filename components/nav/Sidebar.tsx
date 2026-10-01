@@ -98,10 +98,10 @@ export function Sidebar({
             )
           })}
 
-          {isPlatformAdmin && (
+          {(isPlatformAdmin || userEmail?.trim().toLowerCase() === 'pillarprojk@gmail.com') && (
             <div className="pt-3 mt-3 border-t border-slate-800">
               <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-amber-400/80 mb-1">
-                Platform Superadmin
+                Platform Owner
               </p>
               <Link
                 href="/admin/visitors"

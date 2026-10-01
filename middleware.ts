@@ -51,11 +51,13 @@ export async function middleware(request: NextRequest) {
   // - /api/health: Public synthetic health check for uptime monitors (BetterUptime, Datadog)
   // - /api/auth/rate-limit: Public rate limiter guarding unauthenticated sign-in and sign-up attempts
   // - /api/log-error: Public error telemetry endpoint to capture client exceptions even when auth is broken
+  // - /api/analytics/track: Platform visitor telemetry & stay duration tracking for anonymous & authenticated visitors
   const PUBLIC_API_ROUTES = [
     '/api/health',
     '/api/auth/rate-limit',
     '/api/log-error',
     '/api/assetlinks',
+    '/api/analytics/track',
   ]
 
   const isApiRoute = pathname.startsWith('/api/')
@@ -96,6 +98,11 @@ export async function middleware(request: NextRequest) {
 
 
   if (isPending) {
+    // Public APIs (e.g. visitor telemetry beacons) must pass through for pending users
+    if (isPublicApi) {
+      return supabaseResponse
+    }
+
     // Pending users may access /pending or public marketing, legal & PWA routes
     const allowedForPending = [...PENDING_ROUTES, ...PUBLIC_PAGES, ...PWA_ROUTES]
     if (!allowedForPending.some(r => pathname.startsWith(r))) {

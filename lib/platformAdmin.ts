@@ -2,40 +2,21 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const DEFAULT_PLATFORM_ADMINS = [
   'pillarprojk@gmail.com',
-  'contact@pillarprojk.com',
 ]
 
+/**
+ * Strict Platform Owner Check.
+ * Exclusively reserved for pillarprojk@gmail.com. Nobody else may view or use visitor telemetry.
+ */
 export function isDefaultPlatformAdmin(email?: string | null): boolean {
   if (!email) return false
-  const clean = email.trim().toLowerCase()
-  const envAdmins = (process.env.PLATFORM_ADMIN_EMAILS || '')
-    .split(',')
-    .map(e => e.trim().toLowerCase())
-    .filter(Boolean)
-
-  return DEFAULT_PLATFORM_ADMINS.includes(clean) || envAdmins.includes(clean)
+  return email.trim().toLowerCase() === 'pillarprojk@gmail.com'
 }
 
 export async function isPlatformAdmin(
-  supabase: SupabaseClient,
+  _supabase?: SupabaseClient,
   email?: string | null
 ): Promise<boolean> {
   if (!email) return false
-  const clean = email.trim().toLowerCase()
-
-  if (isDefaultPlatformAdmin(clean)) {
-    return true
-  }
-
-  try {
-    const { data } = await supabase
-      .from('platform_admins')
-      .select('email')
-      .eq('email', clean)
-      .maybeSingle()
-
-    return !!data
-  } catch {
-    return false
-  }
+  return email.trim().toLowerCase() === 'pillarprojk@gmail.com'
 }

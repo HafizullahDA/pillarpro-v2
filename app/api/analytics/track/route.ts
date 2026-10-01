@@ -7,7 +7,8 @@ export async function POST(request: Request) {
   try {
     let body: any = {}
     try {
-      body = await request.json()
+      const text = await request.text()
+      body = text ? JSON.parse(text) : {}
     } catch {
       return NextResponse.json({ ok: false, error: 'Invalid JSON' }, { status: 400 })
     }
@@ -41,6 +42,8 @@ export async function POST(request: Request) {
       }
     }
 
+    const effectiveEmail = user?.email || (typeof body.user_email === 'string' ? body.user_email : null)
+
     const { error: rpcError } = await supabase.rpc('track_visitor_session', {
       p_session_id: String(body.session_id),
       p_visitor_id: String(body.visitor_id),
@@ -52,9 +55,9 @@ export async function POST(request: Request) {
       p_city: city ? decodeURIComponent(city) : null,
       p_country: country || null,
       p_ip_address: rawIp || null,
-      p_user_email: user?.email || null,
-      p_user_name: userName,
-      p_org_name: orgName,
+      p_user_email: effectiveEmail,
+      p_user_name: userName || (typeof body.user_name === 'string' ? body.user_name : null),
+      p_org_name: orgName || (typeof body.org_name === 'string' ? body.org_name : null),
       p_duration_increment: Math.max(0, Math.min(3600, Number(body.duration_increment) || 0)),
       p_is_heartbeat: Boolean(body.is_heartbeat),
     })
