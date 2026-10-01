@@ -4,7 +4,7 @@ import { PricingClient } from '@/components/pricing/PricingClient'
 export const metadata: Metadata = {
   title: 'Pricing & Plans — Transparent Active-Site Subscriptions',
   description:
-    'PillarPro pricing for Indian civil contractors: Active Sites + Unlimited Users. No per-seat penalties. 14-day free trial. Bootstrap (₹999/mo), Growth Contractor (₹2,499/mo with ContractIQ AI), and Enterprise Infra (₹4,599/mo).',
+    'PillarPro pricing for Indian civil contractors: Active Sites + Unlimited Users. No per-seat penalties. 7-day free trial. Bootstrap (₹999/mo), Growth Contractor (₹2,499/mo with ContractIQ AI), and Enterprise Infra (₹4,599/mo).',
   keywords: [
     'pillarpro pricing',
     'civil contractor software pricing',
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'PillarPro Pricing — Active Sites + Unlimited Users',
     description:
-      'Fair, predictable civil contractor ERP pricing with ContractIQ AI. Unlimited site supervisors and munshis with zero per-seat fees. Starting at ₹999/mo with 14-day free trial.',
+      'Fair, predictable civil contractor ERP pricing with ContractIQ AI. Unlimited site supervisors and munshis with zero per-seat fees. Starting at ₹999/mo with 7-day free trial.',
     url: 'https://pillarprojk.com/pricing',
     type: 'website',
   },

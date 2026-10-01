@@ -63,7 +63,7 @@ export function SubscriptionStatusBanner({ userCreatedAt }: SubscriptionStatusBa
               Workspace Read-Only
             </span>
             <span className="text-slate-300 text-xs truncate">
-              Your 14-day trial has concluded. Past bills and ledgers are preserved, but adding new entries is paused.
+              Your 7-day trial has concluded. Past bills and ledgers are preserved, but adding new entries is paused.
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -120,7 +120,7 @@ export function SubscriptionStatusBanner({ userCreatedAt }: SubscriptionStatusBa
                   }`}
                 />
               </span>
-              {isUrgent ? 'Trial Ending Soon' : '14-Day Free Trial'}
+              {isUrgent ? 'Trial Ending Soon' : '7-Day Free Trial'}
             </span>
 
             <div className="flex items-center gap-1.5 min-w-0 text-xs">

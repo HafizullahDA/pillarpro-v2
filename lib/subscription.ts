@@ -105,7 +105,7 @@ export function isSubscriptionActive(
       const signupTime = new Date(org.created_at).getTime()
       const explicitEndTime = new Date(org.trial_ends_at).getTime()
       const effectiveEndTime = Math.max(
-        !isNaN(signupTime) ? signupTime + 14 * 24 * 60 * 60 * 1000 : 0,
+        !isNaN(signupTime) ? signupTime + 7 * 24 * 60 * 60 * 1000 : 0,
         !isNaN(explicitEndTime) ? explicitEndTime : 0
       )
       return effectiveEndTime > now
@@ -113,13 +113,13 @@ export function isSubscriptionActive(
     if (org.created_at) {
       const signupTime = new Date(org.created_at).getTime()
       if (!isNaN(signupTime)) {
-        return signupTime + 14 * 24 * 60 * 60 * 1000 > now
+        return signupTime + 7 * 24 * 60 * 60 * 1000 > now
       }
     }
     if (org.trial_ends_at) {
       return new Date(org.trial_ends_at).getTime() > now
     }
-    return true // Fallback to active 14-day trial for new workspaces
+    return true // Fallback to active 7-day trial for new workspaces
   }
 
   if (status === 'active') {
@@ -146,7 +146,7 @@ export function getRemainingTrialDays(
   if (createdAt) {
     const signupTime = new Date(createdAt).getTime()
     if (!isNaN(signupTime)) {
-      const trialEndTime = signupTime + 14 * 24 * 60 * 60 * 1000
+      const trialEndTime = signupTime + 7 * 24 * 60 * 60 * 1000
       const diffMs = trialEndTime - now
       if (diffMs <= 0) return 0
       return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
@@ -164,7 +164,7 @@ export function getRemainingTrialDays(
   }
 
   // Default fallback for fresh workspaces without explicit DB timestamps
-  return 14
+  return 7
 }
 
 /**

@@ -310,7 +310,7 @@ export default function SignUpPage() {
               {/* Free Trial Pill */}
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-semibold mb-4 shadow-2xs">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                14-Day Free Trial • No Credit Card Required
+                7-Day Free Trial • No Credit Card Required
               </div>
 
               {planLabel && (
@@ -454,7 +454,7 @@ export default function SignUpPage() {
                     </h2>
                     <p className="mt-1 text-xs text-slate-500 leading-relaxed">
                       {mode === 'new_firm'
-                        ? 'Instant access to all modules during your 14-day free trial. Setup takes under 30 seconds.'
+                        ? 'Instant access to all modules during your 7-day free trial. Setup takes under 30 seconds.'
                         : 'Enter your firm’s invite code provided by your contractor administrator.'}
                     </p>
                   </div>
@@ -671,7 +671,7 @@ export default function SignUpPage() {
                         </>
                       ) : (
                         <>
-                          {mode === 'new_firm' ? 'Start 14-Day Free Trial' : 'Join Firm Workspace'}
+                          {mode === 'new_firm' ? 'Start 7-Day Free Trial' : 'Join Firm Workspace'}
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                           </svg>

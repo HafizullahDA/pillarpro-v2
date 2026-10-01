@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
+// Set your YouTube embed / Loom / MP4 video link here to automatically play in the walkthrough modal
+// e.g. "https://www.youtube-nocookie.com/embed/YOUR_VIDEO_ID?autoplay=1" or "/videos/walkthrough.mp4"
+const WALKTHROUGH_VIDEO_URL: string = ''
+
 interface LandingPageProps {
   isLoggedIn?: boolean
   userName?: string | null
@@ -15,7 +19,6 @@ export function LandingPage({
   orgName,
 }: LandingPageProps) {
   const [walkthroughOpen, setWalkthroughOpen] = useState(false)
-  const [demoModalOpen, setDemoModalOpen] = useState(false)
   const [previewTimeRange, setPreviewTimeRange] = useState<'month' | 'quarter' | 'all'>('month')
 
   return (
@@ -151,7 +154,7 @@ export function LandingPage({
                   <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                  14-day Free trial
+                  7-day Free trial
                 </span>
                 <span className="text-slate-300">•</span>
                 <span className="flex items-center gap-1">
@@ -655,13 +658,13 @@ export function LandingPage({
             {/* Stat 1 */}
             <div className="md:px-8 first:pl-0 space-y-2">
               <p className="text-4xl sm:text-5xl font-black text-slate-900 font-mono tracking-tight">
-                ₹450+ Cr
+                1-Click
               </p>
               <p className="text-sm font-bold text-slate-900">
-                Contract Value Managed
+                Form 26 &amp; e-MB Generation
               </p>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Running actively across national highway corridors, canal linings, and urban flyovers.
+                Instant export of statutory CPWD/State PWD bill vouchers, deduction schedules, and measurement abstracts.
               </p>
             </div>
 
@@ -709,23 +712,16 @@ export function LandingPage({
           </h2>
 
           <p className="text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
-            Join hundreds of highway, building, and irrigation contractors running efficient, dispute-free projects with real-time cash flow visibility.
+            Built for highway, building, and irrigation contractors running efficient, dispute-free projects with real-time cash flow visibility.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <div className="flex items-center justify-center pt-2">
             <Link
               href="/sign-up"
-              className="inline-flex items-center justify-center px-6 py-3.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-xs active:scale-95 transition-all"
+              className="inline-flex items-center justify-center px-8 py-3.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-blue-600/25 active:scale-95 transition-all"
             >
-              Start 14-Day Free Trial
+              Start 7-Day Free Trial
             </Link>
-            <button
-              type="button"
-              onClick={() => setDemoModalOpen(true)}
-              className="inline-flex items-center justify-center px-6 py-3.5 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-2xs active:scale-95 transition-all"
-            >
-              Schedule a Site Demo
-            </button>
           </div>
 
           <p className="text-xs text-slate-400 pt-2">
@@ -757,6 +753,15 @@ export function LandingPage({
               <p className="text-[11px] text-blue-600 font-medium">
                 • Designed for CPWD, PMGSY, and State Works
               </p>
+              <div className="pt-1 text-xs text-slate-500">
+                <span>Inquiries: </span>
+                <a
+                  href="mailto:contact@pillarprojk.com"
+                  className="font-semibold text-slate-700 hover:text-blue-600 transition-colors"
+                >
+                  contact@pillarprojk.com
+                </a>
+              </div>
             </div>
 
             {/* Product Col */}
@@ -797,7 +802,8 @@ export function LandingPage({
               <h4 className="font-bold text-slate-900 text-xs">Company</h4>
               <ul className="space-y-2">
                 <li><Link href="/pricing" className="hover:text-blue-600 transition-colors">Pricing</Link></li>
-                <li><a href="mailto:support@pillarpro.in" className="hover:text-blue-600 transition-colors">Documentation</a></li>
+                <li><a href="mailto:contact@pillarprojk.com" className="hover:text-blue-600 transition-colors">Contact Us</a></li>
+                <li><a href="mailto:contact@pillarprojk.com?subject=Documentation%20Request" className="hover:text-blue-600 transition-colors">Documentation</a></li>
                 <li><Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="hover:text-blue-600 transition-colors">Terms of Service</Link></li>
               </ul>
@@ -843,14 +849,44 @@ export function LandingPage({
               </button>
             </div>
 
-            <div className="aspect-video bg-slate-950 rounded-xl overflow-hidden relative flex flex-col items-center justify-center p-6 text-center text-white space-y-3">
-              <div className="w-14 h-14 rounded-full bg-blue-600/90 text-white flex items-center justify-center text-2xl shadow-lg pl-1 cursor-pointer hover:scale-105 transition-transform">
-                ▶
-              </div>
-              <div>
-                <p className="font-bold text-sm">Interactive Tour: From Tender BOQ to Form 26 PWD Bill</p>
-                <p className="text-xs text-slate-400 mt-1">See how site measurements sync directly into RA Bill certified amounts without Excel spreadsheets.</p>
-              </div>
+            <div className="aspect-video bg-slate-950 rounded-xl overflow-hidden relative flex flex-col items-center justify-center text-white">
+              {WALKTHROUGH_VIDEO_URL ? (
+                WALKTHROUGH_VIDEO_URL.endsWith('.mp4') ? (
+                  <video
+                    src={WALKTHROUGH_VIDEO_URL}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover rounded-xl"
+                  />
+                ) : (
+                  <iframe
+                    src={WALKTHROUGH_VIDEO_URL}
+                    title="PillarPro 3-Minute Walkthrough"
+                    className="w-full h-full border-0 rounded-xl"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                )
+              ) : (
+                <div className="p-6 text-center space-y-3">
+                  <div className="w-14 h-14 mx-auto rounded-full bg-blue-600/90 text-white flex items-center justify-center text-2xl shadow-lg pl-1">
+                    ▶
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm">Interactive Tour: From Tender BOQ to Form 26 PWD Bill</p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                      See how site measurements sync directly into RA Bill certified amounts without Excel spreadsheets.
+                    </p>
+                  </div>
+                  <div className="pt-2 flex flex-wrap justify-center gap-2 text-[10px] text-slate-400">
+                    <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">0:00 Tender BOQ</span>
+                    <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">0:45 Digital e-MB</span>
+                    <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">1:30 Form 26 RA Bill</span>
+                    <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">2:15 ContractIQ Defense</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
@@ -868,85 +904,6 @@ export function LandingPage({
                 Try It Live for Free
               </Link>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── 10. DEMO MODAL ─────────────────────────────────────── */}
-      {demoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">
-                Schedule a Site Walkthrough &amp; Demo
-              </h3>
-              <button
-                type="button"
-                onClick={() => setDemoModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Our engineering solutions team will demonstrate PillarPro on your ongoing project schedule or BOQ format over Google Meet.
-            </p>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                alert('Thank you! A senior implementation specialist will contact you within 2 working hours.')
-                setDemoModalOpen(false)
-              }}
-              className="space-y-3"
-            >
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase">Your Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Er. Rajesh Gupta"
-                  className="mt-1 w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase">Contract Firm / Company</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Apex Infratech Pvt Ltd"
-                  className="mt-1 w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase">Phone (WhatsApp)</label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="+91 98765 43210"
-                  className="mt-1 w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDemoModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Request Demo
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

@@ -79,7 +79,7 @@ export function PricingClient() {
   const faqs = [
     {
       q: 'Is there a free trial before paying?',
-      a: 'Yes, every contractor gets a 14-day full-featured free trial with zero credit card required. You can set up your active project, invite your site engineers, take measurements, and generate actual CPWD/PWD RA bills immediately.',
+      a: 'Yes, every contractor gets a 7-day full-featured free trial with zero credit card required. You can set up your active project, invite your site engineers, take measurements, and generate actual CPWD/PWD RA bills immediately.',
     },
     {
       q: 'What counts as an "Active Site"? How does archiving work?',
@@ -144,7 +144,7 @@ export function PricingClient() {
               href="/sign-up"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm"
             >
-              <span>Start 14-Day Free Trial</span>
+              <span>Start 7-Day Free Trial</span>
               <IconArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -158,10 +158,10 @@ export function PricingClient() {
         <section className="pt-14 pb-12 sm:pt-20 sm:pb-16 bg-white border-b border-slate-200">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             
-            {/* 14-Day Free Trial Tag */}
+            {/* 7-Day Free Trial Tag */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold tracking-wide mb-6 shadow-2xs">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>14-DAY FREE TRIAL ON ALL PLANS • NO CREDIT CARD REQUIRED</span>
+              <span>7-DAY FREE TRIAL ON ALL PLANS • NO CREDIT CARD REQUIRED</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.15]">
@@ -298,7 +298,7 @@ export function PricingClient() {
                 href="/sign-up?plan=bootstrap"
                 className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-900 bg-white border border-slate-300 hover:bg-slate-50 hover:border-slate-400 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 shadow-2xs"
               >
-                <span>Start 14-Day Free Trial</span>
+                <span>Start 7-Day Free Trial</span>
                 <IconArrowRight className="w-4 h-4 text-slate-600" />
               </Link>
             </div>
@@ -406,7 +406,7 @@ export function PricingClient() {
                 href="/sign-up?plan=growth"
                 className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-900 bg-white hover:bg-slate-100 hover:-translate-y-0.5 active:scale-[0.98] hover:shadow-lg hover:shadow-white/20 transition-all duration-200 shadow-md"
               >
-                <span>Start 14-Day Free Trial</span>
+                <span>Start 7-Day Free Trial</span>
                 <IconArrowRight className="w-4 h-4 text-slate-900" />
               </Link>
             </div>
@@ -499,7 +499,7 @@ export function PricingClient() {
                   href="/sign-up?plan=enterprise"
                   className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 hover:-translate-y-0.5 active:scale-[0.98] hover:shadow-md transition-all duration-200 shadow-sm"
                 >
-                  <span>Start 14-Day Free Trial</span>
+                  <span>Start 7-Day Free Trial</span>
                   <IconArrowRight className="w-4 h-4" />
                 </Link>
                 <a
@@ -684,7 +684,7 @@ export function PricingClient() {
                   href={`/sign-up?plan=${calcSites <= 2 ? 'bootstrap' : calcSites <= 6 ? 'growth' : 'enterprise'}`}
                   className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-900 bg-white hover:bg-slate-100 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 shadow-sm"
                 >
-                  <span>Start 14-Day Free Trial</span>
+                  <span>Start 7-Day Free Trial</span>
                   <IconArrowRight className="w-4 h-4 text-slate-900" />
                 </Link>
               </div>
@@ -939,7 +939,7 @@ export function PricingClient() {
                 href="/sign-up"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-900 bg-white hover:bg-slate-100 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200 shadow-sm"
               >
-                <span>Launch 14-Day Free Trial</span>
+                <span>Launch 7-Day Free Trial</span>
                 <IconArrowRight className="w-4 h-4" />
               </Link>
               <a
