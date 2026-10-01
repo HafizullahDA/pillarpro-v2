@@ -241,10 +241,10 @@ export function ContractAiDrawer({
         className={cn(
           'fixed z-50 bg-white shadow-2xl border border-slate-200/90 rounded-2xl flex flex-col overflow-hidden ring-1 ring-slate-900/10',
           'animate-in fade-in slide-in-from-bottom-2 duration-200',
-          // Mobile: sits right above bottom nav bar
-          'bottom-18 left-3 right-3 h-[490px] max-h-[calc(100vh-5.5rem)]',
+          // Mobile: sits right above bottom nav bar (bottom-20 = 80px)
+          'bottom-20 left-3 right-3 h-[480px] max-h-[calc(100vh-6.5rem)]',
           // Tablet / Desktop / Laptop: anchored strictly at bottom right corner
-          'sm:left-auto sm:right-5 sm:bottom-5 sm:w-[380px] md:w-[400px] sm:h-[520px] sm:max-h-[calc(100vh-6rem)]'
+          'sm:left-auto sm:right-6 sm:bottom-6 sm:w-[390px] md:w-[410px] sm:h-[520px] sm:max-h-[calc(100vh-6rem)]'
         )}
         role="dialog"
         aria-label="ContractIQ AI Assistant"

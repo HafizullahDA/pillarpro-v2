@@ -42,13 +42,13 @@ export function GlobalContractCopilot({
 
   return (
     <>
-      {/* Floating Action Button - Compact bottom right corner */}
+      {/* Floating Action Button - Positioned at bottom right, cleanly above More button on mobile */}
       {!drawerOpen && (
-        <div className="fixed bottom-18 md:bottom-5 right-3.5 md:right-5 z-40 print:hidden animate-in fade-in duration-200">
+        <div className="fixed bottom-20 md:bottom-6 right-3 md:right-6 z-40 print:hidden animate-in fade-in duration-200">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            className="group flex items-center gap-2 px-3 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 border border-slate-700/90 ring-2 ring-blue-500/20 focus:outline-none"
+            className="group flex items-center gap-2 px-3 py-1.5 sm:py-2 rounded-full bg-slate-900/95 hover:bg-slate-900 text-white shadow-lg hover:shadow-xl active:scale-95 transition-all duration-200 border border-slate-700/80 backdrop-blur-xs ring-1 ring-blue-500/25 focus:outline-none"
             aria-label="Open ContractIQ Assistant"
             title="ContractIQ AI Assistant"
           >

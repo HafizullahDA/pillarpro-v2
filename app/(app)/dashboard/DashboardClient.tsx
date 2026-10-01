@@ -297,11 +297,8 @@ export function DashboardClient({
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              Executive Command Center
+              Command Center
             </h1>
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-900 text-white">
-              Stitch 360°
-            </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
             Authoritative real-time treasury pulse, physical e-MB progress, and statutory dispute defense.
@@ -342,18 +339,6 @@ export function DashboardClient({
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
-
-          {/* ContractIQ Quick Trigger */}
-          <Link
-            href="/contract-ai"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-xs font-bold shadow-xs hover:from-blue-700 hover:to-indigo-800 transition-all"
-          >
-            <svg className="w-3.5 h-3.5 text-blue-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-            </svg>
-            <span>ContractIQ</span>
-            <span className="text-[9px] bg-white/20 px-1 py-0.2 rounded font-bold uppercase">AI</span>
-          </Link>
         </div>
       </div>
 
