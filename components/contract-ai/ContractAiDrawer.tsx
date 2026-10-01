@@ -315,14 +315,6 @@ export function ContractAiDrawer({
           </div>
         </div>
 
-        {/* Compact Verification Guarantee Banner */}
-        <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-[10px] text-slate-600 shrink-0">
-          <div className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-semibold text-slate-700">Zero-Hallucination Active</span>
-          </div>
-          <span className="text-[9px] text-slate-400 font-mono">CPWD • FIDIC Grounded</span>
-        </div>
 
         {/* Body Content */}
         {isBootstrap ? (
@@ -417,9 +409,6 @@ export function ContractAiDrawer({
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
                               Grounding: {m.groundingStatus}
-                            </span>
-                            <span className="text-[9px] font-mono text-slate-400 ml-auto">
-                              Zero-Hallucination
                             </span>
                           </div>
                         )}
