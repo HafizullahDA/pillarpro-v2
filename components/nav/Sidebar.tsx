@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { NAV_ITEMS, isNavVisible } from './NavLinks'
+import { NAV_GROUPS, isNavVisible } from './NavLinks'
 import { Icons } from './NavIcons'
 import { UserProfileModal } from './UserProfileModal'
 import { cn } from '@/lib/utils'
@@ -17,7 +17,7 @@ export function Sidebar({
   userEmail,
   isPlatformAdmin = false,
 }: {
-  isPlatformAdmin?: boolean,
+  isPlatformAdmin?: boolean
   userName: string
   userRole: string
   userEmail?: string | null
@@ -26,87 +26,106 @@ export function Sidebar({
   const [profileOpen, setProfileOpen] = useState(false)
   const { locale, setLocale, t } = useLanguage()
 
-  const visibleNavItems = NAV_ITEMS.filter(item => isNavVisible(item.href, userRole))
-
   return (
     <>
-      <aside className="hidden lg:flex flex-col w-60 min-h-screen bg-slate-900 text-white shrink-0">
+      <aside className="hidden lg:flex flex-col w-60 min-h-screen bg-slate-900 text-white shrink-0 border-r border-slate-800/80">
         {/* Logo */}
-        <div className="px-5 py-5 border-b border-slate-800">
+        <div className="px-5 py-4 border-b border-slate-800/80 flex items-center justify-between">
           <Logo theme="dark" href="/dashboard" size="md" />
         </div>
 
-        {/* ContractIQ Featured Card */}
-        <div className="px-3 pt-3 pb-1">
-          <Link
-            href="/contract-ai"
-            className={cn(
-              'w-full flex items-center justify-between p-2.5 rounded-xl border transition-all group',
-              pathname.startsWith('/contract-ai')
-                ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-blue-400 shadow-md ring-1 ring-blue-400/40'
-                : 'bg-gradient-to-r from-slate-800/90 to-blue-950/70 text-slate-200 border-blue-500/30 hover:border-blue-400/60 hover:bg-slate-800'
-            )}
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                {Icons.copilot}
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold truncate group-hover:text-white transition-colors">ContractIQ</p>
-                <p className="text-[10px] text-slate-400 truncate">Claims & Delay Defense</p>
-              </div>
-            </div>
-            <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-500 text-white shadow-xs">
-              AI
-            </span>
-          </Link>
-        </div>
+        {/* Navigation with Google Stitch 4-Cluster Grouping */}
+        <nav className="flex-1 px-3 py-3 space-y-3 overflow-y-auto custom-scrollbar">
+          {/* Top Primary Command Center Link */}
+          <div>
+            <Link
+              href="/dashboard"
+              className={cn(
+                'flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all',
+                pathname === '/dashboard' || pathname === '/'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              )}
+            >
+              <span className={pathname === '/dashboard' || pathname === '/' ? 'text-white' : 'text-slate-400'}>
+                {Icons.dashboard}
+              </span>
+              <span className="flex-1 truncate">{t('nav.dashboard', 'Command Center')}</span>
+            </Link>
+          </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {visibleNavItems.filter(item => item.href !== '/contract-ai').map(item => {
-            const active =
-              item.href === '/ledgers/suppliers'
-                ? pathname.startsWith('/ledgers/suppliers') || pathname.startsWith('/suppliers')
-                : item.href === '/ledgers/ra-bills'
-                ? pathname.startsWith('/ledgers/ra-bills') || pathname.startsWith('/ra-bills')
-                : item.href === '/dashboard'
-                ? pathname === '/dashboard' || pathname === '/'
-                : pathname.startsWith(item.href)
-            const label = t((item as any).i18nKey || '', item.label)
+          {/* Operational Clusters */}
+          {NAV_GROUPS.map(group => {
+            const groupVisibleItems = group.items.filter(item => isNavVisible(item.href, userRole))
+            if (groupVisibleItems.length === 0) return null
+
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
-                  active
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white',
-                )}
-              >
-                <span className={active ? 'text-white' : 'text-slate-500'}>
-                  {Icons[item.icon as keyof typeof Icons]}
-                </span>
-                <span className="flex-1 truncate">{label}</span>
-                {'badge' in item && (item as any).badge && (
-                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                    {(item as any).badge}
-                  </span>
-                )}
-              </Link>
+              <div key={group.id} className="space-y-0.5">
+                <div className="px-3 pt-1 pb-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    {t(group.i18nKey || '', group.label)}
+                  </p>
+                </div>
+
+                <div className="space-y-0.5">
+                  {groupVisibleItems.map(item => {
+                    const active =
+                      item.href === '/ledgers/suppliers'
+                        ? pathname.startsWith('/ledgers/suppliers') || pathname.startsWith('/suppliers')
+                        : item.href === '/ledgers/ra-bills'
+                        ? pathname.startsWith('/ledgers/ra-bills') || pathname.startsWith('/ra-bills')
+                        : pathname.startsWith(item.href)
+
+                    const label = t((item as any).i18nKey || '', item.label)
+                    const isAi = item.href === '/contract-ai'
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                          'flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors',
+                          active
+                            ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                            : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'
+                        )}
+                      >
+                        <span className={active ? 'text-white' : isAi ? 'text-blue-400' : 'text-slate-500'}>
+                          {Icons[item.icon as keyof typeof Icons]}
+                        </span>
+                        <span className="flex-1 truncate">{label}</span>
+                        {'badge' in item && (item as any).badge && (
+                          <span
+                            className={cn(
+                              'text-[9px] font-extrabold px-1.5 py-0.2 rounded shadow-2xs',
+                              active
+                                ? 'bg-white/20 text-white'
+                                : 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
+                            )}
+                          >
+                            {(item as any).badge}
+                          </span>
+                        )}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
             )
           })}
 
+          {/* Exclusive Platform Owner Section */}
           {(isPlatformAdmin || userEmail?.trim().toLowerCase() === 'pillarprojk@gmail.com') && (
-            <div className="pt-3 mt-3 border-t border-slate-800">
-              <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-amber-400/80 mb-1">
-                Platform Owner
-              </p>
+            <div className="pt-2 border-t border-slate-800/80 space-y-0.5">
+              <div className="px-3 pt-1 pb-1">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400/80">
+                  Platform Owner
+                </p>
+              </div>
               <Link
                 href="/admin/visitors"
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-colors',
+                  'flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors',
                   pathname.startsWith('/admin/visitors')
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                     : 'text-slate-400 hover:bg-slate-800 hover:text-white'
@@ -116,7 +135,10 @@ export function Sidebar({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                <span>Visitor Telemetry</span>
+                <span className="flex-1 truncate">Visitor Telemetry</span>
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Live
+                </span>
               </Link>
             </div>
           )}
@@ -159,7 +181,7 @@ export function Sidebar({
             className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-800 transition-colors text-left group"
           >
             <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0 text-white font-semibold text-xs shadow-sm">
-              {userName.slice(0,2).toUpperCase()}
+              {userName.slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-white truncate group-hover:text-blue-300 transition-colors">{userName}</p>
@@ -170,6 +192,7 @@ export function Sidebar({
             </svg>
           </button>
         </div>
+
         {/* Legal & Version Footer */}
         <div className="px-4 py-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-500">
           <div className="flex items-center gap-2">
