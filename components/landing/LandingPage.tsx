@@ -753,15 +753,6 @@ export function LandingPage({
               <p className="text-[11px] text-blue-600 font-medium">
                 • Designed for CPWD, PMGSY, and State Works
               </p>
-              <div className="pt-1 text-xs text-slate-500">
-                <span>Inquiries: </span>
-                <a
-                  href="mailto:contact@pillarprojk.com"
-                  className="font-semibold text-slate-700 hover:text-blue-600 transition-colors"
-                >
-                  contact@pillarprojk.com
-                </a>
-              </div>
             </div>
 
             {/* Product Col */}
@@ -802,7 +793,11 @@ export function LandingPage({
               <h4 className="font-bold text-slate-900 text-xs">Company</h4>
               <ul className="space-y-2">
                 <li><Link href="/pricing" className="hover:text-blue-600 transition-colors">Pricing</Link></li>
-                <li><a href="mailto:contact@pillarprojk.com" className="hover:text-blue-600 transition-colors">Contact Us</a></li>
+                <li>
+                  <a href="mailto:contact@pillarprojk.com" className="hover:text-blue-600 transition-colors">
+                    Contact Us (contact@pillarprojk.com)
+                  </a>
+                </li>
                 <li><a href="mailto:contact@pillarprojk.com?subject=Documentation%20Request" className="hover:text-blue-600 transition-colors">Documentation</a></li>
                 <li><Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="hover:text-blue-600 transition-colors">Terms of Service</Link></li>
