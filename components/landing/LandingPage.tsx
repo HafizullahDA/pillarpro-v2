@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { WalkthroughModal } from './WalkthroughModal'
 
 // Set your YouTube embed / Loom / MP4 video link here to automatically play in the walkthrough modal
 // e.g. "https://www.youtube-nocookie.com/embed/YOUR_VIDEO_ID?autoplay=1" or "/videos/walkthrough.mp4"
@@ -823,85 +824,11 @@ export function LandingPage({
       </footer>
 
       {/* ── 9. WALKTHROUGH MODAL ───────────────────────────────── */}
-      {walkthroughOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
-                  ▶
-                </div>
-                <h3 className="text-base font-bold text-slate-900">
-                  PillarPro 3-Minute Civil Walkthrough
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setWalkthroughOpen(false)}
-                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="aspect-video bg-slate-950 rounded-xl overflow-hidden relative flex flex-col items-center justify-center text-white">
-              {WALKTHROUGH_VIDEO_URL ? (
-                WALKTHROUGH_VIDEO_URL.endsWith('.mp4') ? (
-                  <video
-                    src={WALKTHROUGH_VIDEO_URL}
-                    controls
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover rounded-xl"
-                  />
-                ) : (
-                  <iframe
-                    src={WALKTHROUGH_VIDEO_URL}
-                    title="PillarPro 3-Minute Walkthrough"
-                    className="w-full h-full border-0 rounded-xl"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                )
-              ) : (
-                <div className="p-6 text-center space-y-3">
-                  <div className="w-14 h-14 mx-auto rounded-full bg-blue-600/90 text-white flex items-center justify-center text-2xl shadow-lg pl-1">
-                    ▶
-                  </div>
-                  <div>
-                    <p className="font-bold text-sm">Interactive Tour: From Tender BOQ to Form 26 PWD Bill</p>
-                    <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                      See how site measurements sync directly into RA Bill certified amounts without Excel spreadsheets.
-                    </p>
-                  </div>
-                  <div className="pt-2 flex flex-wrap justify-center gap-2 text-[10px] text-slate-400">
-                    <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">0:00 Tender BOQ</span>
-                    <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">0:45 Digital e-MB</span>
-                    <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">1:30 Form 26 RA Bill</span>
-                    <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">2:15 ContractIQ Defense</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setWalkthroughOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
-              >
-                Close
-              </button>
-              <Link
-                href="/sign-up"
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700"
-              >
-                Try It Live for Free
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+      <WalkthroughModal
+        isOpen={walkthroughOpen}
+        onClose={() => setWalkthroughOpen(false)}
+        videoUrl={WALKTHROUGH_VIDEO_URL}
+      />
     </div>
   )
 }
