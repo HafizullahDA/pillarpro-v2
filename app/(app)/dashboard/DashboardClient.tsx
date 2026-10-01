@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge'
 import { formatINR } from '@/lib/format'
 import { ContractorOnboardingChecklist } from '@/components/dashboard/ContractorOnboardingChecklist'
 import { saveOfflineSnapshot } from '@/lib/offline/db'
+import { cn } from '@/lib/utils'
 
 import {
   ContractItem,
@@ -109,6 +110,7 @@ export function DashboardClient({
 }: DashboardClientProps) {
   const [selectedProject, setSelectedProject] = useState<string>('all')
   const [dateRange, setDateRange] = useState<'month' | 'quarter' | 'all'>('all')
+  const [activeTab, setActiveTab] = useState<'pulse' | 'field' | 'defense'>('pulse')
 
   useEffect(() => {
     if (navigator.onLine) {
@@ -270,8 +272,16 @@ export function DashboardClient({
     return sum + (Number(netPassed) || 0)
   }, 0)
 
+  // Active status counts for Stitch Tab badges
+  const unbilledMeasurementsCount = filteredMeasurements.filter(m => !m.billed_in_ra_bill_id).length
+  const criticalDeadlinesCount = filteredSecurityDeposits.filter(s => {
+    if (!s.expiry_date) return false
+    const diffDays = Math.floor((new Date(s.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    return diffDays <= 30
+  }).length + filteredHindrances.filter(h => h.status === 'open' || h.status === 'ACTIVE').length
+
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
       {/* Interactive Contractor Onboarding Checklist */}
       <ContractorOnboardingChecklist
         projectCount={projects.length}
@@ -282,40 +292,40 @@ export function DashboardClient({
       />
 
       {/* Top Header & Executive Filters */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
         <div>
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">
-              Government Contractor Command Center
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+              Executive Command Center
             </h1>
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-900 text-white">
-              Enterprise 360°
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-900 text-white">
+              Stitch 360°
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time portfolio &amp; project telemetry derived from authoritative contracts, e-MB, RA bills, and site records
+            Authoritative real-time treasury pulse, physical e-MB progress, and statutory dispute defense.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Date range selector for cash flow */}
-          <div className="inline-flex rounded-xl bg-slate-100 p-1 text-xs font-medium">
+          <div className="inline-flex rounded-xl bg-slate-100 p-1 text-xs font-medium border border-slate-200/60">
             <button
               onClick={() => setDateRange('month')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${dateRange === 'month' ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${dateRange === 'month' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
             >
               This Month
             </button>
             <button
               onClick={() => setDateRange('quarter')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${dateRange === 'quarter' ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${dateRange === 'quarter' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
             >
               Quarter
             </button>
             <button
               onClick={() => setDateRange('all')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${dateRange === 'all' ? 'bg-white text-slate-900 shadow-xs font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3 py-1.5 rounded-lg transition-colors ${dateRange === 'all' ? 'bg-white text-slate-900 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
             >
               All Time
             </button>
@@ -325,9 +335,9 @@ export function DashboardClient({
           <select
             value={selectedProject}
             onChange={e => setSelectedProject(e.target.value)}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-xs"
+            className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs"
           >
-            <option value="all">Portfolio-Level: All Projects ({projects.length})</option>
+            <option value="all">Portfolio: All Projects ({projects.length})</option>
             {projects.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
@@ -336,325 +346,360 @@ export function DashboardClient({
           {/* ContractIQ Quick Trigger */}
           <Link
             href="/contract-ai"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-800 text-white text-xs font-bold shadow-xs hover:from-blue-800 hover:to-indigo-900 transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-xs font-bold shadow-xs hover:from-blue-700 hover:to-indigo-800 transition-all"
           >
             <svg className="w-3.5 h-3.5 text-blue-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
             </svg>
             <span>ContractIQ</span>
-            <span className="text-[9px] bg-white/20 px-1 py-0.5 rounded font-bold uppercase">AI</span>
+            <span className="text-[9px] bg-white/20 px-1 py-0.2 rounded font-bold uppercase">AI</span>
           </Link>
         </div>
       </div>
 
-      {/* Quick Anchor Navigation Strip */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-medium scrollbar-thin">
-        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[10px] shrink-0">Jump To:</span>
-        <a href="#contract-position" className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors shrink-0">
-          1. Contract Position
-        </a>
-        <a href="#work-progress" className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors shrink-0">
-          2. Work Progress
-        </a>
-        <a href="#contract-defense" className="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors shrink-0">
-          3. Contract Defense
-        </a>
-        <a href="#financial-risk" className="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors shrink-0">
-          4. Financial Risk
-        </a>
-        <a href="#operational-risk" className="px-3 py-1.5 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors shrink-0">
-          5. Operational Risk
-        </a>
-        <a href="#deadlines" className="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors shrink-0">
-          6. Deadlines Clock
-        </a>
-        <a href="#cash-flow-and-aging" className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors shrink-0">
-          7. Cash Flow &amp; Aging
-        </a>
+      {/* ── GOOGLE STITCH 3-TAB EXECUTIVE COMMAND CENTER SELECTOR ── */}
+      <div className="flex items-center gap-2 p-1.5 bg-slate-200/70 rounded-2xl border border-slate-300/60 overflow-x-auto scrollbar-thin">
+        <button
+          type="button"
+          onClick={() => setActiveTab('pulse')}
+          className={cn(
+            'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0',
+            activeTab === 'pulse'
+              ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+          )}
+        >
+          <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>1. Cash &amp; Liquidity Pulse</span>
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('field')}
+          className={cn(
+            'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0',
+            activeTab === 'field'
+              ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+          )}
+        >
+          <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <span>2. Field Execution &amp; e-MB</span>
+          {unbilledMeasurementsCount > 0 && (
+            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+              {unbilledMeasurementsCount} unbilled
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('defense')}
+          className={cn(
+            'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0',
+            activeTab === 'defense'
+              ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+          )}
+        >
+          <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <span>3. Legal &amp; Contract Defense</span>
+          {criticalDeadlinesCount > 0 && (
+            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+              {criticalDeadlinesCount} alerts
+            </span>
+          )}
+        </button>
       </div>
 
       {/* ========================================================================= */}
-      {/* SECTION 1: CONTRACT POSITION                                              */}
+      {/* TAB 1: CASH & LIQUIDITY PULSE (THE CONTRACTOR'S TREASURY)                 */}
       {/* ========================================================================= */}
-      <ContractPositionSection
-        contracts={filteredContracts}
-        variations={filteredVariations}
-        bills={filteredRawRABills}
-        boqItems={filteredBOQItems}
-      />
-
-      {/* ========================================================================= */}
-      {/* SECTION 2: WORK PROGRESS & BOQ EXECUTION                                   */}
-      {/* ========================================================================= */}
-      <WorkProgressSection
-        boqItems={filteredBOQItems}
-        measurements={filteredMeasurements}
-        currentContractValue={currentContractValue}
-        billedValue={billedValue}
-      />
-
-      {/* ========================================================================= */}
-      {/* SECTION 3: CONTRACT DEFENSE & CLAIMS MATRIX                               */}
-      {/* ========================================================================= */}
-      <ContractDefenseSection
-        events={filteredEvents}
-        hindrances={filteredHindrances}
-        correspondence={filteredCorrespondence}
-        eotCases={filteredEOTCases}
-        variations={filteredVariations}
-        claims={filteredClaims}
-      />
-
-      {/* ========================================================================= */}
-      {/* SECTION 4: FINANCIAL RISK & LIQUIDITY EXPOSURE                            */}
-      {/* ========================================================================= */}
-      <FinancialRiskSection
-        bills={filteredRawRABills}
-        supplierDues={totalSupplierDues}
-        wagePayments={filteredWagePayments}
-        securityDeposits={filteredSecurityDeposits}
-        claims={filteredClaims}
-      />
-
-      {/* ========================================================================= */}
-      {/* SECTION 5: OPERATIONAL RISK & SITE BOTTLENECKS                            */}
-      {/* ========================================================================= */}
-      <OperationalRiskSection
-        inventoryItems={filteredInventory}
-        machineryAssets={filteredMachinery}
-        measurements={filteredMeasurements}
-        events={filteredEvents}
-        hindrances={filteredHindrances}
-        wagePayments={filteredWagePayments}
-      />
-
-      {/* ========================================================================= */}
-      {/* SECTION 6: STATUTORY & CONTRACTUAL DEADLINES CLOCK                         */}
-      {/* ========================================================================= */}
-      <DeadlinesClockSection
-        securityDeposits={filteredSecurityDeposits}
-        contracts={filteredContracts}
-        correspondence={filteredCorrespondence}
-        eotCases={filteredEOTCases}
-      />
-
-      {/* ========================================================================= */}
-      {/* SECTION 7: CASH FLOW & RECEIVABLES AGING (PRESERVED)                      */}
-      {/* ========================================================================= */}
-      <div id="cash-flow-and-aging" className="space-y-4">
-        <div className="flex items-center gap-2">
-          <span className="h-6 w-1.5 rounded-full bg-slate-700 inline-block" />
-          <h2 className="text-base font-bold text-slate-900">7. Net Cash Movement &amp; Receivables Aging</h2>
-          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-            Treasury &amp; Working Capital
-          </span>
-        </div>
-
-        {/* 4 Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <SummaryTile
-            label="Total Expense"
-            value={formatINR(totalExpense)}
-            sub={dateRange === 'all' ? 'Site operational expenses' : `${dateRange === 'month' ? 'This month' : 'This quarter'}`}
-            accent="red"
-          />
-          <SummaryTile
-            label="Total Received"
-            value={formatINR(displayNetReceived)}
-            sub={dateRange === 'all'
-              ? `Gross Released: ${formatINR(displayGrossReceived)}`
-              : `Gross: ${formatINR(displayGrossReceived)} (All time: ${formatINR(allTimeNetBankReceived)})`
-            }
-            accent="emerald"
-          />
-          <SummaryTile label="Outstanding" value={formatINR(totalOutstanding)} accent="amber" />
-          <SummaryTile label="Supplier Dues" value={formatINR(totalSupplierDues)} accent="blue" />
-        </div>
-
-        {/* Net Position Block */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className={`p-4 rounded-xl border flex flex-col justify-between ${netCashMovement >= 0 ? 'bg-emerald-50/60 border-emerald-200' : 'bg-red-50/60 border-red-200'}`}>
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Net Cash Position</span>
-              <p className="text-xs text-slate-400 mt-0.5">Total Received minus Total Expense</p>
-            </div>
-            <div className="mt-4">
-              <span className={`text-2xl font-bold ${netCashMovement >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                {netCashMovement < 0 ? `-${formatINR(Math.abs(netCashMovement))}` : formatINR(netCashMovement)}
-              </span>
-              <span className="text-xs text-slate-400 block mt-1">
-                {dateRange === 'all' ? 'Across all recorded transactions' : `For selected period (${dateRange})`}
-              </span>
-            </div>
+      {activeTab === 'pulse' && (
+        <div className="space-y-5 animate-in fade-in duration-200">
+          {/* 4 Summary Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <SummaryTile
+              label="Net Bank Received"
+              value={formatINR(displayNetReceived)}
+              sub={dateRange === 'all'
+                ? `Gross Released: ${formatINR(displayGrossReceived)}`
+                : `Gross: ${formatINR(displayGrossReceived)} (All time: ${formatINR(allTimeNetBankReceived)})`
+              }
+              accent="emerald"
+            />
+            <SummaryTile
+              label="Total Site Expense"
+              value={formatINR(totalExpense)}
+              sub={dateRange === 'all' ? 'Site operational expenses' : `${dateRange === 'month' ? 'This month' : 'This quarter'}`}
+              accent="red"
+            />
+            <SummaryTile label="Client Receivables" value={formatINR(totalOutstanding)} accent="amber" />
+            <SummaryTile label="Supplier Khata Dues" value={formatINR(totalSupplierDues)} accent="blue" />
           </div>
 
-          <div className="p-4 rounded-xl border bg-white border-slate-200 flex flex-col justify-between">
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Net Liquidity Position</span>
-              <p className="text-xs text-slate-400 mt-0.5">RA Outstanding minus Supplier Dues</p>
-            </div>
-            <div className="mt-4">
-              <span className={`text-2xl font-bold ${netLiquidityPosition >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                {netLiquidityPosition < 0 ? `-${formatINR(Math.abs(netLiquidityPosition))}` : formatINR(netLiquidityPosition)}
-              </span>
-              <span className="text-xs text-slate-400 block mt-1">
-                {netLiquidityPosition >= 0 ? 'Surplus buffer over supplier payables' : 'Supplier liabilities exceed receivables'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Cash Flow Trend + Aging Bands Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Trend Chart (2 Cols) */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-4">
+          {/* Net Position Block */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`p-5 rounded-2xl border flex flex-col justify-between shadow-2xs ${netCashMovement >= 0 ? 'bg-emerald-50/70 border-emerald-200' : 'bg-red-50/70 border-red-200'}`}>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Trailing 6-Month Cash Flow</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Monthly Receipts vs Direct Site Expenses</p>
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Net Realized Cash Position</span>
+                <p className="text-xs text-slate-500 mt-0.5">Total Bank Received minus Total Site Expense</p>
               </div>
-              <div className="flex items-center gap-4 text-xs">
-                <span className="flex items-center gap-1.5 text-slate-600">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />
-                  Received
+              <div className="mt-4">
+                <span className={`text-2xl md:text-3xl font-extrabold tabular-nums ${netCashMovement >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                  {netCashMovement < 0 ? `-${formatINR(Math.abs(netCashMovement))}` : formatINR(netCashMovement)}
                 </span>
-                <span className="flex items-center gap-1.5 text-slate-600">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block" />
-                  Expense
+                <span className="text-xs text-slate-500 block mt-1">
+                  {dateRange === 'all' ? 'Across all recorded project transactions' : `For selected period (${dateRange})`}
                 </span>
               </div>
             </div>
 
-            <div className="h-44 flex items-end gap-2 pt-4 border-b border-slate-100 pb-2">
-              {monthsList.map((m, i) => {
-                const incPct = Math.round((m.mIncome / maxTrendVal) * 100)
-                const expPct = Math.round((m.mExpense / maxTrendVal) * 100)
+            <div className="p-5 rounded-2xl border bg-white border-slate-200/90 flex flex-col justify-between shadow-2xs">
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Working Capital Buffer</span>
+                <p className="text-xs text-slate-500 mt-0.5">Client RA Outstanding minus Supplier Liabilities</p>
+              </div>
+              <div className="mt-4">
+                <span className={`text-2xl md:text-3xl font-extrabold tabular-nums ${netLiquidityPosition >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                  {netLiquidityPosition < 0 ? `-${formatINR(Math.abs(netLiquidityPosition))}` : formatINR(netLiquidityPosition)}
+                </span>
+                <span className="text-xs text-slate-500 block mt-1">
+                  {netLiquidityPosition >= 0 ? 'Comfortable liquidity surplus over vendor obligations' : 'Immediate vendor obligations exceed certified receivables'}
+                </span>
+              </div>
+            </div>
+          </div>
 
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                    <div className="w-full flex items-end justify-center gap-1.5 h-full">
-                      <div
-                        style={{ height: `${Math.max(incPct, 4)}%` }}
-                        className="w-3.5 bg-emerald-500 rounded-t-md transition-all duration-300"
-                        title={`Received: ${formatINR(m.mIncome)}`}
-                      />
-                      <div
-                        style={{ height: `${Math.max(expPct, 4)}%` }}
-                        className="w-3.5 bg-red-400 rounded-t-md transition-all duration-300"
-                        title={`Expense: ${formatINR(m.mExpense)}`}
-                      />
+          {/* Cash Flow Trend + Aging Bands Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Trend Chart (2 Cols) */}
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/90 p-5 flex flex-col justify-between shadow-2xs">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Trailing 6-Month Cash Flow Movement</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Monthly Receipts vs Direct Site Expenses</p>
+                </div>
+                <div className="flex items-center gap-4 text-xs font-medium">
+                  <span className="flex items-center gap-1.5 text-slate-600">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />
+                    Received
+                  </span>
+                  <span className="flex items-center gap-1.5 text-slate-600">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block" />
+                    Expense
+                  </span>
+                </div>
+              </div>
+
+              <div className="h-44 flex items-end gap-2 pt-4 border-b border-slate-100 pb-2">
+                {monthsList.map((m, i) => {
+                  const incPct = Math.round((m.mIncome / maxTrendVal) * 100)
+                  const expPct = Math.round((m.mExpense / maxTrendVal) * 100)
+
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+                      <div className="w-full flex items-end justify-center gap-1.5 h-full">
+                        <div
+                          style={{ height: `${Math.max(incPct, 4)}%` }}
+                          className="w-3.5 bg-emerald-500 rounded-t-md transition-all duration-300"
+                          title={`Received: ${formatINR(m.mIncome)}`}
+                        />
+                        <div
+                          style={{ height: `${Math.max(expPct, 4)}%` }}
+                          className="w-3.5 bg-red-400 rounded-t-md transition-all duration-300"
+                          title={`Expense: ${formatINR(m.mExpense)}`}
+                        />
+                      </div>
+                      <span className="text-[11px] font-medium text-slate-500">{m.label}</span>
                     </div>
-                    <span className="text-[11px] font-medium text-slate-500">{m.label}</span>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-          </div>
 
-          {/* Aging Bands Panel (1 Col) */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 mb-1">Receivables Aging Bands</h3>
-              <p className="text-xs text-slate-500 mb-4">Outstanding billed amounts by age</p>
+            {/* Aging Bands Panel (1 Col) */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 flex flex-col justify-between shadow-2xs">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">Receivables Aging Analysis</h3>
+                <p className="text-xs text-slate-500 mb-4">Outstanding certified bills categorized by age</p>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-600 font-medium">0–30 Days</span>
-                  <span className="font-bold text-slate-900 tabular-nums">{formatINR(agingBands.d0_30)}</span>
-                </div>
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: totalOutstanding > 0 ? `${(agingBands.d0_30 / totalOutstanding) * 100}%` : '0%' }} />
-                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-600 font-medium">0–30 Days</span>
+                    <span className="font-bold text-slate-900 tabular-nums">{formatINR(agingBands.d0_30)}</span>
+                  </div>
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: totalOutstanding > 0 ? `${(agingBands.d0_30 / totalOutstanding) * 100}%` : '0%' }} />
+                  </div>
 
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <span className="text-slate-600 font-medium">31–60 Days</span>
-                  <span className="font-bold text-amber-700 tabular-nums">{formatINR(agingBands.d31_60)}</span>
-                </div>
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div className="bg-amber-500 h-full rounded-full" style={{ width: totalOutstanding > 0 ? `${(agingBands.d31_60 / totalOutstanding) * 100}%` : '0%' }} />
-                </div>
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-slate-600 font-medium">31–60 Days</span>
+                    <span className="font-bold text-amber-700 tabular-nums">{formatINR(agingBands.d31_60)}</span>
+                  </div>
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div className="bg-amber-500 h-full rounded-full" style={{ width: totalOutstanding > 0 ? `${(agingBands.d31_60 / totalOutstanding) * 100}%` : '0%' }} />
+                  </div>
 
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <span className="text-slate-600 font-medium">60+ Days</span>
-                  <span className="font-bold text-red-700 tabular-nums">{formatINR(agingBands.d60_plus)}</span>
-                </div>
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div className="bg-red-500 h-full rounded-full" style={{ width: totalOutstanding > 0 ? `${(agingBands.d60_plus / totalOutstanding) * 100}%` : '0%' }} />
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-slate-600 font-medium">60+ Days (Overdue)</span>
+                    <span className="font-bold text-red-700 tabular-nums">{formatINR(agingBands.d60_plus)}</span>
+                  </div>
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div className="bg-red-500 h-full rounded-full" style={{ width: totalOutstanding > 0 ? `${(agingBands.d60_plus / totalOutstanding) * 100}%` : '0%' }} />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Projects at a Glance Strip */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-slate-900">Projects at a Glance</h3>
-            <Link
-              href="/projects"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-            >
-              + Add Project
-            </Link>
-          </div>
+          {/* Section: Financial Risk & Liquidity Exposure */}
+          <FinancialRiskSection
+            bills={filteredRawRABills}
+            supplierDues={totalSupplierDues}
+            wagePayments={filteredWagePayments}
+            securityDeposits={filteredSecurityDeposits}
+            claims={filteredClaims}
+          />
 
-          {projectGlance.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-xs text-slate-400">No active projects yet.</p>
+          {/* Projects at a Glance Strip */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Project Financial Health</h3>
+                <p className="text-xs text-slate-500">Site-level outstanding receivables vs pending supplier payables</p>
+              </div>
               <Link
                 href="/projects"
-                className="mt-2 inline-block text-xs font-semibold text-blue-600 hover:underline"
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
               >
-                Create your first project &rarr;
+                + View All Projects
               </Link>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {projectGlance.map(p => (
-                <Link
-                  key={p.id}
-                  href={`/projects/${p.id}`}
-                  className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-xs transition-all flex flex-col justify-between gap-3 group bg-slate-50/50 hover:bg-white"
-                >
-                  <div className="flex items-start justify-between gap-2.5 min-w-0">
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className="text-sm font-semibold text-slate-900 line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors"
-                        title={p.name}
-                      >
-                        {p.name}
-                      </p>
-                      <p
-                        className="text-xs text-slate-500 truncate mt-0.5"
-                        title={p.agency_name ?? 'Government Site'}
-                      >
-                        {p.agency_name ?? 'Government Site'}
-                      </p>
-                    </div>
-                    <div className="shrink-0 pt-0.5">
-                      <Badge
-                        label={p.status === 'healthy' ? 'Healthy' : p.status === 'warning' ? 'Warning' : 'Critical'}
-                        variant={p.status === 'healthy' ? 'success' : p.status === 'warning' ? 'warning' : 'danger'}
-                      />
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-2 mt-auto">
-                    <div>
-                      <span className="text-slate-400 block text-[10px] font-medium">Outstanding</span>
-                      <span className="font-semibold text-slate-700 tabular-nums">{formatINR(p.pOutstanding)}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px] font-medium">Supplier Dues</span>
-                      <span className="font-semibold text-red-600 tabular-nums">{formatINR(p.pDues)}</span>
-                    </div>
-                  </div>
+            {projectGlance.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-xs text-slate-400">No active projects recorded yet.</p>
+                <Link
+                  href="/projects"
+                  className="mt-2 inline-block text-xs font-semibold text-blue-600 hover:underline"
+                >
+                  Create your first project &rarr;
                 </Link>
-              ))}
-            </div>
-          )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                {projectGlance.map(p => (
+                  <Link
+                    key={p.id}
+                    href={`/projects/${p.id}`}
+                    className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-xs transition-all flex flex-col justify-between gap-3 group bg-slate-50/50 hover:bg-white"
+                  >
+                    <div className="flex items-start justify-between gap-2.5 min-w-0">
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="text-sm font-semibold text-slate-900 line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors"
+                          title={p.name}
+                        >
+                          {p.name}
+                        </p>
+                        <p
+                          className="text-xs text-slate-500 truncate mt-0.5"
+                          title={p.agency_name ?? 'Government Site'}
+                        >
+                          {p.agency_name ?? 'Government Site'}
+                        </p>
+                      </div>
+                      <div className="shrink-0 pt-0.5">
+                        <Badge
+                          label={p.status === 'healthy' ? 'Healthy' : p.status === 'warning' ? 'Warning' : 'Critical'}
+                          variant={p.status === 'healthy' ? 'success' : p.status === 'warning' ? 'warning' : 'danger'}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-2 mt-auto">
+                      <div>
+                        <span className="text-slate-400 block text-[10px] font-medium">Receivables</span>
+                        <span className="font-semibold text-slate-700 tabular-nums">{formatINR(p.pOutstanding)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px] font-medium">Supplier Liabilities</span>
+                        <span className="font-semibold text-red-600 tabular-nums">{formatINR(p.pDues)}</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 2: FIELD EXECUTION & E-MB (THE ENGINEER'S HUB)                        */}
+      {/* ========================================================================= */}
+      {activeTab === 'field' && (
+        <div className="space-y-5 animate-in fade-in duration-200">
+          {/* Section 1: Contract Position */}
+          <ContractPositionSection
+            contracts={filteredContracts}
+            variations={filteredVariations}
+            bills={filteredRawRABills}
+            boqItems={filteredBOQItems}
+          />
+
+          {/* Section 2: Work Progress & BOQ Execution */}
+          <WorkProgressSection
+            boqItems={filteredBOQItems}
+            measurements={filteredMeasurements}
+            currentContractValue={currentContractValue}
+            billedValue={billedValue}
+          />
+
+          {/* Section 3: Operational Risk & Site Bottlenecks */}
+          <OperationalRiskSection
+            inventoryItems={filteredInventory}
+            machineryAssets={filteredMachinery}
+            measurements={filteredMeasurements}
+            events={filteredEvents}
+            hindrances={filteredHindrances}
+            wagePayments={filteredWagePayments}
+          />
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 3: LEGAL & CONTRACT DEFENSE (THE OWNER'S SHIELD)                      */}
+      {/* ========================================================================= */}
+      {activeTab === 'defense' && (
+        <div className="space-y-5 animate-in fade-in duration-200">
+          {/* Section 1: Statutory & Contractual Deadlines Clock */}
+          <DeadlinesClockSection
+            securityDeposits={filteredSecurityDeposits}
+            contracts={filteredContracts}
+            correspondence={filteredCorrespondence}
+            eotCases={filteredEOTCases}
+          />
+
+          {/* Section 2: Contract Defense & Claims Matrix */}
+          <ContractDefenseSection
+            events={filteredEvents}
+            hindrances={filteredHindrances}
+            correspondence={filteredCorrespondence}
+            eotCases={filteredEOTCases}
+            variations={filteredVariations}
+            claims={filteredClaims}
+          />
+        </div>
+      )}
     </div>
   )
 }
