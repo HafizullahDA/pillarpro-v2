@@ -757,8 +757,16 @@ export function LandingPage({
               <ul className="space-y-2">
                 <li><Link href="/pricing" className="hover:text-blue-600 transition-colors">Pricing</Link></li>
                 <li>
-                  <a href="mailto:contact@pillarprojk.com" className="hover:text-blue-600 transition-colors">
-                    Contact Us (contact@pillarprojk.com)
+                  <a
+                    href="mailto:contact@pillarprojk.com"
+                    className="group block transition-colors"
+                  >
+                    <span className="block font-medium text-slate-700 group-hover:text-blue-600 transition-colors">
+                      Contact Us
+                    </span>
+                    <span className="block text-[11px] text-slate-400 group-hover:text-blue-600 font-mono transition-colors mt-0.5">
+                      contact@pillarprojk.com
+                    </span>
                   </a>
                 </li>
                 <li><a href="mailto:contact@pillarprojk.com?subject=Documentation%20Request" className="hover:text-blue-600 transition-colors">Documentation</a></li>
