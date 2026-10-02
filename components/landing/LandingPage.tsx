@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Logo } from '@/components/ui/Logo'
 import { WalkthroughModal } from './WalkthroughModal'
+import { ContactModal } from './ContactModal'
 
 // Set your YouTube embed / Loom / MP4 video link here to automatically play in the walkthrough modal
 // e.g. "https://www.youtube-nocookie.com/embed/YOUR_VIDEO_ID?autoplay=1" or "/videos/walkthrough.mp4"
@@ -21,6 +22,7 @@ export function LandingPage({
   orgName,
 }: LandingPageProps) {
   const [walkthroughOpen, setWalkthroughOpen] = useState(false)
+  const [contactOpen, setContactOpen] = useState(false)
   const [previewTimeRange, setPreviewTimeRange] = useState<'month' | 'quarter' | 'all'>('month')
 
   return (
@@ -741,12 +743,13 @@ export function LandingPage({
               <ul className="space-y-2">
                 <li><Link href="/pricing" className="hover:text-blue-600 transition-colors">Pricing</Link></li>
                 <li>
-                  <a
-                    href="mailto:contact@pillarprojk.com"
-                    className="hover:text-blue-600 transition-colors"
+                  <button
+                    type="button"
+                    onClick={() => setContactOpen(true)}
+                    className="hover:text-blue-600 transition-colors cursor-pointer text-left font-medium"
                   >
                     Contact Us
-                  </a>
+                  </button>
                 </li>
                 <li><a href="mailto:contact@pillarprojk.com?subject=Documentation%20Request" className="hover:text-blue-600 transition-colors">Documentation</a></li>
                 <li><Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link></li>
@@ -777,6 +780,12 @@ export function LandingPage({
         isOpen={walkthroughOpen}
         onClose={() => setWalkthroughOpen(false)}
         videoUrl={WALKTHROUGH_VIDEO_URL}
+      />
+
+      {/* ── 10. CONTACT MODAL ──────────────────────────────────── */}
+      <ContactModal
+        isOpen={contactOpen}
+        onClose={() => setContactOpen(false)}
       />
     </div>
   )
