@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { Logo } from '@/components/ui/Logo'
 import { WalkthroughModal } from './WalkthroughModal'
 
 // Set your YouTube embed / Loom / MP4 video link here to automatically play in the walkthrough modal
@@ -28,19 +29,7 @@ export function LandingPage({
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Brand Logo */}
-          <div className="flex items-center gap-2.5">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-sm shadow-xs">
-                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M4 4h7v7H4V4zm11 0h5v7h-5V4zM4 13h5v7H4v-7zm7 0h9v7h-9v-7z" />
-                </svg>
-              </div>
-              <span className="font-extrabold text-lg text-slate-900 tracking-tight">PillarPro</span>
-            </Link>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200/80 uppercase">
-              IN
-            </span>
-          </div>
+          <Logo theme="light" href="/" size="sm" />
 
           {/* Nav Links */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-600">
@@ -76,11 +65,16 @@ export function LandingPage({
                 >
                   Start Free
                 </Link>
-                <div className="hidden sm:flex w-8 h-8 rounded-full bg-slate-100 border border-slate-200 items-center justify-center text-slate-600 text-xs">
+                <Link
+                  href={isLoggedIn ? "/dashboard" : "/sign-in"}
+                  title={isLoggedIn ? "Dashboard" : "Sign In"}
+                  aria-label={isLoggedIn ? "Dashboard" : "Sign In"}
+                  className="hidden sm:flex w-8 h-8 rounded-full bg-slate-100 border border-slate-200 items-center justify-center text-slate-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
+                >
                   <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                </div>
+                </Link>
               </>
             )}
           </div>
@@ -699,17 +693,7 @@ export function LandingPage({
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
             {/* Brand Col */}
             <div className="col-span-2 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xs">
-                  <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M4 4h7v7H4V4zm11 0h5v7h-5V4zM4 13h5v7H4v-7zm7 0h9v7h-9v-7z" />
-                  </svg>
-                </div>
-                <span className="font-bold text-base text-slate-900 tracking-tight">PillarPro</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 uppercase">
-                  IN
-                </span>
-              </div>
+              <Logo theme="light" href="/" size="sm" />
               <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
                 The comprehensive operating system engineered specifically for Indian civil contractors, highway builders, and infra developers.
               </p>
@@ -759,14 +743,9 @@ export function LandingPage({
                 <li>
                   <a
                     href="mailto:contact@pillarprojk.com"
-                    className="group block transition-colors"
+                    className="hover:text-blue-600 transition-colors"
                   >
-                    <span className="block font-medium text-slate-700 group-hover:text-blue-600 transition-colors">
-                      Contact Us
-                    </span>
-                    <span className="block text-[11px] text-slate-400 group-hover:text-blue-600 font-mono transition-colors mt-0.5">
-                      contact@pillarprojk.com
-                    </span>
+                    Contact Us
                   </a>
                 </li>
                 <li><a href="mailto:contact@pillarprojk.com?subject=Documentation%20Request" className="hover:text-blue-600 transition-colors">Documentation</a></li>

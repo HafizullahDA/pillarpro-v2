@@ -97,14 +97,12 @@ export function ContactClient() {
               <div className="space-y-2 pt-2 border-t border-slate-100">
                 <a
                   href="mailto:contact@pillarprojk.com"
-                  className="block group"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-xs"
                 >
-                  <span className="text-[11px] font-semibold text-slate-400 group-hover:text-blue-600 uppercase tracking-wider block">
-                    Contact Us
-                  </span>
-                  <span className="text-sm font-bold text-blue-600 font-mono group-hover:underline block mt-0.5">
-                    contact@pillarprojk.com
-                  </span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span>Contact Us</span>
                 </a>
                 <button
                   type="button"
@@ -285,7 +283,7 @@ export function ContactClient() {
 
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <p className="text-[11px] text-slate-500">
-                  Clicking will open your email app addressed directly to <strong className="font-mono text-slate-700">contact@pillarprojk.com</strong>.
+                  Clicking will open your email client pre-filled with your message details.
                 </p>
                 <button
                   type="submit"
@@ -308,7 +306,7 @@ export function ContactClient() {
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-800">PillarPro Technologies India Pvt. Ltd.</span>
             <span>•</span>
-            <span>contact@pillarprojk.com</span>
+            <a href="mailto:contact@pillarprojk.com" className="text-blue-600 hover:underline">Contact Us</a>
           </div>
 
           <div className="flex items-center gap-6 text-[11px]">
