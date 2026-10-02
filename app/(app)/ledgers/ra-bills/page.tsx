@@ -14,21 +14,38 @@ export const metadata: Metadata = {
 export default async function RABillsLedgerPage() {
   const supabase = createClient()
 
-  const [
-    { data: userRole },
-    { data: projects },
-    { data: bills },
-    { data: deposits },
-    { data: deductions },
-    { data: boqData },
-    { data: measurementsData },
-  ] = await Promise.all([
+  const [{ data: userRole }, { data: projectsData }] = await Promise.all([
     supabase.rpc('get_user_role'),
     supabase
       .from('projects')
       .select('id, name, agency_name, advertised_cost, awarded_amount')
       .eq('archived', false)
       .order('name'),
+  ])
+
+  const projects = Array.isArray(projectsData) ? projectsData : []
+  const projectIds = projects.map(p => p.id)
+
+  if (projectIds.length === 0) {
+    return (
+      <RABillsClient
+        initialBills={[]}
+        initialDeposits={[]}
+        projects={[]}
+        userRole={(userRole as string) ?? ''}
+        boqItems={[]}
+        measurements={[]}
+      />
+    )
+  }
+
+  const [
+    { data: bills },
+    { data: deposits },
+    { data: deductions },
+    { data: boqData },
+    { data: measurementsData },
+  ] = await Promise.all([
     supabase
       .from('ra_bills')
       .select(`
@@ -75,6 +92,7 @@ export default async function RABillsLedgerPage() {
         remarks,
         projects (name, agency_name)
       `)
+      .in('project_id', projectIds)
       .order('submission_date', { ascending: false }),
     supabase
       .from('security_deposits')
@@ -93,6 +111,7 @@ export default async function RABillsLedgerPage() {
         notes,
         projects (name)
       `)
+      .in('project_id', projectIds)
       .order('expiry_date', { ascending: true }),
     supabase
       .from('bill_deductions')
@@ -100,6 +119,7 @@ export default async function RABillsLedgerPage() {
     supabase
       .from('boq_items')
       .select('*')
+      .in('project_id', projectIds)
       .order('item_number', { ascending: true }),
     supabase
       .from('measurement_entries')
@@ -119,24 +139,32 @@ export default async function RABillsLedgerPage() {
           title
         )
       `)
+      .in('project_id', projectIds)
       .order('measurement_date', { ascending: false }),
   ])
 
+  const projectIdSet = new Set(projectIds)
+
+  const filteredBills = (bills ?? []).filter((b: any) => projectIdSet.has(b.project_id))
+  const filteredDeposits = (deposits ?? []).filter((d: any) => projectIdSet.has(d.project_id))
+
   // Attach itemized deductions to corresponding bills
-  const billsWithDeductions = (bills ?? []).map(b => ({
+  const billsWithDeductions = filteredBills.map(b => ({
     ...b,
     bill_deductions: (deductions ?? []).filter(d => d.ra_bill_id === b.id),
   }))
 
-  const boqItems: BOQItem[] = Array.isArray(boqData) ? (boqData as BOQItem[]) : []
+  const boqItems: BOQItem[] = Array.isArray(boqData)
+    ? (boqData as BOQItem[]).filter(b => projectIdSet.has(b.project_id))
+    : []
   const measurements: MeasurementEntry[] = Array.isArray(measurementsData)
-    ? (measurementsData as MeasurementEntry[])
+    ? (measurementsData as MeasurementEntry[]).filter(m => projectIdSet.has(m.project_id))
     : []
 
   return (
     <RABillsClient
       initialBills={billsWithDeductions as any}
-      initialDeposits={(deposits as any) ?? []}
+      initialDeposits={(filteredDeposits as any) ?? []}
       projects={projects ?? []}
       userRole={(userRole as string) ?? ''}
       boqItems={boqItems}

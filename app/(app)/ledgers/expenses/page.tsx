@@ -11,32 +11,48 @@ export const metadata: Metadata = {
 
 export default async function ExpensesLedgerPage() {
   const supabase = createClient()
+  const [{ data: userRole }, { data: projectsData }] = await Promise.all([
+    supabase.rpc('get_user_role'),
+    supabase.from('projects').select('id, name').eq('archived', false).order('name'),
+  ])
+
+  const activeProjects = projectsData ?? []
+  const projectIds = activeProjects.map(p => p.id)
+
+  if (projectIds.length === 0) {
+    return (
+      <ExpensesClient
+        initialExpenses={[]}
+        projects={[]}
+        suppliers={[]}
+        partners={[]}
+        userRole={(userRole as string) ?? ''}
+      />
+    )
+  }
+
   const [
-    { data: userRole },
-    { data: projects },
     { data: suppliers },
     { data: partners },
     { data: expenses },
   ] = await Promise.all([
-    supabase.rpc('get_user_role'),
-    supabase.from('projects').select('id, name').eq('archived', false).order('name'),
     supabase.from('suppliers').select('id, name').order('name'),
     supabase.from('partners').select('id, name').order('name'),
     supabase
       .from('expenses')
       .select('id, project_id, description, category, amount, date, mode, receipt_url, paid_by_partner_id, projects(name), partners(name)')
+      .in('project_id', projectIds)
       .order('date', { ascending: false })
       .limit(100),
   ])
 
-  const activeProjects = projects ?? []
-  const activeProjectIds = new Set(activeProjects.map(p => p.id))
+  const activeProjectIds = new Set(projectIds)
 
   const activeExpenses = (expenses ?? []).map((e: any) => ({
     ...e,
     payment_mode: e.mode || e.payment_mode || 'Cash',
   })).filter(
-    (e: any) => !e.project_id || activeProjects.length === 0 || activeProjectIds.has(e.project_id)
+    (e: any) => e.project_id && activeProjectIds.has(e.project_id)
   )
 
   return (

@@ -24,12 +24,12 @@ export interface OrganizationProfile {
 
 export const DEFAULT_ORGANIZATION: OrganizationProfile = {
   id: 'default-org',
-  name: 'Hafizullah Lone Constructions',
-  legal_name: 'Hafizullah Lone Constructions & Infrastructure',
+  name: 'My Workspace',
+  legal_name: 'Construction & Infrastructure Co.',
   registration_no: 'Class-A Govt Contractor, PWD / PMGSY',
   gstin: '',
   pan: '',
-  address: 'Srinagar, Jammu & Kashmir',
+  address: '',
   phone: '',
   email: '',
   logo_url: null,
@@ -51,10 +51,14 @@ export async function getClientOrganization(): Promise<OrganizationProfile> {
   const supabase = createClient()
 
   let userCreatedAt: string | null = null
+  let userId: string | null = null
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (user?.created_at) {
       userCreatedAt = user.created_at
+    }
+    if (user?.id) {
+      userId = user.id
     }
   } catch {
     // ignore
@@ -62,7 +66,7 @@ export async function getClientOrganization(): Promise<OrganizationProfile> {
 
   try {
     const { data, error } = await supabase.rpc('get_organization_profile')
-    if (!error && data) {
+    if (!error && data && (data as any).id) {
       const orgData = data as OrganizationProfile
       return {
         ...orgData,
@@ -71,19 +75,29 @@ export async function getClientOrganization(): Promise<OrganizationProfile> {
       }
     }
 
-    // Direct table fallback
-    const { data: orgs } = await supabase
-      .from('organizations')
-      .select('*')
-      .order('created_at', { ascending: true })
-      .limit(1)
+    // Direct table fallback: only query organizations if user has a profile with organization_id
+    if (userId) {
+      const { data: up } = await supabase
+        .from('user_profiles')
+        .select('organization_id')
+        .eq('id', userId)
+        .maybeSingle()
 
-    if (orgs && orgs.length > 0) {
-      return {
-        ...orgs[0],
-        created_at: userCreatedAt || orgs[0].created_at,
-        user_created_at: userCreatedAt,
-      } as OrganizationProfile
+      if (up?.organization_id) {
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('*')
+          .eq('id', up.organization_id)
+          .maybeSingle()
+
+        if (org) {
+          return {
+            ...org,
+            created_at: userCreatedAt || org.created_at,
+            user_created_at: userCreatedAt,
+          } as OrganizationProfile
+        }
+      }
     }
   } catch {
     // If migration hasn't been executed in Supabase yet, use default fallback
@@ -183,20 +197,7 @@ export async function getUserOrganizationId(projectId?: string): Promise<string 
     } catch {}
   }
 
-  // 5. Try first organization in organizations table
-  try {
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id')
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-    if (org?.id) {
-      cachedOrgId = org.id
-      return org.id
-    }
-  } catch {}
-
+  // Never fall back to another tenant's organization
   return null
 }
 

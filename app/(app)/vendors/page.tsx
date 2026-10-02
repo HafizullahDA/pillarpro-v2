@@ -12,9 +12,23 @@ export default async function VendorsPage() {
   const { data: projects } = await supabase.from('projects').select('id, name').eq('archived', false).order('name')
 
   const activeProjects = projects ?? []
-  const activeProjectIds = new Set(activeProjects.map(p => p.id))
+  const projectIds = activeProjects.map(p => p.id)
 
-  // Vendors with computed due = sum(purchases) - sum(payments) (filtered to active projects or unassigned)
+  if (projectIds.length === 0) {
+    return (
+      <div className="p-4 md:p-6 max-w-5xl mx-auto">
+        <div className="flex items-center justify-between mb-5">
+          <h1 className="text-xl font-bold text-slate-900">Vendors</h1>
+          <VendorActions projects={[]} />
+        </div>
+        <EmptyState title="No vendors yet" description="Add vendors to track purchases and payments against each project." />
+      </div>
+    )
+  }
+
+  const activeProjectIds = new Set(projectIds)
+
+  // Vendors with computed due = sum(purchases) - sum(payments) (filtered to active projects)
   const { data: vendors } = await supabase
     .from('vendors')
     .select(`
@@ -23,10 +37,11 @@ export default async function VendorsPage() {
       vendor_purchases(amount),
       vendor_payments(amount)
     `)
+    .in('project_id', projectIds)
     .order('name')
 
   const vendorsWithDue = (vendors ?? [])
-    .filter(v => !v.project_id || activeProjectIds.has(v.project_id))
+    .filter(v => v.project_id && activeProjectIds.has(v.project_id))
     .map(v => {
       const totalPurchased = (v.vendor_purchases ?? []).reduce((s: number, p: {amount: number}) => s + (p.amount ?? 0), 0)
       const totalPaid = (v.vendor_payments ?? []).reduce((s: number, p: {amount: number}) => s + (p.amount ?? 0), 0)

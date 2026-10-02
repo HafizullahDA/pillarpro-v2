@@ -28,17 +28,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .select('id, name')
       .eq('archived', false)
       .order('created_at', { ascending: false }),
-    supabase
-      .from('organizations')
-      .select('plan_tier, subscription_status, trial_ends_at, current_period_end, created_at')
-      .limit(1)
-      .maybeSingle(),
+    supabase.rpc('get_organization_profile'),
   ])
 
   const displayName = (user.user_metadata?.display_name as string | undefined) ?? user.email ?? 'User'
   const userRole = (roleData as string | null) ?? 'pending'
   const isSuperAdmin = await isPlatformAdmin(supabase, user.email)
-  const effectiveSub = getEffectiveSubscription(orgData)
+  const effectiveSub = getEffectiveSubscription(orgData as any)
 
   return (
     <IdleTimeoutProvider>

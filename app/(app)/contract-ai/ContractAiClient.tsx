@@ -302,61 +302,52 @@ export function ContractAiClient({
       {/* Main Container */}
       <div className="max-w-6xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-5 flex-1">
         {/* Project Selector & Metadata Bar */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col gap-3.5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                Active Project Under Audit
-              </label>
-              <p className="text-xs text-slate-400">
-                Switch contract site to analyze clauses, notices, and uncertified claims
-              </p>
-            </div>
-            <div className="w-full sm:w-80">
-              <select
-                value={selectedProjectId}
-                onChange={(e) => {
-                  setSelectedProjectId(e.target.value)
-                  setMessages([])
-                }}
-                className="w-full text-sm font-semibold text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-2xs cursor-pointer"
-              >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} {p.agency_name ? `(${p.agency_name})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Active Project Under Audit
+            </label>
+            <select
+              value={selectedProjectId}
+              onChange={(e) => {
+                setSelectedProjectId(e.target.value)
+                setMessages([])
+              }}
+              className="w-full sm:w-auto min-w-[280px] max-w-full text-sm font-semibold text-slate-900 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            >
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} {p.agency_name ? `(${p.agency_name})` : ''}
+                </option>
+              ))}
+            </select>
           </div>
 
           {selectedProject && (
-            <div className="border-t border-slate-100 pt-3.5">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200/80 text-xs">
-                <div className="min-w-0">
-                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Employer</p>
-                  <p className="font-semibold text-slate-800 truncate mt-0.5" title={selectedContract?.employer_name || selectedProject.agency_name || 'N/A'}>
-                    {selectedContract?.employer_name || selectedProject.agency_name || 'N/A'}
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Agreement No.</p>
-                  <p className="font-semibold text-slate-800 truncate mt-0.5" title={selectedContract?.agreement_number || 'N/A'}>
-                    {selectedContract?.agreement_number || 'N/A'}
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Awarded Value</p>
-                  <p className="font-semibold text-slate-800 tabular-nums mt-0.5">
-                    {formatINR(selectedProject.awarded_amount)}
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Stipulated End</p>
-                  <p className="font-semibold text-slate-800 mt-0.5">
-                    {formatDate(selectedContract?.stipulated_completion_date || selectedProject.end_date)}
-                  </p>
-                </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-xs">
+              <div>
+                <p className="text-[10px] text-slate-500 uppercase font-semibold">Employer</p>
+                <p className="font-bold text-slate-800 truncate">
+                  {selectedContract?.employer_name || selectedProject.agency_name || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-500 uppercase font-semibold">Agreement No.</p>
+                <p className="font-bold text-slate-800 truncate">
+                  {selectedContract?.agreement_number || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-500 uppercase font-semibold">Awarded Value</p>
+                <p className="font-bold text-slate-800 tabular-nums">
+                  {formatINR(selectedProject.awarded_amount)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-500 uppercase font-semibold">Stipulated End</p>
+                <p className="font-bold text-slate-800">
+                  {formatDate(selectedContract?.stipulated_completion_date || selectedProject.end_date)}
+                </p>
               </div>
             </div>
           )}

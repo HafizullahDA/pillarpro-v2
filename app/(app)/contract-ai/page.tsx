@@ -18,7 +18,7 @@ export default async function ContractAiPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
 
-  const [{ data: userRole }, { data: projects }, { data: contracts }, { data: orgData }] =
+  const [{ data: userRole }, { data: projectsData }, { data: orgData }] =
     await Promise.all([
       supabase.rpc('get_user_role'),
       supabase
@@ -26,30 +26,36 @@ export default async function ContractAiPage() {
         .select('id, name, agency_name, advertised_cost, awarded_amount, start_date, end_date, status, archived')
         .eq('archived', false)
         .order('created_at', { ascending: false }),
-      supabase
+      supabase.rpc('get_organization_profile'),
+    ])
+
+  const projects = Array.isArray(projectsData) ? projectsData : []
+  const projectIds = projects.map(p => p.id)
+
+  const contractsData = projectIds.length > 0
+    ? (await supabase
         .from('contracts')
         .select(
           'id, project_id, agreement_number, work_order_number, nit_number, employer_name, original_completion_date, current_completion_date'
-        ),
-      supabase
-        .from('organizations')
-        .select('plan_tier, subscription_status, trial_ends_at, current_period_end, created_at')
-        .limit(1)
-        .maybeSingle(),
-    ])
+        )
+        .in('project_id', projectIds)).data ?? []
+    : []
 
-  const effectiveSub = getEffectiveSubscription(orgData)
+  const effectiveSub = getEffectiveSubscription(orgData as any)
 
-  const mappedContracts = (contracts ?? []).map((c: any) => ({
-    id: c.id,
-    project_id: c.project_id,
-    contract_number: c.agreement_number || c.work_order_number || null,
-    agreement_number: c.agreement_number || null,
-    tender_number: c.nit_number || null,
-    employer_name: c.employer_name || null,
-    stipulated_completion_date: c.original_completion_date || null,
-    extended_completion_date: c.current_completion_date || null,
-  }))
+  const projectIdSet = new Set(projectIds)
+  const mappedContracts = (contractsData ?? [])
+    .filter((c: any) => projectIdSet.has(c.project_id))
+    .map((c: any) => ({
+      id: c.id,
+      project_id: c.project_id,
+      contract_number: c.agreement_number || c.work_order_number || null,
+      agreement_number: c.agreement_number || null,
+      tender_number: c.nit_number || null,
+      employer_name: c.employer_name || null,
+      stipulated_completion_date: c.original_completion_date || null,
+      extended_completion_date: c.current_completion_date || null,
+    }))
 
   return (
     <ContractAiClient
