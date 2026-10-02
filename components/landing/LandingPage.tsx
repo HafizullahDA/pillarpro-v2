@@ -167,7 +167,7 @@ export function LandingPage({
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                   </div>
                   <div className="px-3 py-1 bg-white border border-slate-200 rounded-md text-[11px] font-mono text-slate-600 max-w-xs w-full text-center truncate">
-                    app.pillarpro.in/contracts/nhai-pkg-04
+                    app.pillarprojk.com/contracts/nhai-pkg-04
                   </div>
                   <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />

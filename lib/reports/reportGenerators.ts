@@ -152,7 +152,7 @@ async function resolveReportMetadata(
     periodEnd: endDate || null,
     generatedAt,
     generatedByName: userProfile?.display_name || userProfile?.name || 'Authorized Engineer',
-    generatedByEmail: userProfile?.email || 'engineer@pillarpro.in',
+    generatedByEmail: userProfile?.email || 'engineer@pillarprojk.com',
     generatedByRole: (userProfile?.role || 'Staff').toUpperCase().replace(/_/g, ' '),
     preparedByTitle: 'Site Engineer (Incharge)',
     checkedByTitle: 'Billing Engineer / QS',

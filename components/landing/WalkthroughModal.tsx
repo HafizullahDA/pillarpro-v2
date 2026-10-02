@@ -34,7 +34,7 @@ const CHAPTERS: WalkthroughChapter[] = [
     ],
     speechText:
       'Welcome to PillarPro. In under three minutes, discover how modern civil contractors run their sites without billing leaks. First, import your tender BOQ with CPWD Schedule of Rates. PillarPro automatically organizes quantities by chainages and structures, giving your team complete financial control from day one.',
-    url: 'app.pillarpro.in/contracts/nhai-pkg-04/boq',
+    url: 'app.pillarprojk.com/contracts/nhai-pkg-04/boq',
   },
   {
     id: 'emb',
@@ -52,7 +52,7 @@ const CHAPTERS: WalkthroughChapter[] = [
     ],
     speechText:
       'Next, on-site execution. Field engineers record measurements directly into the digital e-MB on their phones. Enter length, breadth, and depth. Geotag photos of reinforcement and concrete pours. Even in remote highway trenches with zero internet, data saves locally and syncs automatically when back online.',
-    url: 'app.pillarpro.in/field/e-mb/entry-18250',
+    url: 'app.pillarprojk.com/field/e-mb/entry-18250',
   },
   {
     id: 'rabill',
@@ -70,7 +70,7 @@ const CHAPTERS: WalkthroughChapter[] = [
     ],
     speechText:
       'Billing day no longer takes two weeks of stressful reconciliation. Certified e-MB quantities flow directly into statutory CPWD Form 26. Deductions for 5% retention, mobilization advances, and 18% GST are calculated automatically. Export an audit-ready certified PDF ready for Executive Engineer signature.',
-    url: 'app.pillarpro.in/billing/ra-bills/bill-04/preview',
+    url: 'app.pillarprojk.com/billing/ra-bills/bill-04/preview',
   },
   {
     id: 'contractiq',
@@ -88,7 +88,7 @@ const CHAPTERS: WalkthroughChapter[] = [
     ],
     speechText:
       'Finally, protect your firm profit margins. When government departments delay site possession or drawings, ContractIQ drafts Extension of Time notices citing standard GCC clauses. Track statutory price escalation under Clause 10CC and monitor bank guarantees in real time.',
-    url: 'app.pillarpro.in/contract-iq/defense-copilot',
+    url: 'app.pillarprojk.com/contract-iq/defense-copilot',
   },
 ]
 
