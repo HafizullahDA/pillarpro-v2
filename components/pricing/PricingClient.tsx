@@ -971,7 +971,22 @@ export function PricingClient() {
             <Link href="/" className="hover:text-slate-900 transition-colors">Home</Link>
             <Link href="/sign-in" className="hover:text-slate-900 transition-colors">Sign In</Link>
             <Link href="/sign-up" className="hover:text-slate-900 transition-colors">Create Firm Workspace</Link>
-            <a href="mailto:contact@pillarprojk.com" className="hover:text-slate-900 transition-colors">Contact Us</a>
+            <a
+              href="mailto:contact@pillarprojk.com"
+              onClick={(e) => {
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                if (!isMobile) {
+                  e.preventDefault()
+                  window.open(
+                    'https://mail.google.com/mail/?view=cm&fs=1&to=contact@pillarprojk.com&su=Pricing%20Inquiry',
+                    '_blank'
+                  )
+                }
+              }}
+              className="hover:text-slate-900 transition-colors cursor-pointer"
+            >
+              Contact Us
+            </a>
             <Link href="/privacy" className="hover:text-slate-900 transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-slate-900 transition-colors">Terms of Service</Link>
             <span className="text-slate-400">© 2026 PillarPro. All rights reserved.</span>

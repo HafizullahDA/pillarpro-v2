@@ -86,3 +86,4 @@ BEGIN
   RETURN json_build_object('success', true, 'message', 'User deleted: ' || p_email, 'user_id', v_uid);
 END;
 $$;
+
