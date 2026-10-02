@@ -24,25 +24,7 @@ export function LandingPage({
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white">
-      {/* ── 1. TOP SYSTEM STATUS RIBBON ───────────────────────── */}
-      <div className="bg-[#ecfdf5] border-b border-[#a7f3d0] text-[#065f46] text-xs py-2 px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1 text-[11px] sm:text-xs font-medium">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span className="font-semibold">Field Engine v3.8 Active</span>
-            <span className="text-emerald-400">•</span>
-            <span className="text-emerald-800/90">Offline-first sync queue ready (Zero site data loss)</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-emerald-800">
-            <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            <span>All 8 site work fronts synchronized</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 2. MAIN NAVIGATION ─────────────────────────────────── */}
+      {/* ── 1. MAIN NAVIGATION ─────────────────────────────────── */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Brand Logo */}
@@ -171,26 +153,6 @@ export function LandingPage({
                   </svg>
                   Offline-first field sync
                 </span>
-              </div>
-
-              {/* Social Proof Card */}
-              <div className="pt-2">
-                <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex items-center gap-3.5 max-w-md">
-                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-300/40 flex items-center justify-center shrink-0">
-                    <span className="text-2xl" role="img" aria-label="engineer">👷‍♂️</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      TRUSTED BY EPC FIELD TEAMS
-                    </p>
-                    <p className="text-xs font-bold text-slate-900 mt-0.5">
-                      Deployed across 240+ Highway &amp; Canal Packages
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Average 18 days saved per RA bill submission cycle
-                    </p>
-                  </div>
-                </div>
               </div>
             </div>
 
