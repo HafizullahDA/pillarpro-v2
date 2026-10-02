@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Logo } from '@/components/ui/Logo'
 import { WalkthroughModal } from './WalkthroughModal'
+import { ContactModal } from './ContactModal'
 
 // Set your YouTube embed / Loom / MP4 video link here to automatically play in the walkthrough modal
 // e.g. "https://www.youtube-nocookie.com/embed/YOUR_VIDEO_ID?autoplay=1" or "/videos/walkthrough.mp4"
@@ -21,6 +22,7 @@ export function LandingPage({
   orgName,
 }: LandingPageProps) {
   const [walkthroughOpen, setWalkthroughOpen] = useState(false)
+  const [contactModalOpen, setContactModalOpen] = useState(false)
   const [previewTimeRange, setPreviewTimeRange] = useState<'month' | 'quarter' | 'all'>('month')
 
   return (
@@ -37,6 +39,7 @@ export function LandingPage({
             <a href="#statutory" className="hover:text-blue-600 transition-colors">Solutions</a>
             <Link href="/pricing" className="hover:text-blue-600 transition-colors">Pricing</Link>
             <a href="#impact" className="hover:text-blue-600 transition-colors">Resources</a>
+            <Link href="/contact" className="hover:text-blue-600 transition-colors">Contact</Link>
           </nav>
 
           {/* Right Actions */}
@@ -744,13 +747,10 @@ export function LandingPage({
                   <a
                     href="mailto:contact@pillarprojk.com"
                     onClick={(e) => {
-                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                      const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                       if (!isMobile) {
                         e.preventDefault()
-                        window.open(
-                          'https://mail.google.com/mail/?view=cm&fs=1&to=contact@pillarprojk.com&su=Inquiry%20regarding%20PillarPro',
-                          '_blank'
-                        )
+                        setContactModalOpen(true)
                       }
                     }}
                     className="hover:text-blue-600 transition-colors cursor-pointer"
@@ -762,13 +762,10 @@ export function LandingPage({
                   <a
                     href="mailto:contact@pillarprojk.com?subject=Documentation%20Request"
                     onClick={(e) => {
-                      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                      const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                       if (!isMobile) {
                         e.preventDefault()
-                        window.open(
-                          'https://mail.google.com/mail/?view=cm&fs=1&to=contact@pillarprojk.com&su=Documentation%20Request',
-                          '_blank'
-                        )
+                        setContactModalOpen(true)
                       }
                     }}
                     className="hover:text-blue-600 transition-colors cursor-pointer"
@@ -804,6 +801,12 @@ export function LandingPage({
         isOpen={walkthroughOpen}
         onClose={() => setWalkthroughOpen(false)}
         videoUrl={WALKTHROUGH_VIDEO_URL}
+      />
+
+      {/* ── 10. CONTACT MODAL ─────────────────────────────────── */}
+      <ContactModal
+        isOpen={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
       />
     </div>
   )

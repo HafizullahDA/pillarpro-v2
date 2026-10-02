@@ -13,6 +13,9 @@ export function ContactClient() {
   const [inquiryType, setInquiryType] = useState('General Inquiry')
   const [message, setMessage] = useState('')
 
+  const [submitted, setSubmitted] = useState(false)
+  const [draftLinks, setDraftLinks] = useState<{ gmail: string; mailto: string } | null>(null)
+
   const handleCopyEmail = () => {
     navigator.clipboard.writeText('contact@pillarprojk.com')
     setCopied(true)
@@ -21,16 +24,29 @@ export function ContactClient() {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const subject = encodeURIComponent(`[${inquiryType}] Inquiry from ${firmName || fullName || 'Contractor'}`)
-    const bodyText = encodeURIComponent(
+    const rawSubject = `[${inquiryType}] Inquiry from ${firmName || fullName || 'Contractor'}`
+    const rawBody =
       `Name: ${fullName || 'N/A'}\n` +
       `Firm / Company: ${firmName || 'N/A'}\n` +
       `Email: ${email || 'N/A'}\n` +
       `Phone: ${phone || 'N/A'}\n` +
       `Inquiry Type: ${inquiryType}\n\n` +
       `Message:\n${message || 'N/A'}\n`
-    )
-    window.location.href = `mailto:contact@pillarprojk.com?subject=${subject}&body=${bodyText}`
+
+    const subject = encodeURIComponent(rawSubject)
+    const bodyText = encodeURIComponent(rawBody)
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=contact@pillarprojk.com&su=${subject}&body=${bodyText}`
+    const mailtoUrl = `mailto:contact@pillarprojk.com?subject=${subject}&body=${bodyText}`
+
+    setDraftLinks({ gmail: gmailUrl, mailto: mailtoUrl })
+    setSubmitted(true)
+
+    const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
+      window.location.href = mailtoUrl
+    } else {
+      window.open(gmailUrl, '_blank')
+    }
   }
 
   return (
@@ -96,18 +112,29 @@ export function ContactClient() {
 
               <div className="space-y-2 pt-2 border-t border-slate-100">
                 <a
-                  href="mailto:contact@pillarprojk.com"
+                  href="https://mail.google.com/mail/?view=cm&fs=1&to=contact@pillarprojk.com&su=Inquiry%20regarding%20PillarPro"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-xs"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+                  </svg>
+                  <span>Compose in Gmail</span>
+                </a>
+                <a
+                  href="mailto:contact@pillarprojk.com?subject=Inquiry%20regarding%20PillarPro"
+                  className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  <span>Contact Us</span>
+                  <span>Open Default Mail App</span>
                 </a>
                 <button
                   type="button"
                   onClick={handleCopyEmail}
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors"
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
                 >
                   {copied ? (
                     <>
@@ -121,7 +148,7 @@ export function ContactClient() {
                       <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
-                      <span>Copy Email</span>
+                      <span>Copy Email (contact@pillarprojk.com)</span>
                     </>
                   )}
                 </button>
@@ -142,13 +169,21 @@ export function ContactClient() {
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-slate-100">
+              <div className="pt-2 border-t border-slate-100 space-y-1.5">
                 <a
-                  href="mailto:contact@pillarprojk.com?subject=Tender%20BOQ%20Onboarding%20Assistance"
+                  href="https://mail.google.com/mail/?view=cm&fs=1&to=contact@pillarprojk.com&su=Tender%20BOQ%20Onboarding%20Assistance"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors"
                 >
-                  <span>Request BOQ Setup Help</span>
+                  <span>Request BOQ Help via Gmail</span>
                   <span>→</span>
+                </a>
+                <a
+                  href="mailto:contact@pillarprojk.com?subject=Tender%20BOQ%20Onboarding%20Assistance"
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  <span>Or use Default Mail App</span>
                 </a>
               </div>
             </div>
@@ -167,13 +202,21 @@ export function ContactClient() {
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-slate-100">
+              <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                <a
+                  href="https://mail.google.com/mail/?view=cm&fs=1&to=contact@pillarprojk.com&su=Enterprise%20Multi-Package%20Inquiry"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 transition-colors"
+                >
+                  <span>Inquire via Gmail</span>
+                  <span>→</span>
+                </a>
                 <a
                   href="mailto:contact@pillarprojk.com?subject=Enterprise%20Multi-Package%20Inquiry"
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors"
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-slate-600 hover:text-slate-900 transition-colors"
                 >
-                  <span>Inquire for Enterprise</span>
-                  <span>→</span>
+                  <span>Or use Default Mail App</span>
                 </a>
               </div>
             </div>
@@ -281,13 +324,50 @@ export function ContactClient() {
                 />
               </div>
 
+              {submitted && draftLinks && (
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-slate-800 space-y-2 animate-in fade-in">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-800">
+                    <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Inquiry email draft prepared for contact@pillarprojk.com!</span>
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    If your email window did not open automatically, choose an option below:
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <a
+                      href={draftLinks.gmail}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                    >
+                      Open in Gmail Web →
+                    </a>
+                    <a
+                      href={draftLinks.mailto}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+                    >
+                      Open in Default Mail App
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleCopyEmail}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      {copied ? '✓ Copied' : 'Copy Email Address'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <p className="text-[11px] text-slate-500">
                   Clicking will open your email client pre-filled with your message details.
                 </p>
                 <button
                   type="submit"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm active:scale-95 transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm active:scale-95 transition-all cursor-pointer"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -306,7 +386,13 @@ export function ContactClient() {
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-800">PillarPro Technologies India Pvt. Ltd.</span>
             <span>•</span>
-            <a href="mailto:contact@pillarprojk.com" className="text-blue-600 hover:underline">Contact Us</a>
+            <button
+              type="button"
+              onClick={handleCopyEmail}
+              className="text-blue-600 hover:underline font-medium cursor-pointer"
+            >
+              {copied ? '✓ Email Copied' : 'contact@pillarprojk.com'}
+            </button>
           </div>
 
           <div className="flex items-center gap-6 text-[11px]">

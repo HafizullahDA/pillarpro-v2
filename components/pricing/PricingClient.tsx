@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Logo } from '@/components/ui/Logo'
+import { ContactModal } from '@/components/landing/ContactModal'
 
 // ── Icons ──────────────────────────────────────────────────────────
 function IconCheck({ className = 'w-4 h-4 text-emerald-600' }: { className?: string }) {
@@ -49,6 +50,7 @@ export function PricingClient() {
   // Default to Monthly as requested
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
   const [activeFaq, setActiveFaq] = useState<number | null>(0)
+  const [contactModalOpen, setContactModalOpen] = useState(false)
 
   // Interactive Calculator State
   const [calcSites, setCalcSites] = useState<number>(4)
@@ -131,6 +133,7 @@ export function PricingClient() {
             <a href="#calculator-section" className="hover:text-slate-900 transition-colors">Savings Calculator</a>
             <a href="#matrix" className="hover:text-slate-900 transition-colors">Feature Matrix</a>
             <a href="#faq" className="hover:text-slate-900 transition-colors">FAQ</a>
+            <Link href="/contact" className="hover:text-slate-900 transition-colors">Contact</Link>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -502,12 +505,20 @@ export function PricingClient() {
                   <span>Start 7-Day Free Trial</span>
                   <IconArrowRight className="w-4 h-4" />
                 </Link>
-                <a
-                  href="mailto:contact@pillarprojk.com?subject=Enterprise%20Infra%20Plan%20Inquiry"
-                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                <button
+                  type="button"
+                  onClick={() => {
+                    const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                    if (isMobile) {
+                      window.location.href = 'mailto:contact@pillarprojk.com?subject=Enterprise%20Infra%20Plan%20Inquiry'
+                    } else {
+                      setContactModalOpen(true)
+                    }
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
                 >
                   <span>Need custom tender capacity? Talk to Enterprise Team</span>
-                </a>
+                </button>
               </div>
             </div>
 
@@ -540,7 +551,20 @@ export function PricingClient() {
                 </div>
                 <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500 font-medium">
                   <span>Instant XML & ODBC Bridge</span>
-                  <a href="mailto:contact@pillarprojk.com?subject=Tally%20Prime%20Connector%20Addon" className="text-blue-600 hover:text-blue-800 font-bold">Inquire Addon →</a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                      if (isMobile) {
+                        window.location.href = 'mailto:contact@pillarprojk.com?subject=Tally%20Prime%20Connector%20Addon'
+                      } else {
+                        setContactModalOpen(true)
+                      }
+                    }}
+                    className="text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
+                  >
+                    Inquire Addon →
+                  </button>
                 </div>
               </div>
 
@@ -556,7 +580,20 @@ export function PricingClient() {
                 </div>
                 <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500 font-medium">
                   <span>100% Item-by-Item Verification</span>
-                  <a href="mailto:contact@pillarprojk.com?subject=Tender%20Digitization%20Addon" className="text-blue-600 hover:text-blue-800 font-bold">Book Tender Setup →</a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                      if (isMobile) {
+                        window.location.href = 'mailto:contact@pillarprojk.com?subject=Tender%20Digitization%20Addon'
+                      } else {
+                        setContactModalOpen(true)
+                      }
+                    }}
+                    className="text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
+                  >
+                    Book Tender Setup →
+                  </button>
                 </div>
               </div>
             </div>
@@ -968,13 +1005,10 @@ export function PricingClient() {
             <a
               href="mailto:contact@pillarprojk.com"
               onClick={(e) => {
-                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+                const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                 if (!isMobile) {
                   e.preventDefault()
-                  window.open(
-                    'https://mail.google.com/mail/?view=cm&fs=1&to=contact@pillarprojk.com&su=Pricing%20Inquiry',
-                    '_blank'
-                  )
+                  setContactModalOpen(true)
                 }
               }}
               className="hover:text-slate-900 transition-colors cursor-pointer"
@@ -987,6 +1021,12 @@ export function PricingClient() {
           </div>
         </div>
       </footer>
+
+      {/* ── Contact Modal ─────────────────────────────────────── */}
+      <ContactModal
+        isOpen={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+      />
     </div>
   )
 }
