@@ -41,14 +41,15 @@ export default async function EOTPage() {
           </Link>
         </div>
 
-        <EOTWorkbenchView
+        <EOTMasterView
+          initialCases={[]}
           projects={[]}
           contracts={[]}
           contractEvents={[]}
           hindrances={[]}
-          evidence={[]}
-          correspondence={[]}
-          initialCases={[]}
+          evidenceList={[]}
+          correspondenceList={[]}
+          selectedProjectId="all"
         />
       </div>
     )
