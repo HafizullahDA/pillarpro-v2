@@ -47,10 +47,12 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
   const [modalMode, setModalMode] = useState<'archive' | 'unarchive'>('archive')
   const [seeding, setSeeding] = useState(false)
   const [seedError, setSeedError] = useState('')
+  const [seedSuccess, setSeedSuccess] = useState(false)
 
   const handleSeedStarter = async () => {
     setSeeding(true)
     setSeedError('')
+    setSeedSuccess(false)
     try {
       const res = await fetch('/api/organization/seed-starter', {
         method: 'POST',
@@ -59,7 +61,10 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
       if (!res.ok || data.error) {
         throw new Error(data.error || 'Failed to seed sample project.')
       }
-      window.location.reload()
+      setSeedSuccess(true)
+      setTimeout(() => {
+        window.location.reload()
+      }, 700)
     } catch (err) {
       setSeedError(err instanceof Error ? err.message : 'Failed to seed sample project')
       setSeeding(false)
@@ -190,7 +195,7 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
               </p>
               <button
                 type="button"
-                disabled={seeding}
+                disabled={seeding || seedSuccess}
                 onClick={handleSeedStarter}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 disabled:opacity-50 transition-all shadow-xs"
               >
@@ -202,6 +207,13 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
                     </svg>
                     <span>Loading PMGSY Highway Package...</span>
                   </>
+                ) : seedSuccess ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Civil Package Loaded! Refreshing...</span>
+                  </>
                 ) : (
                   <>
                     <svg className="w-3.5 h-3.5 text-blue-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -212,9 +224,15 @@ export function ProjectsClient({ projects, userRole }: ProjectsClientProps) {
                 )}
               </button>
               {seedError && (
-                <p className="text-xs text-rose-600 font-medium">
-                  {seedError}
-                </p>
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 text-left flex items-start gap-2.5">
+                  <svg className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="font-semibold text-rose-800">Unable to load sample project</p>
+                    <p className="text-[11px] text-rose-600 mt-0.5 leading-relaxed">{seedError}</p>
+                  </div>
+                </div>
               )}
             </div>
           )}

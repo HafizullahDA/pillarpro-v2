@@ -20,10 +20,23 @@ export default async function ProjectsPage() {
       .order('created_at', { ascending: false }),
   ])
 
+  let resolvedRole = (userRole as string) ?? ''
+  if (!resolvedRole) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: roleRow } = await supabase
+        .from('roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      resolvedRole = roleRow?.role || 'owner'
+    }
+  }
+
   return (
     <ProjectsClient
       projects={(projects as ProjectRow[]) ?? []}
-      userRole={(userRole as string) ?? ''}
+      userRole={resolvedRole}
     />
   )
 }
