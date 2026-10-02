@@ -61,7 +61,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
                 Contact PillarPro
               </h3>
               <p className="text-xs text-slate-500">
-                Choose how you'd like to get in touch with our team:
+                Choose how you&apos;d like to get in touch with our team:
               </p>
             </div>
           </div>
