@@ -416,5 +416,9 @@ async function seedStarterDataDirectly(
     console.warn('contracts insert notice:', e)
   }
 
+  if (!projectId) {
+    throw new Error('Project ID was not generated.')
+  }
+
   return projectId
 }
