@@ -942,12 +942,6 @@ export function PricingClient() {
                 <span>Launch 7-Day Free Trial</span>
                 <IconArrowRight className="w-4 h-4" />
               </Link>
-              <a
-                href="mailto:contact@pillarprojk.com?subject=Contractor%20Demo%20Request"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200"
-              >
-                <span>Request Assisted Demo</span>
-              </a>
             </div>
             <p className="mt-5 text-[11px] text-slate-400">
               No credit card required • Official GST B2B Invoice • CPWD Clause 5 &amp; Form 26 Compliant
