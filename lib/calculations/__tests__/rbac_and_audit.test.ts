@@ -237,5 +237,35 @@ describe('Immutable Audit Trail Utilities', () => {
       color: 'orange',
       badgeVariant: 'warning',
     })
+    expect(formatAuditAction('RA_BILL_CREATED')).toEqual({
+      label: 'RA Bill Created',
+      color: 'emerald',
+      badgeVariant: 'success',
+    })
+    expect(formatAuditAction('RA_BILL_UPDATED')).toEqual({
+      label: 'RA Bill Amended',
+      color: 'amber',
+      badgeVariant: 'warning',
+    })
+    expect(formatAuditAction('SECURITY_DEPOSIT_CREATED')).toEqual({
+      label: 'Deposit / BG Pledged',
+      color: 'emerald',
+      badgeVariant: 'success',
+    })
+    expect(formatAuditAction('SECURITY_DEPOSIT_RELEASED')).toEqual({
+      label: 'Deposit / BG Released',
+      color: 'emerald',
+      badgeVariant: 'success',
+    })
+    expect(formatAuditAction('SUPPLIER_TRANSACTION_CREATED')).toEqual({
+      label: 'Ledger Entry Recorded',
+      color: 'emerald',
+      badgeVariant: 'success',
+    })
+    expect(formatAuditAction('SUPPLIER_TRANSACTION_UPDATED')).toEqual({
+      label: 'Ledger Entry Corrected',
+      color: 'amber',
+      badgeVariant: 'warning',
+    })
   })
 })

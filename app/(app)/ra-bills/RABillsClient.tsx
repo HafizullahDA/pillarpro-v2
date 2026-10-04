@@ -25,6 +25,7 @@ import { calculateUnbilledCertifiedWork } from '@/lib/calculations/measurementBi
 import { BillPreparationWizard } from '@/components/ra-bills/BillPreparationWizard'
 import { SupportingMeasurementsModal } from '@/components/ra-bills/SupportingMeasurementsModal'
 import { RABillDetailModal } from '@/components/ra-bills/RABillDetailModal'
+import { RecordActivityModal } from '@/components/audit/RecordActivityModal'
 
 // ════════════════════════════════════════════════════════════════════════
 // CONFIGURABLE THRESHOLD FOR EXPIRING BANK GUARANTEES (IN DAYS)
@@ -148,6 +149,8 @@ export function RABillsClient({
   const [editingBill, setEditingBill] = useState<RABillRow | null>(null)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [detailBill, setDetailBill] = useState<RABillRow | null>(null)
+  const [detailBillTab, setDetailBillTab] = useState<'details' | 'audit'>('details')
+  const [auditDeposit, setAuditDeposit] = useState<SecurityDepositRow | null>(null)
   const [supportingModalData, setSupportingModalData] = useState<{
     open: boolean
     raBillId: string
@@ -745,13 +748,21 @@ export function RABillsClient({
                     <th className="px-3 py-2.5 text-right">Amount</th>
                     <th className="px-3 py-2.5">Expiry Date</th>
                     <th className="px-3 py-2.5">Status</th>
+                    <th className="px-3 py-2.5 text-right">Audit</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredDeposits.map(sd => (
                     <tr key={sd.id} className="hover:bg-slate-50">
                       <td className="px-3 py-2.5 font-mono font-bold text-slate-900">
-                        {sd.reference_number}
+                        <button
+                          type="button"
+                          onClick={() => setAuditDeposit(sd)}
+                          className="hover:underline text-slate-900 font-bold hover:text-indigo-600 text-left"
+                          title="Click to view full BG audit history"
+                        >
+                          {sd.reference_number}
+                        </button>
                         {sd.document_url && (
                           <a
                             href={sd.document_url}
@@ -784,6 +795,19 @@ export function RABillsClient({
                         >
                           {sd.status}
                         </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => setAuditDeposit(sd)}
+                          title="View Bank Guarantee audit history & lifecycle"
+                          className="inline-flex items-center gap-1 text-[11px] py-1 px-2 rounded-lg text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 font-semibold transition-colors"
+                        >
+                          <svg className="w-3 h-3 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Audit
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -849,7 +873,17 @@ export function RABillsClient({
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-slate-900 text-sm">{b.bill_number}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDetailBill(b)
+                              setDetailBillTab('details')
+                            }}
+                            className="font-bold text-slate-900 text-sm hover:underline hover:text-indigo-600 text-left"
+                            title="Click to inspect bill breakdown"
+                          >
+                            {b.bill_number}
+                          </button>
                           {b.bill_type === 'final' && (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
                               Final Bill (Form 27-B)
@@ -942,6 +976,20 @@ export function RABillsClient({
                         </button>
                         <button
                           type="button"
+                          onClick={() => {
+                            setDetailBill(b)
+                            setDetailBillTab('audit')
+                          }}
+                          className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 font-semibold"
+                          title="View Bill Audit & Activity Trail"
+                        >
+                          <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Audit
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => openWhatsApp(generateRABillWhatsAppText(b, org))}
                           className="inline-flex items-center gap-1.5 text-xs py-1 px-2 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-semibold"
                           title="Share via WhatsApp"
@@ -1027,7 +1075,17 @@ export function RABillsClient({
                       {/* Bill Number */}
                       <td className="px-4 py-3.5">
                         <div className="font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
-                          {b.bill_number}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDetailBill(b)
+                              setDetailBillTab('details')
+                            }}
+                            className="font-bold text-slate-900 hover:text-indigo-600 hover:underline text-left"
+                            title="Click to view full bill details & breakdown"
+                          >
+                            {b.bill_number}
+                          </button>
                           {b.bill_type === 'final' && (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
                               Final Bill (Form 27-B)
@@ -1203,6 +1261,20 @@ export function RABillsClient({
                               Edit
                             </button>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDetailBill(b)
+                              setDetailBillTab('audit')
+                            }}
+                            title="View RA Bill Audit Trail & History"
+                            className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors font-semibold"
+                          >
+                            <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Audit
+                          </button>
                           {canCreate && derivedStatus !== 'fully_paid' ? (
                             <Button
                               size="sm"
@@ -1279,6 +1351,7 @@ export function RABillsClient({
           bill={detailBill}
           open={!!detailBill}
           onClose={() => setDetailBill(null)}
+          initialTab={detailBillTab}
           onPrintCertificate={(b) => {
             setCertBill(b)
           }}
@@ -1291,6 +1364,18 @@ export function RABillsClient({
           }}
           onCancelBill={handleCancelBill}
           canCancel={canCreate}
+        />
+      )}
+
+      {/* Security Deposit & BG Activity Audit Modal */}
+      {auditDeposit && (
+        <RecordActivityModal
+          open={!!auditDeposit}
+          onClose={() => setAuditDeposit(null)}
+          entityType="security_deposits"
+          entityId={auditDeposit.id}
+          title={`Bank Guarantee #${auditDeposit.reference_number} Audit Ledger`}
+          subtitle="Cryptographically sealed audit records for this security deposit (who changed what, when)."
         />
       )}
 

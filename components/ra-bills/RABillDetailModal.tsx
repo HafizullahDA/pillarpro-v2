@@ -1,11 +1,13 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { formatINR, formatDate } from '@/lib/format'
 import { RABillRow } from '@/app/(app)/ra-bills/RABillsClient'
 import { RelatedRecordsPanel, RelatedRecordItem } from '@/components/common/RelatedRecordsPanel'
+import { RecordActivityTimeline } from '@/components/audit/RecordActivityTimeline'
 
 interface RABillDetailModalProps {
   bill: RABillRow | null
@@ -16,6 +18,7 @@ interface RABillDetailModalProps {
   onPrintEMB?: (bill: RABillRow) => void
   onCancelBill?: (bill: RABillRow) => void
   canCancel?: boolean
+  initialTab?: 'details' | 'audit'
 }
 
 export function RABillDetailModal({
@@ -27,7 +30,16 @@ export function RABillDetailModal({
   onPrintEMB,
   onCancelBill,
   canCancel = false,
+  initialTab = 'details',
 }: RABillDetailModalProps) {
+  const [activeTab, setActiveTab] = useState<'details' | 'audit'>(initialTab)
+
+  useEffect(() => {
+    if (open) {
+      setActiveTab(initialTab)
+    }
+  }, [open, initialTab])
+
   if (!open || !bill) return null
 
   const isFinal = bill.bill_type === 'final'
@@ -54,7 +66,8 @@ export function RABillDetailModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={`RA Bill #${bill.bill_number} Detailed Breakdown`}
+      title={`RA Bill #${bill.bill_number} Detailed Breakdown & Audit`}
+      maxWidth="2xl"
     >
       <div className="space-y-4 text-left text-xs text-slate-700">
         {/* Header Ribbon */}
@@ -108,128 +121,170 @@ export function RABillDetailModal({
           </div>
         </div>
 
-        {/* Financial Realization Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 font-mono text-center">
-          <div>
-            <span className="text-[10px] text-slate-400 block font-sans uppercase font-bold">Gross Certified Work</span>
-            <span className="font-bold text-slate-900 text-sm">{formatINR(bill.work_certified_amount)}</span>
-          </div>
-          <div>
-            <span className="text-[10px] text-rose-500 block font-sans uppercase font-bold">Total Deductions</span>
-            <span className="font-bold text-rose-700 text-sm">-{formatINR(totalDeductions)}</span>
-          </div>
-          <div>
-            <span className="text-[10px] text-emerald-600 block font-sans uppercase font-bold">Net Bank Received</span>
-            <span className="font-bold text-emerald-800 text-sm">{formatINR(bill.net_bank_received || bill.amount_received)}</span>
-          </div>
-          <div>
-            <span className="text-[10px] text-amber-600 block font-sans uppercase font-bold">Outstanding Balance</span>
-            <span className="font-bold text-amber-800 text-sm">{formatINR(bill.outstanding_balance)}</span>
-          </div>
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-2 border-b border-slate-200 pt-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('details')}
+            className={`px-3 py-2 text-xs font-semibold border-b-2 transition-colors ${
+              activeTab === 'details'
+                ? 'border-slate-900 text-slate-900'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Bill Breakdown &amp; Recoveries
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('audit')}
+            className={`px-3 py-2 text-xs font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
+              activeTab === 'audit'
+                ? 'border-indigo-600 text-indigo-700 font-bold'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Activity History &amp; Audit Trail
+          </button>
         </div>
 
-        {/* Itemized Deductions & Statutory Recoveries */}
-        <div className="border border-slate-200 rounded-xl overflow-hidden">
-          <div className="bg-slate-100 px-3 py-2 text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-            Statutory & Contractual Recoveries Schedule
+        {activeTab === 'audit' ? (
+          <div className="py-2">
+            <RecordActivityTimeline
+              entityType="ra_bills"
+              entityId={bill.id}
+              title={`RA Bill #${bill.bill_number} Audit Ledger`}
+              subtitle="Full chronological provenance: who created, certified, or modified this bill and when."
+            />
           </div>
-          <div className="p-3 bg-white space-y-2 text-xs">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <div className="p-2 bg-slate-50 rounded border border-slate-100">
-                <span className="text-[10px] text-slate-400 block font-sans">Retention ({bill.retention_percentage || 5}%)</span>
-                <span className="font-mono font-bold text-slate-800">{formatINR(bill.retention_amount)}</span>
+        ) : (
+          <>
+            {/* Financial Realization Strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 font-mono text-center">
+              <div>
+                <span className="text-[10px] text-slate-400 block font-sans uppercase font-bold">Gross Certified Work</span>
+                <span className="font-bold text-slate-900 text-sm">{formatINR(bill.work_certified_amount)}</span>
               </div>
-              <div className="p-2 bg-slate-50 rounded border border-slate-100">
-                <span className="text-[10px] text-slate-400 block font-sans">Income Tax TDS (2%)</span>
-                <span className="font-mono font-bold text-slate-800">{formatINR(bill.tds_deducted || 0)}</span>
+              <div>
+                <span className="text-[10px] text-rose-500 block font-sans uppercase font-bold">Total Deductions</span>
+                <span className="font-bold text-rose-700 text-sm">-{formatINR(totalDeductions)}</span>
               </div>
-              <div className="p-2 bg-slate-50 rounded border border-slate-100">
-                <span className="text-[10px] text-slate-400 block font-sans">GST TDS (2%)</span>
-                <span className="font-mono font-bold text-slate-800">{formatINR(bill.gst_tds_deducted || 0)}</span>
+              <div>
+                <span className="text-[10px] text-emerald-600 block font-sans uppercase font-bold">Net Bank Received</span>
+                <span className="font-bold text-emerald-800 text-sm">{formatINR(bill.net_bank_received || bill.amount_received)}</span>
               </div>
-              <div className="p-2 bg-slate-50 rounded border border-slate-100">
-                <span className="text-[10px] text-slate-400 block font-sans">Labour Welfare Cess (1%)</span>
-                <span className="font-mono font-bold text-slate-800">{formatINR(bill.labour_cess_deducted || 0)}</span>
-              </div>
-              <div className="p-2 bg-slate-50 rounded border border-slate-100">
-                <span className="text-[10px] text-slate-400 block font-sans">Material Recovery (Cement/Steel)</span>
-                <span className="font-mono font-bold text-slate-800">
-                  {formatINR((bill.cement_recovery || 0) + (bill.steel_recovery || 0) + (bill.other_material_recovery || 0))}
-                </span>
-              </div>
-              <div className="p-2 bg-slate-50 rounded border border-slate-100">
-                <span className="text-[10px] text-slate-400 block font-sans">Other Recoveries</span>
-                <span className="font-mono font-bold text-slate-800">{formatINR(bill.other_deductions || 0)}</span>
+              <div>
+                <span className="text-[10px] text-amber-600 block font-sans uppercase font-bold">Outstanding Balance</span>
+                <span className="font-bold text-amber-800 text-sm">{formatINR(bill.outstanding_balance)}</span>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* UNIFIED RELATED RECORDS PANEL */}
-        <RelatedRecordsPanel
-          title="Traceable Related Records (RA Bill Audit Trail)"
-          description="Bidirectional links connecting this bill to Contract, BOQ, e-MB measurements, and payments."
-          records={[
-            {
-              id: bill.project_id,
-              type: 'project' as const,
-              title: bill.projects?.name || 'Project Master Record',
-              href: `/projects/${bill.project_id}`,
-            },
-            {
-              id: `contract-${bill.project_id}`,
-              type: 'contract' as const,
-              title: 'Contract Agreement & Clause Terms',
-              href: `/projects/${bill.project_id}/contract`,
-            },
-            {
-              id: `boq-${bill.project_id}`,
-              type: 'boq' as const,
-              title: 'Schedule of Quantities (BOQ)',
-              subtitle: 'Item-rate billing realization',
-              status: 'BOQ',
-              href: `/projects/${bill.project_id}/boq`,
-            },
-            {
-              id: `meas-${bill.id}`,
-              type: 'measurement' as const,
-              title: bill.mb_number ? `Measurement Book: ${bill.mb_number}` : 'e-MB Contemporary Measurements',
-              subtitle: bill.mb_page_start && bill.mb_page_end ? `Pages ${bill.mb_page_start} - ${bill.mb_page_end}` : 'Supporting measurement records',
-              status: 'e-MB',
-              href: `/measurement?projectId=${bill.project_id}`,
-            },
-            {
-              id: `var-${bill.project_id}`,
-              type: 'variation' as const,
-              title: 'Clause 12 Variations & Deviations',
-              subtitle: 'Sanctioned extra items & quantity deviation orders',
-              status: 'VARIATION',
-              href: `/variations?projectId=${bill.project_id}`,
-            },
-            {
-              id: `ledger-${bill.project_id}`,
-              type: 'payment' as const,
-              title: 'Financial Ledger & Bank Realization',
-              subtitle: `Net Bank Disbursed: ${formatINR(bill.net_bank_received || bill.amount_received)}`,
-              status: 'LEDGER',
-              href: `/ledgers?projectId=${bill.project_id}`,
-            },
-            {
-              id: `claims-${bill.project_id}`,
-              type: 'claim' as const,
-              title: 'Contractual Claims & Disputes',
-              subtitle: 'Delay damages & price escalation records',
-              status: 'DISPUTE',
-              href: `/claims?projectId=${bill.project_id}`,
-            },
-            ...(bill.document_url ? [{
-              id: `doc-${bill.id}`,
-              type: 'evidence' as const,
-              title: 'Signed Bill / Measurement Sheet Scan',
-              href: bill.document_url,
-            }] : []),
-          ]}
-        />
+            {/* Itemized Deductions & Statutory Recoveries */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden">
+              <div className="bg-slate-100 px-3 py-2 text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                Statutory &amp; Contractual Recoveries Schedule
+              </div>
+              <div className="p-3 bg-white space-y-2 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="p-2 bg-slate-50 rounded border border-slate-100">
+                    <span className="text-[10px] text-slate-400 block font-sans">Retention ({bill.retention_percentage || 5}%)</span>
+                    <span className="font-mono font-bold text-slate-800">{formatINR(bill.retention_amount)}</span>
+                  </div>
+                  <div className="p-2 bg-slate-50 rounded border border-slate-100">
+                    <span className="text-[10px] text-slate-400 block font-sans">Income Tax TDS (2%)</span>
+                    <span className="font-mono font-bold text-slate-800">{formatINR(bill.tds_deducted || 0)}</span>
+                  </div>
+                  <div className="p-2 bg-slate-50 rounded border border-slate-100">
+                    <span className="text-[10px] text-slate-400 block font-sans">GST TDS (2%)</span>
+                    <span className="font-mono font-bold text-slate-800">{formatINR(bill.gst_tds_deducted || 0)}</span>
+                  </div>
+                  <div className="p-2 bg-slate-50 rounded border border-slate-100">
+                    <span className="text-[10px] text-slate-400 block font-sans">Labour Welfare Cess (1%)</span>
+                    <span className="font-mono font-bold text-slate-800">{formatINR(bill.labour_cess_deducted || 0)}</span>
+                  </div>
+                  <div className="p-2 bg-slate-50 rounded border border-slate-100">
+                    <span className="text-[10px] text-slate-400 block font-sans">Material Recovery (Cement/Steel)</span>
+                    <span className="font-mono font-bold text-slate-800">
+                      {formatINR((bill.cement_recovery || 0) + (bill.steel_recovery || 0) + (bill.other_material_recovery || 0))}
+                    </span>
+                  </div>
+                  <div className="p-2 bg-slate-50 rounded border border-slate-100">
+                    <span className="text-[10px] text-slate-400 block font-sans">Other Recoveries</span>
+                    <span className="font-mono font-bold text-slate-800">{formatINR(bill.other_deductions || 0)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* UNIFIED RELATED RECORDS PANEL */}
+            <RelatedRecordsPanel
+              title="Traceable Related Records (RA Bill Audit Trail)"
+              description="Bidirectional links connecting this bill to Contract, BOQ, e-MB measurements, and payments."
+              records={[
+                {
+                  id: bill.project_id,
+                  type: 'project' as const,
+                  title: bill.projects?.name || 'Project Master Record',
+                  href: `/projects/${bill.project_id}`,
+                },
+                {
+                  id: `contract-${bill.project_id}`,
+                  type: 'contract' as const,
+                  title: 'Contract Agreement & Clause Terms',
+                  href: `/projects/${bill.project_id}/contract`,
+                },
+                {
+                  id: `boq-${bill.project_id}`,
+                  type: 'boq' as const,
+                  title: 'Schedule of Quantities (BOQ)',
+                  subtitle: 'Item-rate billing realization',
+                  status: 'BOQ',
+                  href: `/projects/${bill.project_id}/boq`,
+                },
+                {
+                  id: `meas-${bill.id}`,
+                  type: 'measurement' as const,
+                  title: bill.mb_number ? `Measurement Book: ${bill.mb_number}` : 'e-MB Contemporary Measurements',
+                  subtitle: bill.mb_page_start && bill.mb_page_end ? `Pages ${bill.mb_page_start} - ${bill.mb_page_end}` : 'Supporting measurement records',
+                  status: 'e-MB',
+                  href: `/measurement?projectId=${bill.project_id}`,
+                },
+                {
+                  id: `var-${bill.project_id}`,
+                  type: 'variation' as const,
+                  title: 'Clause 12 Variations & Deviations',
+                  subtitle: 'Sanctioned extra items & quantity deviation orders',
+                  status: 'VARIATION',
+                  href: `/variations?projectId=${bill.project_id}`,
+                },
+                {
+                  id: `ledger-${bill.project_id}`,
+                  type: 'payment' as const,
+                  title: 'Financial Ledger & Bank Realization',
+                  subtitle: `Net Bank Disbursed: ${formatINR(bill.net_bank_received || bill.amount_received)}`,
+                  status: 'LEDGER',
+                  href: `/ledgers?projectId=${bill.project_id}`,
+                },
+                {
+                  id: `claims-${bill.project_id}`,
+                  type: 'claim' as const,
+                  title: 'Contractual Claims & Disputes',
+                  subtitle: 'Delay damages & price escalation records',
+                  status: 'DISPUTE',
+                  href: `/claims?projectId=${bill.project_id}`,
+                },
+                ...(bill.document_url ? [{
+                  id: `doc-${bill.id}`,
+                  type: 'evidence' as const,
+                  title: 'Signed Bill / Measurement Sheet Scan',
+                  href: bill.document_url,
+                }] : []),
+              ]}
+            />
+          </>
+        )}
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-200">
