@@ -30,6 +30,7 @@ export type AuditActionType =
   | 'SUPPLIER_TRANSACTION_CREATED'
   | 'SUPPLIER_TRANSACTION_UPDATED'
   | 'SUPPLIER_TRANSACTION_DELETED'
+  | 'WHATSAPP_ALERT_SENT'
   | 'RECORD_CREATED'
   | 'RECORD_UPDATED'
   | 'RECORD_DELETED'
@@ -199,6 +200,8 @@ export function formatAuditAction(action: string): { label: string; color: strin
       return { label: 'Ledger Entry Corrected', color: 'amber', badgeVariant: 'warning' }
     case 'SUPPLIER_TRANSACTION_DELETED':
       return { label: 'Ledger Entry Deleted', color: 'rose', badgeVariant: 'danger' }
+    case 'WHATSAPP_ALERT_SENT':
+      return { label: 'WhatsApp Alert Dispatched', color: 'emerald', badgeVariant: 'success' }
     default:
       return {
         label: action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -254,3 +257,4 @@ export async function fetchEntityAuditLogs(
     return []
   }
 }
+

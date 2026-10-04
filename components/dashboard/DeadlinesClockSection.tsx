@@ -9,6 +9,7 @@ import {
   CorrespondenceSummary,
   EOTCaseSummary,
 } from './types'
+import { SendWhatsAppModal, WhatsAppAlertData } from '@/components/alerts/SendWhatsAppModal'
 
 interface DeadlinesClockProps {
   securityDeposits: SecurityDepositItem[]
@@ -25,6 +26,8 @@ interface DeadlineItem {
   category: 'BG' | 'COMPLETION' | 'DLP' | 'NOTICE' | 'EOT'
   href: string
   metaAmount?: number | null
+  rawBg?: SecurityDepositItem
+  rawNotice?: CorrespondenceSummary
 }
 
 export function DeadlinesClockSection({
@@ -34,6 +37,12 @@ export function DeadlinesClockSection({
   eotCases,
 }: DeadlinesClockProps) {
   const [filter, setFilter] = useState<'all' | 'bg' | 'contract' | 'dlp' | 'notice'>('all')
+  const [whatsAppModalState, setWhatsAppModalState] = useState<{
+    isOpen: boolean
+    alertType: 'bg_expiry' | 'clause_notice' | 'text'
+    title: string
+    data: WhatsAppAlertData
+  } | null>(null)
 
   const todayStr = new Date().toISOString().split('T')[0]
   const todayTimestamp = new Date(todayStr).getTime()
@@ -52,6 +61,7 @@ export function DeadlinesClockSection({
         category: 'BG',
         href: '/contracts',
         metaAmount: bg.amount,
+        rawBg: bg,
       })
     }
   }
@@ -98,6 +108,7 @@ export function DeadlinesClockSection({
         date: corr.response_deadline,
         category: 'NOTICE',
         href: '/correspondence',
+        rawNotice: corr,
       })
     }
   }
@@ -129,12 +140,51 @@ export function DeadlinesClockSection({
     return true
   })
 
-  // Urgent counts
-  const overdueCount = items.filter(i => i.date < todayStr).length
-  const dueWithin7Count = items.filter(i => {
-    const diffDays = Math.ceil((new Date(i.date).getTime() - todayTimestamp) / 86400000)
-    return diffDays >= 0 && diffDays <= 7
-  }).length
+  const handleTriggerWhatsApp = (item: DeadlineItem, diffDays: number) => {
+    if (item.category === 'BG' && item.rawBg) {
+      setWhatsAppModalState({
+        isOpen: true,
+        alertType: 'bg_expiry',
+        title: `Bank Guarantee Expiry Alert: ${item.rawBg.reference_number || 'Deposit'}`,
+        data: {
+          reference: item.rawBg.reference_number || 'Deposit',
+          depositType: item.rawBg.deposit_type,
+          amount: item.rawBg.amount,
+          issuingBank: item.rawBg.issuing_bank || undefined,
+          date: item.date,
+          daysRemaining: diffDays,
+          entityId: item.rawBg.id,
+          projectId: item.rawBg.project_id,
+        },
+      })
+    } else if (item.category === 'NOTICE' && item.rawNotice) {
+      setWhatsAppModalState({
+        isOpen: true,
+        alertType: 'clause_notice',
+        title: `Notice Deadline Alert: ${item.rawNotice.letter_number || item.rawNotice.reference_number}`,
+        data: {
+          reference: item.rawNotice.letter_number || item.rawNotice.reference_number,
+          subject: item.rawNotice.subject,
+          date: item.date,
+          daysRemaining: diffDays,
+          entityId: item.rawNotice.id,
+          projectId: item.rawNotice.project_id,
+        },
+      })
+    } else {
+      setWhatsAppModalState({
+        isOpen: true,
+        alertType: 'text',
+        title: item.title,
+        data: {
+          reference: item.title,
+          subtitle: item.subtitle,
+          date: item.date,
+          daysRemaining: diffDays,
+        },
+      })
+    }
+  }
 
   return (
     <div id="deadlines" className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
@@ -152,8 +202,30 @@ export function DeadlinesClockSection({
           </p>
         </div>
 
-        {/* Filter Pills */}
+        {/* Filter Pills & WhatsApp Test Action */}
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <button
+            type="button"
+            onClick={() => {
+              setWhatsAppModalState({
+                isOpen: true,
+                alertType: 'text',
+                title: 'PillarPro WhatsApp Cloud API Live Test',
+                data: {
+                  reference: 'Live Meta API Test Alert',
+                  subtitle: 'Meta Cloud API v22.0 Push Pipeline',
+                  date: todayStr,
+                  daysRemaining: 0,
+                },
+              })
+            }}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors mr-1 cursor-pointer"
+            title="Dispatch a live test alert to your WhatsApp number"
+          >
+            <span>💬</span>
+            <span>Test WhatsApp</span>
+          </button>
+
           <button
             onClick={() => setFilter('all')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${filter === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
@@ -204,10 +276,9 @@ export function DeadlinesClockSection({
             const isUrgent = diffDays > 0 && diffDays <= 7
 
             return (
-              <Link
+              <div
                 key={item.id}
-                href={item.href}
-                className={`group block p-3.5 rounded-xl border transition-all ${
+                className={`group flex flex-col justify-between p-3.5 rounded-xl border transition-all ${
                   isOverdue
                     ? 'border-red-300 bg-red-50/50 hover:bg-white hover:border-red-500 hover:shadow-xs'
                     : isDueToday
@@ -217,66 +288,101 @@ export function DeadlinesClockSection({
                     : 'border-slate-200 bg-slate-50 hover:bg-white hover:border-blue-400 hover:shadow-xs'
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <span
-                      className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider mb-1.5 ${
-                        item.category === 'BG'
-                          ? 'bg-indigo-100 text-indigo-800'
-                          : item.category === 'COMPLETION'
-                          ? 'bg-blue-100 text-blue-800'
-                          : item.category === 'DLP'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : item.category === 'NOTICE'
-                          ? 'bg-rose-100 text-rose-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}
-                    >
-                      {item.category === 'COMPLETION' ? 'Milestone' : item.category}
-                    </span>
-                    <h4 className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
-                      {item.title}
-                    </h4>
-                    <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                      {item.subtitle}
-                    </p>
-                  </div>
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <span
+                        className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider mb-1.5 ${
+                          item.category === 'BG'
+                            ? 'bg-indigo-100 text-indigo-800'
+                            : item.category === 'COMPLETION'
+                            ? 'bg-blue-100 text-blue-800'
+                            : item.category === 'DLP'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : item.category === 'NOTICE'
+                            ? 'bg-rose-100 text-rose-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {item.category === 'COMPLETION' ? 'Milestone' : item.category}
+                      </span>
+                      <Link
+                        href={item.href}
+                        className="block text-xs font-bold text-slate-900 line-clamp-1 hover:text-blue-600 transition-colors"
+                      >
+                        {item.title}
+                      </Link>
+                      <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                        {item.subtitle}
+                      </p>
+                    </div>
 
-                  {/* Countdown Badge */}
-                  <div className="shrink-0 text-right">
-                    {isOverdue ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 border border-red-300">
-                        {Math.abs(diffDays)}d overdue
+                    {/* Countdown Badge */}
+                    <div className="shrink-0 text-right">
+                      {isOverdue ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 border border-red-300">
+                          {Math.abs(diffDays)}d overdue
+                        </span>
+                      ) : isDueToday ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
+                          Due Today
+                        </span>
+                      ) : isUrgent ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 border border-orange-300">
+                          In {diffDays}d
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700">
+                          In {diffDays}d
+                        </span>
+                      )}
+                      <span className="block text-[10px] text-slate-400 mt-1 font-mono">
+                        {item.date}
                       </span>
-                    ) : isDueToday ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
-                        Due Today
-                      </span>
-                    ) : isUrgent ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 border border-orange-300">
-                        In {diffDays}d
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700">
-                        In {diffDays}d
-                      </span>
-                    )}
-                    <span className="block text-[10px] text-slate-400 mt-1 font-mono">
-                      {item.date}
-                    </span>
+                    </div>
                   </div>
                 </div>
 
-                {item.metaAmount != null && item.metaAmount > 0 && (
-                  <div className="border-t border-slate-100 pt-2 mt-2 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Security / Value</span>
-                    <span className="font-semibold text-slate-800 tabular-nums">{formatINR(item.metaAmount)}</span>
-                  </div>
-                )}
-              </Link>
+                {/* Card Footer with Amount & WhatsApp Action */}
+                <div className="border-t border-slate-100/90 pt-2.5 mt-3 flex items-center justify-between text-[11px] gap-2">
+                  {item.metaAmount != null && item.metaAmount > 0 ? (
+                    <div className="min-w-0">
+                      <span className="text-slate-400 text-[10px] block leading-none mb-0.5">Amount</span>
+                      <span className="font-semibold text-slate-800 tabular-nums">{formatINR(item.metaAmount)}</span>
+                    </div>
+                  ) : (
+                    <Link href={item.href} className="text-slate-400 hover:text-slate-600 text-[11px] font-medium">
+                      View Details →
+                    </Link>
+                  )}
+
+                  {(item.category === 'BG' || item.category === 'NOTICE') && (
+                    <button
+                      type="button"
+                      onClick={() => handleTriggerWhatsApp(item, diffDays)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 transition-colors shadow-2xs shrink-0 cursor-pointer"
+                      title="Dispatch real WhatsApp push alert to mobile"
+                    >
+                      <span>💬</span>
+                      <span>WhatsApp Alert</span>
+                    </button>
+                  )}
+                </div>
+              </div>
             )
           })}
         </div>
+      )}
+
+      {/* WhatsApp Dispatch Modal */}
+      {whatsAppModalState && (
+        <SendWhatsAppModal
+          isOpen={whatsAppModalState.isOpen}
+          onClose={() => setWhatsAppModalState(null)}
+          alertType={whatsAppModalState.alertType}
+          title={whatsAppModalState.title}
+          data={whatsAppModalState.data}
+        />
       )}
     </div>
   )
