@@ -131,28 +131,32 @@ Critical Guidelines:
       },
     }
 
-    // Primary: gemini-3.6-flash (optimized for complex tables and numerical OCR)
-    // Fallback: gemini-3.5-flash-lite
+    // Primary: gemini-3.8-flash (optimized for complex tables and numerical OCR)
+    // Fallbacks: gemini-flash-latest, gemini-3.5-flash, gemini-3.5-flash-lite
+    const configuredModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash'
+    const modelsToTry = [configuredModel, 'gemini-flash-latest', 'gemini-3.5-flash', 'gemini-3.5-flash-lite']
+
     let responseText = ''
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: [prompt, imagePart],
-        config: {
-          responseMimeType: 'application/json',
-        },
-      })
-      responseText = response.text?.trim() ?? ''
-    } catch (primaryErr: any) {
-      console.warn('gemini-3.6-flash failed for RA bill OCR, falling back to gemini-3.5-flash-lite:', primaryErr.message)
-      const fallbackResponse = await ai.models.generateContent({
-        model: 'gemini-3.5-flash-lite',
-        contents: [prompt, imagePart],
-        config: {
-          responseMimeType: 'application/json',
-        },
-      })
-      responseText = fallbackResponse.text?.trim() ?? ''
+    let lastErr: any = null
+    for (const model of modelsToTry) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: [prompt, imagePart],
+          config: {
+            responseMimeType: 'application/json',
+          },
+        })
+        responseText = response.text?.trim() ?? ''
+        if (responseText) break
+      } catch (err: any) {
+        lastErr = err
+        console.warn(`[RA Bill OCR] ${model} failed, trying fallback:`, err?.message || err)
+      }
+    }
+
+    if (!responseText) {
+      throw new AppError(`RA bill OCR failed across all models: ${lastErr?.message || 'Empty response'}`, 503)
     }
 
     const cleanJsonStr = responseText

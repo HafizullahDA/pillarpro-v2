@@ -111,15 +111,32 @@ Return valid JSON only. Do not format with markdown codeblocks or backticks.`
       },
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash-lite',
-      contents: [prompt, imagePart],
-      config: {
-        responseMimeType: 'application/json',
-      },
-    })
+    // Primary: gemini-3.8-flash; fallback across latest flash and legacy models
+    const configuredModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash'
+    const modelsToTry = [configuredModel, 'gemini-flash-latest', 'gemini-3.5-flash-lite']
 
-    const responseText = response.text?.trim() ?? ''
+    let responseText = ''
+    let lastErr: any = null
+    for (const model of modelsToTry) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: [prompt, imagePart],
+          config: {
+            responseMimeType: 'application/json',
+          },
+        })
+        responseText = response.text?.trim() ?? ''
+        if (responseText) break
+      } catch (err: any) {
+        lastErr = err
+        console.warn(`[Receipt OCR] ${model} failed, trying fallback:`, err?.message || err)
+      }
+    }
+
+    if (!responseText) {
+      throw new AppError(`Receipt OCR failed across all models: ${lastErr?.message || 'Empty response'}`, 503)
+    }
 
     // Clean JSON response (strip markdown wrappers if model added them)
     const cleanJsonStr = responseText

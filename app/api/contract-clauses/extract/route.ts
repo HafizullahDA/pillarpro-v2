@@ -145,24 +145,29 @@ Do NOT wrap the output in markdown fences or backticks. Return raw valid JSON on
       ]
     }
 
+    const configuredModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash'
+    const modelsToTry = [configuredModel, 'gemini-flash-latest', 'gemini-3.5-flash']
+
     let response: any
-    try {
-      response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents,
-        config: {
-          responseMimeType: 'application/json',
-        },
-      })
-    } catch (primaryErr: any) {
-      console.warn('gemini-3.6-flash failed for contract extraction, falling back to gemini-3.5-flash:', primaryErr?.message)
-      response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
-        contents,
-        config: {
-          responseMimeType: 'application/json',
-        },
-      })
+    let lastErr: any = null
+    for (const model of modelsToTry) {
+      try {
+        response = await ai.models.generateContent({
+          model,
+          contents,
+          config: {
+            responseMimeType: 'application/json',
+          },
+        })
+        if (response?.text) break
+      } catch (err: any) {
+        lastErr = err
+        console.warn(`[Contract Extraction] ${model} failed, trying fallback:`, err?.message || err)
+      }
+    }
+
+    if (!response?.text) {
+      throw new AppError(`Contract extraction failed across all models: ${lastErr?.message || 'Empty response'}`, 503)
     }
 
     const responseText = response.text?.trim() ?? ''
