@@ -13,7 +13,6 @@ import { DeadlineBadge } from './DeadlineBadge'
 import { RelatedRecordsPanel, RelatedRecordItem } from '@/components/common/RelatedRecordsPanel'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/Toast'
-import { SendWhatsAppModal } from '@/components/alerts/SendWhatsAppModal'
 
 interface CorrespondenceDetailModalProps {
   open: boolean
@@ -31,7 +30,6 @@ export function CorrespondenceDetailModal({
   const supabase = createClient()
   const { success, error: toastError } = useToast()
   const [updating, setUpdating] = useState(false)
-  const [whatsAppOpen, setWhatsAppOpen] = useState(false)
 
   if (!record) return null
 
@@ -253,30 +251,16 @@ export function CorrespondenceDetailModal({
 
         {/* Footer Actions */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-          <div className="flex items-center gap-2">
-            {record.response_required && record.response_deadline && (
-              <Button
-                size="sm"
-                type="button"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs inline-flex items-center gap-1.5"
-                onClick={() => setWhatsAppOpen(true)}
-              >
-                <span>💬</span>
-                <span>Push WhatsApp Alert</span>
-              </Button>
-            )}
-
-            {record.response_required && record.status !== 'RESPONDED' && record.status !== 'CLOSED' && (
-              <Button
-                size="sm"
-                disabled={updating}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
-                onClick={handleMarkResponded}
-              >
-                {updating ? 'Updating…' : '✓ Mark as Responded'}
-              </Button>
-            )}
-          </div>
+          {record.response_required && record.status !== 'RESPONDED' && record.status !== 'CLOSED' && (
+            <Button
+              size="sm"
+              disabled={updating}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+              onClick={handleMarkResponded}
+            >
+              {updating ? 'Updating…' : '✓ Mark as Responded'}
+            </Button>
+          )}
 
           <div className="flex items-center gap-2 ml-auto">
             <Button
@@ -289,25 +273,6 @@ export function CorrespondenceDetailModal({
           </div>
         </div>
       </div>
-
-      {whatsAppOpen && (
-        <SendWhatsAppModal
-          isOpen={whatsAppOpen}
-          onClose={() => setWhatsAppOpen(false)}
-          alertType="clause_notice"
-          title={`Notice Deadline Alert: ${record.letter_number || record.reference_number}`}
-          data={{
-            reference: record.letter_number || record.reference_number,
-            subject: record.subject,
-            date: record.response_deadline || undefined,
-            daysRemaining: record.response_deadline
-              ? Math.ceil((new Date(record.response_deadline).getTime() - Date.now()) / 86400000)
-              : undefined,
-            entityId: record.id,
-            projectId: record.project_id,
-          }}
-        />
-      )}
     </Modal>
   )
 }
