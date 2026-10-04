@@ -50,7 +50,7 @@ BEGIN
         (project_id, entry_type, amount, date, source_table, source_id, description, created_by)
       VALUES
         (NEW.project_id, 'income', NEW.net_bank_amount, NEW.payment_date,
-         'ra_bill_payments', NEW.id, v_desc, COALESCE(NEW.created_by, auth.uid()));
+         'ra_bill_payments', NEW.id, v_desc, auth.uid());
     END IF;
     RETURN NEW;
   END IF;
@@ -75,7 +75,7 @@ SELECT
   'ra_bill_payments',
   p.id,
   'RA Bill Payment (' || COALESCE(p.voucher_reference, 'Treasury Transfer') || ')',
-  p.created_by
+  NULL::uuid
 FROM public.ra_bill_payments p
 WHERE p.project_id IS NOT NULL
   AND NOT EXISTS (
