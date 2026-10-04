@@ -11,6 +11,9 @@
 -- PART 1: GAP 1 — RA BILL PAYMENTS TO CENTRAL LEDGER SYNCHRONIZATION
 -- ==============================================================================
 
+-- 1.0 Ensure created_by column exists on public.ra_bill_payments
+ALTER TABLE public.ra_bill_payments ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES auth.users(id);
+
 -- 1.1 Trigger function to sync public.ra_bill_payments -> public.ledger
 CREATE OR REPLACE FUNCTION public.ledger_from_ra_bill_payment()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -47,7 +50,7 @@ BEGIN
         (project_id, entry_type, amount, date, source_table, source_id, description, created_by)
       VALUES
         (NEW.project_id, 'income', NEW.net_bank_amount, NEW.payment_date,
-         'ra_bill_payments', NEW.id, v_desc, NEW.created_by);
+         'ra_bill_payments', NEW.id, v_desc, COALESCE(NEW.created_by, auth.uid()));
     END IF;
     RETURN NEW;
   END IF;
