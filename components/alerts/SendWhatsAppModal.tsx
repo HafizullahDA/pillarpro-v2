@@ -324,3 +324,4 @@ export function SendWhatsAppModal({
   )
 }
 
+export default SendWhatsAppModal
