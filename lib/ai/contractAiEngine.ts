@@ -129,12 +129,11 @@ export async function runContractAiQuery(
     parts: [{ text: userQuery }],
   })
 
-  // Primary model: gemini-3.8-flash (state-of-the-art accuracy & speed, verified active on API key)
-  // Fallbacks: gemini-flash-latest, gemini-3.5-flash
-  const configuredModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash'
-  const modelsToTry = [configuredModel, 'gemini-flash-latest', 'gemini-3.5-flash']
+  // Primary model: gemini-3.6-flash (state-of-the-art accuracy & speed, verified active on API key)
+  // Fallbacks: gemini-3.5-flash, gemini-flash-latest
+  const modelsToTry = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-flash-latest']
   let rawText = ''
-  let selectedModel = configuredModel
+  let selectedModel = 'gemini-3.6-flash'
   let lastError: any = null
 
   for (const model of modelsToTry) {

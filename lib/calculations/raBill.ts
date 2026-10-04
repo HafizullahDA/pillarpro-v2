@@ -5,6 +5,7 @@ export type ContractorEntityType = 'individual_proprietor' | 'company_firm'
 export interface StatutoryRates {
   contractorType?: ContractorEntityType // 'individual_proprietor' (1% TDS) or 'company_firm' (2% TDS)
   retentionPercent?: number // Contractual Security Deposit: typically 0%, 2.5%, 5%, or 10% (Default: 5%)
+  bgOffsetAmount?: number   // Submitted Bank Guarantee offsetting cash retention (CPWD GCC Clause 1A)
   itTdsPercent?: number     // Section 194C: 1% for Ind/Prop, 2% for Co/Firm (Default depends on contractorType)
   gstTdsPercent?: number    // Section 51: 2% on taxable contracts > ₹2.5L (Default: 2%)
   labourCessPercent?: number // 1% BOCW Labour Welfare Cess Act 1996 (Default: 1%)
@@ -13,6 +14,8 @@ export interface StatutoryRates {
 
 export interface StatutoryDeductionBreakdown {
   retention: number
+  grossRetentionRequired?: number
+  bgOffsetAmount?: number
   itTds: number
   gstTds: number
   labourCess: number
@@ -25,6 +28,7 @@ export interface StatutoryDeductionBreakdown {
  * Accurately accounts for Section 194C differential rates:
  * - 1% for Individuals and Sole Proprietorships
  * - 2% for Companies, Partnership Firms, and LLPs
+ * Also applies Bank Guarantee offsets against cash retention per CPWD GCC Clause 1A.
  */
 export function calculateStatutoryDeductions(
   grossAmount: number,
@@ -34,6 +38,8 @@ export function calculateStatutoryDeductions(
   if (gross === 0) {
     return {
       retention: 0,
+      grossRetentionRequired: 0,
+      bgOffsetAmount: 0,
       itTds: 0,
       gstTds: 0,
       labourCess: 0,
@@ -50,20 +56,49 @@ export function calculateStatutoryDeductions(
   const cessRate = (rates.labourCessPercent ?? 1) / 100
   const additional = Math.max(0, roundToTwo(rates.additionalDeductionsAmount ?? 0))
 
-  const retention = safeMul(gross, retRate)
+  const grossRetention = safeMul(gross, retRate)
+  const bgOffset = Math.min(grossRetention, Math.max(0, roundToTwo(rates.bgOffsetAmount ?? 0)))
+  const netRetention = Math.max(0, safeSub(grossRetention, bgOffset))
+
   const itTds = safeMul(gross, itRate)
   const gstTds = safeMul(gross, gstRate)
   const labourCess = safeMul(gross, cessRate)
 
-  const totalDeductions = safeAdd(retention, itTds, gstTds, labourCess, additional)
+  const totalDeductions = safeAdd(netRetention, itTds, gstTds, labourCess, additional)
 
   return {
-    retention,
+    retention: netRetention,
+    grossRetentionRequired: grossRetention,
+    bgOffsetAmount: bgOffset,
     itTds,
     gstTds,
     labourCess,
     additionalDeductions: additional,
     totalDeductions,
+  }
+}
+
+/**
+ * Calculates net cash retention withheld after offsetting submitted Bank Guarantees (CPWD GCC Clause 1A).
+ */
+export function calculateRetentionWithBgOffset(
+  grossAmount: number,
+  retentionPercent: number = 5,
+  bgAvailableAmount: number = 0
+): {
+  grossRetention: number
+  bgOffsetApplied: number
+  netRetentionWithheld: number
+} {
+  const gross = Math.max(0, roundToTwo(grossAmount))
+  const grossRetention = safeMul(gross, (retentionPercent || 0) / 100)
+  const bgOffsetApplied = Math.min(grossRetention, Math.max(0, roundToTwo(bgAvailableAmount)))
+  const netRetentionWithheld = Math.max(0, safeSub(grossRetention, bgOffsetApplied))
+
+  return {
+    grossRetention,
+    bgOffsetApplied,
+    netRetentionWithheld,
   }
 }
 

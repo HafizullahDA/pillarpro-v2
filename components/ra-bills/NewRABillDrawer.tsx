@@ -29,6 +29,10 @@ export interface EditRABillData {
   work_certified_amount: number
   retention_percentage?: number
   retention_amount?: number
+  bg_offset_amount?: number
+  bg_applied_id?: string | null
+  gross_retention_required?: number
+  net_retention_withheld?: number
   net_payable_amount?: number
   amount_received?: number
   cumulative_certified_amount?: number | null
@@ -118,6 +122,45 @@ export function NewRABillDrawer({
     dlp_months: '12',
     remarks: '',
   })
+
+  // CPWD GCC Clause 1A Bank Guarantee offset state
+  const [activeDeposits, setActiveDeposits] = useState<
+    { id: string; reference_number: string; amount: number; deposit_type: string; issuing_bank?: string | null }[]
+  >([])
+  const [selectedBgId, setSelectedBgId] = useState<string>('')
+  const [applyBgOffset, setApplyBgOffset] = useState<boolean>(true)
+
+  // Fetch active BGs / security deposits for BG offset per CPWD GCC Clause 1A
+  useEffect(() => {
+    if (!billForm.project_id) {
+      setActiveDeposits([])
+      setSelectedBgId('')
+      return
+    }
+    supabase
+      .from('security_deposits')
+      .select('id, reference_number, amount, deposit_type, issuing_bank')
+      .eq('project_id', billForm.project_id)
+      .eq('status', 'active')
+      .then(({ data }) => {
+        const bgs = (data || []).map(d => ({
+          id: d.id,
+          reference_number: d.reference_number,
+          amount: Number(d.amount) || 0,
+          deposit_type: d.deposit_type,
+          issuing_bank: d.issuing_bank,
+        }))
+        setActiveDeposits(bgs)
+        if (bgs.length > 0) {
+          if (editBill?.bg_applied_id && bgs.some(b => b.id === editBill.bg_applied_id)) {
+            setSelectedBgId(editBill.bg_applied_id)
+            setApplyBgOffset(true)
+          } else if (!selectedBgId) {
+            setSelectedBgId(bgs[0].id)
+          }
+        }
+      })
+  }, [billForm.project_id, supabase, editBill?.bg_applied_id, selectedBgId])
 
   // Load BOQ items whenever project_id changes and item_wise is active
   const loadBoqItems = useCallback(async (projectId: string) => {
@@ -304,11 +347,19 @@ export function NewRABillDrawer({
   const totalMatRecoveries = safeAdd(cementRecNum, steelRecNum, otherMatRecNum)
   const unmeasuredAdvNum = parseFloat(billForm.advance_payments_unmeasured) || 0
 
-  // Pure financial math derivations
-  const standaloneRetention = safeMul(certifiedNum, retentionPctNum / 100)
+  // Pure financial math derivations (with CPWD GCC Clause 1A Bank Guarantee offset)
+  const standaloneGrossRetention = safeMul(certifiedNum, retentionPctNum / 100)
+  const cumulativeGrossRetention = safeMul(certifiedNum, retentionPctNum / 100)
+  const grossRetention = isCumulative ? cumulativeGrossRetention : standaloneGrossRetention
+
+  const selectedBg = activeDeposits.find(d => d.id === selectedBgId) || (activeDeposits.length > 0 ? activeDeposits[0] : null)
+  const availableBgAmount = applyBgOffset && selectedBg ? Number(selectedBg.amount) || 0 : 0
+  const bgOffsetAmount = Math.min(grossRetention, availableBgAmount)
+  const netRetentionWithheld = Math.max(0, safeSub(grossRetention, bgOffsetAmount))
+
   const standaloneNetPayable = calculateRABillNetPayable({
     workCertified: certifiedNum,
-    totalDeductions: safeAdd(standaloneRetention, totalMatRecoveries),
+    totalDeductions: safeAdd(netRetentionWithheld, totalMatRecoveries),
   })
 
   // Cumulative calculation
@@ -316,14 +367,13 @@ export function NewRABillDrawer({
     currentCumulative: certifiedNum,
     previousCumulative: prevCertified,
   })
-  const cumulativeRetention = safeMul(certifiedNum, retentionPctNum / 100)
   const cumulativeNetPassed = calculateRABillNetPayable({
     workCertified: certifiedNum,
-    totalDeductions: safeAdd(cumulativeRetention, totalMatRecoveries),
+    totalDeductions: safeAdd(netRetentionWithheld, totalMatRecoveries),
   })
   const cumulativeNetPayableThisBill = Math.max(0, safeSub(cumulativeNetPassed, prevReceived))
 
-  const liveRetentionAmount = isCumulative ? cumulativeRetention : standaloneRetention
+  const liveRetentionAmount = netRetentionWithheld
   const liveNetPayable = Math.max(0, safeAdd(isCumulative ? cumulativeNetPayableThisBill : standaloneNetPayable, unmeasuredAdvNum))
   const thisBillCertified = isCumulative ? cumulativeThisBillCertified : certifiedNum
 
@@ -423,6 +473,11 @@ export function NewRABillDrawer({
           net_payable_this_bill: liveNetPayable,
           work_certified_amount: certifiedNum,
           retention_percentage: retentionPctNum,
+          retention_amount: netRetentionWithheld,
+          bg_offset_amount: bgOffsetAmount,
+          bg_applied_id: bgOffsetAmount > 0 ? (selectedBg?.id || null) : null,
+          gross_retention_required: grossRetention,
+          net_retention_withheld: netRetentionWithheld,
           remarks: billForm.remarks.trim() || null,
           billing_entry_mode: entryMode,
           // CPWA Code Citations & Recoveries
@@ -512,6 +567,11 @@ export function NewRABillDrawer({
           net_payable_this_bill: liveNetPayable,
           work_certified_amount: certifiedNum,
           retention_percentage: retentionPctNum,
+          retention_amount: netRetentionWithheld,
+          bg_offset_amount: bgOffsetAmount,
+          bg_applied_id: bgOffsetAmount > 0 ? (selectedBg?.id || null) : null,
+          gross_retention_required: grossRetention,
+          net_retention_withheld: netRetentionWithheld,
           amount_received: 0,
           status: 'submitted',
           document_url: documentUrl,
@@ -1123,12 +1183,75 @@ export function NewRABillDrawer({
               />
             </FieldWrapper>
 
-            <FieldWrapper label="Withheld Retention (₹)" hint="Auto-computed or held till DLP">
+            <FieldWrapper
+              label="Net Cash Withheld (₹)"
+              hint={bgOffsetAmount > 0 ? `Gross ₹${grossRetention.toLocaleString('en-IN')} - BG ₹${bgOffsetAmount.toLocaleString('en-IN')}` : 'Auto-computed or held till DLP'}
+            >
               <div className="h-10 px-3 flex items-center rounded-lg bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700">
                 {formatINR(liveRetentionAmount)}
               </div>
             </FieldWrapper>
           </div>
+
+          {/* CPWD GCC Clause 1A Bank Guarantee Offset Card */}
+          {activeDeposits.length > 0 && (
+            <div className="mt-2 p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-emerald-950">
+                  <input
+                    type="checkbox"
+                    checked={applyBgOffset}
+                    onChange={e => setApplyBgOffset(e.target.checked)}
+                    className="rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                  />
+                  <span>Offset Cash Retention with Bank Guarantee (CPWD GCC Clause 1A)</span>
+                </label>
+                {bgOffsetAmount > 0 && (
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                    Shield: {formatINR(bgOffsetAmount)}
+                  </span>
+                )}
+              </div>
+
+              {applyBgOffset && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 border-t border-emerald-200/60">
+                  <div>
+                    <label className="block text-[11px] font-medium text-emerald-900 mb-1">
+                      Submitted BG / Security Deposit
+                    </label>
+                    <select
+                      value={selectedBgId}
+                      onChange={e => setSelectedBgId(e.target.value)}
+                      className="w-full text-xs rounded-lg border-emerald-300 bg-white py-1.5 px-2 text-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    >
+                      {activeDeposits.map(d => (
+                        <option key={d.id} value={d.id}>
+                          {d.reference_number} ({formatINR(d.amount)}) {d.issuing_bank ? `- ${d.issuing_bank}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="text-[11px] text-emerald-800 flex flex-col justify-center bg-white/70 p-2 rounded-lg border border-emerald-100">
+                    <div className="flex justify-between">
+                      <span>Gross Required:</span>
+                      <span className="font-semibold">{formatINR(grossRetention)}</span>
+                    </div>
+                    <div className="flex justify-between text-emerald-700 font-bold">
+                      <span>BG Offset Applied:</span>
+                      <span>-{formatINR(bgOffsetAmount)}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-emerald-200 pt-0.5 mt-0.5 font-bold">
+                      <span>Cash Deducted:</span>
+                      <span className={netRetentionWithheld === 0 ? 'text-emerald-700' : 'text-slate-800'}>
+                        {netRetentionWithheld === 0 ? '₹0 (100% Protected Working Capital)' : formatINR(netRetentionWithheld)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* CPWA Code Recoveries & Unmeasured Advance (Form 26 Account III) */}
@@ -1272,8 +1395,14 @@ export function NewRABillDrawer({
             )}
             <div className="flex justify-between text-amber-700">
               <span>Item 5: Less Retention Withheld ({retentionPctNum}%):</span>
-              <span className="font-semibold">- {formatINR(standaloneRetention)}</span>
+              <span className="font-semibold">- {formatINR(netRetentionWithheld)}</span>
             </div>
+            {bgOffsetAmount > 0 && (
+              <div className="flex justify-between text-emerald-700 text-[11px]">
+                <span>&nbsp;&nbsp;↳ BG Offset Applied (Cl 1A):</span>
+                <span className="font-medium">+ {formatINR(bgOffsetAmount)} (Shielded)</span>
+              </div>
+            )}
             {cementRecNum > 0 && (
               <div className="flex justify-between text-amber-700">
                 <span>Item 8(a): Less Cement Recovery:</span>

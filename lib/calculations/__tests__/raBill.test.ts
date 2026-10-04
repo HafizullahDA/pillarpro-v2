@@ -57,6 +57,37 @@ describe('RA Bill Statutory Deductions & Net Payable Calculations', () => {
     expect(result.totalDeductions).toBe(360000)
   })
 
+  it('offsets cash retention against active Bank Guarantees per CPWD GCC Clause 1A', () => {
+    const gross = 5000000 // ₹50 Lakhs certified bill (5% retention = ₹2.5 Lakhs)
+    
+    // Scenario 1: Active BG fully covers required retention
+    const fullyCovered = calculateStatutoryDeductions(gross, {
+      retentionPercent: 5,
+      bgOffsetAmount: 250000, // ₹2.5L Bank Guarantee submitted
+      itTdsPercent: 2,
+      gstTdsPercent: 2,
+      labourCessPercent: 1,
+    })
+
+    expect(fullyCovered.grossRetentionRequired).toBe(250000)
+    expect(fullyCovered.bgOffsetAmount).toBe(250000)
+    expect(fullyCovered.retention).toBe(0) // Net cash retention withheld = ₹0
+    expect(fullyCovered.totalDeductions).toBe(250000) // Only IT (1L) + GST (1L) + Cess (50k) = ₹2.5L, NO cash retention deducted!
+
+    // Scenario 2: Active BG partially covers retention (e.g. ₹1.5L BG against ₹2.5L required)
+    const partiallyCovered = calculateStatutoryDeductions(gross, {
+      retentionPercent: 5,
+      bgOffsetAmount: 150000,
+      itTdsPercent: 2,
+      gstTdsPercent: 2,
+      labourCessPercent: 1,
+    })
+
+    expect(partiallyCovered.grossRetentionRequired).toBe(250000)
+    expect(partiallyCovered.bgOffsetAmount).toBe(150000)
+    expect(partiallyCovered.retention).toBe(100000) // ₹2.5L - ₹1.5L = ₹1 Lakh cash withheld
+  })
+
   it('correctly calculates net bill payable after deductions', () => {
     const workCertified = 4550000 // ₹45.5 Lakhs
     const totalDeductions = 455000 // ₹4.55 Lakhs (10%)

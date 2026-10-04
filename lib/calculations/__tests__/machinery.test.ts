@@ -68,6 +68,32 @@ describe('Machinery & Diesel Log Validation', () => {
     const result = createMachineryLogSchema.safeParse(invalidLog)
     expect(result.success).toBe(false)
   })
+
+  it('correctly sets fuel_source defaults and validates custom sources', () => {
+    const defaultSourceLog = {
+      asset_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+      log_date: '2026-09-19',
+      start_meter: 100,
+      end_meter: 110,
+      diesel_liters: 20,
+      diesel_rate_per_liter: 90,
+    }
+    const defaultRes = createMachineryLogSchema.safeParse(defaultSourceLog)
+    expect(defaultRes.success).toBe(true)
+    if (defaultRes.success) {
+      expect(defaultRes.data.fuel_source).toBe('site_tank')
+    }
+
+    const cashLog = {
+      ...defaultSourceLog,
+      fuel_source: 'cash_direct',
+    }
+    const cashRes = createMachineryLogSchema.safeParse(cashLog)
+    expect(cashRes.success).toBe(true)
+    if (cashRes.success) {
+      expect(cashRes.data.fuel_source).toBe('cash_direct')
+    }
+  })
 })
 
 describe('Machinery Shift Working Hours (Clock Time Engine)', () => {

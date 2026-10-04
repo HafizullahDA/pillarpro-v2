@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -59,6 +59,36 @@ export function BillPreparationWizard({
   const [billType, setBillType] = useState<'running' | 'first_and_final' | 'final'>('running')
   const [submissionDate, setSubmissionDate] = useState(new Date().toISOString().split('T')[0])
   const [retentionPercent, setRetentionPercent] = useState('5.00')
+
+  // CPWD GCC Clause 1A Bank Guarantee offset state
+  const [activeDeposits, setActiveDeposits] = useState<
+    { id: string; reference_number: string; amount: number; deposit_type: string; issuing_bank?: string | null }[]
+  >([])
+  const [selectedBgId, setSelectedBgId] = useState<string>('')
+  const [applyBgOffset, setApplyBgOffset] = useState<boolean>(true)
+
+  // Fetch active BGs for project per CPWD GCC Clause 1A
+  useEffect(() => {
+    if (!selectedProjectId) return
+    supabase
+      .from('security_deposits')
+      .select('id, reference_number, amount, deposit_type, issuing_bank')
+      .eq('project_id', selectedProjectId)
+      .eq('status', 'active')
+      .then(({ data }) => {
+        const bgs = (data || []).map(d => ({
+          id: d.id,
+          reference_number: d.reference_number,
+          amount: Number(d.amount) || 0,
+          deposit_type: d.deposit_type,
+          issuing_bank: d.issuing_bank,
+        }))
+        setActiveDeposits(bgs)
+        if (bgs.length > 0 && !selectedBgId) {
+          setSelectedBgId(bgs[0].id)
+        }
+      })
+  }, [selectedProjectId, supabase, selectedBgId])
 
   // Step 2: Selected Measurement Entries
   const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set())
@@ -151,13 +181,17 @@ export function BillPreparationWizard({
     return calculatedBreakdowns.reduce((sum, b) => sum + b.current_amount, 0)
   }, [calculatedBreakdowns])
 
-  // Statutory deductions preview
+  const selectedBg = activeDeposits.find(d => d.id === selectedBgId) || (activeDeposits.length > 0 ? activeDeposits[0] : null)
+  const availableBgAmount = applyBgOffset && selectedBg ? Number(selectedBg.amount) || 0 : 0
+
+  // Statutory deductions preview (with CPWD GCC Clause 1A Bank Guarantee offset)
   const deductions = useMemo(() => {
     return calculateStatutoryDeductions(totalWorkCertified, {
       retentionPercent: parseFloat(retentionPercent) || 5,
+      bgOffsetAmount: availableBgAmount,
       contractorType: 'company_firm',
     })
-  }, [totalWorkCertified, retentionPercent])
+  }, [totalWorkCertified, retentionPercent, availableBgAmount])
 
   const netPayable = useMemo(() => {
     return calculateRABillNetPayable({
@@ -214,6 +248,10 @@ export function BillPreparationWizard({
           this_bill_work_certified: totalWorkCertified,
           retention_percentage: parseFloat(retentionPercent) || 5,
           retention_amount: deductions.retention,
+          bg_offset_amount: deductions.bgOffsetAmount || 0,
+          bg_applied_id: (deductions.bgOffsetAmount || 0) > 0 ? (selectedBg?.id || null) : null,
+          gross_retention_required: deductions.grossRetentionRequired || deductions.retention,
+          net_retention_withheld: deductions.retention,
           net_payable_amount: netPayable,
           net_payable_this_bill: netPayable,
           tds_deducted: deductions.itTds,
@@ -634,6 +672,66 @@ export function BillPreparationWizard({
                 </div>
               </div>
             </div>
+
+            {/* CPWD GCC Clause 1A Bank Guarantee Offset Card */}
+            {activeDeposits.length > 0 && (
+              <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-emerald-950">
+                    <input
+                      type="checkbox"
+                      checked={applyBgOffset}
+                      onChange={e => setApplyBgOffset(e.target.checked)}
+                      className="rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span>Offset Cash Retention with Bank Guarantee (CPWD GCC Clause 1A)</span>
+                  </label>
+                  {(deductions.bgOffsetAmount || 0) > 0 && (
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                      Shielded: {formatINR(deductions.bgOffsetAmount || 0)}
+                    </span>
+                  )}
+                </div>
+
+                {applyBgOffset && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 border-t border-emerald-200/60">
+                    <div>
+                      <label className="block text-[11px] font-medium text-emerald-900 mb-1">
+                        Select Submitted BG / Security Deposit
+                      </label>
+                      <select
+                        value={selectedBgId}
+                        onChange={e => setSelectedBgId(e.target.value)}
+                        className="w-full text-xs rounded-lg border-emerald-300 bg-white py-1.5 px-2 text-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                      >
+                        {activeDeposits.map(d => (
+                          <option key={d.id} value={d.id}>
+                            {d.reference_number} ({formatINR(d.amount)}) {d.issuing_bank ? `- ${d.issuing_bank}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="text-[11px] text-emerald-800 flex flex-col justify-center bg-white/70 p-2 rounded-lg border border-emerald-100">
+                      <div className="flex justify-between">
+                        <span>Contractual Retention:</span>
+                        <span className="font-semibold">{formatINR(deductions.grossRetentionRequired || deductions.retention)}</span>
+                      </div>
+                      <div className="flex justify-between text-emerald-700 font-bold">
+                        <span>BG Credit Offset:</span>
+                        <span>-{formatINR(deductions.bgOffsetAmount || 0)}</span>
+                      </div>
+                      <div className="flex justify-between border-t border-emerald-200 pt-0.5 mt-0.5 font-bold">
+                        <span>Cash Withheld:</span>
+                        <span className={deductions.retention === 0 ? 'text-emerald-700' : 'text-slate-800'}>
+                          {deductions.retention === 0 ? '₹0 (100% Protected Working Capital)' : formatINR(deductions.retention)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Audit & Compliance Confirmation */}
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-900 space-y-1">

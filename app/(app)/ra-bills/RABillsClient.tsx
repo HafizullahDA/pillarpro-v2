@@ -50,6 +50,10 @@ export type RABillRow = {
   work_certified_amount: number
   retention_percentage: number
   retention_amount: number
+  bg_offset_amount?: number
+  bg_applied_id?: string | null
+  gross_retention_required?: number
+  net_retention_withheld?: number
   net_payable_amount: number
   amount_received: number
   tds_deducted?: number
@@ -284,7 +288,9 @@ export function RABillsClient({
       const isCum = b.billing_mode === 'cumulative'
       if (isCum && b.this_bill_work_certified != null) {
         const retPct = Number(b.retention_percentage) || 5
-        return s + (Math.round((Number(b.this_bill_work_certified) * retPct) / 100 * 100) / 100)
+        const grossRet = Math.round((Number(b.this_bill_work_certified) * retPct) / 100 * 100) / 100
+        const bgOffset = Number(b.bg_offset_amount) || 0
+        return s + Math.max(0, grossRet - bgOffset)
       }
       return s + (Number(b.retention_amount) || 0)
     }, 0)
@@ -368,6 +374,10 @@ export function RABillsClient({
         work_certified_amount: Number(b.work_certified_amount) || 0,
         retention_percentage: Number(b.retention_percentage) || 0,
         retention_amount: Number(b.retention_amount) || 0,
+        bg_offset_amount: Number(b.bg_offset_amount) || 0,
+        bg_applied_id: b.bg_applied_id || null,
+        gross_retention_required: Number(b.gross_retention_required) || 0,
+        net_retention_withheld: Number(b.net_retention_withheld) || 0,
         net_payable_amount: netPassed,
         amount_received: Number(b.amount_received) || 0,
         tds_deducted: Number(b.tds_deducted) || 0,
@@ -1086,10 +1096,17 @@ export function RABillsClient({
                       <td className="px-4 py-3.5 text-right hidden sm:table-cell tabular-nums whitespace-nowrap">
                         <div className="text-amber-800 font-medium">
                           {isCum && b.this_bill_work_certified != null
-                            ? formatINR(Math.round((Number(b.this_bill_work_certified) * (Number(b.retention_percentage) || 5)) / 100 * 100) / 100)
+                            ? formatINR(Math.max(0, Math.round((Number(b.this_bill_work_certified) * (Number(b.retention_percentage) || 5)) / 100 * 100) / 100 - (Number(b.bg_offset_amount) || 0)))
                             : formatINR(b.retention_amount)}
                         </div>
                         <div className="text-[11px] text-slate-400 font-mono">({b.retention_percentage}%)</div>
+                        {Number(b.bg_offset_amount) > 0 && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              🛡️ BG: -{formatINR(Number(b.bg_offset_amount))}
+                            </span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Net Payable */}

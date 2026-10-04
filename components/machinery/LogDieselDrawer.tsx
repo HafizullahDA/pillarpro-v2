@@ -66,6 +66,7 @@ export function LogDieselDrawer({
     work_description: '',
     diesel_liters: '0',
     diesel_rate_per_liter: '90', // Default realistic diesel rate ₹90/L
+    fuel_source: 'site_tank' as 'site_tank' | 'cash_direct' | 'credit_supplier',
     fuel_vendor: '',
   })
 
@@ -157,6 +158,7 @@ export function LogDieselDrawer({
       work_description: workDesc || undefined,
       diesel_liters: Number(form.diesel_liters),
       diesel_rate_per_liter: Number(form.diesel_rate_per_liter),
+      fuel_source: form.fuel_source,
       project_id: form.project_id || undefined,
     })
 
@@ -180,6 +182,7 @@ export function LogDieselDrawer({
       work_description: workDesc || null,
       diesel_liters: Number(form.diesel_liters) || 0,
       diesel_rate_per_liter: Number(form.diesel_rate_per_liter) || 0,
+      fuel_source: form.fuel_source,
       fuel_vendor: form.fuel_vendor.trim() || null,
       is_offline: true,
     }
@@ -224,6 +227,28 @@ export function LogDieselDrawer({
       return
     }
 
+    // Gap 2 Deduplication: If fuel is paid directly in cash on site, auto-create a linked expense voucher
+    let linkedExpenseId: string | null = null
+    if (form.fuel_source === 'cash_direct' && totalFuelCost > 0) {
+      try {
+        const { data: expData } = await supabase.from('expenses').insert({
+          organization_id: orgId,
+          project_id: form.project_id || null,
+          category: 'fuel',
+          amount: totalFuelCost,
+          date: form.log_date,
+          description: `Diesel (${dieselLiters}L @ ₹${dieselRate}/L) for ${selectedAsset?.asset_name || 'machinery'}${form.fuel_vendor ? ` via ${form.fuel_vendor}` : ''}`,
+          payment_mode: 'cash',
+        }).select('id').single()
+
+        if (expData?.id) {
+          linkedExpenseId = expData.id
+        }
+      } catch (expErr) {
+        console.warn('Could not auto-create linked cash fuel expense:', expErr)
+      }
+    }
+
     const { data: insertedLog, error: insertErr } = await supabase.from('machinery_logs').insert({
       organization_id: orgId,
       asset_id: resolvedAssetId,
@@ -235,6 +260,8 @@ export function LogDieselDrawer({
       work_description: workDesc || null,
       diesel_liters: Number(form.diesel_liters) || 0,
       diesel_rate_per_liter: Number(form.diesel_rate_per_liter) || 0,
+      fuel_source: form.fuel_source,
+      linked_expense_id: linkedExpenseId,
       fuel_vendor: form.fuel_vendor.trim() || null,
     })
     .select('id, asset_id, project_id, log_date, operator_name, start_meter, end_meter, total_run, work_description, diesel_liters, diesel_rate_per_liter, diesel_cost, fuel_vendor, machinery_assets(asset_name, registration_number, meter_tracking), projects(name)')
@@ -526,6 +553,59 @@ export function LogDieselDrawer({
             <span className="text-amber-800 font-bold">
               Cost: {formatINR(totalFuelCost)}
             </span>
+          </div>
+
+          {/* Fuel Source Selector (Gap 2 Deduplication) */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Fuel Source & Payment Mode
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setField('fuel_source', 'site_tank')}
+                className={`px-2 py-2 rounded-lg text-xs font-medium border text-center transition-all ${
+                  form.fuel_source === 'site_tank'
+                    ? 'bg-amber-100 border-amber-400 text-amber-900 font-semibold shadow-xs'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <div className="text-base mb-0.5">⛽</div>
+                <div className="leading-tight">Site Tank</div>
+                <div className="text-[10px] text-slate-400 font-normal mt-0.5">Pre-purchased</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setField('fuel_source', 'cash_direct')}
+                className={`px-2 py-2 rounded-lg text-xs font-medium border text-center transition-all ${
+                  form.fuel_source === 'cash_direct'
+                    ? 'bg-emerald-100 border-emerald-400 text-emerald-900 font-semibold shadow-xs'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <div className="text-base mb-0.5">💵</div>
+                <div className="leading-tight">Cash on Site</div>
+                <div className="text-[10px] text-emerald-600 font-normal mt-0.5">Auto-expense</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setField('fuel_source', 'credit_supplier')}
+                className={`px-2 py-2 rounded-lg text-xs font-medium border text-center transition-all ${
+                  form.fuel_source === 'credit_supplier'
+                    ? 'bg-blue-100 border-blue-400 text-blue-900 font-semibold shadow-xs'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <div className="text-base mb-0.5">📋</div>
+                <div className="leading-tight">Credit Slip</div>
+                <div className="text-[10px] text-blue-600 font-normal mt-0.5">Pump ledger</div>
+              </button>
+            </div>
+            <p className="text-[11px] mt-1.5 text-slate-500">
+              {form.fuel_source === 'site_tank' && '⛽ Dispensed from site stock. Tracks machine consumption without double-booking cash expenses.'}
+              {form.fuel_source === 'cash_direct' && '💵 Immediate site cash payment. Automatically records a linked fuel expense voucher in your cash ledger.'}
+              {form.fuel_source === 'credit_supplier' && '📋 Credit slip from petrol pump. Settled via supplier ledger without duplicate cash booking.'}
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

@@ -48,6 +48,9 @@ export const createMachineryLogSchema = z.object({
   work_description: z.string().trim().max(500).optional().or(z.literal('')),
   diesel_liters: z.coerce.number().min(0, 'Diesel quantity cannot be negative.').default(0),
   diesel_rate_per_liter: z.coerce.number().min(0, 'Diesel rate cannot be negative.').default(0),
+  fuel_source: z.enum(['site_tank', 'cash_direct', 'credit_supplier']).default('site_tank'),
+  linked_expense_id: z.string().uuid().optional().or(z.literal('')),
+  linked_supplier_tx_id: z.string().uuid().optional().or(z.literal('')),
   fuel_vendor: z.string().trim().max(150).optional().or(z.literal('')),
   fuel_slip_url: z.string().url().optional().or(z.literal('')),
 }).refine(data => data.end_meter >= data.start_meter, {

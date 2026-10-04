@@ -25,7 +25,7 @@ if (!apiKey) {
   process.exit(1);
 }
 
-console.log('Testing Gemini API key with gemini-3.8-flash...');
+console.log('Testing Gemini API key with gemini-3.6-flash...');
 const ai = new GoogleGenAI({ apiKey });
 
 // Realistic contractor scenario for NHAI / State PWD highway project
@@ -110,40 +110,21 @@ const userQuery = "What is our exposure under Liquidated Damages (Clause 2) if t
 
 async function run() {
   const t0 = Date.now();
-  const modelsToTry = [
-    process.env.GEMINI_MODEL || 'gemini-3.8-flash',
-    'gemini-flash-latest',
-    'gemini-3.5-flash',
-  ];
-  let response = null;
-  let selectedModel = '';
-
-  for (const model of modelsToTry) {
-    try {
-      console.log(`Sending query to ${model} with 4-Layer Zero-Hallucination Shield...`);
-      selectedModel = model;
-      response = await ai.models.generateContent({
-        model,
-        contents: [
-          { role: 'user', parts: [{ text: userQuery }] }
-        ],
-        config: {
-          systemInstruction: systemPrompt,
-          temperature: 0.1,
-        }
-      });
-      if (response?.text) break;
-    } catch (err) {
-      console.warn(`[WARN] ${model} unavailable (${err?.message || err}), attempting next fallback...`);
+  console.log("Sending query to gemini-3.6-flash with 4-Layer Zero-Hallucination Shield...");
+  
+  const response = await ai.models.generateContent({
+    model: 'gemini-3.6-flash',
+    contents: [
+      { role: 'user', parts: [{ text: userQuery }] }
+    ],
+    config: {
+      systemInstruction: systemPrompt,
+      temperature: 0.1,
     }
-  }
-
-  if (!response?.text) {
-    throw new Error('All models in fallback chain failed.');
-  }
+  });
 
   const duration = Date.now() - t0;
-  console.log(`\n=== CONTRACTIQ RESPONSE RECEIVED (Model: ${selectedModel}) in ${duration}ms ===\n`);
+  console.log(`\n=== CONTRACTIQ RESPONSE RECEIVED in ${duration}ms ===\n`);
   console.log(response.text);
   console.log("\n=== VERIFICATION CHECKS ===");
   console.log("1. Mentions Clause 2 (LD maximum 10% / ₹1.38 Cr):", response.text.includes("Clause 2") || response.text.includes("10%"));
