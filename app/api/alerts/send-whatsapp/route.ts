@@ -86,6 +86,14 @@ export async function POST(req: NextRequest) {
         })
         break
 
+      case 'template':
+        result = await sendWhatsAppTemplateMessage({
+          to: targetPhone,
+          templateName: payload.templateName || 'hello_world',
+          languageCode: payload.languageCode || 'en_US',
+        })
+        break
+
       case 'text':
       default:
         result = await sendWhatsAppTextMessage({

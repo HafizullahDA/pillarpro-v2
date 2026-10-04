@@ -25,7 +25,7 @@ export interface WhatsAppAlertData {
 interface SendWhatsAppModalProps {
   isOpen: boolean
   onClose: () => void
-  alertType: 'bg_expiry' | 'clause_notice' | 'ra_bill' | 'text'
+  alertType: 'bg_expiry' | 'clause_notice' | 'ra_bill' | 'text' | 'template'
   title: string
   data: WhatsAppAlertData
   onSuccess?: (messageId: string) => void
@@ -83,6 +83,12 @@ export function SendWhatsAppModal({
         `_PillarPro Contract Defense Shield_`
     }
 
+    if (alertType === 'template' || alertType === 'text') {
+      return `💬 *Meta Pre-Approved Template: hello_world*\n\n` +
+        `"Welcome and congratulations! This message demonstrates your ability to send a WhatsApp message using the Cloud API."\n\n` +
+        `✅ *Guaranteed Delivery:* Pre-approved templates bypass WhatsApp's 24-hour customer session rule and land on your phone immediately.`
+    }
+
     return `📢 *PILLARPRO ENTERPRISE ALERT*\n\n*Reference:* ${data.reference}\n*Status:* Action Required\n\n_PillarPro Enterprise_`
   }
 
@@ -102,13 +108,16 @@ export function SendWhatsAppModal({
         localStorage.setItem('pillarpro_whatsapp_recipient', recipientPhone)
       }
 
+      const dispatchType = (alertType === 'text' || alertType === 'template') ? 'template' : alertType
+
       const res = await fetch('/api/alerts/send-whatsapp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          alertType,
+          alertType: dispatchType,
           recipientPhone,
           payload: {
+            templateName: 'hello_world',
             bgReference: data.reference,
             depositType: data.depositType,
             amount: data.amount,
@@ -267,6 +276,16 @@ export function SendWhatsAppModal({
                       {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} ✓✓
                     </div>
                   </div>
+                </div>
+
+                {/* WhatsApp 24-Hour Session Rule Callout */}
+                <div className="p-3 bg-amber-50/90 border border-amber-200/90 rounded-xl text-xs text-amber-950 space-y-1 mt-2.5">
+                  <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                    <span>💡 WhatsApp 24-Hour Session Rule</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-900/90">
+                    Meta delivers pre-approved templates (like <b>hello_world</b>) immediately. When the message arrives, send a quick <b>&quot;Hi&quot;</b> reply in WhatsApp to open your 24-hour active session so custom alerts can also be delivered freely!
+                  </p>
                 </div>
               </div>
 

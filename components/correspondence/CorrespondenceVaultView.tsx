@@ -24,7 +24,6 @@ import { DeadlineBadge } from './DeadlineBadge'
 import { DeadlineMetricsStrip } from './DeadlineMetricsStrip'
 import { NewCorrespondenceModal } from './NewCorrespondenceModal'
 import { CorrespondenceDetailModal } from './CorrespondenceDetailModal'
-import { SendWhatsAppModal } from '@/components/alerts/SendWhatsAppModal'
 
 interface CorrespondenceVaultViewProps {
   initialCorrespondence?: CorrespondenceRecord[]
@@ -69,7 +68,6 @@ export function CorrespondenceVaultView({
   // Quick preset parameters for "+ Log" button
   const [modalDirection, setModalDirection] = useState<CorrespondenceDirection>('INCOMING')
   const [modalCategory, setModalCategory] = useState<CorrespondenceCategory>('CORRESPONDENCE')
-  const [whatsAppTestOpen, setWhatsAppTestOpen] = useState(false)
 
   // Calculate project-scoped records for metrics
   const projectScopedRecords = useMemo(() => {
@@ -145,16 +143,6 @@ export function CorrespondenceVaultView({
           </div>
 
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
-            <Button
-              size="sm"
-              type="button"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
-              onClick={() => setWhatsAppTestOpen(true)}
-              title="Test WhatsApp Cloud API push alert"
-            >
-              <span>💬</span>
-              <span>Test WhatsApp</span>
-            </Button>
             <Button
               size="sm"
               variant="secondary"
@@ -501,21 +489,6 @@ export function CorrespondenceVaultView({
         record={selectedRecord}
         onUpdated={handleUpdated}
       />
-
-      {/* WHATSAPP TEST MODAL */}
-      {whatsAppTestOpen && (
-        <SendWhatsAppModal
-          isOpen={whatsAppTestOpen}
-          onClose={() => setWhatsAppTestOpen(false)}
-          alertType="text"
-          title="PillarPro WhatsApp Cloud API Live Test"
-          data={{
-            reference: 'Contract Defense Live Verification',
-            subtitle: 'Meta Cloud API v22.0 Push Pipeline',
-            date: new Date().toISOString().split('T')[0],
-          }}
-        />
-      )}
     </div>
   )
 }
