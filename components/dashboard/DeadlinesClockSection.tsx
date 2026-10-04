@@ -39,7 +39,7 @@ export function DeadlinesClockSection({
   const [filter, setFilter] = useState<'all' | 'bg' | 'contract' | 'dlp' | 'notice'>('all')
   const [whatsAppModalState, setWhatsAppModalState] = useState<{
     isOpen: boolean
-    alertType: 'bg_expiry' | 'clause_notice' | 'text' | 'template'
+    alertType: 'bg_expiry' | 'clause_notice' | 'text'
     title: string
     data: WhatsAppAlertData
   } | null>(null)
@@ -209,10 +209,10 @@ export function DeadlinesClockSection({
             onClick={() => {
               setWhatsAppModalState({
                 isOpen: true,
-                alertType: 'template',
+                alertType: 'text',
                 title: 'PillarPro WhatsApp Cloud API Live Test',
                 data: {
-                  reference: 'Meta Pre-Approved Template (hello_world)',
+                  reference: 'Live Meta API Test Alert',
                   subtitle: 'Meta Cloud API v22.0 Push Pipeline',
                   date: todayStr,
                   daysRemaining: 0,

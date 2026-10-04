@@ -5,6 +5,7 @@ import {
   sendClauseNoticeDeadlineAlert,
   sendRABillStatusAlert,
   sendWhatsAppTextMessage,
+  sendWhatsAppTemplateMessage,
   normalizeWhatsAppNumber,
 } from '@/lib/whatsappCloudApi'
 import { logAuditEvent } from '@/lib/audit'
