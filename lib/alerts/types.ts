@@ -10,6 +10,8 @@ export type AlertEntityType =
   | 'supplier'
   | 'machinery'
   | 'inventory'
+  | 'dpr'
+  | 'labour_payout'
 
 export type MilestoneKey =
   | 'T_MINUS_30'
@@ -24,6 +26,12 @@ export type MilestoneKey =
   | 'OVERDUE_60D'
   | 'CREDIT_85_PERCENT'
   | 'CREDIT_BREACHED'
+  // Phase 3 Operations & Fleet milestones:
+  | 'DPR_MISSING_EVENING'
+  | 'STOCK_LOW'
+  | 'STOCK_CRITICAL'
+  | 'SERVICE_DUE'
+  | 'WEEKLY_LABOUR_PAYOUT'
 
 export type AlertDispatchStatus = 'dispatched' | 'failed' | 'skipped'
 
@@ -55,6 +63,26 @@ export interface AlertCandidate {
   creditUtilizationPercent?: number
   paymentMode?: string
   transactionRef?: string
+  // Phase 3 Operations & Fleet additions:
+  itemName?: string
+  itemCode?: string
+  currentStock?: number
+  minimumStock?: number
+  unit?: string
+  assetName?: string
+  registrationNumber?: string
+  currentMeter?: number
+  lastServiceMeter?: number
+  serviceIntervalMeter?: number
+  hoursSinceLastService?: number
+  complianceDocType?: 'insurance' | 'fitness' | 'puc' | 'service'
+  totalWorkers?: number
+  totalMandays?: number
+  totalOTHours?: number
+  regularWages?: number
+  otWages?: number
+  grossWageLiability?: number
+  bocwCessEstimate?: number
   customPayload?: Record<string, any>
 }
 

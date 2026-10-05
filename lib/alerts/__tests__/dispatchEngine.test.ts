@@ -1,9 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { runDailyMorningScan } from '../dispatchEngine'
+import {
+  runDailyMorningScan,
+  runDailyEveningScan,
+  runSaturdayLabourScan,
+  runFullScan,
+} from '../dispatchEngine'
 import * as securitiesScanner from '../scanners/securitiesScanner'
 import * as noticesScanner from '../scanners/noticesScanner'
 import * as raBillsScanner from '../scanners/raBillsScanner'
 import * as suppliersScanner from '../scanners/suppliersScanner'
+import * as inventoryScanner from '../scanners/inventoryScanner'
+import * as machineryScanner from '../scanners/machineryScanner'
+import * as dprScanner from '../scanners/dprScanner'
+import * as labourPayoutScanner from '../scanners/labourPayoutScanner'
 import * as ledger from '../ledger'
 
 describe('Autonomous Alerts Dispatch Engine', () => {
@@ -13,6 +22,10 @@ describe('Autonomous Alerts Dispatch Engine', () => {
     vi.spyOn(noticesScanner, 'scanNotices').mockResolvedValue([])
     vi.spyOn(raBillsScanner, 'scanRABills').mockResolvedValue([])
     vi.spyOn(suppliersScanner, 'scanSuppliers').mockResolvedValue([])
+    vi.spyOn(inventoryScanner, 'scanInventory').mockResolvedValue([])
+    vi.spyOn(machineryScanner, 'scanMachinery').mockResolvedValue([])
+    vi.spyOn(dprScanner, 'scanMissingDPRs').mockResolvedValue([])
+    vi.spyOn(labourPayoutScanner, 'scanWeeklyLabourPayout').mockResolvedValue([])
     vi.spyOn(ledger, 'isMilestoneDispatched').mockResolvedValue(false)
   })
 
@@ -94,6 +107,62 @@ describe('Autonomous Alerts Dispatch Engine', () => {
     expect(summary.dispatchedCount).toBe(2)
     expect(summary.details[0].milestoneKey).toBe('OVERDUE_45D')
     expect(summary.details[1].milestoneKey).toBe('CREDIT_85_PERCENT')
+  })
+
+  it('runs Phase 3 evening scan for missing DPRs', async () => {
+    vi.spyOn(dprScanner, 'scanMissingDPRs').mockResolvedValue([
+      {
+        entityType: 'dpr',
+        entityId: 'proj-88',
+        entityReference: 'Highway NH-44 Widening',
+        projectName: 'Highway NH-44 Widening',
+        targetDate: '2026-10-05',
+        daysRemaining: 0,
+        milestoneKey: 'DPR_MISSING_EVENING',
+        urgencyLabel: 'MISSING (8:00 PM CUTOFF)',
+      },
+    ])
+
+    const mockSupabase = {} as any
+
+    const summary = await runDailyEveningScan(mockSupabase, {
+      dryRun: true,
+      overrideRecipientPhone: '+919999999999',
+    })
+
+    expect(summary.totalScanned).toBe(1)
+    expect(summary.dispatchedCount).toBe(1)
+    expect(summary.details[0].entityType).toBe('dpr')
+    expect(summary.details[0].milestoneKey).toBe('DPR_MISSING_EVENING')
+  })
+
+  it('runs Phase 3 Saturday weekly labour payout scan', async () => {
+    vi.spyOn(labourPayoutScanner, 'scanWeeklyLabourPayout').mockResolvedValue([
+      {
+        entityType: 'labour_payout',
+        entityId: 'proj-1_week_2026-09-29',
+        entityReference: 'Highway NH-44 (Weekly Payout)',
+        projectName: 'Highway NH-44',
+        targetDate: '2026-10-05',
+        daysRemaining: 0,
+        milestoneKey: 'WEEKLY_LABOUR_PAYOUT',
+        urgencyLabel: 'SATURDAY LABOUR PAYOUT DUE',
+        totalWorkers: 30,
+        grossWageLiability: 105000,
+        bocwCessEstimate: 1050,
+      },
+    ])
+
+    const mockSupabase = {} as any
+
+    const summary = await runSaturdayLabourScan(mockSupabase, {
+      dryRun: true,
+      overrideRecipientPhone: '+919999999999',
+    })
+
+    expect(summary.totalScanned).toBe(1)
+    expect(summary.dispatchedCount).toBe(1)
+    expect(summary.details[0].entityType).toBe('labour_payout')
   })
 
   it('skips candidates when already recorded in deduplication ledger', async () => {

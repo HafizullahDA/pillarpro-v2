@@ -30,6 +30,28 @@ export interface WhatsAppAlertPayload {
   supplierName?: string
   paymentMode?: string
   updatedBalance?: number
+  // Phase 3 Site Operations & Fleet fields:
+  itemName?: string
+  itemCode?: string
+  currentStock?: number
+  minimumStock?: number
+  unit?: string
+  assetName?: string
+  registrationNumber?: string
+  currentMeter?: number
+  lastServiceMeter?: number
+  serviceIntervalMeter?: number
+  hoursSinceLastService?: number
+  complianceDocType?: 'insurance' | 'fitness' | 'puc' | 'service'
+  totalWorkers?: number
+  totalMandays?: number
+  totalOTHours?: number
+  regularWages?: number
+  otWages?: number
+  grossWageLiability?: number
+  bocwCessEstimate?: number
+  weekStart?: string
+  weekEnd?: string
 }
 
 /**
@@ -367,6 +389,170 @@ export function generateVendorPaymentAdviceWhatsAppText(data: WhatsAppAlertPaylo
 }
 
 /**
+ * 8. Enterprise Missing Daily Progress Report (DPR) Alert (8:00 PM Closeout)
+ */
+export function generateMissingDPRWhatsAppText(data: WhatsAppAlertPayload): string {
+  const auditCode = generateAuditCode('DPR-MISS', data.entityId || data.projectName || data.reference)
+  const dateStr = data.date || new Date().toISOString().split('T')[0]
+
+  const lines: (string | null)[] = [
+    `🏗️ *PILLARPRO ENTERPRISE | SITE REPORTING DISCIPLINE*`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🚨 *DAILY PROGRESS REPORT (DPR) MISSING (8:00 PM CHECK)*`,
+    ``,
+    `📋 *Site Particulars:*`,
+    `• *Project / Package*: *${data.projectName || data.reference || 'Active Site Package'}*`,
+    `• *Log Date*: ${dateStr}`,
+    `• *Status*: ⚠️ *No DPR Logged as of 8:00 PM Cutoff*`,
+    ``,
+    `⚖️ *Contractual & Legal Risk:*`,
+    `Contemporaneous site records are mandatory under CPWD GCC Clause 5.2 and FIDIC Sub-Clause 20.1. Failure to log daily activities, impediments, and idle machinery prevents valid Extension of Time (EOT) and financial claims.`,
+    ``,
+    `📌 *Mandated Immediate Action:*`,
+    `1. Site Engineer / Supervisor must log today's progress notes & photos immediately in PillarPro.`,
+    `2. Record any weather halts, right-of-way hindrances, or machine idle hours.`,
+    `3. Verify daily labour muster roll attendance before shift closeout.`,
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🔒 *Audit Code*: ${auditCode} • Site Operations Discipline`,
+    `_PillarPro Site Operations & Project Shield_`,
+  ]
+
+  return lines.filter(Boolean).join('\n')
+}
+
+/**
+ * 9. Enterprise Critical Material Reorder Level Alert
+ */
+export function generateInventoryReorderWhatsAppText(data: WhatsAppAlertPayload): string {
+  const auditCode = generateAuditCode('MAT-LOW', data.entityId || data.itemName || data.reference)
+  const currentStockStr = data.currentStock != null ? `${data.currentStock} ${data.unit || 'units'}` : 'Depleted'
+  const minStockStr = data.minimumStock != null ? `${data.minimumStock} ${data.unit || 'units'}` : 'Threshold'
+
+  const lines: (string | null)[] = [
+    `📦 *PILLARPRO ENTERPRISE | SITE STORE & SUPPLY CHAIN*`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🚨 *CRITICAL MATERIAL REORDER ALERT: SAFETY BUFFER BREACHED*`,
+    ``,
+    `📋 *Material Details:*`,
+    `• *Item Description*: *${data.itemName || data.reference || 'Site Material'}*`,
+    data.itemCode ? `• *Material Code*: ${data.itemCode}` : null,
+    data.projectName ? `• *Site Location*: ${data.projectName}` : null,
+    ``,
+    `📊 *Inventory Status:*`,
+    `• *Current On-Hand Stock*: ⚠️ *${currentStockStr}*`,
+    `• *Safety Reorder Threshold*: ${minStockStr}`,
+    ``,
+    `⚠️ *Execution Impact Assessment:*`,
+    `Exhaustion of this critical material will halt active structural execution (casting/pouring/reinforcement), idling skilled labour and heavy machinery.`,
+    ``,
+    `📌 *Recommended Procurement Action:*`,
+    `1. Issue immediate Purchase Order (PO) to approved vendor in Supplier Khata.`,
+    `2. Expedite gate entry / Goods Received Note (GRN) for incoming transit dumpers.`,
+    `3. Update site store ledger in PillarPro Store Management.`,
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🔒 *Audit Code*: ${auditCode} • Store & Supply Shield`,
+    `_PillarPro Store & Inventory Automation_`,
+  ]
+
+  return lines.filter(Boolean).join('\n')
+}
+
+/**
+ * 10. Enterprise Heavy Plant & Machinery Maintenance / Compliance Alert
+ */
+export function generateMachineryAlertWhatsAppText(data: WhatsAppAlertPayload): string {
+  const auditCode = generateAuditCode('MCH-ALRT', data.entityId || data.assetName || data.reference)
+  const meterStr = data.currentMeter != null ? `${data.currentMeter}` : 'N/A'
+
+  const isServiceAlert = data.complianceDocType === 'service' || (data.hoursSinceLastService != null && data.hoursSinceLastService > 0)
+  const docTypeLabel =
+    data.complianceDocType === 'insurance'
+      ? 'Vehicle Insurance Expiry'
+      : data.complianceDocType === 'fitness'
+      ? 'Fitness Certificate Expiry'
+      : data.complianceDocType === 'puc'
+      ? 'Pollution Under Control (PUC) Expiry'
+      : 'Preventive Engine Service Interval'
+
+  const lines: (string | null)[] = [
+    `🚜 *PILLARPRO ENTERPRISE | PLANT & FLEET SHIELD*`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `⚠️ *HEAVY MACHINERY: ${isServiceAlert ? 'PREVENTIVE SERVICE DUE' : 'STATUTORY COMPLIANCE EXPIRING'}*`,
+    ``,
+    `📋 *Equipment Particulars:*`,
+    `• *Asset / Machinery*: *${data.assetName || data.reference || 'Fleet Asset'}*`,
+    data.registrationNumber ? `• *Registration / Fleet No*: ${data.registrationNumber}` : null,
+    data.projectName ? `• *Assigned Site*: ${data.projectName}` : null,
+    `• *Current Meter Reading*: ${meterStr} (Hrs/Km)`,
+    ``,
+    `🚨 *Alert Specifics:*`,
+    `• *Type*: *${docTypeLabel}*`,
+    data.targetDate ? `• *Expiration Date*: ⚠️ *${data.targetDate}* (${data.daysRemaining != null ? `${data.daysRemaining} days left` : 'Due'})` : null,
+    data.hoursSinceLastService != null ? `• *Run Since Last Service*: ⚠️ *${data.hoursSinceLastService} Hrs/Km* (Interval: ${data.serviceIntervalMeter || 250})` : null,
+    ``,
+    `⚠️ *Operational & Legal Risk:*`,
+    isServiceAlert
+      ? `Overdue engine service causes severe hydraulic failure, turbocharger seizure, and catastrophic downtime on active highway/building projects.`
+      : `Operating commercial construction vehicles with expired documentation invites heavy RTO penalties, seizure under Motor Vehicles Act, and denial of third-party insurance claims.`,
+    ``,
+    `📌 *Mandated Fleet Action:*`,
+    isServiceAlert
+      ? `1. Schedule immediate 250h/500h preventive oil, fuel filter & lube service.`
+      : `1. Initiate commercial insurance / fitness certificate / PUC renewal immediately.`,
+    `2. Update machinery maintenance log in PillarPro Fleet Tracker.`,
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🔒 *Audit Code*: ${auditCode} • Fleet Compliance Channel`,
+    `_PillarPro Fleet & Plant Management_`,
+  ]
+
+  return lines.filter(Boolean).join('\n')
+}
+
+/**
+ * 11. Enterprise Saturday Labour Payout Summary (4:00 PM IST)
+ */
+export function generateLabourPayoutWhatsAppText(data: WhatsAppAlertPayload): string {
+  const auditCode = generateAuditCode('WAGE-SUM', data.entityId || data.projectName || data.reference)
+  const totalWagesStr = data.grossWageLiability != null ? formatINR(data.grossWageLiability) : 'N/A'
+  const regularWagesStr = data.regularWages != null ? formatINR(data.regularWages) : 'N/A'
+  const otWagesStr = data.otWages != null ? formatINR(data.otWages) : '₹0.00'
+  const cessStr = data.bocwCessEstimate != null ? formatINR(data.bocwCessEstimate) : '₹0.00'
+
+  const lines: (string | null)[] = [
+    `👷 *PILLARPRO ENTERPRISE | WEEKLY LABOUR MUSTER ROLL*`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `💼 *SATURDAY WAGE PAYOUT & STATUTORY SUMMARY (4:00 PM)*`,
+    ``,
+    `📋 *Deployment Particulars:*`,
+    `• *Site / Project*: *${data.projectName || data.reference || 'Active Site'}*`,
+    data.weekStart && data.weekEnd ? `• *Billing Period*: ${data.weekStart} to ${data.weekEnd}` : null,
+    `• *Active Workers Logged*: ${data.totalWorkers ?? 0}`,
+    `• *Total Shift Mandays*: ${data.totalMandays ?? 0} days`,
+    `• *Overtime (OT) Hours*: ${data.totalOTHours ?? 0} hrs`,
+    ``,
+    `💰 *Disbursement Liability Breakdown:*`,
+    `• *Regular Wage Liability*: ${regularWagesStr}`,
+    `• *Overtime Wage Accrual*: ${otWagesStr}`,
+    `• *Total Weekly Cash Payout*: *${totalWagesStr}*`,
+    `• *1% BOCW Cess Provision*: ${cessStr}`,
+    ``,
+    `📌 *Site Payout Protocol:*`,
+    `1. Disburse cash/UPI wages to labour gangs against muster roll signatures.`,
+    `2. Retain 1% BOCW Cess compliance record for government audit.`,
+    `3. Log wage payment disbursement vouchers in PillarPro Daily-Wage Ledger.`,
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🔒 *Audit Code*: ${auditCode} • Authorized Payroll Summary`,
+    `_PillarPro Labour Attendance & Wage Engine_`,
+  ]
+
+  return lines.filter(Boolean).join('\n')
+}
+
+/**
  * Master dispatcher for formatted alert text based on type.
  */
 export function generateWhatsAppAlertText(
@@ -377,6 +563,10 @@ export function generateWhatsAppAlertText(
     | 'ra_bill_delayed'
     | 'supplier_credit'
     | 'payment_advice'
+    | 'dpr_missing'
+    | 'inventory_reorder'
+    | 'machinery_alert'
+    | 'labour_payout'
     | 'text'
     | string,
   data: WhatsAppAlertPayload
@@ -394,6 +584,14 @@ export function generateWhatsAppAlertText(
       return generateSupplierCreditLimitWhatsAppText(data)
     case 'payment_advice':
       return generateVendorPaymentAdviceWhatsAppText(data)
+    case 'dpr_missing':
+      return generateMissingDPRWhatsAppText(data)
+    case 'inventory_reorder':
+      return generateInventoryReorderWhatsAppText(data)
+    case 'machinery_alert':
+      return generateMachineryAlertWhatsAppText(data)
+    case 'labour_payout':
+      return generateLabourPayoutWhatsAppText(data)
     case 'text':
     default:
       return generateEnterpriseExecutiveAlertText(data)

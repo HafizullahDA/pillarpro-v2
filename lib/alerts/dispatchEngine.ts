@@ -1,7 +1,11 @@
 /**
  * Autonomous Alerts Dispatch Engine
- * Coordinates domain scanners, performs deduplication checks against the ledger,
- * formats enterprise WhatsApp messages, and dispatches via Meta Cloud API.
+ * Coordinates domain scanners across all phases:
+ * - Phase 1: Securities (BG/FDR/CAR) & Notice Deadlines (CPWD 5.2 / FIDIC 20.1)
+ * - Phase 2: Delayed RA Bills (CPWD 7 / MSMED 2006) & Supplier Credit Limits
+ * - Phase 3: Site Operations (Evening DPR Missing, Low Stock Reorders, Fleet Maintenance/Compliance, Saturday Labour Payout)
+ * Performs deduplication checks against the ledger, formats enterprise WhatsApp messages,
+ * and dispatches via Meta Cloud API.
  */
 
 import { SupabaseClient } from '@supabase/supabase-js'
@@ -10,12 +14,20 @@ import { scanSecurities } from './scanners/securitiesScanner'
 import { scanNotices } from './scanners/noticesScanner'
 import { scanRABills } from './scanners/raBillsScanner'
 import { scanSuppliers } from './scanners/suppliersScanner'
+import { scanInventory } from './scanners/inventoryScanner'
+import { scanMachinery } from './scanners/machineryScanner'
+import { scanMissingDPRs } from './scanners/dprScanner'
+import { scanWeeklyLabourPayout } from './scanners/labourPayoutScanner'
 import { isMilestoneDispatched, recordDispatchLog } from './ledger'
 import {
   generateEnterpriseExecutiveAlertText,
   generateClauseNoticeWhatsAppText,
   generateDelayedRABillWhatsAppText,
   generateSupplierCreditLimitWhatsAppText,
+  generateMissingDPRWhatsAppText,
+  generateInventoryReorderWhatsAppText,
+  generateMachineryAlertWhatsAppText,
+  generateLabourPayoutWhatsAppText,
 } from '../whatsappTemplates'
 import { sendWhatsAppTextMessage } from '../whatsappCloudApi'
 
@@ -25,11 +37,16 @@ export interface DispatchEngineOptions {
   overrideRecipientPhone?: string
 }
 
-export async function runDailyMorningScan(
+/**
+ * Internal processor to deduplicate, format, and dispatch alert candidates.
+ */
+async function processCandidates(
   supabase: SupabaseClient,
-  options: DispatchEngineOptions = {}
+  allCandidates: AlertCandidate[],
+  options: DispatchEngineOptions,
+  runPrefix: string = 'scan'
 ): Promise<ScanRunSummary> {
-  const runId = `scan-${Date.now()}`
+  const runId = `${runPrefix}-${Date.now()}`
   const timestamp = new Date().toISOString()
   const defaultPhone =
     options.overrideRecipientPhone ||
@@ -39,38 +56,14 @@ export async function runDailyMorningScan(
   const summary: ScanRunSummary = {
     runId,
     timestamp,
-    totalScanned: 0,
-    eligibleCandidates: 0,
+    totalScanned: allCandidates.length,
+    eligibleCandidates: allCandidates.length,
     dispatchedCount: 0,
     skippedCount: 0,
     failedCount: 0,
     details: [],
   }
 
-  // 1. Gather all candidates from active domain scanners
-  const [
-    securitiesCandidates,
-    noticesCandidates,
-    raBillsCandidates,
-    suppliersCandidates,
-  ] = await Promise.all([
-    scanSecurities(supabase, options.asOfDateStr),
-    scanNotices(supabase, options.asOfDateStr),
-    scanRABills(supabase, options.asOfDateStr),
-    scanSuppliers(supabase, options.asOfDateStr),
-  ])
-
-  const allCandidates: AlertCandidate[] = [
-    ...securitiesCandidates,
-    ...noticesCandidates,
-    ...raBillsCandidates,
-    ...suppliersCandidates,
-  ]
-
-  summary.totalScanned = allCandidates.length
-  summary.eligibleCandidates = allCandidates.length
-
-  // 2. Process each candidate with deduplication & dispatch
   for (const candidate of allCandidates) {
     const targetPhone = candidate.recipientPhone || defaultPhone
 
@@ -89,7 +82,7 @@ export async function runDailyMorningScan(
       continue
     }
 
-    // 3. Deduplication check: Has this milestone already been dispatched?
+    // Deduplication check: Has this milestone already been dispatched?
     const alreadyDispatched = await isMilestoneDispatched(
       supabase,
       candidate.entityType,
@@ -110,7 +103,7 @@ export async function runDailyMorningScan(
       continue
     }
 
-    // 4. Format enterprise message text
+    // Format enterprise message text based on entity type
     let messageText = ''
     if (candidate.entityType === 'bank_guarantee') {
       messageText = generateEnterpriseExecutiveAlertText({
@@ -156,11 +149,58 @@ export async function runDailyMorningScan(
         projectName: candidate.projectName,
         entityId: candidate.entityId,
       })
+    } else if (candidate.entityType === 'dpr') {
+      messageText = generateMissingDPRWhatsAppText({
+        reference: candidate.entityReference,
+        projectName: candidate.projectName,
+        date: candidate.targetDate,
+        entityId: candidate.entityId,
+      })
+    } else if (candidate.entityType === 'inventory') {
+      messageText = generateInventoryReorderWhatsAppText({
+        reference: candidate.entityReference,
+        itemName: candidate.itemName,
+        itemCode: candidate.itemCode,
+        currentStock: candidate.currentStock,
+        minimumStock: candidate.minimumStock,
+        unit: candidate.unit,
+        projectName: candidate.projectName,
+        entityId: candidate.entityId,
+      })
+    } else if (candidate.entityType === 'machinery') {
+      messageText = generateMachineryAlertWhatsAppText({
+        reference: candidate.entityReference,
+        assetName: candidate.assetName,
+        registrationNumber: candidate.registrationNumber,
+        projectName: candidate.projectName,
+        currentMeter: candidate.currentMeter,
+        targetDate: candidate.targetDate,
+        daysRemaining: candidate.daysRemaining,
+        hoursSinceLastService: candidate.hoursSinceLastService,
+        serviceIntervalMeter: candidate.serviceIntervalMeter,
+        complianceDocType: candidate.complianceDocType,
+        entityId: candidate.entityId,
+      })
+    } else if (candidate.entityType === 'labour_payout') {
+      messageText = generateLabourPayoutWhatsAppText({
+        reference: candidate.entityReference,
+        projectName: candidate.projectName,
+        weekStart: candidate.customPayload?.weekStart,
+        weekEnd: candidate.customPayload?.weekEnd || candidate.targetDate,
+        totalWorkers: candidate.totalWorkers,
+        totalMandays: candidate.totalMandays,
+        totalOTHours: candidate.totalOTHours,
+        regularWages: candidate.regularWages,
+        otWages: candidate.otWages,
+        grossWageLiability: candidate.grossWageLiability,
+        bocwCessEstimate: candidate.bocwCessEstimate,
+        entityId: candidate.entityId,
+      })
     } else {
       messageText = `⚠️ CONTRACTUAL ALERT: ${candidate.entityReference} is ${candidate.urgencyLabel}. Target date: ${candidate.targetDate}.`
     }
 
-    // 5. Dry-run support: Skip real API call and DB insert
+    // Dry-run support: Skip real API call and DB insert
     if (options.dryRun) {
       summary.dispatchedCount++
       summary.details.push({
@@ -175,7 +215,7 @@ export async function runDailyMorningScan(
       continue
     }
 
-    // 6. Execute live Meta Cloud API WhatsApp dispatch
+    // Execute live Meta Cloud API WhatsApp dispatch
     try {
       const dispatchResult = await sendWhatsAppTextMessage({
         to: targetPhone,
@@ -201,7 +241,7 @@ export async function runDailyMorningScan(
         error: dispatchResult.error,
       })
 
-      // 7. Record into deduplication ledger
+      // Record into deduplication ledger
       await recordDispatchLog(supabase, {
         organization_id: candidate.organizationId,
         project_id: candidate.projectId,
@@ -235,4 +275,107 @@ export async function runDailyMorningScan(
   }
 
   return summary
+}
+
+/**
+ * 1. Morning Autonomous Scan:
+ * Evaluates securities, contract notice deadlines, delayed RA bills, supplier credit limits,
+ * inventory stock reorders, and fleet compliance / maintenance.
+ */
+export async function runDailyMorningScan(
+  supabase: SupabaseClient,
+  options: DispatchEngineOptions = {}
+): Promise<ScanRunSummary> {
+  const [
+    securitiesCandidates,
+    noticesCandidates,
+    raBillsCandidates,
+    suppliersCandidates,
+    inventoryCandidates,
+    machineryCandidates,
+  ] = await Promise.all([
+    scanSecurities(supabase, options.asOfDateStr),
+    scanNotices(supabase, options.asOfDateStr),
+    scanRABills(supabase, options.asOfDateStr),
+    scanSuppliers(supabase, options.asOfDateStr),
+    scanInventory(supabase, options.asOfDateStr),
+    scanMachinery(supabase, options.asOfDateStr),
+  ])
+
+  const allCandidates: AlertCandidate[] = [
+    ...securitiesCandidates,
+    ...noticesCandidates,
+    ...raBillsCandidates,
+    ...suppliersCandidates,
+    ...inventoryCandidates,
+    ...machineryCandidates,
+  ]
+
+  return processCandidates(supabase, allCandidates, options, 'morning-scan')
+}
+
+/**
+ * 2. Evening Autonomous Scan (8:00 PM IST Cutoff):
+ * Evaluates active projects missing Daily Progress Reports (DPR).
+ */
+export async function runDailyEveningScan(
+  supabase: SupabaseClient,
+  options: DispatchEngineOptions = {}
+): Promise<ScanRunSummary> {
+  const dprCandidates = await scanMissingDPRs(supabase, options.asOfDateStr)
+  return processCandidates(supabase, dprCandidates, options, 'evening-scan')
+}
+
+/**
+ * 3. Saturday Labour Payout Scan (4:00 PM IST):
+ * Aggregates weekly labour muster roll liabilities & BOCW Cess.
+ */
+export async function runSaturdayLabourScan(
+  supabase: SupabaseClient,
+  options: DispatchEngineOptions = {}
+): Promise<ScanRunSummary> {
+  const labourCandidates = await scanWeeklyLabourPayout(supabase, options.asOfDateStr)
+  return processCandidates(supabase, labourCandidates, options, 'saturday-labour-scan')
+}
+
+/**
+ * 4. Full Comprehensive Scan (All Domains):
+ * Used for diagnostic dry-runs, testing, and manual platform sweeps.
+ */
+export async function runFullScan(
+  supabase: SupabaseClient,
+  options: DispatchEngineOptions = {}
+): Promise<ScanRunSummary> {
+  const [
+    securitiesCandidates,
+    noticesCandidates,
+    raBillsCandidates,
+    suppliersCandidates,
+    inventoryCandidates,
+    machineryCandidates,
+    dprCandidates,
+    labourCandidates,
+  ] = await Promise.all([
+    scanSecurities(supabase, options.asOfDateStr),
+    scanNotices(supabase, options.asOfDateStr),
+    scanRABills(supabase, options.asOfDateStr),
+    scanSuppliers(supabase, options.asOfDateStr),
+    scanInventory(supabase, options.asOfDateStr),
+    scanMachinery(supabase, options.asOfDateStr),
+    scanMissingDPRs(supabase, options.asOfDateStr),
+    scanWeeklyLabourPayout(supabase, options.asOfDateStr),
+  ])
+
+  const allCandidates: AlertCandidate[] = [
+    ...securitiesCandidates,
+    ...noticesCandidates,
+    ...raBillsCandidates,
+    ...suppliersCandidates,
+    ...inventoryCandidates,
+    ...machineryCandidates,
+    ...dprCandidates,
+    ...labourCandidates,
+  ]
+
+  return processCandidates(supabase, allCandidates, options, 'full-scan')
 }
