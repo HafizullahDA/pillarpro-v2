@@ -38,7 +38,7 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     const isAppleDevice = /iphone|ipad|ipod/.test(ua)
     setIsIOS(isAppleDevice)
 
-    // 3. Register Service Worker in production only, unregister on localhost
+    // 3. Register Service Worker in production only, proactively unregister on localhost/dev
     const isLocalhost =
       typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' ||
@@ -65,7 +65,6 @@ export function PwaProvider({ children }: { children: ReactNode }) {
           navigator.serviceWorker
             .register('/sw.js', { scope: '/' })
             .then((registration) => {
-              // Check for service worker updates
               registration.onupdatefound = () => {
                 const installingWorker = registration.installing
                 if (installingWorker) {

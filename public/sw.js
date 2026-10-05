@@ -26,6 +26,10 @@ const PRECACHE_ASSETS = [
 
 // 1. Install Event: Pre-cache static shell & offline fallback gracefully
 self.addEventListener('install', (event) => {
+  if (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1') {
+    self.registration.unregister().catch(() => {})
+    return
+  }
   self.skipWaiting()
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
@@ -58,6 +62,15 @@ self.addEventListener('install', (event) => {
 
 // 2. Activate Event: Clean up legacy caches and immediately take control
 self.addEventListener('activate', (event) => {
+  if (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1') {
+    event.waitUntil(
+      caches
+        .keys()
+        .then((cacheNames) => Promise.all(cacheNames.map((name) => caches.delete(name))))
+        .then(() => self.registration.unregister())
+    )
+    return
+  }
   event.waitUntil(
     caches
       .keys()
@@ -83,6 +96,11 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
+
+  // Never intercept anything on localhost / dev
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    return
+  }
 
   // Only intercept GET requests
   if (request.method !== 'GET') {
