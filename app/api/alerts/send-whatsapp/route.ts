@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
           recipient: normalizeWhatsAppNumber(targetPhone),
           messageId: result.messageId,
         },
-        notes: `Automated WhatsApp push alert dispatched via Meta Cloud API (Message ID: ${result.messageId}).`,
+        notes: `Automated WhatsApp push alert dispatched (Message ID: ${result.messageId}).`,
       })
     }
 
