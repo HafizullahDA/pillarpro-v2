@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS public.alert_preferences (
 ALTER TABLE public.alert_preferences ENABLE ROW LEVEL SECURITY;
 
 -- Organization members can view their notification preferences
+DROP POLICY IF EXISTS "org_members_view_alert_preferences" ON public.alert_preferences;
 CREATE POLICY "org_members_view_alert_preferences"
   ON public.alert_preferences
   FOR SELECT
@@ -60,6 +61,7 @@ CREATE POLICY "org_members_view_alert_preferences"
   );
 
 -- Organization members with authorized roles can create/update preferences
+DROP POLICY IF EXISTS "org_members_modify_alert_preferences" ON public.alert_preferences;
 CREATE POLICY "org_members_modify_alert_preferences"
   ON public.alert_preferences
   FOR ALL
