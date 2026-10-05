@@ -14,8 +14,13 @@ import { getTodayIST } from '@/lib/date'
 import { safeMul, roundToTwo } from '@/lib/calculations/financial'
 import { SupplierScanConfirmModal } from '@/components/suppliers/SupplierScanConfirmModal'
 
-type Project = { id: string; name: string }
-type SupplierOption = { id: string; name: string; pending?: boolean; contact_number?: string }
+type SupplierOption = {
+  id: string
+  name: string
+  pending?: boolean
+  contact_number?: string | null
+  credit_limit?: number | null
+}
 
 const PAYMENT_MODES = [
   { value: 'cash',          label: 'Cash' },
@@ -56,6 +61,10 @@ export function SupplierActions({
   const [scannedBillData, setScannedBillData] = useState<any>(null)
   const [scanPreviewUrl, setScanPreviewUrl] = useState<string | null>(null)
 
+  // WhatsApp payment advice states
+  const [sendWhatsAppAdvice, setSendWhatsAppAdvice] = useState(true)
+  const [customPhone, setCustomPhone] = useState('')
+
   // Form states
   const [sForm, setSForm] = useState({
     name: '',
@@ -63,6 +72,7 @@ export function SupplierActions({
     gst_number: '',
     address: '',
     notes: '',
+    credit_limit: '',
   })
   const [offlineSupplierOptions, setOfflineSupplierOptions] = useState<SupplierOption[]>([])
   const availableSuppliers = [...suppliers, ...offlineSupplierOptions]
@@ -134,6 +144,8 @@ export function SupplierActions({
   const openModal = (type: 'supplier' | 'procurement' | 'payment') => {
     setWhich(type)
     setError('')
+    setCustomPhone('')
+    setSendWhatsAppAdvice(true)
     if (defaultSupplierId) {
       setProcForm(f => ({ ...f, supplier_id: defaultSupplierId }))
       setPayForm(f => ({ ...f, supplier_id: defaultSupplierId }))
@@ -192,6 +204,8 @@ export function SupplierActions({
     setSaving(true)
     setError('')
 
+    const creditLimitVal = sForm.credit_limit ? parseFloat(sForm.credit_limit) : null
+
     if (typeof window !== 'undefined' && !navigator.onLine) {
       try {
         const { saveToOfflineQueue } = await import('@/lib/offline/db')
@@ -202,14 +216,21 @@ export function SupplierActions({
           contact_number: sForm.contact_number.trim() || null,
           gst_number: sForm.gst_number.trim().toUpperCase() || null,
           address: sForm.address.trim() || null,
+          credit_limit: creditLimitVal,
           notes: sForm.notes.trim() || null,
         })
         setOfflineSupplierOptions(options => [
           ...options,
-          { id: offlineSupplierId, name: sForm.name.trim(), pending: true },
+          {
+            id: offlineSupplierId,
+            name: sForm.name.trim(),
+            pending: true,
+            contact_number: sForm.contact_number.trim() || null,
+            credit_limit: creditLimitVal,
+          },
         ])
         setWhich(null)
-        setSForm({ name: '', contact_number: '', gst_number: '', address: '', notes: '' })
+        setSForm({ name: '', contact_number: '', gst_number: '', address: '', notes: '', credit_limit: '' })
         toast.success(`Supplier "${sForm.name.trim()}" saved offline and will sync on reconnect`)
       } catch {
         setError('Failed to save the supplier offline. Please try again.')
@@ -237,6 +258,7 @@ export function SupplierActions({
       contact_number: sForm.contact_number.trim() || null,
       gst_number: sForm.gst_number.trim().toUpperCase() || null,
       address: sForm.address.trim() || null,
+      credit_limit: creditLimitVal,
       notes: sForm.notes.trim() || null,
       organization_id: organizationId,
     })
@@ -250,7 +272,7 @@ export function SupplierActions({
 
     const savedName = sForm.name.trim()
     setWhich(null)
-    setSForm({ name: '', contact_number: '', gst_number: '', address: '', notes: '' })
+    setSForm({ name: '', contact_number: '', gst_number: '', address: '', notes: '', credit_limit: '' })
     toast.success(`Supplier "${savedName}" added successfully`)
     router.refresh()
   }
@@ -451,26 +473,33 @@ export function SupplierActions({
     })
     toast.success(`Payment of ₹${amountVal.toLocaleString('en-IN')} recorded`)
 
-    // Background dispatch of WhatsApp payment advice to vendor if contact number is available
+    // WhatsApp Payment Advice Dispatch
     const matchedSup = availableSuppliers.find(s => s.id === payForm.supplier_id)
-    if (matchedSup?.contact_number) {
+    const targetPhone = matchedSup?.contact_number || (customPhone.trim() ? customPhone.trim() : null)
+
+    if (sendWhatsAppAdvice && targetPhone) {
+      const matchedProj = projects.find(p => p.id === payForm.project_id)
       fetch('/api/alerts/send-payment-advice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           supplierId: payForm.supplier_id,
-          supplierName: matchedSup.name,
-          recipientPhone: matchedSup.contact_number,
+          supplierName: matchedSup?.name || 'Supplier',
+          recipientPhone: targetPhone,
           amount: amountVal,
           paymentMode: payForm.mode,
           reference: payForm.reference.trim() || undefined,
           date: payForm.date,
           projectId: payForm.project_id || null,
+          projectName: matchedProj?.name,
         }),
       })
-        .then(res => {
-          if (res.ok) {
-            toast.success(`WhatsApp Payment Advice sent to ${matchedSup.name}`)
+        .then(async res => {
+          const data = await res.json()
+          if (res.ok && data.success) {
+            toast.success(`WhatsApp Payment Advice sent to ${targetPhone}`)
+          } else {
+            toast.error(data.error || 'WhatsApp delivery pending')
           }
         })
         .catch(() => {})
@@ -601,6 +630,14 @@ export function SupplierActions({
               placeholder="Shop / Yard address or city"
               value={sForm.address}
               onChange={e => setSForm(f => ({ ...f, address: e.target.value }))}
+            />
+          </FieldWrapper>
+
+          <FieldWrapper label="Agreed Credit Limit (₹)" hint="Autonomous WhatsApp alerts trigger at 85% and 100% utilization">
+            <CurrencyInput
+              placeholder="0 (Optional)"
+              value={sForm.credit_limit}
+              onChange={e => setSForm(f => ({ ...f, credit_limit: e.target.value }))}
             />
           </FieldWrapper>
 
@@ -948,6 +985,61 @@ export function SupplierActions({
               onChange={e => setPayForm(f => ({ ...f, notes: e.target.value }))}
             />
           </FieldWrapper>
+
+          {/* WhatsApp Payment Advice Voucher Option */}
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 space-y-2.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-2.5">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.316 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.818-.981z" />
+                  </svg>
+                </span>
+                <div>
+                  <span className="text-xs font-semibold text-emerald-950 block">Instant WhatsApp Payment Advice</span>
+                  <span className="text-[11px] text-emerald-700 block">Deliver official digital payment voucher to vendor WhatsApp</span>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer mt-0.5">
+                <input
+                  type="checkbox"
+                  checked={sendWhatsAppAdvice}
+                  onChange={e => setSendWhatsAppAdvice(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+
+            {sendWhatsAppAdvice && (
+              <div className="pt-2 border-t border-emerald-200/60">
+                {availableSuppliers.find(s => s.id === payForm.supplier_id)?.contact_number ? (
+                  <div className="flex items-center justify-between text-xs text-emerald-900 bg-white/90 px-3 py-2 rounded-lg border border-emerald-200">
+                    <span className="font-medium text-slate-600">Vendor WhatsApp:</span>
+                    <span className="font-mono font-bold text-emerald-800">
+                      {availableSuppliers.find(s => s.id === payForm.supplier_id)?.contact_number}
+                    </span>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="text-[11px] font-medium text-emerald-900 block mb-1">
+                      Vendor WhatsApp Number (Missing on supplier profile):
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="+91 98765 43210"
+                      value={customPhone}
+                      onChange={e => setCustomPhone(e.target.value)}
+                      className="w-full text-xs px-3 py-1.5 bg-white border border-emerald-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono"
+                    />
+                    <p className="text-[10px] text-emerald-700 mt-1">
+                      Enter mobile number to send payment advice voucher
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </Drawer>
 

@@ -25,6 +25,8 @@ export type SupplierSummaryRow = {
   total_procured: number
   total_paid: number
   outstanding_balance: number
+  credit_limit?: number | null
+  credit_utilization_percent?: number | null
 }
 
 type Project = { id: string; name: string }
@@ -94,7 +96,12 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
   }, [suppliers, search])
 
   const supplierOptions = useMemo(() => {
-    return suppliers.map(s => ({ id: s.id, name: s.name }))
+    return suppliers.map(s => ({
+      id: s.id,
+      name: s.name,
+      contact_number: s.contact_number,
+      credit_limit: s.credit_limit,
+    }))
   }, [suppliers])
 
   return (
@@ -253,15 +260,33 @@ export function SuppliersClient({ initialSuppliers, projects, userRole }: Suppli
                       </StitchTableCell>
 
                       <StitchTableCell align="right" className="font-semibold">
-                        <span
-                          className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold font-mono tabular-nums ${
-                            balance > 0
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200/80'
-                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
-                          }`}
-                        >
-                          {formatINR(balance)}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span
+                            className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold font-mono tabular-nums ${
+                              balance > 0
+                                ? 'bg-rose-50 text-rose-700 border border-rose-200/80'
+                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                            }`}
+                          >
+                            {formatINR(balance)}
+                          </span>
+                          {s.credit_limit && s.credit_limit > 0 ? (
+                            <div className="flex items-center gap-1.5 text-[10px] font-medium">
+                              <span className="text-slate-400">Limit: {formatINR(s.credit_limit)}</span>
+                              <span
+                                className={`px-1.5 py-0.2 rounded font-semibold ${
+                                  (s.credit_utilization_percent ?? (balance / s.credit_limit) * 100) >= 100
+                                    ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                                    : (s.credit_utilization_percent ?? (balance / s.credit_limit) * 100) >= 85
+                                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                                }`}
+                              >
+                                {Math.round(s.credit_utilization_percent ?? (balance / s.credit_limit) * 100)}%
+                              </span>
+                            </div>
+                          ) : null}
+                        </div>
                       </StitchTableCell>
 
                       <StitchTableCell align="right">

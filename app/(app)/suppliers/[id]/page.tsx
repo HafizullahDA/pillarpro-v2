@@ -23,7 +23,7 @@ export default async function SupplierDetailPage({ params }: Props) {
     supabase.rpc('get_user_role'),
     supabase
       .from('suppliers')
-      .select('id, name, gst_number, contact_number, address, notes, created_at, updated_at')
+      .select('id, name, gst_number, contact_number, address, notes, credit_limit, created_at, updated_at')
       .eq('id', params.id)
       .single(),
     supabase
@@ -108,7 +108,7 @@ export default async function SupplierDetailPage({ params }: Props) {
             />
             <SupplierActions
               projects={projects ?? []}
-              suppliers={[{ id: supplier.id, name: supplier.name, contact_number: supplier.contact_number }]}
+              suppliers={[{ id: supplier.id, name: supplier.name, contact_number: supplier.contact_number, credit_limit: supplier.credit_limit }]}
               defaultSupplierId={supplier.id}
               showAddSupplier={false}
             />
@@ -134,7 +134,7 @@ export default async function SupplierDetailPage({ params }: Props) {
       )}
 
       {/* KPI Tiles */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 ${supplier.credit_limit && supplier.credit_limit > 0 ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-4`}>
         <StitchMetric
           label="Total Procured"
           value={formatINR(totalProcured)}
@@ -168,6 +168,25 @@ export default async function SupplierDetailPage({ params }: Props) {
             </svg>
           }
         />
+        {supplier.credit_limit && supplier.credit_limit > 0 ? (
+          <StitchMetric
+            label="Agreed Credit Limit"
+            value={formatINR(supplier.credit_limit)}
+            sub={`${Math.round((balanceOwed / supplier.credit_limit) * 100)}% credit utilized`}
+            tone={
+              balanceOwed >= supplier.credit_limit
+                ? 'rose'
+                : balanceOwed >= 0.85 * supplier.credit_limit
+                ? 'amber'
+                : 'default'
+            }
+            icon={
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            }
+          />
+        ) : null}
       </div>
 
       {/* Transaction Ledger Statement */}
