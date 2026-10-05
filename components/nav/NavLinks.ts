@@ -18,6 +18,7 @@ export const NAV_ITEMS = [
   { href: '/admin/users',       label: 'Team & Roles',    i18nKey: 'nav.team',          icon: 'admin'     },
   { href: '/admin/periods',     label: 'Month Close',     i18nKey: 'nav.month_close',   icon: 'admin'     },
   { href: '/admin/audit',       label: 'Audit Trail',     i18nKey: 'nav.audit',         icon: 'shield'    },
+  { href: '/settings/alerts',   label: 'Alert Center',    i18nKey: 'nav.alerts',        icon: 'alerts'    },
 ] as const
 
 export type NavItem = typeof NAV_ITEMS[number]
@@ -72,6 +73,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { href: '/admin/users', label: 'Team & Roles', i18nKey: 'nav.team', icon: 'admin' },
       { href: '/admin/periods', label: 'Month Close', i18nKey: 'nav.month_close', icon: 'admin' },
       { href: '/admin/audit', label: 'Audit Trail', i18nKey: 'nav.audit', icon: 'shield' },
+      { href: '/settings/alerts', label: 'Alert Center', i18nKey: 'nav.alerts', icon: 'alerts' },
     ],
   },
 ] as const
@@ -82,6 +84,9 @@ export function isNavVisible(href: string, role: string | null | undefined): boo
   if (href === '/admin/periods') return canManagePeriods(role)
   if (href === '/admin/audit') {
     return role === 'owner' || role === 'partner' || role === 'managing_partner' || role === 'project_manager' || role === 'billing_engineer' || role === 'accountant' || role === 'viewer'
+  }
+  if (href === '/settings/alerts') {
+    return role === 'owner' || role === 'partner' || role === 'managing_partner' || role === 'project_manager' || role === 'billing_engineer' || role === 'accountant'
   }
   return true
 }

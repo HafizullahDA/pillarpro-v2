@@ -134,8 +134,8 @@ export async function scanWeeklyLabourPayout(
       pEntry.otWages += (otHours / 7.0) * rate
     }
 
-    for (const [pid, data] of projectMap.entries()) {
-      if (data.workersSet.size === 0) continue
+    projectMap.forEach((data, pid) => {
+      if (data.workersSet.size === 0) return
 
       const gross = Math.round((data.regularWages + data.otWages) * 100) / 100
       const cess = Math.round(gross * 0.01 * 100) / 100
@@ -163,7 +163,7 @@ export async function scanWeeklyLabourPayout(
           weekEnd: asOf,
         },
       })
-    }
+    })
   } catch (err: any) {
     console.error('[LABOUR PAYOUT SCANNER] Unhandled exception:', err.message)
   }

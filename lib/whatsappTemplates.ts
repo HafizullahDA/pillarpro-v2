@@ -1,7 +1,7 @@
 import { formatINR } from './format'
 
 export interface WhatsAppAlertPayload {
-  reference: string
+  reference?: string
   subtitle?: string
   date?: string
   targetDate?: string

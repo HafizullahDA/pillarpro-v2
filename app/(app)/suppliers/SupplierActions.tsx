@@ -14,6 +14,7 @@ import { getTodayIST } from '@/lib/date'
 import { safeMul, roundToTwo } from '@/lib/calculations/financial'
 import { SupplierScanConfirmModal } from '@/components/suppliers/SupplierScanConfirmModal'
 
+type Project = { id: string; name: string }
 type SupplierOption = {
   id: string
   name: string

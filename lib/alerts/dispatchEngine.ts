@@ -64,8 +64,74 @@ async function processCandidates(
     details: [],
   }
 
+  // Load organization-level alert preferences for candidates
+  const orgIds = Array.from(new Set(allCandidates.map(c => c.organizationId).filter(Boolean))) as string[]
+  const orgPrefsMap: Record<string, any> = {}
+
+  if (orgIds.length > 0) {
+    try {
+      const { data: prefs } = await supabase
+        .from('alert_preferences')
+        .select('*')
+        .in('organization_id', orgIds)
+
+      if (prefs) {
+        for (const p of prefs) {
+          orgPrefsMap[p.organization_id] = p
+        }
+      }
+    } catch {
+      // Graceful fallback if table is unavailable or offline
+    }
+  }
+
   for (const candidate of allCandidates) {
-    const targetPhone = candidate.recipientPhone || defaultPhone
+    const orgPrefs = candidate.organizationId ? orgPrefsMap[candidate.organizationId] : null
+
+    // Check if domain is enabled in organization preferences
+    if (orgPrefs) {
+      const isEnabled =
+        candidate.entityType === 'bank_guarantee' ? orgPrefs.bg_fdr_enabled !== false :
+        candidate.entityType === 'correspondence' ? orgPrefs.contractual_notices_enabled !== false :
+        candidate.entityType === 'ra_bill' ? orgPrefs.ra_bills_enabled !== false :
+        candidate.entityType === 'supplier' ? orgPrefs.supplier_credit_enabled !== false :
+        candidate.entityType === 'dpr' ? orgPrefs.dpr_reminders_enabled !== false :
+        candidate.entityType === 'inventory' ? orgPrefs.inventory_reorder_enabled !== false :
+        candidate.entityType === 'machinery' ? orgPrefs.machinery_fleet_enabled !== false :
+        candidate.entityType === 'labour_payout' ? orgPrefs.labour_payout_enabled !== false : true
+
+      if (!isEnabled) {
+        summary.skippedCount++
+        summary.details.push({
+          entityType: candidate.entityType,
+          entityId: candidate.entityId,
+          entityReference: candidate.entityReference,
+          milestoneKey: candidate.milestoneKey,
+          status: 'skipped',
+          recipientPhone: '',
+          error: 'Alert domain paused in Alert Control Center',
+        })
+        continue
+      }
+    }
+
+    // Role-specific phone routing from preferences
+    let routedPhone = candidate.recipientPhone
+    if (!routedPhone && orgPrefs) {
+      if (candidate.entityType === 'ra_bill' || candidate.entityType === 'supplier') {
+        routedPhone = orgPrefs.accounts_phone || orgPrefs.primary_phone
+      } else if (
+        candidate.entityType === 'dpr' ||
+        candidate.entityType === 'inventory' ||
+        candidate.entityType === 'machinery' ||
+        candidate.entityType === 'labour_payout'
+      ) {
+        routedPhone = orgPrefs.site_phone || orgPrefs.primary_phone
+      } else {
+        routedPhone = orgPrefs.primary_phone
+      }
+    }
+    const targetPhone = routedPhone || defaultPhone
 
     // If no phone number is configured, record failure and continue
     if (!targetPhone) {
