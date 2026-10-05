@@ -13,7 +13,10 @@ ALTER TABLE public.suppliers
   ADD COLUMN IF NOT EXISTS credit_limit NUMERIC(15,2) DEFAULT NULL;
 
 -- 2. Recreate supplier_summary view with credit utilization
-CREATE OR REPLACE VIEW public.supplier_summary AS
+-- DROP VIEW CASCADE guarantees no column reorder conflict (42P16) with previous view definition
+DROP VIEW IF EXISTS public.supplier_summary CASCADE;
+
+CREATE VIEW public.supplier_summary AS
 SELECT
   s.id,
   s.organization_id,
@@ -21,23 +24,23 @@ SELECT
   s.contact_number,
   s.gst_number,
   s.address,
-  s.notes,
-  s.credit_limit,
   s.created_at,
   s.updated_at,
-  COALESCE(SUM(CASE WHEN st.transaction_type = 'procurement' THEN st.amount ELSE 0 END), 0) AS total_procured,
-  COALESCE(SUM(CASE WHEN st.transaction_type = 'payment' THEN st.amount ELSE 0 END), 0)     AS total_paid,
+  COALESCE(SUM(CASE WHEN st.transaction_type = 'procurement' THEN st.amount ELSE 0 END), 0)::NUMERIC(15,2) AS total_procured,
+  COALESCE(SUM(CASE WHEN st.transaction_type = 'payment'     THEN st.amount ELSE 0 END), 0)::NUMERIC(15,2) AS total_paid,
   (
     COALESCE(SUM(CASE WHEN st.transaction_type = 'procurement' THEN st.amount ELSE 0 END), 0) -
-    COALESCE(SUM(CASE WHEN st.transaction_type = 'payment' THEN st.amount ELSE 0 END), 0)
-  ) AS outstanding_balance,
+    COALESCE(SUM(CASE WHEN st.transaction_type = 'payment'     THEN st.amount ELSE 0 END), 0)
+  )::NUMERIC(15,2) AS outstanding_balance,
+  s.notes,
+  s.credit_limit,
   CASE 
     WHEN s.credit_limit IS NOT NULL AND s.credit_limit > 0 THEN
       ROUND(
         (
           (
             COALESCE(SUM(CASE WHEN st.transaction_type = 'procurement' THEN st.amount ELSE 0 END), 0) -
-            COALESCE(SUM(CASE WHEN st.transaction_type = 'payment' THEN st.amount ELSE 0 END), 0)
+            COALESCE(SUM(CASE WHEN st.transaction_type = 'payment'     THEN st.amount ELSE 0 END), 0)
           ) / s.credit_limit * 100.0
         ), 2
       )
@@ -46,6 +49,10 @@ SELECT
 FROM public.suppliers s
 LEFT JOIN public.supplier_transactions st ON st.supplier_id = s.id
 GROUP BY s.id;
+
+-- Maintain RLS security invoker and permissions on the recreated view
+ALTER VIEW public.supplier_summary SET (security_invoker = true);
+GRANT SELECT ON public.supplier_summary TO authenticated;
 
 -- 3. SECURITY DEFINER RPC: Returns active cash flow & vendor alert candidates
 CREATE OR REPLACE FUNCTION public.get_autonomous_cashflow_candidates(p_as_of_date DATE DEFAULT CURRENT_DATE)
