@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/daily-alerts",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/evening-alerts",
+      "schedule": "30 14 * * *"
+    }
+  ]
+}
