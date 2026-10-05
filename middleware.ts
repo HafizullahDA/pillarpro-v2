@@ -58,6 +58,8 @@ export async function middleware(request: NextRequest) {
     '/api/log-error',
     '/api/assetlinks',
     '/api/analytics/track',
+    '/api/cron',
+    '/api/alerts/test-scan',
   ]
 
   const isApiRoute = pathname.startsWith('/api/')
