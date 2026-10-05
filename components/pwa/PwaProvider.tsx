@@ -38,36 +38,58 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     const isAppleDevice = /iphone|ipad|ipod/.test(ua)
     setIsIOS(isAppleDevice)
 
-    // 3. Register Service Worker in production or supported browsers
-    const registerServiceWorker = () => {
-      navigator.serviceWorker
-        .register('/sw.js', { scope: '/' })
-        .then((registration) => {
-          // Check for service worker updates
-          registration.onupdatefound = () => {
-            const installingWorker = registration.installing
-            if (installingWorker) {
-              installingWorker.onstatechange = () => {
-                if (
-                  installingWorker.state === 'installed' &&
-                  navigator.serviceWorker.controller
-                ) {
-                  console.log('PillarPro updated in background. Ready for use.')
-                }
-              }
-            }
-          }
-        })
-        .catch((error) => {
-          console.warn('Service Worker registration failed:', error)
-        })
-    }
+    // 3. Register Service Worker in production only, unregister on localhost
+    const isLocalhost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.endsWith('.local'))
 
     if ('serviceWorker' in navigator) {
-      if (document.readyState === 'complete') {
-        registerServiceWorker()
+      if (isLocalhost || process.env.NODE_ENV !== 'production') {
+        // Automatically purge any stale service workers or caches on local dev
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const reg of registrations) {
+            reg.unregister()
+          }
+        })
+        if ('caches' in window) {
+          caches.keys().then((keys) => {
+            for (const key of keys) {
+              caches.delete(key)
+            }
+          })
+        }
       } else {
-        window.addEventListener('load', registerServiceWorker)
+        const registerServiceWorker = () => {
+          navigator.serviceWorker
+            .register('/sw.js', { scope: '/' })
+            .then((registration) => {
+              // Check for service worker updates
+              registration.onupdatefound = () => {
+                const installingWorker = registration.installing
+                if (installingWorker) {
+                  installingWorker.onstatechange = () => {
+                    if (
+                      installingWorker.state === 'installed' &&
+                      navigator.serviceWorker.controller
+                    ) {
+                      console.log('PillarPro updated in background. Ready for use.')
+                    }
+                  }
+                }
+              }
+            })
+            .catch((error) => {
+              console.warn('Service Worker registration failed:', error)
+            })
+        }
+
+        if (document.readyState === 'complete') {
+          registerServiceWorker()
+        } else {
+          window.addEventListener('load', registerServiceWorker)
+        }
       }
     }
 

@@ -5,7 +5,11 @@ import { PwaProvider } from '@/components/pwa/PwaProvider'
 import { VisitorTracker } from '@/components/analytics/VisitorTracker'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+})
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pillarprojk.com'
 
@@ -91,12 +95,24 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function(){});
-                } else {
-                  window.addEventListener('DOMContentLoaded', function() {
-                    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function(){});
+                var isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                if (isLocal) {
+                  navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    for (var i = 0; i < regs.length; i++) { regs[i].unregister(); }
                   });
+                  if ('caches' in window) {
+                    caches.keys().then(function(keys) {
+                      for (var j = 0; j < keys.length; j++) { caches.delete(keys[j]); }
+                    });
+                  }
+                } else {
+                  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function(){});
+                  } else {
+                    window.addEventListener('DOMContentLoaded', function() {
+                      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function(){});
+                    });
+                  }
                 }
               }
             `,
