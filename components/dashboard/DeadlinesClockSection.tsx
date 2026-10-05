@@ -202,30 +202,8 @@ export function DeadlinesClockSection({
           </p>
         </div>
 
-        {/* Filter Pills & WhatsApp Test Action */}
+        {/* Filter Pills */}
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <button
-            type="button"
-            onClick={() => {
-              setWhatsAppModalState({
-                isOpen: true,
-                alertType: 'text',
-                title: 'PillarPro WhatsApp Cloud API Live Test',
-                data: {
-                  reference: 'Live Meta API Test Alert',
-                  subtitle: 'Meta Cloud API v22.0 Push Pipeline',
-                  date: todayStr,
-                  daysRemaining: 0,
-                },
-              })
-            }}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors mr-1 cursor-pointer"
-            title="Dispatch a live test alert to your WhatsApp number"
-          >
-            <span>💬</span>
-            <span>Test WhatsApp</span>
-          </button>
-
           <button
             onClick={() => setFilter('all')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${filter === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}

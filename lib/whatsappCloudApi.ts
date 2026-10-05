@@ -145,6 +145,12 @@ export async function sendWhatsAppTemplateMessage(params: {
   })
 }
 
+import {
+  generateBankGuaranteeWhatsAppText,
+  generateClauseNoticeWhatsAppText,
+  generateRABillWhatsAppText,
+} from './whatsappTemplates'
+
 // ==============================================================================
 // DOMAIN-SPECIFIC HIGH-STAKES CONTRACTOR ALERT DISPATCHERS
 // ==============================================================================
@@ -162,28 +168,15 @@ export async function sendBankGuaranteeExpiryAlert(params: {
   daysRemaining: number
   projectName?: string | null
 }): Promise<WhatsAppSendResult> {
-  const formattedAmount = new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(params.amount)
-
-  const text = [
-    `🚨 *PILLARPRO CRITICAL ALERT: BANK GUARANTEE EXPIRING*`,
-    ``,
-    `• *Reference / BG No.*: ${params.bgReference}`,
-    `• *Deposit Type*: ${params.depositType.replace(/_/g, ' ').toUpperCase()}`,
-    `• *Pledged Amount*: ${formattedAmount}`,
-    params.issuingBank ? `• *Issuing Bank*: ${params.issuingBank}` : null,
-    params.projectName ? `• *Project Site*: ${params.projectName}` : null,
-    `• *Expiry Date*: ${params.expiryDate} (*${params.daysRemaining} days remaining*)`,
-    ``,
-    `⚠️ *Legal Directive*: Under CPWD GCC Clause 1A / FIDIC Sub-Clause 4.2, guarantees must be extended at least 14 days prior to expiry. Failure to renew entitles the Engineer-in-Charge to encash the guarantee into treasury cash retention.`,
-    ``,
-    `_Sent automatically from your PillarPro Enterprise Command Center._`,
-  ]
-    .filter(Boolean)
-    .join('\n')
+  const text = generateBankGuaranteeWhatsAppText({
+    reference: params.bgReference,
+    depositType: params.depositType,
+    amount: params.amount,
+    issuingBank: params.issuingBank || undefined,
+    date: params.expiryDate,
+    daysRemaining: params.daysRemaining,
+    projectName: params.projectName || undefined,
+  })
 
   return sendWhatsAppTextMessage({
     to: params.to,
@@ -203,21 +196,14 @@ export async function sendClauseNoticeDeadlineAlert(params: {
   clauseTitle?: string | null
   projectName?: string | null
 }): Promise<WhatsAppSendResult> {
-  const text = [
-    `⏱️ *PILLARPRO LEGAL NOTICE ALERT: TIME-BAR APPROACHING*`,
-    ``,
-    `• *Letter Ref*: ${params.letterNumber}`,
-    params.clauseTitle ? `• *Contract Clause*: ${params.clauseTitle}` : null,
-    params.projectName ? `• *Project*: ${params.projectName}` : null,
-    `• *Subject*: ${params.subject}`,
-    `• *Reply Deadline*: ${params.deadlineDate} (*${params.daysRemaining} days left*)`,
-    ``,
-    `⚠️ *Statutory Risk*: In contemporary Indian construction arbitration (Union of India v. Rai Engineering), failure to lodge written notices within the stipulated window creates an irrebuttable presumption of waiver. Submit your response letter before the deadline.`,
-    ``,
-    `_Sent automatically from your PillarPro Enterprise Command Center._`,
-  ]
-    .filter(Boolean)
-    .join('\n')
+  const text = generateClauseNoticeWhatsAppText({
+    reference: params.letterNumber,
+    subject: params.subject,
+    date: params.deadlineDate,
+    daysRemaining: params.daysRemaining,
+    clauseTitle: params.clauseTitle || undefined,
+    projectName: params.projectName || undefined,
+  })
 
   return sendWhatsAppTextMessage({
     to: params.to,
@@ -237,27 +223,15 @@ export async function sendRABillStatusAlert(params: {
   projectName?: string | null
   date?: string | null
 }): Promise<WhatsAppSendResult> {
-  const formatCur = (v: number) =>
-    new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(v)
-
-  const text = [
-    `📄 *PILLARPRO FINANCIAL UPDATE: RA BILL ${params.status.toUpperCase()}*`,
-    ``,
-    `• *Bill Number*: ${params.billNumber}`,
-    params.projectName ? `• *Project*: ${params.projectName}` : null,
-    `• *Work Certified*: ${formatCur(params.certifiedAmount)}`,
-    params.receivedAmount != null ? `• *Gross Released*: ${formatCur(params.receivedAmount)}` : null,
-    params.date ? `• *Date*: ${params.date}` : null,
-    `• *Current Status*: ${params.status.replace(/_/g, ' ').toUpperCase()}`,
-    ``,
-    `_Sent from your PillarPro Enterprise Account._`,
-  ]
-    .filter(Boolean)
-    .join('\n')
+  const text = generateRABillWhatsAppText({
+    reference: params.billNumber,
+    billNumber: params.billNumber,
+    status: params.status,
+    certifiedAmount: params.certifiedAmount,
+    receivedAmount: params.receivedAmount,
+    projectName: params.projectName || undefined,
+    date: params.date || undefined,
+  })
 
   return sendWhatsAppTextMessage({
     to: params.to,

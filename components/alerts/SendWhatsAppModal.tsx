@@ -1,26 +1,15 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { formatINR } from '@/lib/format'
+import {
+  generateWhatsAppAlertText,
+  getUrgencyStatus,
+  WhatsAppAlertPayload,
+} from '@/lib/whatsappTemplates'
 
-export interface WhatsAppAlertData {
-  reference: string
-  subtitle?: string
-  date?: string
-  daysRemaining?: number
-  amount?: number
-  issuingBank?: string
-  depositType?: string
-  letterNumber?: string
-  subject?: string
-  clauseTitle?: string
-  billNumber?: string
-  certifiedAmount?: number
-  entityId?: string
-  projectId?: string
-  projectName?: string
-}
+export interface WhatsAppAlertData extends WhatsAppAlertPayload {}
 
 interface SendWhatsAppModalProps {
   isOpen: boolean
@@ -44,11 +33,13 @@ export function SendWhatsAppModal({
   const [isSending, setIsSending] = useState<boolean>(false)
   const [sentMessageId, setSentMessageId] = useState<string | null>(null)
   const [errorDetails, setErrorDetails] = useState<string | null>(null)
+  const [copied, setCopied] = useState<boolean>(false)
 
   useEffect(() => {
     if (isOpen) {
       setSentMessageId(null)
       setErrorDetails(null)
+      setCopied(false)
       const saved = typeof window !== 'undefined' ? localStorage.getItem('pillarpro_whatsapp_recipient') : null
       if (saved) {
         setRecipientPhone(saved)
@@ -56,34 +47,26 @@ export function SendWhatsAppModal({
     }
   }, [isOpen])
 
+  // Compute enterprise formatted text
+  const previewText = useMemo(() => {
+    return generateWhatsAppAlertText(alertType, data)
+  }, [alertType, data])
+
+  const urgency = useMemo(() => {
+    return getUrgencyStatus(data.daysRemaining)
+  }, [data.daysRemaining])
+
   if (!isOpen) return null
 
-  // Generate real preview text based on alertType
-  const getPreviewText = () => {
-    if (alertType === 'bg_expiry') {
-      const typeLabel = (data.depositType || 'Bank Guarantee').replace(/_/g, ' ').toUpperCase()
-      return `🚨 *PILLARPRO CRITICAL ALERT: BANK GUARANTEE EXPIRY*\n\n` +
-        `*Reference:* ${data.reference}\n` +
-        `*Deposit Type:* ${typeLabel}\n` +
-        (data.issuingBank ? `*Issuing Bank:* ${data.issuingBank}\n` : '') +
-        (data.amount ? `*Amount:* ${formatINR(data.amount)}\n` : '') +
-        `*Expiry Date:* ${data.date || 'Approaching'}\n` +
-        `*Urgency:* ${data.daysRemaining != null ? (data.daysRemaining <= 0 ? 'EXPIRED' : `${data.daysRemaining} day(s) remaining`) : 'Immediate action required'}\n\n` +
-        `⚠️ *Action Required:* Initiate renewal or release immediately with department authorities to avoid liquidity forfeiture.\n\n` +
-        `_PillarPro Enterprise Contractor Intelligence_`
+  const handleCopyPreview = async () => {
+    try {
+      await navigator.clipboard.writeText(previewText)
+      setCopied(true)
+      toast.success('Formatted alert text copied to clipboard!')
+      setTimeout(() => setCopied(false), 2500)
+    } catch {
+      toast.error('Failed to copy to clipboard.')
     }
-
-    if (alertType === 'clause_notice') {
-      return `⚠️ *PILLARPRO STATUTORY NOTICE DEADLINE ALERT*\n\n` +
-        `*Letter / Notice:* ${data.reference}\n` +
-        (data.subject ? `*Subject:* ${data.subject}\n` : '') +
-        `*Response Deadline:* ${data.date || 'Urgent'}\n` +
-        `*Days Remaining:* ${data.daysRemaining != null ? (data.daysRemaining <= 0 ? 'OVERDUE' : `${data.daysRemaining} day(s)`) : 'Due Soon'}\n\n` +
-        `⏳ *Contract Defense Action:* Statutory notice rules require timely reply to preserve contractor claims and rights.\n\n` +
-        `_PillarPro Contract Defense Shield_`
-    }
-
-    return `📢 *PILLARPRO ENTERPRISE ALERT*\n\n*Reference:* ${data.reference}\n*Status:* Action Required\n\n_PillarPro Enterprise_`
   }
 
   const handleSend = async (e: React.FormEvent) => {
@@ -109,19 +92,25 @@ export function SendWhatsAppModal({
           alertType,
           recipientPhone,
           payload: {
+            reference: data.reference,
             bgReference: data.reference,
             depositType: data.depositType,
             amount: data.amount,
             issuingBank: data.issuingBank,
             expiryDate: data.date,
+            date: data.date,
             daysRemaining: data.daysRemaining,
             letterNumber: data.reference,
             subject: data.subject,
             deadlineDate: data.date,
             clauseTitle: data.clauseTitle,
+            billNumber: data.billNumber || data.reference,
+            certifiedAmount: data.certifiedAmount,
+            receivedAmount: data.receivedAmount,
             projectName: data.projectName,
             projectId: data.projectId,
             entityId: data.entityId,
+            formattedText: previewText,
           },
         }),
       })
@@ -147,23 +136,38 @@ export function SendWhatsAppModal({
     }
   }
 
+  const getCategoryBadge = () => {
+    switch (alertType) {
+      case 'bg_expiry':
+        return { label: 'Bank Guarantee Expiry Defense', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' }
+      case 'clause_notice':
+        return { label: 'Statutory Notice Time-Bar Defense', color: 'bg-amber-100 text-amber-800 border-amber-200' }
+      case 'ra_bill':
+        return { label: 'RA Bill Treasury Milestone', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' }
+      case 'text':
+      default:
+        return { label: 'Executive Contract Alert', color: 'bg-blue-100 text-blue-800 border-blue-200' }
+    }
+  }
+
+  const categoryBadge = getCategoryBadge()
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-4 text-white flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+        {/* Clean Header - NO Meta or API subtitle */}
+        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 px-6 py-4 text-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-lg">
+            <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-lg shadow-inner">
               💬
             </div>
             <div>
               <h3 className="font-bold text-base leading-tight">WhatsApp Push Alert</h3>
-              <p className="text-xs text-emerald-100">Meta Cloud API Real-Time Dispatch</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+            className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
             aria-label="Close modal"
           >
             ✕
@@ -171,28 +175,35 @@ export function SendWhatsAppModal({
         </div>
 
         {/* Content Body */}
-        <div className="p-6 overflow-y-auto space-y-4">
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-4">
           {sentMessageId ? (
             <div className="text-center py-6 space-y-3">
-              <div className="h-16 w-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl animate-bounce">
+              <div className="h-16 w-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-3xl shadow-xs animate-in zoom-in-90 duration-300">
                 ✓
               </div>
               <h4 className="text-lg font-bold text-slate-900">Alert Dispatched Successfully!</h4>
-              <p className="text-xs text-slate-600 max-w-sm mx-auto">
-                The critical deadline notification was pushed directly via Meta WhatsApp Cloud API.
+              <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                The critical deadline notification was pushed directly to the recipient&apos;s verified WhatsApp number.
               </p>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-left font-mono text-[11px] text-slate-700 break-all">
-                <span className="text-slate-400 block font-sans text-[10px] uppercase font-bold tracking-wider mb-1">
-                  Meta Message ID
-                </span>
-                {sentMessageId}
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-left font-mono text-[11px] text-slate-700 break-all space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-sans text-[10px] uppercase font-bold tracking-wider">
+                    Dispatch Reference ID
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    DELIVERED
+                  </span>
+                </div>
+                <div className="text-slate-800 font-bold">{sentMessageId}</div>
               </div>
+
               <div className="pt-2">
                 <button
                   onClick={onClose}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors"
+                  className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
-                  Done
+                  Close &amp; Return to Dashboard
                 </button>
               </div>
             </div>
@@ -200,36 +211,63 @@ export function SendWhatsAppModal({
             <form onSubmit={handleSend} className="space-y-4">
               {/* Alert Summary Box */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-700">{title}</span>
-                  {data.daysRemaining != null && (
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-wider ${categoryBadge.color}`}>
+                    {categoryBadge.label}
+                  </span>
+
+                  {data.daysRemaining != null ? (
                     <span
-                      className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-                        data.daysRemaining <= 0
-                          ? 'bg-red-100 text-red-800'
+                      className={`px-2 py-0.5 rounded-full font-bold text-[10px] border ${
+                        data.daysRemaining < 0
+                          ? 'bg-rose-100 text-rose-800 border-rose-300'
+                          : data.daysRemaining === 0
+                          ? 'bg-amber-100 text-amber-800 border-amber-300 animate-pulse'
                           : data.daysRemaining <= 7
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-indigo-100 text-indigo-800'
+                          ? 'bg-orange-100 text-orange-800 border-orange-300'
+                          : 'bg-slate-100 text-slate-700 border-slate-200'
                       }`}
                     >
-                      {data.daysRemaining <= 0
+                      {data.daysRemaining < 0
                         ? `${Math.abs(data.daysRemaining)}d Overdue`
+                        : data.daysRemaining === 0
+                        ? 'Due Today'
                         : `${data.daysRemaining}d remaining`}
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full font-semibold text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Active Defense
                     </span>
                   )}
                 </div>
-                {data.amount != null && data.amount > 0 && (
-                  <div className="text-xs text-slate-600 flex justify-between border-t border-slate-200/60 pt-1.5">
-                    <span>Guaranteed Amount:</span>
-                    <span className="font-bold text-slate-900">{formatINR(data.amount)}</span>
+
+                <div className="text-xs space-y-1 pt-1 border-t border-slate-200/60">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-slate-500 font-medium">Instrument / Notice Ref:</span>
+                    <span className="font-bold text-slate-900 font-mono text-right">{data.reference}</span>
                   </div>
-                )}
-                {data.date && (
-                  <div className="text-xs text-slate-600 flex justify-between">
-                    <span>Target Date:</span>
-                    <span className="font-mono font-medium text-slate-800">{data.date}</span>
-                  </div>
-                )}
+
+                  {data.amount != null && data.amount > 0 && (
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-slate-500 font-medium">Guaranteed Exposure:</span>
+                      <span className="font-bold text-slate-900 tabular-nums">{formatINR(data.amount)}</span>
+                    </div>
+                  )}
+
+                  {data.issuingBank && (
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-slate-500 font-medium">Issuing Bank:</span>
+                      <span className="font-semibold text-slate-800">{data.issuingBank}</span>
+                    </div>
+                  )}
+
+                  {data.date && (
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-slate-500 font-medium">Statutory Target Date:</span>
+                      <span className="font-mono font-semibold text-slate-800">{data.date}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Recipient Phone Input */}
@@ -237,17 +275,18 @@ export function SendWhatsAppModal({
                 <label className="block text-xs font-bold text-slate-800 mb-1">
                   Recipient Mobile Number <span className="text-rose-500">*</span>
                 </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">
-                    📱
-                  </span>
+                <div className="flex rounded-xl shadow-2xs border border-slate-300 overflow-hidden focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
+                  <div className="bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 flex items-center gap-1.5 border-r border-slate-200 select-none">
+                    <span>🇮🇳</span>
+                    <span>+91</span>
+                  </div>
                   <input
                     type="text"
                     required
                     value={recipientPhone}
                     onChange={e => setRecipientPhone(e.target.value)}
-                    placeholder="+91 98765 43210 (or 10 digits)"
-                    className="w-full pl-8 pr-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 font-mono"
+                    placeholder="98765 43210 (or 10 digits)"
+                    className="flex-1 px-3 py-2 text-xs text-slate-900 font-mono focus:outline-hidden"
                   />
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
@@ -257,14 +296,27 @@ export function SendWhatsAppModal({
 
               {/* Message Preview (WhatsApp chat bubble simulation) */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                  Live Message Preview
-                </label>
-                <div className="bg-[#EFEAE2] p-3.5 rounded-xl border border-slate-300">
-                  <div className="bg-[#DCF8C6] text-slate-900 text-xs p-3 rounded-lg rounded-tr-none shadow-xs whitespace-pre-wrap font-sans leading-relaxed">
-                    {getPreviewText()}
-                    <div className="text-[10px] text-slate-400 text-right mt-1 font-mono">
-                      {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} ✓✓
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    Live Message Preview
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleCopyPreview}
+                    className="text-[11px] text-slate-600 hover:text-emerald-700 font-medium flex items-center gap-1 px-2 py-0.5 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    <span>{copied ? '✓ Copied' : '📋 Copy Text'}</span>
+                  </button>
+                </div>
+
+                <div className="bg-[#EFEAE2] p-3.5 sm:p-4 rounded-xl border border-slate-300 relative shadow-inner">
+                  <div className="max-w-md bg-[#DCF8C6] text-slate-900 text-xs p-3.5 rounded-2xl rounded-tr-xs shadow-xs font-sans leading-relaxed border border-[#c5e6af]">
+                    <div className="whitespace-pre-wrap font-sans text-[11.5px] leading-relaxed text-slate-900 select-text">
+                      {previewText}
+                    </div>
+                    <div className="flex items-center justify-end gap-1 text-[10px] text-slate-500 mt-2 font-mono">
+                      <span>{new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="text-emerald-600 font-bold">✓✓</span>
                     </div>
                   </div>
                 </div>
@@ -274,17 +326,13 @@ export function SendWhatsAppModal({
               {errorDetails && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 space-y-1">
                   <div className="font-bold flex items-center gap-1.5">
-                    <span>⚠️ Error Disagreeing with Meta API:</span>
+                    <span>⚠️ Dispatch Error:</span>
                   </div>
                   <p className="font-mono text-[11px] break-words">{errorDetails}</p>
-                  {errorDetails.includes('OAuthException') || errorDetails.includes('190') ? (
-                    <p className="text-[11px] text-red-700 font-semibold">
-                      Tip: Your 24-hr development token may have expired. Generate a fresh temporary token in the Meta App Dashboard or create a permanent System User token.
-                    </p>
-                  ) : errorDetails.includes('131030') || errorDetails.includes('allowed') ? (
-                    <p className="text-[11px] text-red-700 font-semibold">
-                      Tip: In Meta Development Mode, you can only send messages to recipient numbers added to the test recipient list in the Meta App Developer Console.
-                    </p>
+                  {errorDetails.includes('131047') || errorDetails.includes('24 hours') ? (
+                    <div className="text-[11px] text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200 mt-1">
+                      <b>Active Session Window Notice:</b> Outbound custom text messages require an active 24-hr session. Send any reply (e.g. &ldquo;Hi&rdquo;) from your mobile to <code>+1 555-635-8760</code> on WhatsApp to refresh the session window.
+                    </div>
                   ) : null}
                 </div>
               )}
@@ -295,19 +343,19 @@ export function SendWhatsAppModal({
                   type="button"
                   onClick={onClose}
                   disabled={isSending}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSending}
-                  className="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                 >
                   {isSending ? (
                     <>
                       <span className="inline-block h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Sending to WhatsApp...</span>
+                      <span>Dispatching WhatsApp Alert…</span>
                     </>
                   ) : (
                     <>

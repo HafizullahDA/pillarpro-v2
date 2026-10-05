@@ -8,6 +8,7 @@ import {
   sendWhatsAppTemplateMessage,
   normalizeWhatsAppNumber,
 } from '@/lib/whatsappCloudApi'
+import { generateEnterpriseExecutiveAlertText } from '@/lib/whatsappTemplates'
 import { logAuditEvent } from '@/lib/audit'
 
 export async function POST(req: NextRequest) {
@@ -53,11 +54,11 @@ export async function POST(req: NextRequest) {
       case 'bg_expiry':
         result = await sendBankGuaranteeExpiryAlert({
           to: targetPhone,
-          bgReference: payload.bgReference || 'BG Deposit',
+          bgReference: payload.bgReference || payload.reference || 'BG Deposit',
           depositType: payload.depositType || 'performance_bank_guarantee',
           amount: Number(payload.amount) || 0,
           issuingBank: payload.issuingBank,
-          expiryDate: payload.expiryDate,
+          expiryDate: payload.expiryDate || payload.date,
           daysRemaining: Number(payload.daysRemaining) || 0,
           projectName: payload.projectName,
         })
@@ -66,9 +67,9 @@ export async function POST(req: NextRequest) {
       case 'clause_notice':
         result = await sendClauseNoticeDeadlineAlert({
           to: targetPhone,
-          letterNumber: payload.letterNumber || 'Letter Notice',
+          letterNumber: payload.letterNumber || payload.reference || 'Letter Notice',
           subject: payload.subject || 'Contractual Notice',
-          deadlineDate: payload.deadlineDate,
+          deadlineDate: payload.deadlineDate || payload.date,
           daysRemaining: Number(payload.daysRemaining) || 0,
           clauseTitle: payload.clauseTitle,
           projectName: payload.projectName,
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
       case 'ra_bill':
         result = await sendRABillStatusAlert({
           to: targetPhone,
-          billNumber: payload.billNumber,
+          billNumber: payload.billNumber || payload.reference,
           status: payload.status || 'submitted',
           certifiedAmount: Number(payload.certifiedAmount) || 0,
           receivedAmount: payload.receivedAmount != null ? Number(payload.receivedAmount) : null,
@@ -99,7 +100,15 @@ export async function POST(req: NextRequest) {
       default:
         result = await sendWhatsAppTextMessage({
           to: targetPhone,
-          text: payload.text || 'Test alert from PillarPro Enterprise Command Center.',
+          text:
+            payload.formattedText ||
+            payload.text ||
+            generateEnterpriseExecutiveAlertText({
+              reference: payload.reference || 'Executive Contract Defense',
+              subtitle: payload.subtitle,
+              date: payload.date,
+              entityId: payload.entityId,
+            }),
         })
         break
     }
