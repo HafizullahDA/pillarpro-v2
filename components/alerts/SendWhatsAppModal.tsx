@@ -329,6 +329,29 @@ export function SendWhatsAppModal({
                     <span>⚠️ Dispatch Error:</span>
                   </div>
                   <p className="font-mono text-[11px] break-words">{errorDetails}</p>
+
+                  {errorDetails.toLowerCase().includes('token') ||
+                  errorDetails.toLowerCase().includes('authentication') ||
+                  errorDetails.toLowerCase().includes('expired') ||
+                  errorDetails.toLowerCase().includes('190') ? (
+                    <div className="text-[11px] text-amber-950 bg-amber-50/90 p-2.5 rounded-lg border border-amber-200 mt-2 space-y-1.5 leading-relaxed">
+                      <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                        <span>🔑 Meta Developer Token Expired (24-Hour Limit)</span>
+                      </div>
+                      <p className="text-[11px] text-amber-900">
+                        Meta&apos;s temporary testing access tokens expire after 24 hours.
+                      </p>
+                      <ul className="list-disc pl-4 space-y-1 text-[10.5px] text-amber-800">
+                        <li>
+                          <b>Quick Fix (10 seconds):</b> Go to <span className="font-mono font-semibold">developers.facebook.com</span> &gt; your App &gt; <b>WhatsApp &gt; API Setup</b>, click <b>&ldquo;Generate token&rdquo;</b>, and paste it into <code className="font-mono bg-white px-1 py-0.5 rounded border border-amber-300">WHATSAPP_API_TOKEN</code> in <code className="font-mono bg-white px-1 py-0.5 rounded border border-amber-300">.env.local</code>.
+                        </li>
+                        <li>
+                          <b>Permanent Fix (Never Expires):</b> In <span className="font-mono font-semibold">business.facebook.com/settings</span> &gt; <b>Users &gt; System Users</b>, create a System User, assign WhatsApp permissions, and generate a token with <b>&ldquo;Never Expire&rdquo;</b>.
+                        </li>
+                      </ul>
+                    </div>
+                  ) : null}
+
                   {errorDetails.includes('131047') || errorDetails.includes('24 hours') ? (
                     <div className="text-[11px] text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200 mt-1">
                       <b>Active Session Window Notice:</b> Outbound custom text messages require an active 24-hr session. Send any reply (e.g. &ldquo;Hi&rdquo;) from your mobile to <code>+1 555-635-8760</code> on WhatsApp to refresh the session window.

@@ -68,8 +68,27 @@ export async function sendRawWhatsAppPayload(payload: Record<string, any>): Prom
     const data = await res.json()
 
     if (!res.ok) {
-      const errMsg = data?.error?.message || data?.error?.error_user_msg || `Meta API HTTP ${res.status}`
+      const errMsg =
+        data?.error?.message ||
+        data?.error?.error_user_msg ||
+        data?.error?.error_user_title ||
+        `Meta API HTTP ${res.status}`
       console.error('[WHATSAPP CLOUD API ERROR]', errMsg, JSON.stringify(data))
+
+      if (
+        data?.error?.code === 190 ||
+        data?.error?.error_subcode === 463 ||
+        errMsg.toLowerCase().includes('session has expired') ||
+        errMsg.toLowerCase().includes('validating access token') ||
+        errMsg.toLowerCase().includes('authentication error')
+      ) {
+        return {
+          success: false,
+          error:
+            'Authentication Error: Your 24-hour temporary Meta WhatsApp API token in .env.local has expired. Generate a fresh token in the Meta App Dashboard or create a permanent System User token.',
+        }
+      }
+
       return {
         success: false,
         error: errMsg,
