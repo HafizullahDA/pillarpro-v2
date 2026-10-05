@@ -4,6 +4,7 @@ export interface WhatsAppAlertPayload {
   reference: string
   subtitle?: string
   date?: string
+  targetDate?: string
   daysRemaining?: number
   amount?: number
   issuingBank?: string
