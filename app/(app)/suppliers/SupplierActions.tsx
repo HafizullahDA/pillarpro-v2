@@ -15,7 +15,7 @@ import { safeMul, roundToTwo } from '@/lib/calculations/financial'
 import { SupplierScanConfirmModal } from '@/components/suppliers/SupplierScanConfirmModal'
 
 type Project = { id: string; name: string }
-type SupplierOption = { id: string; name: string; pending?: boolean }
+type SupplierOption = { id: string; name: string; pending?: boolean; contact_number?: string }
 
 const PAYMENT_MODES = [
   { value: 'cash',          label: 'Cash' },
@@ -450,6 +450,32 @@ export function SupplierActions({
       notes: '',
     })
     toast.success(`Payment of ₹${amountVal.toLocaleString('en-IN')} recorded`)
+
+    // Background dispatch of WhatsApp payment advice to vendor if contact number is available
+    const matchedSup = availableSuppliers.find(s => s.id === payForm.supplier_id)
+    if (matchedSup?.contact_number) {
+      fetch('/api/alerts/send-payment-advice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          supplierId: payForm.supplier_id,
+          supplierName: matchedSup.name,
+          recipientPhone: matchedSup.contact_number,
+          amount: amountVal,
+          paymentMode: payForm.mode,
+          reference: payForm.reference.trim() || undefined,
+          date: payForm.date,
+          projectId: payForm.project_id || null,
+        }),
+      })
+        .then(res => {
+          if (res.ok) {
+            toast.success(`WhatsApp Payment Advice sent to ${matchedSup.name}`)
+          }
+        })
+        .catch(() => {})
+    }
+
     router.refresh()
   }
 

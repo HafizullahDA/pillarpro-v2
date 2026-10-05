@@ -1,12 +1,22 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { runDailyMorningScan } from '../dispatchEngine'
 import * as securitiesScanner from '../scanners/securitiesScanner'
 import * as noticesScanner from '../scanners/noticesScanner'
+import * as raBillsScanner from '../scanners/raBillsScanner'
+import * as suppliersScanner from '../scanners/suppliersScanner'
 import * as ledger from '../ledger'
 
 describe('Autonomous Alerts Dispatch Engine', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(securitiesScanner, 'scanSecurities').mockResolvedValue([])
+    vi.spyOn(noticesScanner, 'scanNotices').mockResolvedValue([])
+    vi.spyOn(raBillsScanner, 'scanRABills').mockResolvedValue([])
+    vi.spyOn(suppliersScanner, 'scanSuppliers').mockResolvedValue([])
+    vi.spyOn(ledger, 'isMilestoneDispatched').mockResolvedValue(false)
+  })
+
   it('runs dry-run scan without triggering live Meta calls and reports candidate metrics', async () => {
-    // Mock scanners
     vi.spyOn(securitiesScanner, 'scanSecurities').mockResolvedValue([
       {
         entityType: 'bank_guarantee',
@@ -25,9 +35,6 @@ describe('Autonomous Alerts Dispatch Engine', () => {
       },
     ])
 
-    vi.spyOn(noticesScanner, 'scanNotices').mockResolvedValue([])
-    vi.spyOn(ledger, 'isMilestoneDispatched').mockResolvedValue(false)
-
     const mockSupabase = {} as any
 
     const summary = await runDailyMorningScan(mockSupabase, {
@@ -44,6 +51,51 @@ describe('Autonomous Alerts Dispatch Engine', () => {
     expect(summary.details[0].entityReference).toBe('PBG #SBI-2024-91')
   })
 
+  it('correctly dispatches Phase 2 RA bill and supplier credit alerts', async () => {
+    vi.spyOn(raBillsScanner, 'scanRABills').mockResolvedValue([
+      {
+        entityType: 'ra_bill',
+        entityId: 'rab-55',
+        entityReference: 'RA Bill #04',
+        projectName: 'Four Lane Bypass',
+        targetDate: '2026-08-20',
+        daysRemaining: -46,
+        milestoneKey: 'OVERDUE_45D',
+        urgencyLabel: '46d DELAYED (MSME STATUTORY INTEREST)',
+        workCertifiedAmount: 5000000,
+        netPayableAmount: 4750000,
+        outstandingBalance: 4750000,
+      },
+    ])
+
+    vi.spyOn(suppliersScanner, 'scanSuppliers').mockResolvedValue([
+      {
+        entityType: 'supplier',
+        entityId: 'sup-88',
+        entityReference: 'J&K Cements Ltd',
+        targetDate: '2026-10-05',
+        daysRemaining: 0,
+        milestoneKey: 'CREDIT_85_PERCENT',
+        urgencyLabel: 'CREDIT LIMIT CRITICAL (91%)',
+        creditLimit: 1000000,
+        outstandingBalance: 910000,
+        creditUtilizationPercent: 91,
+      },
+    ])
+
+    const mockSupabase = {} as any
+
+    const summary = await runDailyMorningScan(mockSupabase, {
+      dryRun: true,
+      overrideRecipientPhone: '+919999999999',
+    })
+
+    expect(summary.totalScanned).toBe(2)
+    expect(summary.dispatchedCount).toBe(2)
+    expect(summary.details[0].milestoneKey).toBe('OVERDUE_45D')
+    expect(summary.details[1].milestoneKey).toBe('CREDIT_85_PERCENT')
+  })
+
   it('skips candidates when already recorded in deduplication ledger', async () => {
     vi.spyOn(securitiesScanner, 'scanSecurities').mockResolvedValue([
       {
@@ -57,8 +109,6 @@ describe('Autonomous Alerts Dispatch Engine', () => {
       },
     ])
 
-    vi.spyOn(noticesScanner, 'scanNotices').mockResolvedValue([])
-    // Mock that T_MINUS_7 was ALREADY dispatched today
     vi.spyOn(ledger, 'isMilestoneDispatched').mockResolvedValue(true)
 
     const mockSupabase = {} as any
@@ -87,8 +137,6 @@ describe('Autonomous Alerts Dispatch Engine', () => {
         recipientPhone: undefined,
       },
     ])
-
-    vi.spyOn(noticesScanner, 'scanNotices').mockResolvedValue([])
 
     const mockSupabase = {} as any
     const originalEnv = process.env.WHATSAPP_ALERT_RECIPIENT_PHONE

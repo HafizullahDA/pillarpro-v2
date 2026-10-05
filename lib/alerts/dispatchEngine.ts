@@ -8,10 +8,14 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { AlertCandidate, ScanRunSummary, AlertDispatchStatus } from './types'
 import { scanSecurities } from './scanners/securitiesScanner'
 import { scanNotices } from './scanners/noticesScanner'
+import { scanRABills } from './scanners/raBillsScanner'
+import { scanSuppliers } from './scanners/suppliersScanner'
 import { isMilestoneDispatched, recordDispatchLog } from './ledger'
 import {
   generateEnterpriseExecutiveAlertText,
   generateClauseNoticeWhatsAppText,
+  generateDelayedRABillWhatsAppText,
+  generateSupplierCreditLimitWhatsAppText,
 } from '../whatsappTemplates'
 import { sendWhatsAppTextMessage } from '../whatsappCloudApi'
 
@@ -44,14 +48,23 @@ export async function runDailyMorningScan(
   }
 
   // 1. Gather all candidates from active domain scanners
-  const [securitiesCandidates, noticesCandidates] = await Promise.all([
+  const [
+    securitiesCandidates,
+    noticesCandidates,
+    raBillsCandidates,
+    suppliersCandidates,
+  ] = await Promise.all([
     scanSecurities(supabase, options.asOfDateStr),
     scanNotices(supabase, options.asOfDateStr),
+    scanRABills(supabase, options.asOfDateStr),
+    scanSuppliers(supabase, options.asOfDateStr),
   ])
 
   const allCandidates: AlertCandidate[] = [
     ...securitiesCandidates,
     ...noticesCandidates,
+    ...raBillsCandidates,
+    ...suppliersCandidates,
   ]
 
   summary.totalScanned = allCandidates.length
@@ -117,6 +130,29 @@ export async function runDailyMorningScan(
         clauseTitle: candidate.clauseCitation,
         date: candidate.targetDate,
         daysRemaining: candidate.daysRemaining,
+        projectName: candidate.projectName,
+        entityId: candidate.entityId,
+      })
+    } else if (candidate.entityType === 'ra_bill') {
+      messageText = generateDelayedRABillWhatsAppText({
+        reference: candidate.entityReference,
+        billNumber: candidate.entityReference,
+        date: candidate.targetDate,
+        daysDelayed: Math.abs(candidate.daysRemaining),
+        daysRemaining: candidate.daysRemaining,
+        workCertifiedAmount: candidate.workCertifiedAmount,
+        netPayableAmount: candidate.netPayableAmount,
+        outstandingBalance: candidate.outstandingBalance,
+        projectName: candidate.projectName,
+        entityId: candidate.entityId,
+      })
+    } else if (candidate.entityType === 'supplier') {
+      messageText = generateSupplierCreditLimitWhatsAppText({
+        reference: candidate.entityReference,
+        supplierName: candidate.entityReference,
+        creditLimit: candidate.creditLimit,
+        outstandingBalance: candidate.outstandingBalance,
+        creditUtilizationPercent: candidate.creditUtilizationPercent,
         projectName: candidate.projectName,
         entityId: candidate.entityId,
       })

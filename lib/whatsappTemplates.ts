@@ -20,6 +20,16 @@ export interface WhatsAppAlertPayload {
   entityId?: string
   recipientPhone?: string
   auditRef?: string
+  // Phase 2 Cash Flow & Vendor fields:
+  daysDelayed?: number
+  workCertifiedAmount?: number
+  netPayableAmount?: number
+  outstandingBalance?: number
+  creditLimit?: number
+  creditUtilizationPercent?: number
+  supplierName?: string
+  paymentMode?: string
+  updatedBalance?: number
 }
 
 /**
@@ -235,10 +245,140 @@ export function generateEnterpriseExecutiveAlertText(data: WhatsAppAlertPayload)
 }
 
 /**
+ * 5. Enterprise Delayed RA Bill Payment & Statutory Interest Alert
+ */
+export function generateDelayedRABillWhatsAppText(data: WhatsAppAlertPayload): string {
+  const auditCode = generateAuditCode('RAB-DLY', data.entityId || data.billNumber || data.reference)
+  const daysDelayed = data.daysDelayed != null ? Math.abs(data.daysDelayed) : Math.abs(data.daysRemaining || 0)
+  const isMsmeEligible = daysDelayed >= 45
+
+  const grossStr = data.workCertifiedAmount != null ? formatINR(data.workCertifiedAmount) : 'Pending'
+  const netStr = data.netPayableAmount != null ? formatINR(data.netPayableAmount) : 'Pending'
+  const outstandingStr = data.outstandingBalance != null ? formatINR(data.outstandingBalance) : netStr
+
+  const lines: (string | null)[] = [
+    `💼 *PILLARPRO ENTERPRISE | CASH FLOW RADAR*`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `⚠️ *RA BILL PAYMENT OVERDUE: STATUTORY THRESHOLD EXCEEDED*`,
+    ``,
+    `📋 *Bill Particulars:*`,
+    `• *Bill Reference*: ${data.billNumber || data.reference}`,
+    data.projectName ? `• *Project / Package*: ${data.projectName}` : null,
+    data.date ? `• *Submission Date*: ${data.date}` : null,
+    `• *Aging*: 🚨 *${daysDelayed} days elapsed* since submission`,
+    ``,
+    `💰 *Financial Balance Owed:*`,
+    `• *Gross Certified Amount*: ${grossStr}`,
+    `• *Net Certified Payable*: ${netStr}`,
+    `• *Outstanding Department Debt*: *${outstandingStr}*`,
+    ``,
+    `⚖️ *Governing Statutory Basis:*`,
+    isMsmeEligible
+      ? `• *MSMED Act 2006 (Sec 15 & 16)*: Statutory 45-day payment window exceeded. Department is liable to pay compound interest with monthly rests at *3x RBI Bank Rate*.`
+      : `• *CPWD GCC Clause 7*: Interim RA bill certification & payment mandated within 30 days of submission.`,
+    ``,
+    `📌 *Mandated Recovery Action:*`,
+    `1. Issue formal reminder letter citing CPWD Clause 7 to Executive Engineer.`,
+    isMsmeEligible
+      ? `2. File formal statutory interest notice under Section 16 of MSMED Act 2006.`
+      : `2. Follow up with Divisional Accounts Officer (DAO) for treasury token generation.`,
+    `3. Track recovery status in PillarPro RA Bill Ledger.`,
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🔒 *Audit Code*: ${auditCode} • Confidential Financial Escalation`,
+    `_PillarPro Treasury & Cash Flow Engine_`,
+  ]
+
+  return lines.filter(Boolean).join('\n')
+}
+
+/**
+ * 6. Enterprise Supplier Credit Limit Threshold Alert
+ */
+export function generateSupplierCreditLimitWhatsAppText(data: WhatsAppAlertPayload): string {
+  const auditCode = generateAuditCode('VEN-CR', data.entityId || data.supplierName || data.reference)
+  const limitStr = data.creditLimit != null ? formatINR(data.creditLimit) : 'N/A'
+  const balanceStr = data.outstandingBalance != null ? formatINR(data.outstandingBalance) : 'N/A'
+  const utilStr = data.creditUtilizationPercent != null ? `${data.creditUtilizationPercent.toFixed(1)}%` : 'Critical'
+
+  const lines: (string | null)[] = [
+    `🏗️ *PILLARPRO ENTERPRISE | PROCUREMENT RISK SHIELD*`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🚨 *SUPPLIER CREDIT LIMIT: CRITICAL UTILIZATION WARNING*`,
+    ``,
+    `📋 *Supplier Particulars:*`,
+    `• *Supplier / Vendor*: ${data.supplierName || data.reference}`,
+    data.projectName ? `• *Site Allocation*: ${data.projectName}` : null,
+    ``,
+    `📊 *Credit Utilization Breakdown:*`,
+    `• *Agreed Credit Limit*: ${limitStr}`,
+    `• *Current Balance Owed*: *${balanceStr}*`,
+    `• *Utilization Threshold*: ⚠️ *${utilStr}*`,
+    ``,
+    `⚠️ *Operational Risk Assessment:*`,
+    `Exceeding vendor credit threshold will trigger an immediate material dispatch hold (cement/RMC/steel), creating severe structural delay or machine idling on active sites.`,
+    ``,
+    `📌 *Recommended Procurement Action:*`,
+    `1. Authorize partial payment via NEFT/RTGS to vendor account.`,
+    `2. Negotiate temporary limit enhancement for ongoing casting schedules.`,
+    `3. Log payment advice in PillarPro Supplier Khata.`,
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🔒 *Audit Code*: ${auditCode} • Authorized Procurement Channel`,
+    `_PillarPro Vendor Management & Supply Chain Shield_`,
+  ]
+
+  return lines.filter(Boolean).join('\n')
+}
+
+/**
+ * 7. Enterprise Vendor Payment Advice Receipt
+ */
+export function generateVendorPaymentAdviceWhatsAppText(data: WhatsAppAlertPayload): string {
+  const auditCode = generateAuditCode('PAY-ADV', data.entityId || data.reference)
+  const amountStr = data.amount != null ? formatINR(data.amount) : '0.00'
+  const balanceStr = data.updatedBalance != null ? formatINR(data.updatedBalance) : null
+  const dateStr = data.date || new Date().toISOString().split('T')[0]
+
+  const lines: (string | null)[] = [
+    `✅ *PILLARPRO ENTERPRISE | OFFICIAL PAYMENT ADVICE*`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `Dear ${data.supplierName || 'Valued Supplier / Partner'},`,
+    ``,
+    `Please be advised that an official vendor payment has been authorized and dispatched by the contractor accounts desk:`,
+    ``,
+    `💰 *Transaction Particulars:*`,
+    `• *Payment Amount*: *${amountStr}*`,
+    `• *Disbursed Date*: ${dateStr}`,
+    `• *Payment Mode*: ${data.paymentMode ? data.paymentMode.replace(/_/g, ' ').toUpperCase() : 'BANK TRANSFER'}`,
+    data.reference ? `• *Bank Ref / UTR / Cheque*: ${data.reference}` : null,
+    data.projectName ? `• *Project Allocation*: ${data.projectName}` : null,
+    balanceStr ? `• *Updated Ledger Balance Owed*: ${balanceStr}` : null,
+    ``,
+    `📌 *Verification Note:*`,
+    `Please reconcile your accounts ledger. If you have any discrepancy, please contact our accounts department with the audit code below.`,
+    ``,
+    `━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🔒 *Audit Code*: ${auditCode} • Official Accounts Advice`,
+    `_PillarPro Accounts & Khata Automation_`,
+  ]
+
+  return lines.filter(Boolean).join('\n')
+}
+
+/**
  * Master dispatcher for formatted alert text based on type.
  */
 export function generateWhatsAppAlertText(
-  alertType: 'bg_expiry' | 'clause_notice' | 'ra_bill' | 'text' | string,
+  alertType:
+    | 'bg_expiry'
+    | 'clause_notice'
+    | 'ra_bill'
+    | 'ra_bill_delayed'
+    | 'supplier_credit'
+    | 'payment_advice'
+    | 'text'
+    | string,
   data: WhatsAppAlertPayload
 ): string {
   switch (alertType) {
@@ -248,8 +388,15 @@ export function generateWhatsAppAlertText(
       return generateClauseNoticeWhatsAppText(data)
     case 'ra_bill':
       return generateRABillWhatsAppText(data)
+    case 'ra_bill_delayed':
+      return generateDelayedRABillWhatsAppText(data)
+    case 'supplier_credit':
+      return generateSupplierCreditLimitWhatsAppText(data)
+    case 'payment_advice':
+      return generateVendorPaymentAdviceWhatsAppText(data)
     case 'text':
     default:
       return generateEnterpriseExecutiveAlertText(data)
   }
 }
+

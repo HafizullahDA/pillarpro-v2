@@ -108,7 +108,7 @@ export default async function SupplierDetailPage({ params }: Props) {
             />
             <SupplierActions
               projects={projects ?? []}
-              suppliers={[{ id: supplier.id, name: supplier.name }]}
+              suppliers={[{ id: supplier.id, name: supplier.name, contact_number: supplier.contact_number }]}
               defaultSupplierId={supplier.id}
               showAddSupplier={false}
             />

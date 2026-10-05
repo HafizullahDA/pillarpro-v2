@@ -19,6 +19,11 @@ export type MilestoneKey =
   | 'T_MINUS_1'
   | 'T_0'
   | 'OVERDUE'
+  | 'OVERDUE_30D'
+  | 'OVERDUE_45D'
+  | 'OVERDUE_60D'
+  | 'CREDIT_85_PERCENT'
+  | 'CREDIT_BREACHED'
 
 export type AlertDispatchStatus = 'dispatched' | 'failed' | 'skipped'
 
@@ -40,6 +45,16 @@ export interface AlertCandidate {
   letterNumber?: string
   subject?: string
   clauseCitation?: string
+  // Phase 2 Cash Flow & Vendor additions:
+  workCertifiedAmount?: number
+  retentionAmount?: number
+  netPayableAmount?: number
+  amountReceived?: number
+  outstandingBalance?: number
+  creditLimit?: number
+  creditUtilizationPercent?: number
+  paymentMode?: string
+  transactionRef?: string
   customPayload?: Record<string, any>
 }
 
