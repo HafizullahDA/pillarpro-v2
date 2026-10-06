@@ -80,19 +80,24 @@ export function Sidebar({
         </div>
 
         {/* Navigation with Collapsible Heading Accordions */}
-        <nav className="flex-1 px-3 py-3 space-y-2.5 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-3 py-3 space-y-3.5 overflow-y-auto custom-scrollbar">
           {/* Top Primary Command Center Link */}
           <div>
             <Link
               href="/dashboard"
               className={cn(
-                'flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all',
+                'relative overflow-hidden flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all select-none group',
                 pathname === '/dashboard' || pathname === '/'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  ? 'bg-blue-600 text-white font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_1px_3px_rgba(0,0,0,0.3)] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r before:bg-white'
+                  : 'bg-transparent text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
               )}
             >
-              <span className={pathname === '/dashboard' || pathname === '/' ? 'text-white' : 'text-slate-400'}>
+              <span
+                className={cn(
+                  'w-5 h-5 flex items-center justify-center shrink-0 [&>svg]:w-4 [&>svg]:h-4 transition-colors',
+                  pathname === '/dashboard' || pathname === '/' ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'
+                )}
+              >
                 {Icons.dashboard}
               </span>
               <span className="flex-1 truncate">{t('nav.dashboard', 'Command Center')}</span>
@@ -115,48 +120,50 @@ export function Sidebar({
 
             return (
               <div key={group.id} className="space-y-1">
-                {/* Heading Button (Only visible by default, expands sub-cards on click) */}
-                <button
-                  type="button"
-                  onClick={() => toggleGroup(group.id)}
-                  aria-expanded={isExpanded}
-                  className={cn(
-                    'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all select-none group',
-                    hasActiveChild
-                      ? 'text-white bg-slate-800/90 hover:bg-slate-800 border border-slate-700/60'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                  )}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[11px] font-bold uppercase tracking-wider truncate">
-                      {t(group.i18nKey || '', group.label)}
-                    </span>
-                    {hasActiveChild && !isExpanded && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                    <span className="text-[10px] text-slate-500 font-mono">
-                      {groupVisibleItems.length}
-                    </span>
-                    <svg
-                      className={cn(
-                        'w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300 transition-transform duration-200',
-                        isExpanded ? 'rotate-90 text-blue-400' : 'rotate-0'
+                {/* Heading Button with bottom divider */}
+                <div className="pb-1 border-b border-slate-800/70">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.id)}
+                    aria-expanded={isExpanded}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs transition-colors select-none group hover:bg-slate-800/40"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className={cn(
+                          'text-[10.5px] font-bold uppercase tracking-[0.09em] truncate transition-colors',
+                          hasActiveChild ? 'text-slate-200' : 'text-slate-300 group-hover:text-white'
+                        )}
+                      >
+                        {t(group.i18nKey || '', group.label)}
+                      </span>
+                      {hasActiveChild && !isExpanded && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_6px_rgba(59,130,246,0.8)]" />
                       )}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-4 px-1.5 rounded-full text-[10px] font-mono font-medium leading-none bg-slate-800/90 text-slate-300 border border-slate-700/60 shadow-2xs group-hover:border-slate-600 transition-colors">
+                        {groupVisibleItems.length}
+                      </span>
+                      <svg
+                        className={cn(
+                          'w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200 transition-transform duration-200 shrink-0',
+                          isExpanded ? 'rotate-90 text-blue-400' : 'rotate-0'
+                        )}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
+                </div>
 
-                {/* Sub-cards Container with visual tree line (|) */}
+                {/* Sub-items Container with thin 1px 20-25% white vertical connector line */}
                 {isExpanded && (
-                  <div className="relative ml-4.5 pl-3 border-l-2 border-slate-700/70 space-y-1 pt-1 pb-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="relative ml-3 pl-1.5 border-l border-white/20 space-y-0.5 pt-1 pb-1 animate-in fade-in slide-in-from-top-1 duration-150">
                     {groupVisibleItems.map(item => {
                       const active =
                         item.href === '/ledgers/suppliers'
@@ -169,27 +176,33 @@ export function Sidebar({
                       const isAi = item.href === '/contract-ai'
 
                       return (
-                        <div key={item.href} className="relative flex items-center group/item">
-                          {/* Horizontal tree branch connector |─ */}
-                          <span className="absolute -left-3 top-1/2 w-2.5 h-px bg-slate-700/70 pointer-events-none group-hover/item:bg-slate-500 transition-colors" />
-
+                        <div key={item.href} className="relative flex items-center">
                           <Link
                             href={item.href}
                             className={cn(
-                              'w-full flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border',
+                              'relative overflow-hidden w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all select-none group',
                               active
-                                ? 'bg-blue-600 text-white font-semibold shadow-xs border-blue-500'
-                                : 'bg-slate-800/40 text-slate-400 hover:text-white hover:bg-slate-800/80 border-slate-800/80 hover:border-slate-700'
+                                ? 'bg-blue-600 text-white font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_1px_3px_rgba(0,0,0,0.3)] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r before:bg-white'
+                                : 'bg-transparent text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
                             )}
                           >
-                            <span className={active ? 'text-white' : isAi ? 'text-blue-400' : 'text-slate-400'}>
+                            <span
+                              className={cn(
+                                'w-5 h-5 flex items-center justify-center shrink-0 [&>svg]:w-4 [&>svg]:h-4 transition-colors',
+                                active
+                                  ? 'text-white'
+                                  : isAi
+                                  ? 'text-blue-400 group-hover:text-blue-300'
+                                  : 'text-slate-500 group-hover:text-slate-300'
+                              )}
+                            >
                               {Icons[item.icon as keyof typeof Icons]}
                             </span>
                             <span className="flex-1 truncate">{label}</span>
                             {'badge' in item && (item as any).badge && (
                               <span
                                 className={cn(
-                                  'text-[9px] font-extrabold px-1.5 py-0.2 rounded shadow-2xs',
+                                  'text-[9px] font-extrabold px-1.5 py-0.2 rounded shadow-2xs leading-none',
                                   active
                                     ? 'bg-white/20 text-white'
                                     : 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
@@ -210,54 +223,67 @@ export function Sidebar({
 
           {/* Exclusive Platform Owner Section */}
           {(isPlatformAdmin || userEmail?.trim().toLowerCase() === 'pillarprojk@gmail.com') && (
-            <div className="pt-2 border-t border-slate-800/80 space-y-1">
-              <button
-                type="button"
-                onClick={() => setOwnerExpanded(prev => !prev)}
-                aria-expanded={ownerExpanded}
-                className={cn(
-                  'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all select-none group',
-                  pathname.startsWith('/admin/visitors')
-                    ? 'text-amber-300 bg-amber-500/10 border border-amber-500/30'
-                    : 'text-amber-400/80 hover:text-amber-300 hover:bg-slate-800/50'
-                )}
-              >
-                <span className="text-[11px] font-bold uppercase tracking-wider truncate">
-                  Platform Owner
-                </span>
-                <svg
-                  className={cn(
-                    'w-3.5 h-3.5 text-amber-500/70 group-hover:text-amber-400 transition-transform duration-200',
-                    ownerExpanded ? 'rotate-90' : 'rotate-0'
-                  )}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
+            <div className="pt-3 border-t border-slate-800/80 space-y-1">
+              <div className="pb-1 border-b border-slate-800/70">
+                <button
+                  type="button"
+                  onClick={() => setOwnerExpanded(prev => !prev)}
+                  aria-expanded={ownerExpanded}
+                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs transition-colors select-none group hover:bg-slate-800/40 text-amber-300"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[10.5px] font-bold uppercase tracking-[0.09em] truncate text-amber-300/90 group-hover:text-amber-200">
+                      Platform Owner
+                    </span>
+                    {pathname.startsWith('/admin/visitors') && !ownerExpanded && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                    <span className="inline-flex items-center justify-center min-w-[18px] h-4 px-1.5 rounded-full text-[10px] font-mono font-medium leading-none bg-amber-500/10 text-amber-300 border border-amber-500/30 shadow-2xs">
+                      1
+                    </span>
+                    <svg
+                      className={cn(
+                        'w-3.5 h-3.5 text-amber-400/80 group-hover:text-amber-300 transition-transform duration-200 shrink-0',
+                        ownerExpanded ? 'rotate-90 text-amber-300' : 'rotate-0'
+                      )}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </button>
+              </div>
 
               {ownerExpanded && (
-                <div className="relative ml-4.5 pl-3 border-l-2 border-amber-500/40 space-y-1 pt-1 pb-1 animate-in fade-in slide-in-from-top-1 duration-150">
-                  <div className="relative flex items-center group/item">
-                    <span className="absolute -left-3 top-1/2 w-2.5 h-px bg-amber-500/40 pointer-events-none group-hover/item:bg-amber-400 transition-colors" />
+                <div className="relative ml-3 pl-1.5 border-l border-amber-500/30 space-y-0.5 pt-1 pb-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="relative flex items-center">
                     <Link
                       href="/admin/visitors"
                       className={cn(
-                        'w-full flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border',
+                        'relative overflow-hidden w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all select-none group',
                         pathname.startsWith('/admin/visitors')
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                          : 'bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-white border-slate-800/80'
+                          ? 'bg-amber-500/20 text-amber-300 font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_1px_3px_rgba(0,0,0,0.3)] before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-r before:bg-amber-400'
+                          : 'bg-transparent text-slate-400 hover:text-slate-100 hover:bg-slate-800/60'
                       )}
                     >
-                      <svg className="w-4 h-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
+                      <span
+                        className={cn(
+                          'w-5 h-5 flex items-center justify-center shrink-0 [&>svg]:w-4 [&>svg]:h-4 transition-colors',
+                          pathname.startsWith('/admin/visitors') ? 'text-amber-300' : 'text-amber-500/70 group-hover:text-amber-400'
+                        )}
+                      >
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </span>
                       <span className="flex-1 truncate">Visitor Telemetry</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 leading-none">
                         Live
                       </span>
                     </Link>
