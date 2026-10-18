@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -39,6 +39,30 @@ export default function SignInPage() {
   const [loading, setLoading]           = useState(false)
   const [cooldown, setCooldown]         = useState(0)
 
+  // Unconfirmed email & OTP verification state
+  const [isEmailUnconfirmed, setIsEmailUnconfirmed] = useState(false)
+  const [otpCode, setOtpCode]                       = useState('')
+  const [verifyLoading, setVerifyLoading]           = useState(false)
+  const [verifyError, setVerifyError]               = useState('')
+  const [resendNotice, setResendNotice]             = useState('')
+  const [resendCooldown, setResendCooldown]         = useState(0)
+  const [resendLoading, setResendLoading]           = useState(false)
+
+  // Read ?error= or ?email= from query parameters
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const errParam = params.get('error')
+      const emailParam = params.get('email')
+      if (errParam) {
+        setError(decodeURIComponent(errParam))
+      }
+      if (emailParam) {
+        setEmail(decodeURIComponent(emailParam))
+      }
+    }
+  }, [])
+
   // Countdown timer for security lockout cooldown
   useEffect(() => {
     if (cooldown <= 0) return
@@ -48,11 +72,52 @@ export default function SignInPage() {
     return () => clearInterval(timer)
   }, [cooldown])
 
+  // Countdown timer for resend email cooldown
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const timer = setInterval(() => {
+      setResendCooldown(c => Math.max(0, c - 1))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [resendCooldown])
+
+  const ensureUserProvisioned = async (user: any) => {
+    if (!user) return
+    try {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('organization_id, status')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (!profile?.organization_id || profile?.status !== 'active') {
+        const meta = user.user_metadata || {}
+        if (meta.join_code) {
+          await supabase.rpc('join_organization', {
+            p_join_code: meta.join_code,
+            p_display_name: meta.display_name || user.email?.split('@')[0],
+            p_role: 'site_supervisor',
+          })
+        } else {
+          await supabase.rpc('onboard_contractor', {
+            p_firm_name: meta.firm_name || 'My Contracting Firm',
+            p_display_name: meta.display_name || user.email?.split('@')[0],
+            p_seed_starter: meta.seed_starter !== false,
+          })
+        }
+      }
+    } catch (e) {
+      console.warn('Post-login provisioning check notice:', e)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (cooldown > 0) return
 
     setError('')
+    setVerifyError('')
+    setResendNotice('')
     setLoading(true)
 
     // 1. Enforce sliding-window rate limit pre-flight
@@ -76,19 +141,95 @@ export default function SignInPage() {
     }
 
     // 2. Attempt Supabase authentication
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
     })
 
     if (authError) {
-      setError(authError.message)
+      const isUnconfirmed = authError.message.toLowerCase().includes('not confirmed') ||
+                            authError.message.toLowerCase().includes('unconfirmed')
+
+      if (isUnconfirmed) {
+        setIsEmailUnconfirmed(true)
+        setError('Your email address has not been confirmed yet. Check your inbox or resend the confirmation email below.')
+      } else {
+        setError(authError.message)
+      }
       setLoading(false)
       return
     }
 
+    if (authData?.user) {
+      await ensureUserProvisioned(authData.user)
+    }
+
     router.refresh()
     router.push('/dashboard')
+  }
+
+  // Handle OTP verification from sign-in
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!otpCode.trim() || !email.trim()) return
+
+    setVerifyError('')
+    setVerifyLoading(true)
+
+    try {
+      const { data: verifyData, error: verifyErr } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: otpCode.trim(),
+        type: 'signup',
+      })
+
+      if (verifyErr) {
+        setVerifyError(verifyErr.message || 'Invalid or expired verification code.')
+        setVerifyLoading(false)
+        return
+      }
+
+      if (verifyData?.user) {
+        await ensureUserProvisioned(verifyData.user)
+      }
+
+      router.refresh()
+      router.push('/dashboard')
+    } catch (err: any) {
+      setVerifyError(err?.message || 'Verification failed. Please try again.')
+      setVerifyLoading(false)
+    }
+  }
+
+  // Handle resending confirmation email from sign-in
+  const handleResendEmail = async () => {
+    if (!email.trim() || resendCooldown > 0 || resendLoading) return
+
+    setResendLoading(true)
+    setResendNotice('')
+    setVerifyError('')
+
+    try {
+      const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined
+      const { error: resendErr } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim().toLowerCase(),
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
+      })
+
+      if (resendErr) {
+        setVerifyError(resendErr.message)
+      } else {
+        setResendCooldown(60)
+        setResendNotice(`Confirmation email resent to ${email.trim().toLowerCase()}! Please check your inbox and spam folder.`)
+      }
+    } catch (err: any) {
+      setVerifyError(err?.message || 'Failed to resend confirmation email.')
+    } finally {
+      setResendLoading(false)
+    }
   }
 
   return (

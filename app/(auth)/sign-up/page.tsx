@@ -70,6 +70,9 @@ export default function SignUpPage() {
       if (plan) {
         setSelectedPlan(plan.toLowerCase().trim())
       }
+      if (roleParam && ['site_supervisor', 'accountant', 'partner', 'viewer'].includes(roleParam)) {
+        setJoinRole(roleParam as any)
+      }
     }
   }, [])
 
@@ -293,562 +296,587 @@ export default function SignUpPage() {
     : null
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] bg-enterprise-grid flex flex-col justify-center py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-5xl mx-auto">
-        <div className="relative rounded-2xl bg-white shadow-xl border border-slate-200/90 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[680px]">
-          
-          {/* ── Left Brand Showcase Column (Refined Executive Slate Theme) ── */}
-          <div className="order-2 lg:order-1 lg:col-span-5 bg-slate-50/90 p-7 sm:p-9 lg:p-10 flex flex-col justify-between border-t lg:border-t-0 lg:border-r border-slate-200/80 text-slate-900 relative overflow-hidden">
-            {/* Subtle background ambient wash */}
-            <div className="absolute top-0 left-0 w-72 h-72 bg-blue-100/30 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-dvh w-full grid lg:grid-cols-12 bg-white antialiased selection:bg-blue-600 selection:text-white">
+      {/* ── LEFT PANEL: DARK INSTITUTIONAL SHOWCASE ──── */}
+      <div className="hidden lg:flex lg:flex-col lg:justify-between lg:col-span-5 xl:col-span-5 p-10 xl:p-14 bg-slate-900 text-white relative overflow-hidden border-r border-slate-800 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:3rem_3rem]">
+        {/* Subtle radial glow */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="relative z-10">
-              <div className="hidden lg:flex items-center gap-3 mb-8">
-                <Logo theme="light" size="md" subtitle="Civil Contractor OS" href="/" />
+        <div className="relative z-10 space-y-6">
+          {/* Top Logo & Enterprise Trial Badge */}
+          <div className="flex items-center justify-between gap-3">
+            <Logo theme="dark" size="md" subtitle="Civil Contractor OS" href="/" />
+            <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold px-3 py-1 rounded-md tracking-wide shadow-xs shrink-0 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              7-DAY FULL ENTERPRISE TRIAL • NO CREDIT CARD
+            </span>
+          </div>
+
+          {planLabel && (
+            <div className="text-[11px] font-bold tracking-wide uppercase text-blue-400 bg-blue-950/70 px-2.5 py-1 rounded-md border border-blue-800/80 inline-block">
+              Configuring Plan: {planLabel}
+            </div>
+          )}
+
+          {/* Headline */}
+          <div className="pt-2">
+            <h1 className="text-2xl xl:text-3xl font-extrabold text-white tracking-tight leading-tight">
+              The Statutory &amp; Financial OS for Indian Civil Contractors.
+            </h1>
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+              Protect contract margins, stop unfair liquidated damages, and reconcile multi-agency Running Account bills down to the exact rupee.
+            </p>
+          </div>
+
+          {/* Live Contract Telemetry Preview Card (Dark Glass Card) */}
+          <div className="rounded-xl bg-slate-800/90 border border-slate-700 p-4 space-y-3 shadow-md">
+            <div className="flex items-center justify-between border-b border-slate-700/80 pb-2.5">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                <span className="text-[11px] text-slate-200 font-semibold truncate max-w-[180px]">
+                  NH-44 Bypass Package
+                </span>
               </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                RA-04 Certified
+              </span>
+            </div>
 
-              {/* Free Trial Pill */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-semibold mb-4 shadow-2xs">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                7-Day Free Trial • No Credit Card Required
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div>
+                <span className="text-slate-400 block text-[10px]">Gross Work Passed</span>
+                <span className="font-bold text-white tabular-nums tracking-tight text-xs">₹54,00,000</span>
               </div>
-
-              {planLabel && (
-                <div className="mb-3 text-[11px] font-bold tracking-wide uppercase text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 inline-block">
-                  Configuring Plan: {planLabel}
-                </div>
-              )}
-
-              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 leading-tight">
-                The Statutory &amp; Financial OS for Indian Civil Contractors
-              </h1>
-              
-              <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                Protect contract margins, stop unfair liquidated damages, and reconcile multi-agency Running Account bills down to the exact rupee.
-              </p>
-
-              {/* Live Contract Audit Preview Card */}
-              <div className="mt-6 rounded-2xl bg-white border border-slate-200/90 p-4 shadow-2xs hover:border-blue-300/80 hover:shadow-xs hover:-translate-y-0.5 transition-all duration-200 space-y-3 cursor-default">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-600" />
-                    <span className="text-[11px] font-mono text-slate-700 font-semibold truncate max-w-[180px]">
-                      NH-44 Bypass Package
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    RA-04 Certified
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Gross Work Passed</span>
-                    <span className="font-bold text-slate-900 font-mono text-xs">₹54,00,000</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Net Bank Disbursed</span>
-                    <span className="font-bold text-emerald-700 font-mono text-xs">₹48,60,000</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
-                  <span>Clause 5 LD Protected: <b className="text-slate-900 font-mono">₹50,00,000</b></span>
-                  <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
-                    TDS / Cess Reconciled
-                    <svg className="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </span>
-                </div>
-              </div>
-
-              {/* Replaces 4 Disconnected Apps Ticker */}
-              <div className="mt-6">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  All-in-One: Replaces Disconnected Apps &amp; Spreadsheets
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    'Multi-Agency RA Bills',
-                    'Clause 5 Delay Defense',
-                    'Form 26 e-MB',
-                    'PillarVision™ Slip Scanner',
-                    'Labor Muster Roll',
-                    'Machinery & Diesel HSD',
-                    'Supplier Khatas',
-                    'Partner Capital Parity',
-                  ].map((feat, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white text-slate-700 border border-slate-200/80 shadow-2xs hover:border-blue-300 hover:text-blue-700 hover:-translate-y-0.5 transition-all duration-150 cursor-default"
-                    >
-                      {feat}
-                    </span>
-                  ))}
-                </div>
+              <div>
+                <span className="text-slate-400 block text-[10px]">Net Bank Disbursed</span>
+                <span className="font-bold text-emerald-400 tabular-nums tracking-tight text-xs">₹48,60,000</span>
               </div>
             </div>
 
-            {/* Trust Authorities Footer */}
-            <div className="mt-8 pt-4 border-t border-slate-200/80 text-[11px] text-slate-500 relative z-10">
-              <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                <span className="font-semibold text-slate-700">Engineered for:</span>
-                <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-700">CPWD</span>
-                <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-700">State PWD</span>
-                <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-700">PMGSY</span>
-                <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-700">NHAI</span>
-                <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold text-slate-700">NHPC</span>
-              </div>
-              <span className="text-[10px] text-slate-400">
-                Airtight multi-tenant isolation. Your tender rates and margins remain 100% confidential.
+            <div className="pt-2 border-t border-slate-700/80 flex items-center justify-between text-[10px] text-slate-400">
+              <span>Clause 5 LD Protected: <b className="text-white tabular-nums tracking-tight">₹50,00,000</b></span>
+              <span className="text-emerald-400 font-semibold inline-flex items-center gap-1">
+                TDS / Cess Reconciled
+                <svg className="w-3 h-3 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
               </span>
             </div>
           </div>
 
-          {/* ── Right Column: Clean, Frictionless Onboarding Form ── */}
-          <div className="order-1 lg:order-2 lg:col-span-7 bg-white p-7 sm:p-9 lg:p-12 flex flex-col justify-center relative z-10 text-slate-900">
-            <div className="max-w-md w-full mx-auto">
-              
-              <div className="lg:hidden flex items-center justify-between pb-5 mb-5 border-b border-slate-100">
-                <Logo theme="light" size="md" subtitle="Civil Contractor OS" href="/" />
+          {/* Structured 4-Item Capability Checklist (2x2 Grid) */}
+          <div className="pt-2">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">
+              All-in-One Enterprise Infra Suite
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-xs font-medium text-slate-300 leading-snug">Multi-Agency RA Bills &amp; Form 26</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-xs font-medium text-slate-300 leading-snug">Clause 5 Delay Defense &amp; EOT</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-xs font-medium text-slate-300 leading-snug">PillarVision™ Slip OCR Scanner</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-xs font-medium text-slate-300 leading-snug">Supplier Khata &amp; Partner Equity</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Agency & Confidentiality Footer */}
+        <div className="relative z-10 pt-6 border-t border-slate-800 space-y-2">
+          <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium flex-wrap">
+            <span className="text-slate-300 font-semibold">Engineered For:</span>
+            <span>CPWD</span>
+            <span>•</span>
+            <span>State PWD</span>
+            <span>•</span>
+            <span>PMGSY</span>
+            <span>•</span>
+            <span>NHAI</span>
+            <span>•</span>
+            <span>NHPC</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500">
+            <svg className="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <span>Airtight multi-tenant isolation. Tender rates and margins remain 100% confidential.</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── RIGHT PANEL: CRISP WORKSPACE CREATION FORM ─────── */}
+      <div className="lg:col-span-7 xl:col-span-7 flex flex-col justify-center items-center p-6 sm:p-12 bg-white">
+        <div className="w-full max-w-[480px] space-y-5">
+          
+          {/* Mobile Header (Visible only on <lg) */}
+          <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-100">
+            <Logo theme="light" size="sm" href="/" />
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+              7-Day Free Trial
+            </span>
+          </div>
+
+          {step === 'form' ? (
+            <>
+              {/* Mode Switcher: Segmented Control */}
+              <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-lg border border-slate-200/80 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setMode('new_firm')}
+                  className={`flex items-center justify-center gap-1.5 py-2 rounded-md transition-all text-center ${
+                    mode === 'new_firm'
+                      ? 'bg-white text-slate-900 shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900 font-medium'
+                  }`}
+                >
+                  <svg className="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span>Register New Firm</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('join_firm')}
+                  className={`flex items-center justify-center gap-1.5 py-2 rounded-md transition-all text-center ${
+                    mode === 'join_firm'
+                      ? 'bg-white text-slate-900 shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900 font-medium'
+                  }`}
+                >
+                  <svg className="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  <span>Join Existing Firm</span>
+                </button>
               </div>
 
-              {step === 'form' ? (
-                <>
-                  {/* Mode Selector Tab */}
-                  <div className="grid grid-cols-2 rounded-2xl bg-slate-100 p-1 mb-6 text-xs font-semibold border border-slate-200/80 shadow-2xs">
-                    <button
-                      type="button"
-                      onClick={() => setMode('new_firm')}
-                      className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition-all text-center ${
-                        mode === 'new_firm'
-                          ? 'bg-white text-slate-900 shadow-sm font-bold'
-                          : 'text-slate-600 hover:text-slate-900 font-medium'
-                      }`}
-                    >
-                      <svg className="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                      <span>Register New Firm</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setMode('join_firm')}
-                      className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition-all text-center ${
-                        mode === 'join_firm'
-                          ? 'bg-white text-slate-900 shadow-sm font-bold'
-                          : 'text-slate-600 hover:text-slate-900 font-medium'
-                      }`}
-                    >
-                      <svg className="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                      <span>Join Existing Firm</span>
-                    </button>
-                  </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  {mode === 'new_firm' ? 'Create your contractor workspace' : 'Join your firm’s workspace'}
+                </h2>
+                <p className="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  {mode === 'new_firm'
+                    ? 'Instant access to all modules during your 7-day free trial. Setup takes under 30 seconds.'
+                    : 'Enter your firm’s invite code provided by your contractor administrator.'}
+                </p>
+              </div>
 
-                  <div className="mb-5">
-                    <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                      {mode === 'new_firm' ? 'Create your contractor workspace' : 'Join your firm’s workspace'}
-                    </h2>
-                    <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                      {mode === 'new_firm'
-                        ? 'Instant access to all modules during your 7-day free trial. Setup takes under 30 seconds.'
-                        : 'Enter your firm’s invite code provided by your contractor administrator.'}
-                    </p>
-                  </div>
-
-                  {error && (
-                    <div className="mb-5 rounded-2xl bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-700 flex items-start gap-2.5 shadow-2xs">
-                      <svg className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="font-medium leading-relaxed">{error}</span>
-                    </div>
-                  )}
-
-                  <form onSubmit={handleSubmit} className="space-y-3.5">
-                    {mode === 'new_firm' ? (
-                      <div>
-                        <label htmlFor="firmName" className="block text-xs font-semibold text-slate-700 mb-1">
-                          Contracting Firm / Company Name <span className="text-blue-600">*</span>
-                        </label>
-                        <input
-                          id="firmName"
-                          type="text"
-                          required
-                          value={firmName}
-                          onChange={e => setFirmName(e.target.value)}
-                          className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
-                          placeholder="e.g. Apex Infratech Pvt. Ltd. or Lone Constructions"
-                        />
-                      </div>
-                    ) : (
-                      <div>
-                        <label htmlFor="joinCode" className="block text-xs font-semibold text-slate-700 mb-1">
-                          Firm Invite Code <span className="text-blue-600">*</span>
-                        </label>
-                        <input
-                          id="joinCode"
-                          type="text"
-                          required
-                          value={joinCode}
-                          onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                          className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 font-mono tracking-wider uppercase placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
-                          placeholder="e.g. APEX26"
-                        />
-                      </div>
-                    )}
-
-                    <div>
-                      <label htmlFor="displayName" className="block text-xs font-semibold text-slate-700 mb-1">
-                        Your Full Name <span className="text-blue-600">*</span>
-                      </label>
-                      <input
-                        id="displayName"
-                        type="text"
-                        required
-                        autoComplete="name"
-                        value={displayName}
-                        onChange={e => setDisplayName(e.target.value)}
-                        className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
-                        placeholder="e.g. Rajesh Kumar"
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1">
-                        Work Email Address <span className="text-blue-600">*</span>
-                      </label>
-                      <input
-                        id="email"
-                        type="email"
-                        autoComplete="email"
-                        required
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
-                        placeholder="you@contractorfirm.com"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label htmlFor="password" className="block text-xs font-semibold text-slate-700 mb-1">
-                          Password <span className="text-blue-600">*</span>
-                        </label>
-                        <div className="relative">
-                          <input
-                            id="password"
-                            type={showPassword ? 'text' : 'password'}
-                            autoComplete="new-password"
-                            required
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 pr-9 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
-                            placeholder="Min. 8 chars"
-                          />
-                          <EyeToggle show={showPassword} onToggle={() => setShowPassword(v => !v)} />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label htmlFor="confirm" className="block text-xs font-semibold text-slate-700 mb-1">
-                          Confirm Password <span className="text-blue-600">*</span>
-                        </label>
-                        <div className="relative">
-                          <input
-                            id="confirm"
-                            type={showConfirm ? 'text' : 'password'}
-                            autoComplete="new-password"
-                            required
-                            value={confirm}
-                            onChange={e => setConfirm(e.target.value)}
-                            className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 pr-9 text-sm text-slate-900 placeholder-slate-400 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10"
-                            placeholder="Re-enter password"
-                          />
-                          <EyeToggle show={showConfirm} onToggle={() => setShowConfirm(v => !v)} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {mode === 'new_firm' && (
-                      <div className="pt-1">
-                        <label
-                          className={`group relative flex flex-col p-4 rounded-2xl border transition-all duration-300 ease-out cursor-pointer select-none ${
-                            seedStarter
-                              ? 'border-blue-400 bg-gradient-to-br from-blue-50/90 via-white to-blue-50/40 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-blue-500'
-                              : 'border-slate-200 bg-slate-50/60 hover:bg-white hover:border-slate-300 hover:shadow-2xs hover:-translate-y-0.5'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <input
-                              type="checkbox"
-                              checked={seedStarter}
-                              onChange={e => setSeedStarter(e.target.checked)}
-                              className="sr-only"
-                            />
-                            
-                            {/* Animated Custom Checkbox */}
-                            <div
-                              className={`mt-0.5 h-5 w-5 rounded-lg border flex items-center justify-center shrink-0 transition-all duration-200 ${
-                                seedStarter
-                                  ? 'bg-blue-600 border-blue-600 text-white shadow-xs scale-105 group-hover:scale-110'
-                                  : 'border-slate-300 bg-white text-transparent group-hover:border-slate-400'
-                              }`}
-                            >
-                              <svg
-                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                                  seedStarter ? 'scale-100' : 'scale-0'
-                                }`}
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={3}
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-
-                            <div className="flex-1 min-w-0 text-xs">
-                              <div className="flex items-center gap-2 flex-wrap mb-1">
-                                <span className="font-bold text-slate-900 group-hover:text-blue-900 transition-colors text-xs sm:text-sm">
-                                  Pre-load Sample Highway Project &amp; RA Bill
-                                </span>
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white shadow-2xs group-hover:scale-105 transition-transform duration-200">
-                                  Recommended
-                                </span>
-                              </div>
-                              <p className="text-slate-600 leading-relaxed text-[11px] sm:text-xs">
-                                Populates a full-scale 10-module PMGSY civil package (₹1.78 Cr) with Form 26 Measurement Book, Clause 5 Delay Defense claim, 60/40 Partner Equity, JCB POL diesel log, and Store inventory so you can test all features immediately.
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Interactive Animated Feature Showcase Chips */}
-                          <div
-                            className={`mt-3 pt-3 border-t border-blue-100/80 grid grid-cols-2 sm:grid-cols-3 gap-1.5 transition-all duration-300 ${
-                              seedStarter ? 'opacity-100 max-h-40' : 'opacity-60 max-h-40'
-                            }`}
-                          >
-                            {[
-                              'PMGSY Highway (₹1.78 Cr)',
-                              'RA Bill 01 & Form 26 e-MB',
-                              'Clause 5 Delay Defense',
-                              '60/40 Partner Equity',
-                              'JCB & Excavator POL Log',
-                              'OPC Cement & Steel Stock',
-                              'Daily Muster Roll & OT',
-                              '₹8.9L PBG Deposit Radar',
-                              'Supplier Khata & GST TDS',
-                            ].map((text, idx) => (
-                              <div
-                                key={idx}
-                                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium bg-white/90 text-slate-700 border border-slate-200/80 shadow-2xs hover:border-blue-300 hover:text-blue-700 hover:-translate-y-0.5 hover:shadow-xs transition-all duration-150 cursor-pointer"
-                              >
-                                <span className="h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0" />
-                                <span className="truncate">{text}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </label>
-                      </div>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full mt-2 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 active:scale-[0.98] shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loading ? (
-                        <>
-                          <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                          </svg>
-                          {mode === 'new_firm' ? 'Setting up workspace…' : 'Joining firm workspace…'}
-                        </>
-                      ) : (
-                        <>
-                          {mode === 'new_firm' ? 'Start 7-Day Free Trial' : 'Join Firm Workspace'}
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                          </svg>
-                        </>
-                      )}
-                    </button>
-
-                    <p className="mt-3 text-[11px] text-center text-slate-500 leading-relaxed">
-                      By registering, you agree to PillarPro&apos;s{' '}
-                      <Link href="/terms" target="_blank" className="underline hover:text-slate-700 transition-colors">
-                        Terms of Service
-                      </Link>{' '}
-                      and{' '}
-                      <Link href="/privacy" target="_blank" className="underline hover:text-slate-700 transition-colors">
-                        Privacy Policy
-                      </Link>.
-                    </p>
-                  </form>
-                </>
-              ) : (
-                /* ── Verification Step ── */
-                <div className="space-y-5">
-                  <div className="text-center">
-                    <div className="mx-auto mb-4 h-12 w-12 flex items-center justify-center rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 shadow-xs">
-                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-                      Confirm your email address
-                    </h2>
-                    <p className="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                      We sent a confirmation link &amp; verification code to:
-                    </p>
-                    <p className="mt-1 inline-block px-3 py-1 rounded-lg bg-slate-100 font-semibold text-slate-900 text-xs sm:text-sm border border-slate-200">
-                      {email}
-                    </p>
-                  </div>
-
-                  {verifyError && (
-                    <div className="rounded-xl bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-700 flex items-start gap-2.5 shadow-2xs">
-                      <svg className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="font-medium">{verifyError}</span>
-                    </div>
-                  )}
-
-                  {resendNotice && (
-                    <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-800 flex items-start gap-2.5 shadow-2xs">
-                      <svg className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="font-medium">{resendNotice}</span>
-                    </div>
-                  )}
-
-                  {/* Form 1: Enter 6-digit OTP code */}
-                  <form onSubmit={handleVerifyOtp} className="space-y-3.5 bg-slate-50/80 rounded-2xl p-4 border border-slate-200">
-                    <div>
-                      <label htmlFor="otpCode" className="block text-xs font-semibold text-slate-700 mb-1.5 text-center">
-                        Enter 6-Digit Code (from confirmation email)
-                      </label>
-                      <input
-                        id="otpCode"
-                        type="text"
-                        required
-                        maxLength={8}
-                        value={otpCode}
-                        onChange={e => setOtpCode(e.target.value.replace(/\s+/g, ''))}
-                        className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-center text-lg font-mono tracking-widest text-slate-900 placeholder-slate-300 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/10 uppercase"
-                        placeholder="123456"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={verifyLoading || !otpCode.trim()}
-                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 active:bg-slate-950 active:scale-[0.98] shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {verifyLoading ? (
-                        <>
-                          <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                          </svg>
-                          Verifying…
-                        </>
-                      ) : (
-                        'Verify Code & Launch Workspace'
-                      )}
-                    </button>
-                  </form>
-
-                  {/* Resend Confirmation Section */}
-                  <div className="pt-2 text-center">
-                    <p className="text-xs text-slate-500 mb-2">
-                      Didn&apos;t receive the email or link?
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleResendEmail}
-                      disabled={resendCooldown > 0 || resendLoading}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-xs font-semibold text-slate-700 shadow-2xs transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {resendLoading ? (
-                        <>
-                          <svg className="animate-spin h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                          </svg>
-                          Sending email…
-                        </>
-                      ) : resendCooldown > 0 ? (
-                        <>
-                          <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Resend email in {resendCooldown}s
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          Resend Confirmation Email
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Troubleshooting Guidance Card */}
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 text-[11px] text-slate-500 space-y-1 leading-relaxed">
-                    <p className="font-semibold text-slate-700">Check these common points:</p>
-                    <ul className="list-disc pl-4 space-y-0.5">
-                      <li>Check your <strong>Spam / Junk</strong> folder in case your mail provider flagged it.</li>
-                      <li>Standard delivery from the shared verification gateway usually takes 30–60 seconds.</li>
-                      <li>You can also click the link directly inside the email on your phone or PC.</li>
-                    </ul>
-                  </div>
-
-                  {/* Change Email or Sign In */}
-                  <div className="pt-2 text-center space-y-2 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStep('form')
-                        setVerifyError('')
-                      }}
-                      className="text-slate-600 hover:text-slate-900 font-medium underline"
-                    >
-                      ← Need to edit your email address?
-                    </button>
-                    <div>
-                      <span className="text-slate-500">Already confirmed? </span>
-                      <Link href="/sign-in" className="font-semibold text-blue-600 hover:text-blue-700">
-                        Sign in here →
-                      </Link>
-                    </div>
-                  </div>
+              {error && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-3.5 text-xs text-red-700 flex items-start gap-2.5 shadow-2xs">
+                  <svg className="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-medium leading-relaxed">{error}</span>
                 </div>
               )}
 
-              <div className="mt-5 pt-4 border-t border-slate-100 text-center space-y-2.5">
-                <p className="text-xs text-slate-600">
-                  Already have an account?{' '}
-                  <Link href="/sign-in" className="font-bold text-slate-900 hover:underline transition-colors">
-                    Sign in to your workspace →
-                  </Link>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {mode === 'new_firm' ? (
+                  <div>
+                    <label htmlFor="firmName" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Contracting Firm / Company Name <span className="text-blue-600">*</span>
+                    </label>
+                    <input
+                      id="firmName"
+                      type="text"
+                      required
+                      value={firmName}
+                      onChange={e => setFirmName(e.target.value)}
+                      className="h-10 sm:h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/15 transition-all"
+                      placeholder="e.g. Apex Infratech Pvt. Ltd. or Lone Constructions"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <label htmlFor="joinCode" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                        Firm Invite Code <span className="text-blue-600">*</span>
+                      </label>
+                      <input
+                        id="joinCode"
+                        type="text"
+                        required
+                        value={joinCode}
+                        onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                        className="h-10 sm:h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-sm text-slate-900 tabular-nums tracking-widest uppercase placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/15 transition-all"
+                        placeholder="e.g. APEX26"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="joinRole" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                        Your Role at Firm
+                      </label>
+                      <select
+                        id="joinRole"
+                        value={joinRole}
+                        onChange={e => setJoinRole(e.target.value as any)}
+                        className="h-10 sm:h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/15 transition-all"
+                      >
+                        <option value="site_supervisor">Site Supervisor / Field Engineer</option>
+                        <option value="accountant">Firm Accountant / Billing Engineer</option>
+                        <option value="partner">Managing Partner / Director</option>
+                        <option value="viewer">Site Auditor / Viewer</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="displayName" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                    Your Full Name <span className="text-blue-600">*</span>
+                  </label>
+                  <input
+                    id="displayName"
+                    type="text"
+                    required
+                    autoComplete="name"
+                    value={displayName}
+                    onChange={e => setDisplayName(e.target.value)}
+                    className="h-10 sm:h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/15 transition-all"
+                    placeholder="e.g. Rajesh Kumar"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                    Work Email Address <span className="text-blue-600">*</span>
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="h-10 sm:h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/15 transition-all"
+                    placeholder="you@contractorfirm.com"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="password" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Password <span className="text-blue-600">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        required
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        className="h-10 sm:h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/15 transition-all"
+                        placeholder="Min. 8 chars"
+                      />
+                      <EyeToggle show={showPassword} onToggle={() => setShowPassword(v => !v)} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="confirm" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Confirm Password <span className="text-blue-600">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="confirm"
+                        type={showConfirm ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        required
+                        value={confirm}
+                        onChange={e => setConfirm(e.target.value)}
+                        className="h-10 sm:h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/15 transition-all"
+                        placeholder="Re-enter password"
+                      />
+                      <EyeToggle show={showConfirm} onToggle={() => setShowConfirm(v => !v)} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pre-load Sample Highway Project & RA Bill (Clean 2x2 Grid) */}
+                {mode === 'new_firm' && (
+                  <div className="pt-1">
+                    <label
+                      className={`group relative flex flex-col p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none ${
+                        seedStarter
+                          ? 'border-blue-400 bg-blue-50/40 shadow-xs'
+                          : 'border-slate-200 bg-slate-50/60 hover:bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={seedStarter}
+                          onChange={e => setSeedStarter(e.target.checked)}
+                          className="sr-only"
+                        />
+                        
+                        {/* Custom Checkbox */}
+                        <div
+                          className={`mt-0.5 h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-all duration-200 ${
+                            seedStarter
+                              ? 'bg-blue-600 border-blue-600 text-white shadow-xs'
+                              : 'border-slate-300 bg-white text-transparent'
+                          }`}
+                        >
+                          <svg
+                            className={`w-3 h-3 transition-transform duration-200 ${
+                              seedStarter ? 'scale-100' : 'scale-0'
+                            }`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={3}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                              Pre-load Sample Highway Project &amp; RA Bill
+                            </span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                              Recommended
+                            </span>
+                          </div>
+                          <p className="text-slate-600 leading-relaxed text-xs">
+                            Populates a full-scale PMGSY civil package so you can test certified billing, hindrance defenses, and equipment logs immediately.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Clean 2x2 Summary Grid */}
+                      <div className="mt-3 pt-3 border-t border-slate-200/80 grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex items-center gap-1.5 text-slate-700">
+                          <span className="text-emerald-600 font-bold shrink-0">✓</span>
+                          <span className="font-medium truncate">₹1.78 Cr PMGSY Package &amp; BOQ</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-700">
+                          <span className="text-emerald-600 font-bold shrink-0">✓</span>
+                          <span className="font-medium truncate">Certified Form 26 RA Bill &amp; e-MB</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-700">
+                          <span className="text-emerald-600 font-bold shrink-0">✓</span>
+                          <span className="font-medium truncate">Clause 5 Hindrance &amp; EOT Claim</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-700">
+                          <span className="text-emerald-600 font-bold shrink-0">✓</span>
+                          <span className="font-medium truncate">JCB Diesel Log &amp; Supplier Khata</span>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                )}
+
+                {/* Unified Enterprise Primary Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="h-11 w-full rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold text-sm shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      {mode === 'new_firm' ? 'Setting up workspace…' : 'Joining firm workspace…'}
+                    </>
+                  ) : (
+                    <>
+                      <span>{mode === 'new_firm' ? 'Create Firm Workspace & Start Trial' : 'Join Firm Workspace'}</span>
+                      <span aria-hidden="true">→</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Single Legal Agreement Line */}
+                <p className="text-[11px] text-center text-slate-500 leading-relaxed">
+                  By registering, you agree to PillarPro&apos;s{' '}
+                  <Link href="/terms" target="_blank" className="underline hover:text-slate-700 transition-colors">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/privacy" target="_blank" className="underline hover:text-slate-700 transition-colors">
+                    Privacy Policy
+                  </Link>.
                 </p>
-                <div className="flex items-center justify-center gap-3 text-[11px] text-slate-400">
-                  <Link href="/terms" className="hover:text-slate-600 transition-colors">Terms of Service</Link>
-                  <span>•</span>
-                  <Link href="/privacy" className="hover:text-slate-600 transition-colors">Privacy Policy</Link>
+              </form>
+            </>
+          ) : (
+            /* ── Verification Step ── */
+            <div className="space-y-5">
+              <div className="text-center">
+                <div className="mx-auto mb-4 h-12 w-12 flex items-center justify-center rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 shadow-xs">
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  Confirm your email address
+                </h2>
+                <p className="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  We sent a confirmation link &amp; verification code to:
+                </p>
+                <p className="mt-1 inline-block px-3 py-1 rounded-lg bg-slate-100 font-semibold text-slate-900 text-xs sm:text-sm border border-slate-200">
+                  {email}
+                </p>
+              </div>
+
+              {verifyError && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-3.5 text-xs text-red-700 flex items-start gap-2.5 shadow-2xs">
+                  <svg className="w-4 h-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-medium leading-relaxed">{verifyError}</span>
+                </div>
+              )}
+
+              {resendNotice && (
+                <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-800 flex items-start gap-2.5 shadow-2xs">
+                  <svg className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="font-medium">{resendNotice}</span>
+                </div>
+              )}
+
+              {/* Form: Enter 6-digit OTP code */}
+              <form onSubmit={handleVerifyOtp} className="space-y-3.5 bg-slate-50/80 rounded-xl p-4 border border-slate-200">
+                <div>
+                  <label htmlFor="otpCode" className="block text-xs font-semibold text-slate-700 mb-1.5 text-center">
+                    Enter 6-Digit Code (from confirmation email)
+                  </label>
+                  <input
+                    id="otpCode"
+                    type="text"
+                    required
+                    maxLength={8}
+                    value={otpCode}
+                    onChange={e => setOtpCode(e.target.value.replace(/\s+/g, ''))}
+                    className="block h-12 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-center text-xl tabular-nums tracking-widest text-slate-900 placeholder:text-slate-300 shadow-2xs transition-all focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/15 uppercase"
+                    placeholder="123456"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={verifyLoading || !otpCode.trim()}
+                  className="h-11 w-full rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold text-sm shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {verifyLoading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Verifying…
+                    </>
+                  ) : (
+                    <>
+                      <span>Verify Code &amp; Launch Workspace</span>
+                      <span aria-hidden="true">→</span>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Resend Confirmation Section */}
+              <div className="pt-2 text-center">
+                <p className="text-xs text-slate-500 mb-2">
+                  Didn&apos;t receive the email or link?
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResendEmail}
+                  disabled={resendCooldown > 0 || resendLoading}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-xs font-semibold text-slate-700 shadow-2xs transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resendLoading ? (
+                    <>
+                      <svg className="animate-spin h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Sending email…
+                    </>
+                  ) : resendCooldown > 0 ? (
+                    <>
+                      <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Resend email in {resendCooldown}s
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Resend Confirmation Email
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Troubleshooting Guidance Card */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 text-xs text-slate-600 space-y-1 leading-relaxed">
+                <p className="font-semibold text-slate-700">Check these common points:</p>
+                <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-slate-500">
+                  <li>Check your <strong>Spam / Junk</strong> folder in case your mail provider flagged it.</li>
+                  <li>Standard delivery from the shared verification gateway usually takes 30–60 seconds.</li>
+                  <li>You can also click the link directly inside the email on your phone or PC.</li>
+                </ul>
+              </div>
+
+              {/* Change Email or Sign In */}
+              <div className="pt-2 text-center space-y-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('form')
+                    setVerifyError('')
+                  }}
+                  className="text-slate-600 hover:text-slate-900 font-medium underline"
+                >
+                  ← Need to edit your email address?
+                </button>
+                <div>
+                  <span className="text-slate-500">Already confirmed? </span>
+                  <Link href="/sign-in" className="font-semibold text-blue-600 hover:text-blue-700">
+                    Sign in here →
+                  </Link>
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Bottom Footer */}
+          <div className="border-t border-slate-200 pt-5 text-center">
+            <p className="text-xs text-slate-600">
+              Already have an account?{' '}
+              <Link href="/sign-in" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                Sign in to your workspace →
+              </Link>
+            </p>
           </div>
 
         </div>
@@ -856,4 +884,3 @@ export default function SignUpPage() {
     </div>
   )
 }
-
