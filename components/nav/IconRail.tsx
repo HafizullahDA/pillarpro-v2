@@ -15,10 +15,12 @@ export function IconRail({
   userName,
   userRole = 'Owner',
   userEmail,
+  isPlatformAdmin = false,
 }: {
   userName: string
   userRole?: string
   userEmail?: string | null
+  isPlatformAdmin?: boolean
 }) {
   const pathname = usePathname()
   const [profileOpen, setProfileOpen] = useState(false)
@@ -129,7 +131,7 @@ export function IconRail({
 
         {/* User avatar and platform owner telemetry at bottom */}
         <div className="mt-auto flex flex-col items-center gap-2 pt-2">
-          {userEmail?.trim().toLowerCase() === 'pillarprojk@gmail.com' && (
+          {(isPlatformAdmin || userEmail?.trim().toLowerCase() === 'pillarprojk@gmail.com') && (
             <Link
               href="/admin/visitors"
               title="Visitor Telemetry (Owner)"
@@ -306,7 +308,7 @@ export function IconRail({
               })}
 
               {/* Exclusive Platform Owner Section */}
-              {userEmail?.trim().toLowerCase() === 'pillarprojk@gmail.com' && (
+              {(isPlatformAdmin || userEmail?.trim().toLowerCase() === 'pillarprojk@gmail.com') && (
                 <div className="pt-2 border-t border-slate-800/80 space-y-1">
                   <button
                     type="button"

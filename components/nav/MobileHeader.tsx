@@ -11,10 +11,12 @@ export function MobileHeader({
   userName,
   userRole,
   userEmail,
+  isPlatformAdmin = false,
 }: {
   userName: string
   userRole: string
   userEmail?: string | null
+  isPlatformAdmin?: boolean
 }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const { locale, setLocale } = useLanguage()
@@ -31,7 +33,7 @@ export function MobileHeader({
 
         <div className="flex items-center gap-2">
           {/* Quick Telemetry Button for Platform Owner on Mobile */}
-          {userEmail?.trim().toLowerCase() === 'pillarprojk@gmail.com' && (
+          {(isPlatformAdmin || userEmail?.trim().toLowerCase() === 'pillarprojk@gmail.com') && (
             <Link
               href="/admin/visitors"
               className="p-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-colors flex items-center justify-center"

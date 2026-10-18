@@ -8,32 +8,32 @@ import { getEffectiveSubscription, EffectiveSubscription } from '@/lib/subscript
 
 interface SubscriptionStatusBannerProps {
   userCreatedAt?: string | null
+  effectiveSub?: EffectiveSubscription | null
 }
 
-export function SubscriptionStatusBanner({ userCreatedAt }: SubscriptionStatusBannerProps = {}) {
-  const [sub, setSub] = useState<EffectiveSubscription | null>(null)
+export function SubscriptionStatusBanner({
+  userCreatedAt,
+  effectiveSub,
+}: SubscriptionStatusBannerProps = {}) {
+  const [sub, setSub] = useState<EffectiveSubscription | null>(effectiveSub ?? null)
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
+    if (effectiveSub) {
+      setSub(effectiveSub)
+      return
+    }
+
     let mounted = true
 
     async function loadSubscription() {
       try {
-        const supabase = createClient()
-        let signupDate = userCreatedAt
-
-        if (!signupDate) {
-          const { data: { user } } = await supabase.auth.getUser()
-          if (user?.created_at) {
-            signupDate = user.created_at
-          }
-        }
-
         const org = await getClientOrganization()
         if (mounted) {
+          // Prioritize organization's subscription creation date over member's personal signup date
           const orgWithSignup: OrganizationProfile = {
             ...org,
-            created_at: signupDate || org.user_created_at || org.created_at,
+            created_at: org.created_at || org.user_created_at || userCreatedAt,
           }
           setSub(getEffectiveSubscription(orgWithSignup))
         }
@@ -47,7 +47,7 @@ export function SubscriptionStatusBanner({ userCreatedAt }: SubscriptionStatusBa
     return () => {
       mounted = false
     }
-  }, [userCreatedAt])
+  }, [userCreatedAt, effectiveSub])
 
   if (!sub || dismissed) return null
 

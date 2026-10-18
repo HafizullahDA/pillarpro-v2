@@ -32,10 +32,12 @@ export function BottomNav({
   userName = 'User',
   userRole = 'owner',
   userEmail,
+  isPlatformAdmin = false,
 }: {
   userName?: string
   userRole?: string
   userEmail?: string | null
+  isPlatformAdmin?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -249,7 +251,7 @@ export function BottomNav({
               })}
 
               {/* Exclusive Platform Owner Section */}
-              {userEmail?.trim().toLowerCase() === 'pillarprojk@gmail.com' && (
+              {(isPlatformAdmin || userEmail?.trim().toLowerCase() === 'pillarprojk@gmail.com') && (
                 <div className="space-y-1">
                   <button
                     type="button"
