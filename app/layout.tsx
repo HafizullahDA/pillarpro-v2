@@ -5,9 +5,17 @@ import { PwaProvider } from '@/components/pwa/PwaProvider'
 import { VisitorTracker } from '@/components/analytics/VisitorTracker'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' })
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pillarprojk.com'
+const getSafeBaseUrl = () => {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://pillarprojk.com'
+  try {
+    return new URL(raw.startsWith('http') ? raw : `https://${raw}`).origin
+  } catch {
+    return 'https://pillarprojk.com'
+  }
+}
+const baseUrl = getSafeBaseUrl()
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -37,8 +45,6 @@ export const metadata: Metadata = {
     icon: [
       { url: '/favicon.ico', sizes: '48x48 32x32 16x16' },
       { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
-      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
       { url: '/icon.svg', type: 'image/svg+xml' },
     ],
     shortcut: '/favicon.ico',
@@ -47,7 +53,6 @@ export const metadata: Metadata = {
     ],
   },
   appleWebApp: {
-    capable: true,
     statusBarStyle: 'default',
     title: 'PillarPro',
   },
@@ -75,7 +80,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#2563eb',
+  themeColor: '#ffffff',
   viewportFit: 'cover',
 }
 
@@ -85,11 +90,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <PwaProvider>
-          {children}
-        </PwaProvider>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <body className="font-sans antialiased bg-slate-50 text-slate-900 min-h-dvh selection:bg-blue-600 selection:text-white">
+        <PwaProvider>{children}</PwaProvider>
         <Analytics />
         <VisitorTracker />
       </body>

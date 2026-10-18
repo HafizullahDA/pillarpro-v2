@@ -8,8 +8,15 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+      },
       spacing: {
         '4.5': '1.125rem',
+      },
+      boxShadow: {
+        '2xs': '0 1px 2px 0 rgb(0 0 0 / 0.03)',
+        'xs': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
       },
       colors: {
         brand: {
