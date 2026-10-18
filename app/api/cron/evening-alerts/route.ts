@@ -13,10 +13,8 @@ export async function GET(req: NextRequest) {
     const urlKey = req.nextUrl.searchParams.get('key')
 
     const isAuthorized =
-      !cronSecret || // If no secret set yet in local dev, allow
-      process.env.NODE_ENV !== 'production' ||
-      (cronSecret && authHeader === `Bearer ${cronSecret}`) ||
-      (cronSecret && urlKey === cronSecret)
+      Boolean(cronSecret) &&
+      (authHeader === `Bearer ${cronSecret}` || urlKey === cronSecret)
 
     if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized cron trigger' }, { status: 401 })

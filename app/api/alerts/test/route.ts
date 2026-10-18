@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { isPlatformAdmin } from '@/lib/platformAdmin'
 import { sendWhatsAppTextMessage } from '@/lib/whatsappCloudApi'
 
 export const dynamic = 'force-dynamic'
@@ -10,10 +11,27 @@ export async function POST(req: NextRequest) {
     const supabase = createClient()
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser()
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Authentication required.' },
+        { status: 401 }
+      )
+    }
+
+    const [isSuperAdmin, { data: userRole }] = await Promise.all([
+      isPlatformAdmin(supabase, user.email),
+      supabase.rpc('get_user_role'),
+    ])
+
+    const isOwner = typeof userRole === 'string' && (userRole.toLowerCase() === 'owner' || userRole.toLowerCase() === 'admin')
+    if (!isSuperAdmin && !isOwner) {
+      return NextResponse.json(
+        { error: 'Forbidden: Platform admin or organization owner privileges required.' },
+        { status: 403 }
+      )
     }
 
     const { phone, roleName } = await req.json()
