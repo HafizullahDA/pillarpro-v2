@@ -2,9 +2,17 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { Logo } from '@/components/ui/Logo'
-import { WalkthroughModal } from './WalkthroughModal'
-import { ContactModal } from './ContactModal'
+
+const WalkthroughModal = dynamic(
+  () => import('./WalkthroughModal').then((mod) => mod.WalkthroughModal),
+  { ssr: false }
+)
+const ContactModal = dynamic(
+  () => import('./ContactModal').then((mod) => mod.ContactModal),
+  { ssr: false }
+)
 
 // Set your YouTube embed / Loom / MP4 video link here to automatically play in the walkthrough modal
 // e.g. "https://www.youtube-nocookie.com/embed/YOUR_VIDEO_ID?autoplay=1" or "/videos/walkthrough.mp4"
@@ -16,6 +24,51 @@ interface LandingPageProps {
   orgName?: string | null
 }
 
+const MOCKUP_DATA = {
+  month: {
+    contractPosition: '₹18,42,10,000',
+    variationsNote: 'Excl. Variations 19',
+    physicalPct: '72.8%',
+    billedPct: '12.4%',
+    originalValue: '₹16.80 Cr',
+    variations: '+₹1.62 Cr',
+    physicalWork: '₹13.40 Cr',
+    totalBilled: '₹11.80 Cr',
+    receivedPaid: '₹9.40 Cr',
+    card1: { count: '2', val: '₹2.40 Cr', note: '⏱️ Avg wait: 18 days' },
+    card2: { count: '2', val: 'Ch. 32+400', note: 'Sub-base verification delay' },
+    card3: { count: '✓', val: '142 Manpower', note: '8 Rollers • 4 Graders active' },
+  },
+  quarter: {
+    contractPosition: '₹19,10,40,000',
+    variationsNote: 'Excl. Variations 24',
+    physicalPct: '81.5%',
+    billedPct: '14.2%',
+    originalValue: '₹16.80 Cr',
+    variations: '+₹2.30 Cr',
+    physicalWork: '₹15.56 Cr',
+    totalBilled: '₹13.75 Cr',
+    receivedPaid: '₹11.90 Cr',
+    card1: { count: '1', val: '₹1.15 Cr', note: '⏱️ Avg wait: 9 days' },
+    card2: { count: '1', val: 'Ch. 41+200', note: 'Wearing course clearance' },
+    card3: { count: '✓', val: '168 Manpower', note: '10 Rollers • 6 Graders active' },
+  },
+  all: {
+    contractPosition: '₹21,85,50,000',
+    variationsNote: 'Total Sanctioned Value',
+    physicalPct: '89.2%',
+    billedPct: '16.0%',
+    originalValue: '₹16.80 Cr',
+    variations: '+₹5.05 Cr',
+    physicalWork: '₹19.50 Cr',
+    totalBilled: '₹18.20 Cr',
+    receivedPaid: '₹16.80 Cr',
+    card1: { count: '3', val: '₹3.87 Cr', note: '⏱️ Cumulative certified 95%' },
+    card2: { count: '0', val: 'All Cleared', note: 'Final bill MB reconciliation' },
+    card3: { count: '✓', val: '185 Manpower', note: 'Full mobilization on front' },
+  },
+} as const
+
 export function LandingPage({
   isLoggedIn = false,
   userName,
@@ -24,6 +77,8 @@ export function LandingPage({
   const [walkthroughOpen, setWalkthroughOpen] = useState(false)
   const [contactModalOpen, setContactModalOpen] = useState(false)
   const [previewTimeRange, setPreviewTimeRange] = useState<'month' | 'quarter' | 'all'>('month')
+
+  const currentMock = MOCKUP_DATA[previewTimeRange]
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white">
@@ -69,13 +124,13 @@ export function LandingPage({
                   Start Free
                 </Link>
                 <Link
-                  href={isLoggedIn ? "/dashboard" : "/sign-in"}
-                  title={isLoggedIn ? "Dashboard" : "Sign In"}
-                  aria-label={isLoggedIn ? "Dashboard" : "Sign In"}
+                  href="/sign-in"
+                  title="Sign In"
+                  aria-label="Sign In"
                   className="hidden sm:flex w-8 h-8 rounded-full bg-slate-100 border border-slate-200 items-center justify-center text-slate-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
                 >
                   <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </Link>
               </>
@@ -157,16 +212,16 @@ export function LandingPage({
             <div className="lg:col-span-7">
               <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden">
                 {/* Browser Titlebar */}
-                <div className="bg-slate-50/90 border-b border-slate-200/80 px-4 py-2.5 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
+                <div className="bg-slate-50/90 border-b border-slate-200/80 px-4 py-2.5 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
                     <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                   </div>
-                  <div className="px-3 py-1 bg-white border border-slate-200 rounded-md text-[11px] font-mono text-slate-600 max-w-xs w-full text-center truncate">
+                  <div className="px-3 py-1 bg-white border border-slate-200 rounded-md text-[11px] font-mono text-slate-600 max-w-xs w-full text-center truncate min-w-0 flex-1">
                     app.pillarprojk.com/contracts/nhai-pkg-04
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     <span>Live Master e-MB</span>
                   </div>
@@ -237,15 +292,15 @@ export function LandingPage({
                   <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
                           CURRENT CONTRACT POSITION
                         </span>
                         <div className="flex items-baseline gap-2 mt-0.5">
-                          <span className="text-2xl font-black text-slate-900 font-mono tracking-tight">
-                            ₹18,42,10,000
+                          <span className="text-2xl font-black text-slate-900 tabular-nums tracking-tight">
+                            {currentMock.contractPosition}
                           </span>
                           <span className="text-xs text-slate-500 font-medium">
-                            Excl. Variations 19
+                            {currentMock.variationsNote}
                           </span>
                         </div>
                       </div>
@@ -253,37 +308,43 @@ export function LandingPage({
                         <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
-                        <span>72.8% Physically Executed</span>
+                        <span>{currentMock.physicalPct} Physically Executed</span>
                       </div>
                     </div>
 
                     {/* Progress Bar */}
                     <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex">
-                      <div className="bg-emerald-500 h-full w-[72.8%]" />
-                      <div className="bg-blue-600 h-full w-[12.4%]" />
+                      <div
+                        className="bg-emerald-500 h-full transition-all duration-300"
+                        style={{ width: currentMock.physicalPct }}
+                      />
+                      <div
+                        className="bg-blue-600 h-full transition-all duration-300"
+                        style={{ width: currentMock.billedPct }}
+                      />
                     </div>
 
                     {/* 5 Stats Row */}
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 text-[11px]">
                       <div>
-                        <span className="text-slate-400 block text-[10px]">Original Value</span>
-                        <span className="font-bold text-slate-700 font-mono">₹16.80 Cr</span>
+                        <span className="text-slate-600 block text-[10px]">Original Value</span>
+                        <span className="font-bold text-slate-700 tabular-nums tracking-tight">{currentMock.originalValue}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[10px]">Variations</span>
-                        <span className="font-bold text-emerald-600 font-mono">+₹1.62 Cr</span>
+                        <span className="text-slate-600 block text-[10px]">Variations</span>
+                        <span className="font-bold text-emerald-600 tabular-nums tracking-tight">{currentMock.variations}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[10px]">Physical Work</span>
-                        <span className="font-bold text-slate-800 font-mono">₹13.40 Cr</span>
+                        <span className="text-slate-600 block text-[10px]">Physical Work</span>
+                        <span className="font-bold text-slate-800 tabular-nums tracking-tight">{currentMock.physicalWork}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[10px]">Total Billed</span>
-                        <span className="font-bold text-blue-600 font-mono">₹11.80 Cr</span>
+                        <span className="text-slate-600 block text-[10px]">Total Billed</span>
+                        <span className="font-bold text-blue-600 tabular-nums tracking-tight">{currentMock.totalBilled}</span>
                       </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Received Paid</span>
-                        <span className="font-bold text-emerald-700 font-mono">₹9.40 Cr</span>
+                      <div className="col-span-2 sm:col-span-1">
+                        <span className="text-slate-600 block text-[10px]">Received Paid</span>
+                        <span className="font-bold text-emerald-700 tabular-nums tracking-tight">{currentMock.receivedPaid}</span>
                       </div>
                     </div>
                   </div>
@@ -295,12 +356,12 @@ export function LandingPage({
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-slate-500">RA Bills Pending Cert.</span>
                         <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold flex items-center justify-center">
-                          2
+                          {currentMock.card1.count}
                         </span>
                       </div>
-                      <p className="text-lg font-black text-slate-900 font-mono">₹2.40 Cr</p>
+                      <p className="text-lg font-black text-slate-900 tabular-nums tracking-tight">{currentMock.card1.val}</p>
                       <p className="text-[10px] font-semibold text-amber-700 flex items-center gap-1">
-                        <span>⏱️ Avg wait: 18 days</span>
+                        <span>{currentMock.card1.note}</span>
                       </p>
                     </div>
 
@@ -309,12 +370,12 @@ export function LandingPage({
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-slate-500">Overdue MB Entries</span>
                         <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold flex items-center justify-center">
-                          2
+                          {currentMock.card2.count}
                         </span>
                       </div>
-                      <p className="text-lg font-black text-slate-900 font-mono">Ch. 32+400</p>
+                      <p className="text-lg font-black text-slate-900 tabular-nums tracking-tight">{currentMock.card2.val}</p>
                       <p className="text-[10px] font-semibold text-slate-500">
-                        Sub-base verification delay
+                        {currentMock.card2.note}
                       </p>
                     </div>
 
@@ -323,12 +384,12 @@ export function LandingPage({
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-slate-500">Site Labour &amp; Plant</span>
                         <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center justify-center">
-                          ✓
+                          {currentMock.card3.count}
                         </span>
                       </div>
-                      <p className="text-lg font-black text-slate-900 font-mono">142 Manpower</p>
+                      <p className="text-lg font-black text-slate-900 tabular-nums tracking-tight">{currentMock.card3.val}</p>
                       <p className="text-[10px] font-semibold text-slate-500">
-                        8 Rollers • 4 Graders active
+                        {currentMock.card3.note}
                       </p>
                     </div>
                   </div>
@@ -357,7 +418,7 @@ export function LandingPage({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
                 STATUTORY READY
               </p>
               <h3 className="text-xs font-bold text-slate-800 mt-0.5">
@@ -428,7 +489,7 @@ export function LandingPage({
               <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 space-y-3 text-xs">
                 <div className="flex items-center justify-between text-[11px] border-b border-slate-200/70 pb-2">
                   <span className="font-bold text-slate-800">BOQ Schedule Item Tracker</span>
-                  <span className="font-mono text-slate-500">Contract Ref: PWD/DIV-IV/2023/108</span>
+                  <span className="text-slate-500 font-mono">Contract Ref: PWD/DIV-IV/2023/108</span>
                 </div>
 
                 {/* Item 1 */}
@@ -439,7 +500,7 @@ export function LandingPage({
                       Within Limit (72.6%)
                     </span>
                   </div>
-                  <div className="text-[11px] text-slate-500 flex items-center justify-between font-mono">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-slate-500 tabular-nums tracking-tight">
                     <span>Tender: 4,200.00 cum</span>
                     <span>Executed: 3,050.00 cum</span>
                     <span>Rate: ₹6,450 / cum</span>
@@ -454,7 +515,7 @@ export function LandingPage({
                       Variation Approved (+12.4%)
                     </span>
                   </div>
-                  <div className="text-[11px] text-slate-500 flex items-center justify-between font-mono">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-slate-500 tabular-nums tracking-tight">
                     <span>Tender: 18,500.00 cum</span>
                     <span>Current: 20,795.00 cum</span>
                     <span className="text-emerald-700 font-bold">Impact: +₹24,12,000</span>
@@ -497,12 +558,12 @@ export function LandingPage({
                 </div>
 
                 {/* Math Box */}
-                <div className="p-2.5 rounded-lg bg-white border border-slate-200 flex items-center justify-between font-mono">
+                <div className="p-2.5 rounded-lg bg-white border border-slate-200 flex items-center justify-between tabular-nums tracking-tight">
                   <span className="text-slate-600">L: 24.50m × B: 3.20m × D: 0.45m</span>
                   <span className="text-base font-black text-blue-600">35.28 cum</span>
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+                <div className="flex items-center justify-between text-[10px] text-slate-600 pt-1">
                   <span>GPS: 28.3871° N, 79.4326° E | Recorded 11:42 AM</span>
                   <span className="font-semibold text-slate-600">Digital Sign: V. Sharma</span>
                 </div>
@@ -530,35 +591,35 @@ export function LandingPage({
                 <div className="flex items-center justify-between text-[11px] border-b border-slate-200/70 pb-2">
                   <div>
                     <span className="font-bold text-slate-800">NHAI/4L/RA/BILL/03</span>
-                    <span className="text-slate-400 block text-[10px]">Period: 01 Nov to 30 Nov 2024</span>
+                    <span className="text-slate-600 block text-[10px]">Period: 01 Nov to 30 Nov 2024</span>
                   </div>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
                     Certification Due in 3 Days
                   </span>
                 </div>
 
-                <div className="space-y-1 font-mono text-[11px]">
+                <div className="space-y-1 tabular-nums tracking-tight text-[11px]">
                   <div className="flex justify-between text-slate-800 font-semibold">
                     <span>Gross Value of Work Done (A)</span>
                     <span>₹1,15,48,000</span>
                   </div>
                   <div className="flex justify-between text-rose-600">
                     <span>Less: Mobilization Advance Recovery (10%)</span>
-                    <span>- ₹11,54,800</span>
+                    <span>-₹11,54,800</span>
                   </div>
                   <div className="flex justify-between text-rose-600">
                     <span>Less: Security Deposit / Retention (5%)</span>
-                    <span>- ₹5,77,400</span>
+                    <span>-₹5,77,400</span>
                   </div>
                   <div className="flex justify-between text-rose-600">
                     <span>Less: Statutory TDS &amp; 1% Labour Cess</span>
-                    <span>- ₹2,38,600</span>
+                    <span>-₹2,38,600</span>
                   </div>
                 </div>
 
                 <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
                   <span className="font-bold text-slate-900 text-xs">Net Payable to Contractor</span>
-                  <span className="text-base font-black text-blue-600 font-mono">₹95,78,200</span>
+                  <span className="text-base font-black text-blue-600 tabular-nums tracking-tight">₹95,78,200</span>
                 </div>
               </div>
             </div>
@@ -584,11 +645,11 @@ export function LandingPage({
                 {/* 2 Mini Stats */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="p-2.5 rounded-lg bg-white border border-slate-200">
-                    <span className="text-[10px] text-slate-400 block font-medium">Today&apos;s Manpower</span>
+                    <span className="text-[10px] text-slate-600 block font-medium">Today&apos;s Manpower</span>
                     <span className="font-bold text-slate-800 text-xs">84 Labour (4 Gangs)</span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-white border border-slate-200">
-                    <span className="text-[10px] text-slate-400 block font-medium">Machinery &amp; Diesel</span>
+                    <span className="text-[10px] text-slate-600 block font-medium">Machinery &amp; Diesel</span>
                     <span className="font-bold text-slate-800 text-xs">6 Excavators (420 L)</span>
                   </div>
                 </div>
@@ -617,7 +678,7 @@ export function LandingPage({
           <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200 gap-8 md:gap-0">
             {/* Stat 1 */}
             <div className="md:px-8 first:pl-0 space-y-2">
-              <p className="text-4xl sm:text-5xl font-black text-slate-900 font-mono tracking-tight">
+              <p className="text-4xl sm:text-5xl font-black text-slate-900 tabular-nums tracking-tight">
                 1-Click
               </p>
               <p className="text-sm font-bold text-slate-900">
@@ -630,7 +691,7 @@ export function LandingPage({
 
             {/* Stat 2 */}
             <div className="pt-6 md:pt-0 md:px-8 space-y-2">
-              <p className="text-4xl sm:text-5xl font-black text-slate-900 font-mono tracking-tight">
+              <p className="text-4xl sm:text-5xl font-black text-slate-900 tabular-nums tracking-tight">
                 99.4%
               </p>
               <p className="text-sm font-bold text-slate-900">
@@ -643,7 +704,7 @@ export function LandingPage({
 
             {/* Stat 3 */}
             <div className="pt-6 md:pt-0 md:px-8 last:pr-0 space-y-2">
-              <p className="text-4xl sm:text-5xl font-black text-slate-900 font-mono tracking-tight">
+              <p className="text-4xl sm:text-5xl font-black text-slate-900 tabular-nums tracking-tight">
                 4.2x Faster
               </p>
               <p className="text-sm font-bold text-slate-900">
@@ -684,7 +745,7 @@ export function LandingPage({
             </Link>
           </div>
 
-          <p className="text-xs text-slate-400 pt-2">
+          <p className="text-xs text-slate-600 pt-2">
             No credit card needed • Fast 1-day onboarding for existing project BOQs • Free data migration assistance
           </p>
         </div>
@@ -780,7 +841,7 @@ export function LandingPage({
           </div>
 
           {/* Copyright Bottom Bar */}
-          <div className="border-t border-slate-100 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400">
+          <div className="border-t border-slate-100 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-600">
             <p>© 2026 PillarPro Technologies India Pvt. Ltd. All rights reserved.</p>
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1 text-slate-600 font-medium">
@@ -797,17 +858,21 @@ export function LandingPage({
       </footer>
 
       {/* ── 9. WALKTHROUGH MODAL ───────────────────────────────── */}
-      <WalkthroughModal
-        isOpen={walkthroughOpen}
-        onClose={() => setWalkthroughOpen(false)}
-        videoUrl={WALKTHROUGH_VIDEO_URL}
-      />
+      {walkthroughOpen && (
+        <WalkthroughModal
+          isOpen={walkthroughOpen}
+          onClose={() => setWalkthroughOpen(false)}
+          videoUrl={WALKTHROUGH_VIDEO_URL}
+        />
+      )}
 
       {/* ── 10. CONTACT MODAL ─────────────────────────────────── */}
-      <ContactModal
-        isOpen={contactModalOpen}
-        onClose={() => setContactModalOpen(false)}
-      />
+      {contactModalOpen && (
+        <ContactModal
+          isOpen={contactModalOpen}
+          onClose={() => setContactModalOpen(false)}
+        />
+      )}
     </div>
   )
 }
