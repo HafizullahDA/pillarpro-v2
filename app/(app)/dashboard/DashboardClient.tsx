@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { SummaryTile } from '@/components/ui/SummaryTile'
 import { Badge } from '@/components/ui/Badge'
@@ -26,12 +27,28 @@ import {
   RawRABillItem,
 } from '@/components/dashboard/types'
 
-import { ContractPositionSection } from '@/components/dashboard/ContractPositionSection'
-import { WorkProgressSection } from '@/components/dashboard/WorkProgressSection'
-import { ContractDefenseSection } from '@/components/dashboard/ContractDefenseSection'
 import { FinancialRiskSection } from '@/components/dashboard/FinancialRiskSection'
-import { OperationalRiskSection } from '@/components/dashboard/OperationalRiskSection'
-import { DeadlinesClockSection } from '@/components/dashboard/DeadlinesClockSection'
+
+const ContractPositionSection = dynamic(
+  () => import('@/components/dashboard/ContractPositionSection').then(mod => mod.ContractPositionSection),
+  { ssr: false }
+)
+const WorkProgressSection = dynamic(
+  () => import('@/components/dashboard/WorkProgressSection').then(mod => mod.WorkProgressSection),
+  { ssr: false }
+)
+const OperationalRiskSection = dynamic(
+  () => import('@/components/dashboard/OperationalRiskSection').then(mod => mod.OperationalRiskSection),
+  { ssr: false }
+)
+const DeadlinesClockSection = dynamic(
+  () => import('@/components/dashboard/DeadlinesClockSection').then(mod => mod.DeadlinesClockSection),
+  { ssr: false }
+)
+const ContractDefenseSection = dynamic(
+  () => import('@/components/dashboard/ContractDefenseSection').then(mod => mod.ContractDefenseSection),
+  { ssr: false }
+)
 
 type Project = { id: string; name: string; agency_name: string | null }
 type Bill = {
@@ -112,173 +129,291 @@ export function DashboardClient({
   const [dateRange, setDateRange] = useState<'month' | 'quarter' | 'all'>('all')
   const [activeTab, setActiveTab] = useState<'pulse' | 'field' | 'defense'>('pulse')
 
+  // Defer offline snapshot write using requestIdleCallback / setTimeout fallback
   useEffect(() => {
-    if (navigator.onLine) {
+    if (typeof window === 'undefined' || !navigator.onLine) return
+
+    const scheduleSnapshot = (cb: () => void) => {
+      if ('requestIdleCallback' in window) {
+        return (window as any).requestIdleCallback(cb, { timeout: 3000 })
+      }
+      return setTimeout(cb, 1500)
+    }
+
+    const cancelSchedule = (id: any) => {
+      if ('cancelIdleCallback' in window) {
+        ;(window as any).cancelIdleCallback(id)
+      } else {
+        clearTimeout(id)
+      }
+    }
+
+    const timerId = scheduleSnapshot(() => {
       void saveOfflineSnapshot('/dashboard', { projects, bills, suppliers, ledger, orgName })
+    })
+
+    return () => {
+      cancelSchedule(timerId)
     }
   }, [projects, bills, suppliers, ledger, orgName])
 
-  const now = new Date()
-  const currentYear = now.getFullYear()
-  const currentMonth = now.getMonth()
+  // Core financial, ledger, aging, and glance calculations memoized
+  const {
+    filteredBills,
+    filteredSuppliers,
+    totalOutstanding,
+    totalSupplierDues,
+    allTimeGrossReceived,
+    allTimeNetBankReceived,
+    displayGrossReceived,
+    displayNetReceived,
+    totalExpense,
+    netCashMovement,
+    netLiquidityPosition,
+    agingBands,
+    projectGlance,
+    monthsList,
+    maxTrendVal,
+  } = useMemo(() => {
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth()
 
-  // Filter bills & supplier dues by selected project
-  const filteredBills = bills.filter(b => selectedProject === 'all' || b.project_id === selectedProject)
+    // Filter bills & supplier dues by selected project
+    const filteredBills = bills.filter(b => selectedProject === 'all' || b.project_id === selectedProject)
 
-  // Filter suppliers by project
-  const filteredSuppliers = suppliers.filter(v =>
-    selectedProject === 'all' ? v.project_id === null : v.project_id === selectedProject
-  )
+    // Filter suppliers by project
+    const filteredSuppliers = suppliers.filter(v =>
+      selectedProject === 'all' ? v.project_id === null : v.project_id === selectedProject
+    )
 
-  const totalOutstanding = filteredBills.reduce((sum, b) => sum + b.outstanding, 0)
-  const totalSupplierDues = filteredSuppliers.reduce((sum, v) => sum + (v.due > 0 ? v.due : 0), 0)
+    const totalOutstanding = filteredBills.reduce((sum, b) => sum + b.outstanding, 0)
+    const totalSupplierDues = filteredSuppliers.reduce((sum, v) => sum + (v.due > 0 ? v.due : 0), 0)
 
-  // Bills-based cumulative receipts
-  const allTimeGrossReceived = filteredBills.reduce((sum, b) => sum + b.received, 0)
-  const allTimeNetBankReceived = filteredBills.reduce((sum, b) => sum + (b.net_bank_received ?? b.received), 0)
+    // Bills-based cumulative receipts
+    const allTimeGrossReceived = filteredBills.reduce((sum, b) => sum + b.received, 0)
+    const allTimeNetBankReceived = filteredBills.reduce((sum, b) => sum + (b.net_bank_received ?? b.received), 0)
 
-  // Filter ledger entries by selected project & date range
-  const filteredLedger = ledger.filter(item => {
-    if (selectedProject !== 'all' && item.project_id !== selectedProject) {
-      return false
+    // Filter ledger entries by selected project & date range
+    const filteredLedger = ledger.filter(item => {
+      if (selectedProject !== 'all' && item.project_id !== selectedProject) {
+        return false
+      }
+      const itemDate = new Date(item.date)
+      if (dateRange === 'month') {
+        return itemDate.getFullYear() === currentYear && itemDate.getMonth() === currentMonth
+      }
+      if (dateRange === 'quarter') {
+        const qMonthStart = Math.floor(currentMonth / 3) * 3
+        return itemDate.getFullYear() === currentYear && itemDate.getMonth() >= qMonthStart
+      }
+      return true
+    })
+
+    // Date-filtered income from ledger
+    const periodGrossReceived = filteredLedger
+      .filter(i => i.entry_type === 'income')
+      .reduce((sum, i) => sum + i.amount, 0)
+
+    const periodNetBankReceived = filteredLedger
+      .filter(i => i.entry_type === 'income')
+      .reduce((sum, i) => sum + (i.net_bank_amount ?? i.amount), 0)
+
+    const displayGrossReceived = dateRange === 'all' ? allTimeGrossReceived : periodGrossReceived
+    const displayNetReceived = dateRange === 'all' ? allTimeNetBankReceived : periodNetBankReceived
+
+    // Direct site & operational expenses
+    const totalExpense = filteredLedger
+      .filter(i => i.entry_type === 'expense' && (!i.source_table || i.source_table === 'expenses'))
+      .reduce((sum, i) => sum + i.amount, 0)
+
+    // Net Position Block
+    const netCashMovement = displayNetReceived - totalExpense
+    const netLiquidityPosition = totalOutstanding - totalSupplierDues
+
+    // Aging bands for outstanding receivables
+    const nowMs = now.getTime()
+    const agingBands = {
+      d0_30: 0,
+      d31_60: 0,
+      d60_plus: 0,
     }
-    const itemDate = new Date(item.date)
-    if (dateRange === 'month') {
-      return itemDate.getFullYear() === currentYear && itemDate.getMonth() === currentMonth
+
+    filteredBills.forEach(b => {
+      if (b.outstanding > 0) {
+        const days = Math.floor((nowMs - new Date(b.bill_date).getTime()) / (1000 * 60 * 60 * 24))
+        if (days > 60) agingBands.d60_plus += b.outstanding
+        else if (days > 30) agingBands.d31_60 += b.outstanding
+        else agingBands.d0_30 += b.outstanding
+      }
+    })
+
+    // Projects at a glance status strip
+    const projectGlance = projects.map(p => {
+      const pBills = bills.filter(b => b.project_id === p.id)
+      const pSuppliers = suppliers.filter(v => v.project_id === p.id)
+
+      const pOutstanding = pBills.reduce((sum, b) => sum + b.outstanding, 0)
+      const pDues = pSuppliers.reduce((sum, v) => sum + (v.due > 0 ? v.due : 0), 0)
+
+      let status: 'healthy' | 'warning' | 'critical' = 'healthy'
+      if (pDues > pOutstanding && pDues > 50000) status = 'warning'
+      if (pDues > pOutstanding + 200000) status = 'critical'
+
+      return { ...p, pOutstanding, pDues, status }
+    })
+
+    // Trailing 6 months trend data
+    const monthsList = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(currentYear, currentMonth - (5 - i), 1)
+      const y = d.getFullYear()
+      const m = d.getMonth()
+      const label = d.toLocaleString('en-IN', { month: 'short' })
+
+      const mIncome = ledger
+        .filter(l => {
+          const ld = new Date(l.date)
+          return (selectedProject === 'all' || l.project_id === selectedProject) &&
+                 ld.getFullYear() === y && ld.getMonth() === m && l.entry_type === 'income'
+        })
+        .reduce((sum, l) => sum + l.amount, 0)
+
+      const mExpense = ledger
+        .filter(l => {
+          const ld = new Date(l.date)
+          return (selectedProject === 'all' || l.project_id === selectedProject) &&
+                 ld.getFullYear() === y && ld.getMonth() === m &&
+                 (l.entry_type === 'expense' || l.entry_type === 'payment_to_vendor')
+        })
+        .reduce((sum, l) => sum + l.amount, 0)
+
+      return { label, mIncome, mExpense }
+    })
+
+    const maxTrendVal = Math.max(...monthsList.map(m => Math.max(m.mIncome, m.mExpense)), 1)
+
+    return {
+      filteredBills,
+      filteredSuppliers,
+      totalOutstanding,
+      totalSupplierDues,
+      allTimeGrossReceived,
+      allTimeNetBankReceived,
+      displayGrossReceived,
+      displayNetReceived,
+      totalExpense,
+      netCashMovement,
+      netLiquidityPosition,
+      agingBands,
+      projectGlance,
+      monthsList,
+      maxTrendVal,
     }
-    if (dateRange === 'quarter') {
-      const qMonthStart = Math.floor(currentMonth / 3) * 3
-      return itemDate.getFullYear() === currentYear && itemDate.getMonth() >= qMonthStart
-    }
-    return true
-  })
-
-  // Date-filtered income from ledger
-  const periodGrossReceived = filteredLedger
-    .filter(i => i.entry_type === 'income')
-    .reduce((sum, i) => sum + i.amount, 0)
-
-  const periodNetBankReceived = filteredLedger
-    .filter(i => i.entry_type === 'income')
-    .reduce((sum, i) => sum + (i.net_bank_amount ?? i.amount), 0)
-
-  const displayGrossReceived = dateRange === 'all' ? allTimeGrossReceived : periodGrossReceived
-  const displayNetReceived = dateRange === 'all' ? allTimeNetBankReceived : periodNetBankReceived
-
-  // Direct site & operational expenses
-  const totalExpense = filteredLedger
-    .filter(i => i.entry_type === 'expense' && (!i.source_table || i.source_table === 'expenses'))
-    .reduce((sum, i) => sum + i.amount, 0)
-
-  // Net Position Block
-  const netCashMovement = displayNetReceived - totalExpense
-  const netLiquidityPosition = totalOutstanding - totalSupplierDues
-
-  // Aging bands for outstanding receivables
-  const nowMs = now.getTime()
-  const agingBands = {
-    d0_30: 0,
-    d31_60: 0,
-    d60_plus: 0,
-  }
-
-  filteredBills.forEach(b => {
-    if (b.outstanding > 0) {
-      const days = Math.floor((nowMs - new Date(b.bill_date).getTime()) / (1000 * 60 * 60 * 24))
-      if (days > 60) agingBands.d60_plus += b.outstanding
-      else if (days > 30) agingBands.d31_60 += b.outstanding
-      else agingBands.d0_30 += b.outstanding
-    }
-  })
-
-  // Projects at a glance status strip
-  const projectGlance = projects.map(p => {
-    const pBills = bills.filter(b => b.project_id === p.id)
-    const pSuppliers = suppliers.filter(v => v.project_id === p.id)
-
-    const pOutstanding = pBills.reduce((sum, b) => sum + b.outstanding, 0)
-    const pDues = pSuppliers.reduce((sum, v) => sum + (v.due > 0 ? v.due : 0), 0)
-
-    let status: 'healthy' | 'warning' | 'critical' = 'healthy'
-    if (pDues > pOutstanding && pDues > 50000) status = 'warning'
-    if (pDues > pOutstanding + 200000) status = 'critical'
-
-    return { ...p, pOutstanding, pDues, status }
-  })
-
-  // Trailing 6 months trend data
-  const monthsList = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(currentYear, currentMonth - (5 - i), 1)
-    const y = d.getFullYear()
-    const m = d.getMonth()
-    const label = d.toLocaleString('en-IN', { month: 'short' })
-
-    const mIncome = ledger
-      .filter(l => {
-        const ld = new Date(l.date)
-        return (selectedProject === 'all' || l.project_id === selectedProject) &&
-               ld.getFullYear() === y && ld.getMonth() === m && l.entry_type === 'income'
-      })
-      .reduce((sum, l) => sum + l.amount, 0)
-
-    const mExpense = ledger
-      .filter(l => {
-        const ld = new Date(l.date)
-        return (selectedProject === 'all' || l.project_id === selectedProject) &&
-               ld.getFullYear() === y && ld.getMonth() === m &&
-               (l.entry_type === 'expense' || l.entry_type === 'payment_to_vendor')
-      })
-      .reduce((sum, l) => sum + l.amount, 0)
-
-    return { label, mIncome, mExpense }
-  })
-
-  const maxTrendVal = Math.max(...monthsList.map(m => Math.max(m.mIncome, m.mExpense)), 1)
+  }, [bills, suppliers, ledger, projects, selectedProject, dateRange])
 
   // ==========================================
-  // Command Center Filtered Datasets
+  // Command Center Filtered Datasets Memoized
   // ==========================================
-  const filteredContracts = contracts.filter(c => selectedProject === 'all' || c.project_id === selectedProject)
-  const filteredVariations = variations.filter(v => selectedProject === 'all' || v.project_id === selectedProject)
-  const filteredRawRABills = rawRABills.filter(b => selectedProject === 'all' || b.project_id === selectedProject)
-  const filteredBOQItems = boqItems.filter(b => selectedProject === 'all' || b.project_id === selectedProject)
-  const filteredMeasurements = measurements.filter(m => selectedProject === 'all' || m.project_id === selectedProject)
-  const filteredEvents = contractEvents.filter(e => selectedProject === 'all' || e.project_id === selectedProject)
-  const filteredHindrances = hindrances.filter(h => selectedProject === 'all' || h.project_id === selectedProject)
-  const filteredCorrespondence = correspondence.filter(c => selectedProject === 'all' || c.project_id === selectedProject)
-  const filteredEOTCases = eotCases.filter(e => selectedProject === 'all' || e.project_id === selectedProject)
-  const filteredClaims = claims.filter(c => selectedProject === 'all' || c.project_id === selectedProject)
-  const filteredMachinery = machineryAssets.filter(m => selectedProject === 'all' || !m.project_id || m.project_id === selectedProject)
-  const filteredInventory = inventoryItems.filter(i => selectedProject === 'all' || !i.project_id || i.project_id === selectedProject)
-  const filteredWagePayments = wagePayments.filter(w => selectedProject === 'all' || w.project_id === selectedProject)
-  const filteredSecurityDeposits = securityDeposits.filter(s => selectedProject === 'all' || s.project_id === selectedProject)
+  const {
+    filteredContracts,
+    filteredVariations,
+    filteredRawRABills,
+    filteredBOQItems,
+    filteredMeasurements,
+    filteredEvents,
+    filteredHindrances,
+    filteredCorrespondence,
+    filteredEOTCases,
+    filteredClaims,
+    filteredMachinery,
+    filteredInventory,
+    filteredWagePayments,
+    filteredSecurityDeposits,
+    currentContractValue,
+    billedValue,
+    unbilledMeasurementsCount,
+    criticalDeadlinesCount,
+  } = useMemo(() => {
+    const filteredContracts = contracts.filter(c => selectedProject === 'all' || c.project_id === selectedProject)
+    const filteredVariations = variations.filter(v => selectedProject === 'all' || v.project_id === selectedProject)
+    const filteredRawRABills = rawRABills.filter(b => selectedProject === 'all' || b.project_id === selectedProject)
+    const filteredBOQItems = boqItems.filter(b => selectedProject === 'all' || b.project_id === selectedProject)
+    const filteredMeasurements = measurements.filter(m => selectedProject === 'all' || m.project_id === selectedProject)
+    const filteredEvents = contractEvents.filter(e => selectedProject === 'all' || e.project_id === selectedProject)
+    const filteredHindrances = hindrances.filter(h => selectedProject === 'all' || h.project_id === selectedProject)
+    const filteredCorrespondence = correspondence.filter(c => selectedProject === 'all' || c.project_id === selectedProject)
+    const filteredEOTCases = eotCases.filter(e => selectedProject === 'all' || e.project_id === selectedProject)
+    const filteredClaims = claims.filter(c => selectedProject === 'all' || c.project_id === selectedProject)
+    const filteredMachinery = machineryAssets.filter(m => selectedProject === 'all' || !m.project_id || m.project_id === selectedProject)
+    const filteredInventory = inventoryItems.filter(i => selectedProject === 'all' || !i.project_id || i.project_id === selectedProject)
+    const filteredWagePayments = wagePayments.filter(w => selectedProject === 'all' || w.project_id === selectedProject)
+    const filteredSecurityDeposits = securityDeposits.filter(s => selectedProject === 'all' || s.project_id === selectedProject)
 
-  // Financial values for sections
-  const origContractVal = filteredContracts.reduce((sum, c) => sum + (Number(c.awarded_amount) || 0), 0)
-  const appVOVal = filteredVariations
-    .filter(v => v.status === 'APPROVED' && !v.is_deletion)
-    .reduce((sum, v) => sum + (Number(v.approved_amount) || 0), 0)
-  const appDelVal = filteredVariations
-    .filter(v => v.status === 'APPROVED' && v.is_deletion)
-    .reduce((sum, v) => sum + (Number(v.deleted_work_amount) || Number(v.approved_amount) || 0), 0)
-  const currentContractValue = origContractVal + appVOVal - appDelVal
+    // Financial values for sections
+    const origContractVal = filteredContracts.reduce((sum, c) => sum + (Number(c.awarded_amount) || 0), 0)
+    const appVOVal = filteredVariations
+      .filter(v => v.status === 'APPROVED' && !v.is_deletion)
+      .reduce((sum, v) => sum + (Number(v.approved_amount) || 0), 0)
+    const appDelVal = filteredVariations
+      .filter(v => v.status === 'APPROVED' && v.is_deletion)
+      .reduce((sum, v) => sum + (Number(v.deleted_work_amount) || Number(v.approved_amount) || 0), 0)
+    const currentContractValue = origContractVal + appVOVal - appDelVal
 
-  const billedValue = filteredRawRABills.reduce((sum, b) => {
-    const netPassed = b.net_payable_this_bill != null
-      ? Number(b.net_payable_this_bill)
-      : (b.net_payable_amount != null && !isNaN(Number(b.net_payable_amount))
-        ? Number(b.net_payable_amount)
-        : (Number(b.work_certified_amount) || 0) - (Number(b.retention_amount) || 0))
-    return sum + (Number(netPassed) || 0)
-  }, 0)
+    const billedValue = filteredRawRABills.reduce((sum, b) => {
+      const netPassed = b.net_payable_this_bill != null
+        ? Number(b.net_payable_this_bill)
+        : (b.net_payable_amount != null && !isNaN(Number(b.net_payable_amount))
+          ? Number(b.net_payable_amount)
+          : (Number(b.work_certified_amount) || 0) - (Number(b.retention_amount) || 0))
+      return sum + (Number(netPassed) || 0)
+    }, 0)
 
-  // Active status counts for Stitch Tab badges
-  const unbilledMeasurementsCount = filteredMeasurements.filter(m => !m.billed_in_ra_bill_id).length
-  const criticalDeadlinesCount = filteredSecurityDeposits.filter(s => {
-    if (!s.expiry_date) return false
-    const diffDays = Math.floor((new Date(s.expiry_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    return diffDays <= 30
-  }).length + filteredHindrances.filter(h => h.status === 'open' || h.status === 'ACTIVE').length
+    // Active status counts for Stitch Tab badges
+    const unbilledMeasurementsCount = filteredMeasurements.filter(m => !m.billed_in_ra_bill_id).length
+    const nowTime = Date.now()
+    const criticalDeadlinesCount = filteredSecurityDeposits.filter(s => {
+      if (!s.expiry_date) return false
+      const diffDays = Math.floor((new Date(s.expiry_date).getTime() - nowTime) / (1000 * 60 * 60 * 24))
+      return diffDays <= 30
+    }).length + filteredHindrances.filter(h => h.status === 'open' || h.status === 'ACTIVE').length
+
+    return {
+      filteredContracts,
+      filteredVariations,
+      filteredRawRABills,
+      filteredBOQItems,
+      filteredMeasurements,
+      filteredEvents,
+      filteredHindrances,
+      filteredCorrespondence,
+      filteredEOTCases,
+      filteredClaims,
+      filteredMachinery,
+      filteredInventory,
+      filteredWagePayments,
+      filteredSecurityDeposits,
+      currentContractValue,
+      billedValue,
+      unbilledMeasurementsCount,
+      criticalDeadlinesCount,
+    }
+  }, [
+    contracts,
+    variations,
+    rawRABills,
+    boqItems,
+    measurements,
+    contractEvents,
+    hindrances,
+    correspondence,
+    eotCases,
+    claims,
+    machineryAssets,
+    inventoryItems,
+    wagePayments,
+    securityDeposits,
+    selectedProject,
+  ])
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
@@ -354,7 +489,7 @@ export function DashboardClient({
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
           )}
         >
-          <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className={cn('w-4 h-4', activeTab === 'pulse' ? 'text-blue-600' : 'text-slate-500')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span>1. Cash &amp; Liquidity Pulse</span>
@@ -371,7 +506,7 @@ export function DashboardClient({
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
           )}
         >
-          <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className={cn('w-4 h-4', activeTab === 'field' ? 'text-blue-600' : 'text-slate-500')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
           <span>2. Field Execution &amp; e-MB</span>
@@ -392,7 +527,7 @@ export function DashboardClient({
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
           )}
         >
-          <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className={cn('w-4 h-4', activeTab === 'defense' ? 'text-blue-600' : 'text-slate-500')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
           <span>3. Legal &amp; Contract Defense</span>
@@ -612,11 +747,11 @@ export function DashboardClient({
 
                     <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-2 mt-auto">
                       <div>
-                        <span className="text-slate-400 block text-[10px] font-medium">Receivables</span>
+                        <span className="text-slate-600 block text-[10px] font-medium">Receivables</span>
                         <span className="font-semibold text-slate-700 tabular-nums">{formatINR(p.pOutstanding)}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[10px] font-medium">Supplier Liabilities</span>
+                        <span className="text-slate-600 block text-[10px] font-medium">Supplier Liabilities</span>
                         <span className="font-semibold text-red-600 tabular-nums">{formatINR(p.pDues)}</span>
                       </div>
                     </div>
