@@ -205,7 +205,8 @@ export function DashboardClient({
       }
       if (dateRange === 'quarter') {
         const qMonthStart = Math.floor(currentMonth / 3) * 3
-        return itemDate.getFullYear() === currentYear && itemDate.getMonth() >= qMonthStart
+        const qMonthEnd = qMonthStart + 2
+        return itemDate.getFullYear() === currentYear && itemDate.getMonth() >= qMonthStart && itemDate.getMonth() <= qMonthEnd
       }
       return true
     })

@@ -30,27 +30,11 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/sign-in')
 
-  // Role check
-  const { data: roleRow } = await supabase
-    .from('roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  const userRole = roleRow?.role ?? 'site_supervisor'
-
-  // Fetch active projects
-  const { data: projects } = await supabase
-    .from('projects')
-    .select('id, name, agency_name')
-    .eq('archived', false)
-    .order('name')
-
-  const activeProjects = projects ?? []
-  const activeProjectIds = new Set(activeProjects.map(p => p.id))
-
   // Fetch all core Command Center operational & financial tables concurrently
   const [
+    { data: userRoleData },
+    { data: orgProfile },
+    { data: projects },
     { data: raBills },
     { data: raPayments },
     { data: legacyBills },
@@ -70,6 +54,13 @@ export default async function DashboardPage() {
     { data: inventoryData },
     { data: wagePaymentsData },
   ] = await Promise.all([
+    supabase.rpc('get_user_role'),
+    supabase.rpc('get_organization_profile'),
+    supabase
+      .from('projects')
+      .select('id, name, agency_name')
+      .eq('archived', false)
+      .order('name'),
     supabase
       .from('ra_bills')
       .select('id, project_id, bill_number, submission_date, net_payable_amount, work_certified_amount, retention_amount, amount_received, net_bank_received, status, billing_mode, this_bill_work_certified, net_payable_this_bill'),
@@ -81,7 +72,7 @@ export default async function DashboardPage() {
       .select('id, project_id, bill_date, gross_amount, deductions, receivable_payments(amount_received)'),
     supabase
       .from('suppliers')
-      .select('id, name, supplier_transactions(project_id, transaction_type, amount)'),
+      .select('id, name, supplier_transactions(project_id, transaction_type, amount, carriage)'),
     supabase
       .from('ledger')
       .select('id, project_id, entry_type, category, amount, date, source_table')
@@ -127,6 +118,11 @@ export default async function DashboardPage() {
       .select('id, project_id, worker_id, amount_owed, amount_paid, status'),
   ])
 
+  const userRole = (userRoleData as string) ?? 'site_supervisor'
+  const orgName = (orgProfile as any)?.name ?? null
+  const activeProjects = projects ?? []
+  const activeProjectIds = new Set(activeProjects.map(p => p.id))
+
   // Format bills: prioritize official ra_bills, supplement with any legacy bills
   const billsFormatted: { id: string; project_id: string; bill_date: string; net_amount: number; received: number; net_bank_received?: number; outstanding: number }[] = []
   const trackedBillIds = new Set<string>()
@@ -136,9 +132,9 @@ export default async function DashboardPage() {
       trackedBillIds.add(b.id)
       const netPassed = b.net_payable_this_bill != null
         ? Number(b.net_payable_this_bill)
-        : (Number(b.net_payable_amount) != null && !isNaN(Number(b.net_payable_amount))
+        : (b.net_payable_amount != null && !isNaN(Number(b.net_payable_amount))
           ? Number(b.net_payable_amount)
-          : (Number(b.work_certified_amount) - (Number(b.retention_amount) || 0)))
+          : ((Number(b.work_certified_amount) || 0) - (Number(b.retention_amount) || 0)))
       const received = Number(b.amount_received) || 0
       const netBankReceived = b.net_bank_received != null && !isNaN(Number(b.net_bank_received))
         ? Number(b.net_bank_received)
@@ -181,13 +177,16 @@ export default async function DashboardPage() {
     const byProject: Record<string, { procured: number; paid: number }> = {}
 
     for (const t of s.supplier_transactions ?? []) {
+      if (t.project_id && !activeProjectIds.has(t.project_id)) continue
+
       const pid = t.project_id ?? 'central'
       if (!byProject[pid]) byProject[pid] = { procured: 0, paid: 0 }
-      const amt = Number(t.amount) || 0
       if (t.transaction_type === 'procurement') {
+        const amt = (Number(t.amount) || 0) + (Number((t as any).carriage) || 0)
         byProject[pid].procured += amt
         totalProcured += amt
       } else if (t.transaction_type === 'payment') {
+        const amt = Number(t.amount) || 0
         byProject[pid].paid += amt
         totalPaid += amt
       }
@@ -223,13 +222,17 @@ export default async function DashboardPage() {
   const existingIncomeKeys = new Set(
     ledgerFiltered
       .filter(l => l.entry_type === 'income')
-      .map(l => `${l.project_id}-${l.date}-${l.amount}`)
+      .map(l => `${l.project_id}-${String(l.date).slice(0, 10)}-${Number(l.amount).toFixed(2)}`)
   )
 
   const raPaymentEntries = (raPayments ?? [])
     .filter(p => p.project_id && activeProjectIds.has(p.project_id))
-    .filter(p => !existingIncomeKeys.has(`${p.project_id}-${p.payment_date}-${p.gross_amount}`) &&
-                 !existingIncomeKeys.has(`${p.project_id}-${p.payment_date}-${p.net_bank_amount}`))
+    .filter(p => {
+      const pDate = String(p.payment_date).slice(0, 10)
+      const grossKey = `${p.project_id}-${pDate}-${Number(p.gross_amount).toFixed(2)}`
+      const netKey = `${p.project_id}-${pDate}-${Number(p.net_bank_amount).toFixed(2)}`
+      return !existingIncomeKeys.has(grossKey) && !existingIncomeKeys.has(netKey)
+    })
     .map(p => ({
       id: p.id,
       project_id: p.project_id,
@@ -241,20 +244,21 @@ export default async function DashboardPage() {
     }))
 
   const raPaymentNetByGross = new Map(
-    (raPayments ?? []).map(p => [`${p.project_id}-${p.payment_date}-${p.gross_amount}`, Number(p.net_bank_amount)])
+    (raPayments ?? []).map(p => [
+      `${p.project_id}-${String(p.payment_date).slice(0, 10)}-${Number(p.gross_amount).toFixed(2)}`,
+      Number(p.net_bank_amount)
+    ])
   )
 
   const unifiedLedger = [
     ...ledgerFiltered.map(l => ({
       ...l,
-      net_bank_amount: l.entry_type === 'income' ? (raPaymentNetByGross.get(`${l.project_id}-${l.date}-${l.amount}`) ?? l.amount) : undefined,
+      net_bank_amount: l.entry_type === 'income'
+        ? (raPaymentNetByGross.get(`${l.project_id}-${String(l.date).slice(0, 10)}-${Number(l.amount).toFixed(2)}`) ?? l.amount)
+        : undefined,
     })),
     ...raPaymentEntries,
   ]
-
-  // Organization profile
-  const { data: orgProfile } = await supabase.rpc('get_organization_profile')
-  const orgName = (orgProfile as any)?.name ?? null
 
   return (
     <DashboardClient
@@ -265,7 +269,7 @@ export default async function DashboardPage() {
       userRole={userRole}
       orgName={orgName}
       // Command Center Data Feeds
-      rawRABills={(raBills ?? []) as any}
+      rawRABills={((raBills ?? []) as any[]).filter(b => b.project_id && activeProjectIds.has(b.project_id)) as any}
       contracts={((contractsData ?? []) as any[]).filter(c => activeProjectIds.has(c.project_id)) as ContractItem[]}
       securityDeposits={((securityDepositsData ?? []) as any[]).filter(s => activeProjectIds.has(s.project_id)) as SecurityDepositItem[]}
       boqItems={((boqItemsData ?? []) as any[]).filter(b => activeProjectIds.has(b.project_id)) as BOQItemSummary[]}
