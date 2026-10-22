@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { GoogleGenAI } from '@google/genai'
 import { createClient } from '@/lib/supabase/server'
 import { canCreateSupplier } from '@/lib/permissions'
@@ -14,11 +15,73 @@ import {
   formatErrorResponse,
 } from '@/lib/errors/AppError'
 
+export const maxDuration = 60
+
 // Rate limit configuration: 10 supplier invoice scans per user every 2 minutes
 const RATE_LIMIT_CONFIG = {
   limit: 10,
   windowMs: 2 * 60 * 1000,
 }
+
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'application/pdf',
+]
+
+const sanitizeString = (max: number) =>
+  z.preprocess((val) => {
+    if (val === null || val === undefined) return null
+    if (typeof val === 'string') {
+      const trimmed = val.trim()
+      return trimmed === '' ? null : trimmed.slice(0, max)
+    }
+    return String(val).trim().slice(0, max)
+  }, z.string().max(max).nullable())
+
+const dateSchema = z.preprocess((val) => {
+  if (val === null || val === undefined) return null
+  if (typeof val === 'string') {
+    const trimmed = val.trim()
+    if (!trimmed) return null
+    const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})/)
+    return match ? match[1] : null
+  }
+  return null
+}, z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD').nullable())
+
+const coerceNumber = z.preprocess((val) => {
+  if (val === null || val === undefined || val === '') return null
+  if (typeof val === 'number') {
+    return isNaN(val) ? null : val
+  }
+  if (typeof val === 'string') {
+    const cleaned = val.replace(/[₹$,\s]/g, '').trim()
+    if (!cleaned) return null
+    const num = Number(cleaned)
+    return isNaN(num) ? null : num
+  }
+  return null
+}, z.number().nullable())
+
+const supplierScanOutputSchema = z.object({
+  supplier_name: sanitizeString(200),
+  gst_number: sanitizeString(20),
+  contact_number: sanitizeString(30),
+  address: sanitizeString(500),
+  date: dateSchema,
+  reference: sanitizeString(100),
+  project_name: sanitizeString(200),
+  description: sanitizeString(1000),
+  quantity: coerceNumber,
+  unit: sanitizeString(50),
+  rate: coerceNumber,
+  carriage_amount: coerceNumber,
+  amount: coerceNumber,
+}).strip()
 
 export async function POST(req: NextRequest) {
   try {
@@ -73,6 +136,12 @@ export async function POST(req: NextRequest) {
 
     const { base64Data, mimeType } = parseBase64Payload(parseResult.data.imageBase64, 'image/jpeg')
 
+    if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+      throw new ValidationError(
+        `Unsupported file type: ${mimeType}. Please upload an image (JPEG, PNG, WEBP, HEIC) or PDF.`
+      )
+    }
+
     const ai = new GoogleGenAI({ apiKey })
 
     const prompt = `Analyze this construction material invoice, GST tax bill, delivery challan, weighbridge slip, or khata slip.
@@ -108,11 +177,13 @@ Rules:
       },
     }
 
-    // Try gemini-3.6-flash first; fallback to gemini-3.5-flash-lite if needed
+    const primaryModel = process.env.GEMINI_PRIMARY_MODEL || 'gemini-2.5-flash'
+    const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash'
+
     let responseText = ''
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: primaryModel,
         contents: [prompt, imagePart],
         config: {
           responseMimeType: 'application/json',
@@ -120,9 +191,9 @@ Rules:
       })
       responseText = response.text?.trim() ?? ''
     } catch (primaryErr: any) {
-      console.warn('gemini-3.6-flash failed for supplier OCR, falling back to gemini-3.5-flash-lite:', primaryErr.message)
+      console.warn(`Primary model ${primaryModel} failed for supplier OCR, falling back to ${fallbackModel}:`, primaryErr.message)
       const fallbackResponse = await ai.models.generateContent({
-        model: 'gemini-3.5-flash-lite',
+        model: fallbackModel,
         contents: [prompt, imagePart],
         config: {
           responseMimeType: 'application/json',
@@ -137,12 +208,19 @@ Rules:
       .replace(/```$/i, '')
       .trim()
 
-    let extracted: any
+    let rawExtracted: unknown
     try {
-      extracted = JSON.parse(cleanJsonStr)
+      rawExtracted = JSON.parse(cleanJsonStr)
     } catch {
       throw new AppError('Failed to parse AI structured response from invoice. Please try with a clearer photo.', 422)
     }
+
+    const parseOutput = supplierScanOutputSchema.safeParse(rawExtracted)
+    if (!parseOutput.success) {
+      throw new AppError('AI response format was invalid. Please try with a clearer photo.', 422)
+    }
+
+    const extracted = parseOutput.data
 
     return NextResponse.json(
       { success: true, data: extracted },

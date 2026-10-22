@@ -15,6 +15,8 @@ import {
   formatErrorResponse,
 } from '@/lib/errors/AppError'
 
+export const maxDuration = 60
+
 // Rate limit configuration: 10 receipt scans per user every 2 minutes
 const RATE_LIMIT_CONFIG = {
   limit: 10,
@@ -111,15 +113,30 @@ Return valid JSON only. Do not format with markdown codeblocks or backticks.`
       },
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash-lite',
-      contents: [prompt, imagePart],
-      config: {
-        responseMimeType: 'application/json',
-      },
-    })
+    const primaryModel = process.env.GEMINI_PRIMARY_MODEL || 'gemini-2.5-flash'
+    const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash'
 
-    const responseText = response.text?.trim() ?? ''
+    let responseText = ''
+    try {
+      const response = await ai.models.generateContent({
+        model: primaryModel,
+        contents: [prompt, imagePart],
+        config: {
+          responseMimeType: 'application/json',
+        },
+      })
+      responseText = response.text?.trim() ?? ''
+    } catch (primaryErr: any) {
+      console.warn(`Primary model ${primaryModel} failed for receipt OCR, falling back to ${fallbackModel}:`, primaryErr.message)
+      const fallbackResponse = await ai.models.generateContent({
+        model: fallbackModel,
+        contents: [prompt, imagePart],
+        config: {
+          responseMimeType: 'application/json',
+        },
+      })
+      responseText = fallbackResponse.text?.trim() ?? ''
+    }
 
     // Clean JSON response (strip markdown wrappers if model added them)
     const cleanJsonStr = responseText

@@ -90,7 +90,7 @@ export function verifyGrounding(
 }
 
 /**
- * Invokes Gemini 1.5 Pro to answer contract queries with strict grounding.
+ * Invokes Gemini model to answer contract queries with strict grounding.
  */
 export async function runContractAiQuery(
   options: ContractAiQueryOptions
@@ -129,11 +129,11 @@ export async function runContractAiQuery(
     parts: [{ text: userQuery }],
   })
 
-  // Primary model: gemini-3.6-flash (state-of-the-art accuracy & speed, verified active on API key)
-  // Fallbacks: gemini-3.5-flash, gemini-flash-latest
-  const modelsToTry = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-flash-latest']
+  const primaryModel = process.env.GEMINI_PRIMARY_MODEL || 'gemini-2.5-flash'
+  const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash'
+  const modelsToTry = [primaryModel, fallbackModel, 'gemini-2.0-flash-lite', 'gemini-flash-latest']
   let rawText = ''
-  let selectedModel = 'gemini-3.6-flash'
+  let selectedModel = primaryModel
   let lastError: any = null
 
   for (const model of modelsToTry) {

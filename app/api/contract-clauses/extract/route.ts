@@ -11,6 +11,8 @@ import {
 } from '@/lib/errors/AppError'
 import { AIClauseExtractionResult } from '@/lib/types/contractClauses'
 
+export const maxDuration = 60
+
 const RATE_LIMIT_CONFIG = {
   limit: 10,
   windowMs: 2 * 60 * 1000,
@@ -86,39 +88,39 @@ CRITICAL RULES:
 
 Return raw JSON ONLY matching this exact structure:
 {
-  \"candidate_params\": {
-    \"contract_value\": 50000000,
-    \"completion_date\": \"YYYY-MM-DD or null\",
-    \"dlp_months\": 12,
-    \"earnest_money_deposit\": null,
-    \"performance_security_amount\": null,
-    \"performance_security_percent\": 5,
-    \"security_deposit_amount\": null,
-    \"security_deposit_percent\": 2.5,
-    \"retention_percentage\": 5,
-    \"liquidated_damages_percent_per_week\": 0.5,
-    \"liquidated_damages_max_cap_percent\": 10,
-    \"eot_notice_days\": 14,
-    \"source_page_ref\": \"Page / section where summary values found\"
+  "candidate_params": {
+    "contract_value": 50000000,
+    "completion_date": "YYYY-MM-DD or null",
+    "dlp_months": 12,
+    "earnest_money_deposit": null,
+    "performance_security_amount": null,
+    "performance_security_percent": 5,
+    "security_deposit_amount": null,
+    "security_deposit_percent": 2.5,
+    "retention_percentage": 5,
+    "liquidated_damages_percent_per_week": 0.5,
+    "liquidated_damages_max_cap_percent": 10,
+    "eot_notice_days": 14,
+    "source_page_ref": "Page / section where summary values found"
   },
-  \"extracted_clauses\": [
+  "extracted_clauses": [
     {
-      \"clause_number\": \"Clause 5\",
-      \"clause_title\": \"Extension of Time for Delay\",
-      \"clause_text\": \"The contractor shall give notice to the Engineer-in-Charge in writing within 14 days of the date of occurrence of any hindrance...\",
-      \"category\": \"EOT\",
-      \"notice_period_days\": 14,
-      \"payment_requirement\": null,
-      \"eot_relevance\": true,
-      \"variation_relevance\": false,
-      \"claim_relevance\": true,
-      \"bg_relevance\": false,
-      \"retention_relevance\": false,
-      \"ld_relevance\": false,
-      \"escalation_relevance\": false,
-      \"source_page_ref\": \"Page 14, Section IV (GCC)\",
-      \"ai_confidence_score\": 0.95,
-      \"ai_extraction_notes\": \"Statutory CPWD Form 27 14-day notice requirement\"
+      "clause_number": "Clause 5",
+      "clause_title": "Extension of Time for Delay",
+      "clause_text": "The contractor shall give notice to the Engineer-in-Charge in writing within 14 days of the date of occurrence of any hindrance...",
+      "category": "EOT",
+      "notice_period_days": 14,
+      "payment_requirement": null,
+      "eot_relevance": true,
+      "variation_relevance": false,
+      "claim_relevance": true,
+      "bg_relevance": false,
+      "retention_relevance": false,
+      "ld_relevance": false,
+      "escalation_relevance": false,
+      "source_page_ref": "Page 14, Section IV (GCC)",
+      "ai_confidence_score": 0.95,
+      "ai_extraction_notes": "Statutory CPWD Form 27 14-day notice requirement"
     }
   ]
 }
@@ -145,19 +147,22 @@ Do NOT wrap the output in markdown fences or backticks. Return raw valid JSON on
       ]
     }
 
+    const primaryModel = process.env.GEMINI_PRIMARY_MODEL || 'gemini-2.5-flash'
+    const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash'
+
     let response: any
     try {
       response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: primaryModel,
         contents,
         config: {
           responseMimeType: 'application/json',
         },
       })
     } catch (primaryErr: any) {
-      console.warn('gemini-3.6-flash failed for contract extraction, falling back to gemini-3.5-flash:', primaryErr?.message)
+      console.warn(`Primary model ${primaryModel} failed for contract extraction, falling back to ${fallbackModel}:`, primaryErr?.message)
       response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
+        model: fallbackModel,
         contents,
         config: {
           responseMimeType: 'application/json',

@@ -25,7 +25,8 @@ if (!apiKey) {
   process.exit(1);
 }
 
-console.log('Testing Gemini API key with gemini-3.6-flash...');
+const testModel = process.env.GEMINI_PRIMARY_MODEL || 'gemini-2.5-flash';
+console.log(`Testing Gemini API key with ${testModel}...`);
 const ai = new GoogleGenAI({ apiKey });
 
 // Realistic contractor scenario for NHAI / State PWD highway project
@@ -110,10 +111,10 @@ const userQuery = "What is our exposure under Liquidated Damages (Clause 2) if t
 
 async function run() {
   const t0 = Date.now();
-  console.log("Sending query to gemini-3.6-flash with 4-Layer Zero-Hallucination Shield...");
+  console.log(`Sending query to ${testModel} with 4-Layer Zero-Hallucination Shield...`);
   
   const response = await ai.models.generateContent({
-    model: 'gemini-3.6-flash',
+    model: testModel,
     contents: [
       { role: 'user', parts: [{ text: userQuery }] }
     ],

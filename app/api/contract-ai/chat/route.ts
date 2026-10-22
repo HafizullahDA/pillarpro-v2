@@ -14,6 +14,8 @@ import {
   formatErrorResponse,
 } from '@/lib/errors/AppError'
 
+export const maxDuration = 60
+
 // Rate limit: 20 Contract AI queries per 10 minutes per user/IP
 const RATE_LIMIT_CONFIG = {
   limit: 20,
