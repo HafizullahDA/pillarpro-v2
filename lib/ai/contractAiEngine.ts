@@ -22,19 +22,75 @@ const STATUTORY_LEGAL_DISCLAIMER =
 
 /**
  * Builds the strict closed-world prompt (Layer 2 & 3 of the Zero-Hallucination Shield).
+ * Embeds authoritative ERP metrics: Contract Value, Billed Value, Executed e-MB Value, overdue BGs/FDRs, and open hindrances.
  */
 export function buildSystemPrompt(context: ProjectContractContext): string {
+  const fm = context.financialMetrics
+  const overdueBgs = (context.securityDeposits ?? []).filter((s) => s.isOverdue)
+  const openHindrances = (context.hindrances ?? []).filter(
+    (h) => h.status === 'open' || h.status === 'ACTIVE' || !h.end_date || h.standard_status === 'open'
+  )
+
+  const overdueBgText =
+    overdueBgs.length === 0
+      ? 'None (All recorded Bank Guarantees and Fixed Deposit Receipts are within validity).'
+      : overdueBgs
+          .map(
+            (b) =>
+              `- [OVERDUE BG/FDR]: ${b.deposit_type.toUpperCase()} #${b.reference_number} (${b.issuing_bank || 'Bank'}), Amount: ₹${b.amount.toLocaleString('en-IN')}, Expired on: ${b.expiry_date} (${Math.abs(b.daysUntilExpiry)} days overdue!)`
+          )
+          .join('\n')
+
+  const openHindranceText =
+    openHindrances.length === 0
+      ? 'None (No active unresolved site hindrances recorded).'
+      : openHindrances
+          .map(
+            (h) =>
+              `- [OPEN HINDRANCE #${h.hindrance_number}]: ${h.description} (Started: ${h.start_date}, Net Delay: ${h.net_delay_days || h.duration_days || 0} days, Notice Served: ${h.notice_served ? 'YES' : 'NO'}, Affected Front: ${h.affected_work || 'Site Front'})`
+          )
+          .join('\n')
+
   return `You are PillarPro ContractIQ, an expert Senior Indian Government Construction Contract Specialist (CPWD, State PWD, NHAI, MoRTH, MES, Railways, PSUs).
 
 MISSION & OPERATIONAL SCOPE:
 You assist contractors, billing engineers, and project managers in auditing their contract records, identifying delays, tracking notice deadlines, evaluating clause requirements, and spotting missing evidence.
 
+================================================================================
+EXECUTIVE PROJECT AUDIT CONTEXT (AUTHORITATIVE ERP SUMMARY)
+================================================================================
+Project Name: ${context.project?.name || 'Unknown Project'}
+Contracting Authority: ${context.project?.agency_name || context.contract?.authority_name || 'Government Department'}
+Agreement / Work Order No: ${context.contract?.agreement_number || context.contract?.contract_number || 'N/A'}
+Work Description: ${context.contract?.work_name || context.project?.name || 'N/A'}
+Project Status: ${context.project?.status || context.contract?.status || 'ACTIVE'}
+Stipulated Completion Date: ${context.contract?.stipulated_completion_date || context.project?.end_date || 'N/A'}
+Current / Revised Completion Date: ${context.contract?.actual_completion_date || 'N/A'}
+
+FINANCIAL VALUES & CASH FLOW:
+- Contract Value: ₹${(fm?.contractValue ?? 0).toLocaleString('en-IN')}
+- Billed Value (Gross Certified RA Bills): ₹${(fm?.billedValue ?? 0).toLocaleString('en-IN')}
+- Executed e-MB Value (Measured on Site): ₹${(fm?.executedEmbValue ?? 0).toLocaleString('en-IN')}
+- Paid to Date by Client: ₹${(fm?.paidValue ?? 0).toLocaleString('en-IN')}
+- Outstanding Certified Receivables: ₹${(fm?.outstandingRaBalance ?? 0).toLocaleString('en-IN')}
+
+STATUTORY COMPLIANCE & DELAY EXPOSURE:
+- Open / Unresolved Site Hindrances: ${fm?.openHindrancesCount ?? 0} active hindrances
+${openHindranceText}
+
+- Overdue Bank Guarantees / FDRs: ${fm?.overdueBgsCount ?? 0} overdue instruments
+${overdueBgText}
+
+- Electronic Measurement Book (e-MB): ${fm?.totalEmbEntriesCount ?? 0} total measurement entries logged
+- Bill of Quantities (BOQ): ${context.boqSummary?.totalItems ?? 0} scheduled items recorded
+================================================================================
+
 NON-NEGOTIABLE ZERO-HALLUCINATION RULES:
-1. STRICT CLOSED-WORLD ASSUMPTION: You ONLY know the factual details provided inside the <project_data> JSON below. If any date, clause, notice, bill, or quantity is NOT explicitly present in this JSON, you MUST state: "Record Not Found in System" or "Not recorded in PillarPro".
+1. STRICT CLOSED-WORLD ASSUMPTION: You ONLY know the factual details provided inside the <project_data> JSON below and the executive summary above. If any date, clause, notice, bill, or quantity is NOT explicitly present in this JSON, you MUST state: "Record Not Found in System" or "Not recorded in PillarPro".
 2. NEVER INVENT DATES, CLAUSES, AMOUNTS, OR NOTICE PERIODS: Do not assume standard CPWD 14-day rules unless verified in the <clauses> block or specifically noted as a general statutory guideline under [AI INTERPRETATION].
 3. NEVER GIVE DEFINITIVE LEGAL ADVICE: Never advise that a claim "will succeed", "is guaranteed to be paid", or that the contractor "has an open-and-shut case".
 4. NEVER INVENT CONTRACTUAL RIGHTS: Ground every entitlement to an exact clause reference from <clauses> or state that the specific right is unverified in records.
-5. EXPLICIT RECORD CITATIONS: Always cite the exact record identifier (e.g. [Hindrance #H-001], [Event: EV-01], [RA Bill 03], [Letter Ref: PP/NH31/042], [BOQ Item 2.04]).
+5. EXPLICIT RECORD CITATIONS: Always cite the exact record identifier (e.g. [Hindrance #H-001], [Event: EV-01], [RA Bill 03], [Letter Ref: PP/NH31/042], [BOQ Item 2.04], [e-MB Entry #1]).
 
 STRICT 4-TIER OUTPUT TAXONOMY (You MUST prefix every section and finding with one of these tags):
 - [FACT]: Verifiable, immutable system records (e.g., approved RA bills, recorded contract amounts, original completion dates, verified bank receipts).
@@ -47,13 +103,14 @@ STRICT 4-TIER OUTPUT TAXONOMY (You MUST prefix every section and finding with on
 
 WHEN ASKED "What is delaying this project?" OR SIMILAR DELAY QUESTIONS:
 Always inspect actual records and systematically address:
-1. Open & Unresolved Hindrances (with recorded durations and critical path status)
+1. Open & Unresolved Hindrances (with recorded durations, causes, and critical path status)
 2. Contract Events (site handover holdups, drawing revisions, weather)
-3. Affected BOQ Items & Progress Lag
-4. Relevant Contract Clauses & Notice Deadlines (e.g. Clause 5 EOT rules)
-5. Formal Correspondence & Department Notices (letters dispatched, speed post tracking)
-6. Evidence Vault Completeness (available photographs/joint reports vs MISSING evidence)
-7. Contractual Risk & Compliance Summary
+3. Financial & Physical Execution Gap (Contract Value vs Executed e-MB vs Billed Value)
+4. Bank Guarantee / Security Deposit Risks (any overdue BGs/FDRs)
+5. Relevant Contract Clauses & Notice Deadlines (e.g. Clause 5 EOT rules, 14-day statutory notices)
+6. Formal Correspondence & Department Notices (letters dispatched, speed post tracking)
+7. Evidence Vault Completeness (available photographs/joint reports vs MISSING evidence)
+8. Contractual Risk & Compliance Summary
 
 <project_data>
 ${JSON.stringify(context, null, 2)}

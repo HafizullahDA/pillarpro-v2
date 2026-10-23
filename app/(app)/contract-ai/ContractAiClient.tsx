@@ -117,10 +117,15 @@ export function ContractAiClient({
     setMessages((prev) => [...prev, userMsg])
     setLoading(true)
 
+    // Strict 20-second timeout via AbortController
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 20000)
+
     try {
       const res = await fetch('/api/contract-ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           projectId: selectedProjectId,
           query: text,
@@ -131,18 +136,42 @@ export function ContractAiClient({
         }),
       })
 
-      const data = await res.json()
+      clearTimeout(timeoutId)
+
+      let data: any
+      try {
+        data = await res.json()
+      } catch {
+        data = null
+      }
 
       if (!res.ok) {
-        if (data?.code === 'FEATURE_GATED') {
-          setErrorMsg(
-            data.error ||
-              'ContractIQ is an exclusive feature of Growth Contractor and Enterprise Infra plans.'
-          )
-        } else {
-          setErrorMsg(data?.error || 'Failed to process contract query. Please try again.')
-        }
-        setLoading(false)
+        const errorText =
+          data?.code === 'FEATURE_GATED'
+            ? (data?.error || 'ContractIQ is an exclusive feature of Growth Contractor and Enterprise Infra plans.')
+            : (data?.error || `Error ${res.status}: Failed to process contract query. Please try again.`)
+
+        setErrorMsg(errorText)
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'model',
+            content: `⚠️ **Unable to complete analysis**\n\n${errorText}`,
+          },
+        ])
+        return
+      }
+
+      if (!data?.answer) {
+        const fallbackText = data?.error || 'No response received from ContractIQ. Please try again.'
+        setErrorMsg(fallbackText)
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'model',
+            content: `⚠️ **No response generated**\n\n${fallbackText}`,
+          },
+        ])
         return
       }
 
@@ -156,8 +185,22 @@ export function ContractAiClient({
         },
       ])
     } catch (err: any) {
-      setErrorMsg(err.message || 'Network error occurred while contacting ContractIQ.')
+      clearTimeout(timeoutId)
+      const isTimeout = err?.name === 'AbortError' || err?.message?.includes('aborted')
+      const message = isTimeout
+        ? 'ContractIQ request timed out after 20 seconds. The server might be inspecting large ERP records or experiencing network latency. Please retry.'
+        : (err?.message || 'Network error occurred while contacting ContractIQ.')
+
+      setErrorMsg(message)
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'model',
+          content: `⚠️ **Error**\n\n${message}`,
+        },
+      ])
     } finally {
+      clearTimeout(timeoutId)
       setLoading(false)
     }
   }
@@ -168,6 +211,14 @@ export function ContractAiClient({
   }
 
   const formatReportContent = (content: string) => {
+    if (content.startsWith('⚠️')) {
+      return (
+        <div className="p-3 rounded-xl bg-red-50/80 border border-red-200 text-red-800 text-xs sm:text-sm leading-relaxed">
+          <p className="font-semibold whitespace-pre-wrap">{content}</p>
+        </div>
+      )
+    }
+
     const lines = content.split('\n')
     return (
       <div className="space-y-2 text-xs sm:text-sm text-slate-800 leading-relaxed font-sans">

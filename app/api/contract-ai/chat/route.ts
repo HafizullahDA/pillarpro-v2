@@ -112,6 +112,7 @@ export async function POST(req: NextRequest) {
       hasDisclaimer: result.hasDisclaimer,
     })
   } catch (error: any) {
+    console.error('[ContractAI API Error]:', error?.message || error)
     return formatErrorResponse(error)
   }
 }

@@ -29,6 +29,39 @@ export interface ProjectContractContext {
     escalation_clause: string | null
     status: string | null
   } | null
+  financialMetrics: {
+    contractValue: number
+    billedValue: number
+    executedEmbValue: number
+    paidValue: number
+    outstandingRaBalance: number
+    openHindrancesCount: number
+    overdueBgsCount: number
+    totalEmbEntriesCount: number
+  }
+  securityDeposits: Array<{
+    id: string
+    deposit_type: string
+    reference_number: string
+    issuing_bank: string | null
+    amount: number
+    issue_date: string | null
+    expiry_date: string
+    claim_expiry_date: string | null
+    status: string
+    isOverdue: boolean
+    daysUntilExpiry: number
+  }>
+  measurementEntries: Array<{
+    id: string
+    entry_number: string
+    measurement_date: string
+    description: string
+    calculated_quantity: number
+    unit: string
+    status: string
+    boq_item_id: string
+  }>
   clauses: Array<{
     id: string
     clause_number: string
@@ -181,33 +214,134 @@ export interface ProjectContractContext {
 /**
  * Deterministic SQL context aggregator (Layer 1 of the Zero-Hallucination Shield).
  * Fetches verified PostgreSQL rows using the active user's RLS session.
- * Aligns strictly with real Supabase schema without non-existent columns.
+ * All ERP queries run in parallel via Promise.all() for low-latency serverless execution.
  */
 export async function getProjectContractContext(
   supabase: SupabaseClient,
   projectId: string
 ): Promise<ProjectContractContext> {
-  // 1. Fetch Project details (Supabase schema: id, name, agency_name, advertised_cost, awarded_amount, start_date, end_date, status)
-  const { data: project } = await supabase
-    .from('projects')
-    .select('id, name, agency_name, advertised_cost, awarded_amount, start_date, end_date, status')
-    .eq('id', projectId)
-    .maybeSingle()
+  // Parallel fetch of all primary project data
+  const [
+    { data: project },
+    { data: contracts },
+    { data: hindrances },
+    { data: contractEvents },
+    { data: boqItems, count: boqCount },
+    { data: raBills },
+    { data: eotCases },
+    { data: variations },
+    { data: claims },
+    { data: correspondence },
+    { data: evidenceItems, count: evidenceCount },
+    { data: securityDeposits },
+    { data: measurementEntries },
+  ] = await Promise.all([
+    supabase
+      .from('projects')
+      .select('id, name, agency_name, advertised_cost, awarded_amount, start_date, end_date, status')
+      .eq('id', projectId)
+      .maybeSingle(),
+    supabase
+      .from('contracts')
+      .select(
+        'id, agreement_number, work_order_number, nit_number, contract_title, employer_name, contracting_authority, contract_type, awarded_amount, estimated_cost, work_commencement_date, original_completion_date, current_completion_date, dlp_months, performance_security_amount, security_deposit_amount, retention_percentage, eot_clause, eot_notice_days, variation_clause, variation_limit_percent, escalation_clause, escalation_applicable, status'
+      )
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+      .limit(1),
+    supabase
+      .from('hindrances')
+      .select(
+        'id, hindrance_number, hindrance_code, category, description, location_chainage, start_date, end_date, status, delay_type, net_delay_days, duration_days, notice_served, notice_date, notice_reference_no, officer_acknowledged_by, officer_designation, affected_work, affected_boq_items, standard_status, remarks'
+      )
+      .eq('project_id', projectId)
+      .order('start_date', { ascending: false })
+      .limit(40),
+    supabase
+      .from('contract_events')
+      .select(
+        'id, event_number, event_type, event_date, start_date, end_date, location, description, cause, responsible_party, impact, estimated_delay_days, actual_delay_days, financial_impact, eot_relevance, eot_clause, claim_relevance, status, remarks'
+      )
+      .eq('project_id', projectId)
+      .order('event_date', { ascending: false })
+      .limit(40),
+    supabase
+      .from('boq_items')
+      .select('id, item_number, description, unit, tender_quantity, awarded_rate, total_amount, measured_quantity', {
+        count: 'exact',
+      })
+      .eq('project_id', projectId)
+      .order('item_number', { ascending: true })
+      .limit(40),
+    supabase
+      .from('ra_bills')
+      .select(
+        'id, bill_number, submission_date, work_certified_amount, retention_amount, net_payable_amount, amount_received, date_received, outstanding_balance, status, net_payable_this_bill'
+      )
+      .eq('project_id', projectId)
+      .order('submission_date', { ascending: false })
+      .limit(20),
+    supabase
+      .from('contract_eot_cases')
+      .select(
+        'id, eot_reference, cause, start_date, end_date, claimed_days, approved_days, pending_days, submission_date, current_completion_date, revised_completion_date, sanction_authority, sanction_order_number, status'
+      )
+      .eq('project_id', projectId)
+      .order('submission_date', { ascending: false })
+      .limit(20),
+    supabase
+      .from('contract_variations')
+      .select(
+        'id, reference_number, type, instruction_date, instruction_authority, proposed_item_description, proposed_quantity, difference_quantity, proposed_amount, approved_amount, status'
+      )
+      .eq('project_id', projectId)
+      .order('instruction_date', { ascending: false })
+      .limit(25),
+    supabase
+      .from('contract_claims')
+      .select(
+        'id, claim_number, claim_type, title, claim_date, description, basis_of_claim, claimed_amount, approved_amount, paid_amount, outstanding_amount, status'
+      )
+      .eq('project_id', projectId)
+      .order('claim_date', { ascending: false })
+      .limit(20),
+    supabase
+      .from('contract_correspondence')
+      .select(
+        'id, reference_number, letter_number, date, direction, category, sender, recipient, subject, description, status, response_deadline, tracking_consignment_number'
+      )
+      .eq('project_id', projectId)
+      .order('date', { ascending: false })
+      .limit(30),
+    supabase
+      .from('evidence_vault')
+      .select(
+        'id, evidence_number, type, title, description, document_date, related_hindrance_id, related_contract_event_id, related_ra_bill_id',
+        { count: 'exact' }
+      )
+      .eq('project_id', projectId)
+      .order('document_date', { ascending: false })
+      .limit(30),
+    supabase
+      .from('security_deposits')
+      .select(
+        'id, deposit_type, reference_number, issuing_bank, amount, issue_date, expiry_date, claim_expiry_date, status'
+      )
+      .eq('project_id', projectId)
+      .order('expiry_date', { ascending: true })
+      .limit(20),
+    supabase
+      .from('measurement_entries')
+      .select('id, entry_number, measurement_date, description, calculated_quantity, unit, status, boq_item_id')
+      .eq('project_id', projectId)
+      .order('measurement_date', { ascending: false })
+      .limit(30),
+  ])
 
-  // 2. Fetch associated Contract Master (public.contracts schema from migration 051)
-  const { data: contract } = await supabase
-    .from('contracts')
-    .select(
-      'id, agreement_number, work_order_number, nit_number, contract_title, employer_name, contracting_authority, contract_type, awarded_amount, estimated_cost, work_commencement_date, original_completion_date, current_completion_date, dlp_months, performance_security_amount, security_deposit_amount, retention_percentage, eot_clause, eot_notice_days, variation_clause, variation_limit_percent, escalation_clause, escalation_applicable, status'
-    )
-    .eq('project_id', projectId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
+  const contract = (contracts || [])[0] || null
   const contractId = contract?.id
 
-  // 3. Fetch Contract Clauses (public.contract_clauses from migration 058)
+  // Fetch clauses for the active contract
   let clauses: any[] = []
   if (contractId) {
     const { data: clauseRows } = await supabase
@@ -220,111 +354,84 @@ export async function getProjectContractContext(
     clauses = clauseRows || []
   }
 
-  // 4. Fetch Hindrances (public.hindrances from migrations 040 & 055)
-  const { data: hindrances } = await supabase
-    .from('hindrances')
-    .select(
-      'id, hindrance_number, hindrance_code, category, description, location_chainage, start_date, end_date, status, delay_type, net_delay_days, duration_days, notice_served, notice_date, notice_reference_no, officer_acknowledged_by, officer_designation, affected_work, affected_boq_items, standard_status, remarks'
-    )
-    .eq('project_id', projectId)
-    .order('start_date', { ascending: false })
-    .limit(40)
+  // Calculate Key Financial & Execution Metrics (Strictly Null-Safe)
+  const safeContractValue = Number(contract?.awarded_amount || project?.awarded_amount || 0)
 
-  // 5. Fetch Contract Events (public.contract_events from migration 055)
-  const { data: contractEvents } = await supabase
-    .from('contract_events')
-    .select(
-      'id, event_number, event_type, event_date, start_date, end_date, location, description, cause, responsible_party, impact, estimated_delay_days, actual_delay_days, financial_impact, eot_relevance, eot_clause, claim_relevance, status, remarks'
-    )
-    .eq('project_id', projectId)
-    .order('event_date', { ascending: false })
-    .limit(40)
+  const safeBilledValue = (raBills ?? []).reduce((sum, b) => {
+    const netPassed =
+      b.net_payable_this_bill != null
+        ? Number(b.net_payable_this_bill)
+        : b.net_payable_amount != null && !isNaN(Number(b.net_payable_amount))
+        ? Number(b.net_payable_amount)
+        : (Number(b.work_certified_amount) || 0) - (Number(b.retention_amount) || 0)
+    return sum + (Number(netPassed) || 0)
+  }, 0)
 
-  // 6. Fetch BOQ Items (public.boq_items from migration 037)
-  const { data: boqItems, count: boqCount } = await supabase
-    .from('boq_items')
-    .select('id, item_number, description, unit, tender_quantity, awarded_rate, total_amount', {
-      count: 'exact',
-    })
-    .eq('project_id', projectId)
-    .order('item_number', { ascending: true })
-    .limit(30)
+  const safePaidValue = (raBills ?? []).reduce((sum, b) => sum + (Number(b.amount_received) || 0), 0)
+  const safeOutstandingBalance = Math.max(0, safeBilledValue - safePaidValue)
 
-  // 7. Fetch RA Bills (public.ra_bills from migration 008)
-  const { data: raBills } = await supabase
-    .from('ra_bills')
-    .select(
-      'id, bill_number, submission_date, work_certified_amount, retention_amount, net_payable_amount, amount_received, date_received, outstanding_balance, status'
-    )
-    .eq('project_id', projectId)
-    .order('submission_date', { ascending: false })
-    .limit(20)
+  // Executed e-MB Value: Measured quantity from BOQ items * awarded rate
+  const safeExecutedEmbValue = (boqItems ?? []).reduce((sum, b) => {
+    const measuredQty = Number((b as any).measured_quantity || 0)
+    const rate = Number(b.awarded_rate || 0)
+    return sum + measuredQty * rate
+  }, 0)
 
-  // 8. Fetch EOT Cases (public.contract_eot_cases from migration 059)
-  const { data: eotCases } = await supabase
-    .from('contract_eot_cases')
-    .select(
-      'id, eot_reference, cause, start_date, end_date, claimed_days, approved_days, pending_days, submission_date, current_completion_date, revised_completion_date, sanction_authority, sanction_order_number, status'
-    )
-    .eq('project_id', projectId)
-    .order('submission_date', { ascending: false })
-    .limit(20)
+  // Security Deposits / Overdue BGs/FDRs
+  const nowMs = Date.now()
+  const securityDepositsFormatted = (securityDeposits ?? []).map((s) => {
+    const expDate = s.expiry_date ? new Date(s.expiry_date) : null
+    const diffDays = expDate ? Math.floor((expDate.getTime() - nowMs) / (1000 * 60 * 60 * 24)) : 9999
+    const isOverdue = s.status === 'active' && diffDays < 0
+    return {
+      id: s.id,
+      deposit_type: s.deposit_type,
+      reference_number: s.reference_number,
+      issuing_bank: s.issuing_bank || null,
+      amount: Number(s.amount || 0),
+      issue_date: s.issue_date || null,
+      expiry_date: s.expiry_date,
+      claim_expiry_date: s.claim_expiry_date || null,
+      status: s.status,
+      isOverdue,
+      daysUntilExpiry: diffDays,
+    }
+  })
+  const overdueBgsCount = securityDepositsFormatted.filter((s) => s.isOverdue).length
 
-  // 9. Fetch Variations & Extra Items (public.contract_variations from migration 060)
-  const { data: variations } = await supabase
-    .from('contract_variations')
-    .select(
-      'id, reference_number, type, instruction_date, instruction_authority, proposed_item_description, proposed_quantity, difference_quantity, proposed_amount, approved_amount, status'
-    )
-    .eq('project_id', projectId)
-    .order('instruction_date', { ascending: false })
-    .limit(25)
+  // Open Hindrances
+  const openHindrancesCount = (hindrances ?? []).filter(
+    (h) => h.status === 'open' || h.status === 'ACTIVE' || !h.end_date || h.standard_status === 'open'
+  ).length
 
-  // 10. Fetch Claims (public.contract_claims from migration 061)
-  const { data: claims } = await supabase
-    .from('contract_claims')
-    .select(
-      'id, claim_number, claim_type, title, claim_date, description, basis_of_claim, claimed_amount, approved_amount, paid_amount, outstanding_amount, status'
-    )
-    .eq('project_id', projectId)
-    .order('claim_date', { ascending: false })
-    .limit(20)
-
-  // 11. Fetch Correspondence & Notices (public.contract_correspondence from migration 057)
-  const { data: correspondence } = await supabase
-    .from('contract_correspondence')
-    .select(
-      'id, reference_number, letter_number, date, direction, category, sender, recipient, subject, description, status, response_deadline, tracking_consignment_number'
-    )
-    .eq('project_id', projectId)
-    .order('date', { ascending: false })
-    .limit(30)
-
-  // 12. Fetch Evidence Vault Items (public.evidence_vault from migration 056)
-  const { data: evidenceItems, count: evidenceCount } = await supabase
-    .from('evidence_vault')
-    .select(
-      'id, evidence_number, type, title, description, document_date, related_hindrance_id, related_contract_event_id, related_ra_bill_id',
-      { count: 'exact' }
-    )
-    .eq('project_id', projectId)
-    .order('document_date', { ascending: false })
-    .limit(30)
+  // Measurement Entries (e-MB Detail Rows)
+  const measurementEntriesFormatted = (measurementEntries ?? []).map((m) => ({
+    id: m.id,
+    entry_number: m.entry_number,
+    measurement_date: m.measurement_date,
+    description: m.description,
+    calculated_quantity: Number(m.calculated_quantity || 0),
+    unit: m.unit,
+    status: m.status,
+    boq_item_id: m.boq_item_id,
+  }))
 
   // Collect all known real database IDs to empower Layer 4 verification guard
   const knownRecordIds: string[] = []
   if (project?.id) knownRecordIds.push(project.id)
   if (contract?.id) knownRecordIds.push(contract.id)
-  clauses.forEach((c) => c.id && knownRecordIds.push(c.id))
-  ;(hindrances || []).forEach((h) => h.id && knownRecordIds.push(h.id))
-  ;(contractEvents || []).forEach((e) => e.id && knownRecordIds.push(e.id))
-  ;(boqItems || []).forEach((b) => b.id && knownRecordIds.push(b.id))
-  ;(raBills || []).forEach((r) => r.id && knownRecordIds.push(r.id))
-  ;(eotCases || []).forEach((e) => e.id && knownRecordIds.push(e.id))
-  ;(variations || []).forEach((v) => v.id && knownRecordIds.push(v.id))
-  ;(claims || []).forEach((c) => c.id && knownRecordIds.push(c.id))
-  ;(correspondence || []).forEach((cr) => cr.id && knownRecordIds.push(cr.id))
-  ;(evidenceItems || []).forEach((ev) => ev.id && knownRecordIds.push(ev.id))
+  ;(clauses ?? []).forEach((c) => c.id && knownRecordIds.push(c.id))
+  ;(hindrances ?? []).forEach((h) => h.id && knownRecordIds.push(h.id))
+  ;(contractEvents ?? []).forEach((e) => e.id && knownRecordIds.push(e.id))
+  ;(boqItems ?? []).forEach((b) => b.id && knownRecordIds.push(b.id))
+  ;(raBills ?? []).forEach((r) => r.id && knownRecordIds.push(r.id))
+  ;(eotCases ?? []).forEach((e) => e.id && knownRecordIds.push(e.id))
+  ;(variations ?? []).forEach((v) => v.id && knownRecordIds.push(v.id))
+  ;(claims ?? []).forEach((c) => c.id && knownRecordIds.push(c.id))
+  ;(correspondence ?? []).forEach((cr) => cr.id && knownRecordIds.push(cr.id))
+  ;(evidenceItems ?? []).forEach((ev) => ev.id && knownRecordIds.push(ev.id))
+  securityDepositsFormatted.forEach((s) => s.id && knownRecordIds.push(s.id))
+  measurementEntriesFormatted.forEach((m) => m.id && knownRecordIds.push(m.id))
 
   return {
     project: project
@@ -359,7 +466,19 @@ export async function getProjectContractContext(
           status: contract.status,
         }
       : null,
-    clauses: clauses.map((c) => ({
+    financialMetrics: {
+      contractValue: safeContractValue,
+      billedValue: safeBilledValue,
+      executedEmbValue: safeExecutedEmbValue,
+      paidValue: safePaidValue,
+      outstandingRaBalance: safeOutstandingBalance,
+      openHindrancesCount,
+      overdueBgsCount,
+      totalEmbEntriesCount: measurementEntriesFormatted.length,
+    },
+    securityDeposits: securityDepositsFormatted,
+    measurementEntries: measurementEntriesFormatted,
+    clauses: (clauses ?? []).map((c) => ({
       id: c.id,
       clause_number: c.clause_number,
       clause_title: c.clause_title,
@@ -373,7 +492,7 @@ export async function getProjectContractContext(
       claim_relevance: Boolean(c.claim_relevance),
       status: c.status,
     })),
-    hindrances: (hindrances || []).map((h) => ({
+    hindrances: (hindrances ?? []).map((h) => ({
       id: h.id,
       hindrance_number: h.hindrance_number,
       hindrance_code: h.hindrance_code || (h.hindrance_number ? `H-${h.hindrance_number}` : null),
@@ -394,7 +513,7 @@ export async function getProjectContractContext(
       affected_boq_items: h.affected_boq_items || [],
       remarks: h.remarks,
     })),
-    contractEvents: (contractEvents || []).map((e) => ({
+    contractEvents: (contractEvents ?? []).map((e) => ({
       id: e.id,
       event_number: e.event_number,
       event_type: e.event_type,
@@ -413,8 +532,8 @@ export async function getProjectContractContext(
       claim_relevance: Boolean(e.claim_relevance),
     })),
     boqSummary: {
-      totalItems: boqCount || 0,
-      sampleItems: (boqItems || []).map((b) => ({
+      totalItems: boqCount || (boqItems ?? []).length,
+      sampleItems: (boqItems ?? []).map((b) => ({
         id: b.id,
         item_number: b.item_number,
         description: b.description,
@@ -424,7 +543,7 @@ export async function getProjectContractContext(
         total_amount: Number(b.total_amount || 0),
       })),
     },
-    raBills: (raBills || []).map((r) => ({
+    raBills: (raBills ?? []).map((r) => ({
       id: r.id,
       bill_number: r.bill_number,
       submission_date: r.submission_date,
@@ -435,7 +554,7 @@ export async function getProjectContractContext(
       outstanding_balance: Number(r.outstanding_balance || 0),
       status: r.status,
     })),
-    eotCases: (eotCases || []).map((e) => ({
+    eotCases: (eotCases ?? []).map((e) => ({
       id: e.id,
       eot_reference: e.eot_reference,
       cause: e.cause,
@@ -451,7 +570,7 @@ export async function getProjectContractContext(
       sanction_order_number: e.sanction_order_number,
       status: e.status,
     })),
-    variations: (variations || []).map((v) => ({
+    variations: (variations ?? []).map((v) => ({
       id: v.id,
       reference_number: v.reference_number,
       type: v.type,
@@ -464,7 +583,7 @@ export async function getProjectContractContext(
       approved_amount: Number(v.approved_amount || 0),
       status: v.status,
     })),
-    claims: (claims || []).map((c) => ({
+    claims: (claims ?? []).map((c) => ({
       id: c.id,
       claim_number: c.claim_number,
       claim_type: c.claim_type,
@@ -478,7 +597,7 @@ export async function getProjectContractContext(
       outstanding_amount: Number(c.outstanding_amount || 0),
       status: c.status,
     })),
-    correspondence: (correspondence || []).map((cr) => ({
+    correspondence: (correspondence ?? []).map((cr) => ({
       id: cr.id,
       reference_number: cr.reference_number,
       letter_number: cr.letter_number,
@@ -493,8 +612,8 @@ export async function getProjectContractContext(
       tracking_consignment_number: cr.tracking_consignment_number,
     })),
     evidenceSummary: {
-      totalItems: evidenceCount || 0,
-      items: (evidenceItems || []).map((ev) => ({
+      totalItems: evidenceCount || (evidenceItems ?? []).length,
+      items: (evidenceItems ?? []).map((ev) => ({
         id: ev.id,
         evidence_number: ev.evidence_number,
         type: ev.type,
