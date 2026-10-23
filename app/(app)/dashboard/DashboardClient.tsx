@@ -785,6 +785,7 @@ export function DashboardClient({
             variations={filteredVariations}
             bills={filteredRawRABills}
             boqItems={filteredBOQItems}
+            measurements={filteredMeasurements}
           />
 
           {/* Section 2: Work Progress & BOQ Execution */}

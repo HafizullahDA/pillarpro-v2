@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { formatINR } from '@/lib/format'
-import { ContractItem, VariationSummary, RawRABillItem, BOQItemSummary } from './types'
+import { ContractItem, VariationSummary, RawRABillItem, BOQItemSummary, MeasurementEntrySummary } from './types'
 
 interface ContractPositionProps {
   sectionNumber?: number | string
@@ -11,6 +11,7 @@ interface ContractPositionProps {
   variations: VariationSummary[]
   bills: RawRABillItem[]
   boqItems: BOQItemSummary[]
+  measurements?: MeasurementEntrySummary[]
 }
 
 export function ContractPositionSection({
@@ -19,6 +20,7 @@ export function ContractPositionSection({
   variations,
   bills,
   boqItems,
+  measurements = [],
 }: ContractPositionProps) {
   const activeContracts = contracts.filter(c => c.status === 'active')
   const originalContractValue = contracts.reduce((sum, c) => sum + (Number(c.awarded_amount) || 0), 0)
@@ -35,13 +37,19 @@ export function ContractPositionSection({
   // Formula: Current = Original + Approved Variations/Extra Items - Deleted Work
   const currentContractValue = originalContractValue + approvedVariationsAmount - approvedDeletionsAmount
 
-  // Executed value: based on measured BOQ execution or work certified
-  const executedValue = boqItems.reduce(
+  // 1. Calculate eMbExecutedValue from recorded/certified e-MB entries and BOQ item measured quantities
+  const boqRateMap = new Map(boqItems.map(b => [b.id, Number(b.rate) || 0]))
+  const measurementsExecuted = (measurements ?? []).reduce(
+    (sum, m) => sum + ((Number(m.calculated_quantity) || 0) * (boqRateMap.get(m.boq_item_id) || 0)),
+    0
+  )
+  const boqExecuted = boqItems.reduce(
     (sum, b) => sum + ((Number(b.measured_quantity) || 0) * (Number(b.rate) || 0)),
     0
   )
+  const eMbExecutedValue = Math.max(boqExecuted, measurementsExecuted)
 
-  // Billed value from RA Bills
+  // 2. Calculate billedValue from passed/submitted RA Bills
   const billedValue = bills.reduce((sum, b) => {
     const netPassed = b.net_payable_this_bill != null
       ? Number(b.net_payable_this_bill)
@@ -50,6 +58,15 @@ export function ContractPositionSection({
         : (Number(b.work_certified_amount) || 0) - (Number(b.retention_amount) || 0))
     return sum + (Number(netPassed) || 0)
   }, 0)
+
+  // 3. Fallback: If eMbExecutedValue === 0 AND billedValue > 0 (bills entered via Lump-Sum Quick Entry
+  // without itemized e-MB measurements), display certified billedValue with a clear badge so the
+  // Command Center does not contradict itself by claiming ₹0 work completed on a billed project.
+  const isLumpSumBilled = eMbExecutedValue === 0 && billedValue > 0
+  const displayExecutedValue = isLumpSumBilled ? billedValue : eMbExecutedValue
+  const executionPct = currentContractValue > 0
+    ? Math.min(100, Math.round((displayExecutedValue / currentContractValue) * 100))
+    : 0
 
   // Paid value from RA Bills
   const paidValue = bills.reduce((sum, b) => {
@@ -144,17 +161,41 @@ export function ContractPositionSection({
         {/* Executed Value */}
         <Link
           href="/measurements"
-          className="group block p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white hover:border-indigo-400 hover:shadow-xs transition-all"
+          className={`group block p-3.5 rounded-xl border transition-all ${
+            isLumpSumBilled
+              ? 'border-indigo-300 bg-indigo-50/50 hover:bg-white hover:border-indigo-500 hover:shadow-xs'
+              : 'border-slate-200 bg-slate-50 hover:bg-white hover:border-indigo-400 hover:shadow-xs'
+          }`}
         >
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block truncate">
-            Executed (e-MB)
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block truncate">
+              Executed (e-MB)
+            </span>
+            {isLumpSumBilled && (
+              <span className="text-[9px] font-bold text-amber-700 bg-amber-100/90 border border-amber-300/80 px-1 py-0.2 rounded-xs uppercase tracking-tight shrink-0">
+                Lump-Sum
+              </span>
+            )}
+          </div>
           <p className="text-sm font-bold text-indigo-950 mt-1 tabular-nums group-hover:text-indigo-600 transition-colors truncate">
-            {formatINR(executedValue)}
+            {formatINR(displayExecutedValue)}
           </p>
-          <span className="text-[10px] text-slate-400 mt-0.5 block truncate">
-            Site work completed
-          </span>
+          {isLumpSumBilled ? (
+            <span
+              className="text-[10px] text-amber-700 font-semibold mt-0.5 block truncate"
+              title="Billed via Lump-Sum Quick Entry with 0 line-item e-MB measurements linked"
+            >
+              Lump-Sum Billed (0 e-MB linked)
+            </span>
+          ) : eMbExecutedValue > 0 ? (
+            <span className="text-[10px] text-slate-500 mt-0.5 block truncate">
+              {currentContractValue > 0 ? `${executionPct}% of Current Value` : 'Site work completed'}
+            </span>
+          ) : (
+            <span className="text-[10px] text-slate-400 mt-0.5 block truncate">
+              Site work completed
+            </span>
+          )}
         </Link>
 
         {/* Billed Value */}
@@ -215,7 +256,10 @@ export function ContractPositionSection({
           <div className="flex items-center gap-3 text-[11px]">
             <span>Current: <strong>{formatINR(currentContractValue)}</strong></span>
             <span className="text-slate-300">|</span>
-            <span>Executed: <strong>{formatINR(executedValue)}</strong></span>
+            <span>
+              Executed: <strong>{formatINR(displayExecutedValue)}</strong>
+              {isLumpSumBilled && <span className="text-[10px] text-amber-600 font-normal ml-1">(Lump-Sum)</span>}
+            </span>
             <span className="text-slate-300">|</span>
             <span>Billed: <strong>{formatINR(billedValue)}</strong></span>
             <span className="text-slate-300">|</span>
@@ -234,9 +278,9 @@ export function ContractPositionSection({
             title={`Outstanding Billed: ${formatINR(outstandingRAAmount)}`}
           />
           <div
-            style={{ width: `${currentContractValue > 0 ? Math.max(0, Math.min(100, ((executedValue - billedValue) / currentContractValue) * 100)) : 0}%` }}
+            style={{ width: `${currentContractValue > 0 ? Math.max(0, Math.min(100, ((displayExecutedValue - billedValue) / currentContractValue) * 100)) : 0}%` }}
             className="bg-indigo-300 h-full transition-all duration-300"
-            title={`Executed Unbilled: ${formatINR(Math.max(0, executedValue - billedValue))}`}
+            title={`Executed Unbilled: ${formatINR(Math.max(0, displayExecutedValue - billedValue))}`}
           />
         </div>
         <div className="flex items-center gap-4 mt-2 text-[10px] text-slate-500">
@@ -247,7 +291,7 @@ export function ContractPositionSection({
             <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Outstanding RA ({currentContractValue > 0 ? Math.round((outstandingRAAmount / currentContractValue) * 100) : 0}%)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-indigo-300 inline-block" /> Unbilled Measured ({currentContractValue > 0 ? Math.round((Math.max(0, executedValue - billedValue) / currentContractValue) * 100) : 0}%)
+            <span className="w-2 h-2 rounded-full bg-indigo-300 inline-block" /> Unbilled Measured ({currentContractValue > 0 ? Math.round((Math.max(0, displayExecutedValue - billedValue) / currentContractValue) * 100) : 0}%)
           </span>
         </div>
       </div>

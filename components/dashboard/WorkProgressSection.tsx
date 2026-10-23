@@ -20,11 +20,19 @@ export function WorkProgressSection({
   currentContractValue,
   billedValue,
 }: WorkProgressProps) {
-  // Executed value from BOQ measured quantities * rate
-  const executedValue = boqItems.reduce(
+  // Executed value from BOQ measured quantities and/or e-MB entries
+  const boqExecuted = boqItems.reduce(
     (sum, b) => sum + ((Number(b.measured_quantity) || 0) * (Number(b.rate) || 0)),
     0
   )
+  const boqRateMap = new Map(boqItems.map(b => [b.id, Number(b.rate) || 0]))
+  const measurementsExecuted = (measurements ?? []).reduce(
+    (sum, m) => sum + ((Number(m.calculated_quantity) || 0) * (boqRateMap.get(m.boq_item_id) || 0)),
+    0
+  )
+  const eMbExecutedValue = Math.max(boqExecuted, measurementsExecuted)
+  const isLumpSumBilled = eMbExecutedValue === 0 && billedValue > 0
+  const executedValue = isLumpSumBilled ? billedValue : eMbExecutedValue
 
   const physicalProgressPct = currentContractValue > 0
     ? Math.min(100, Math.round((executedValue / currentContractValue) * 100))
@@ -44,8 +52,6 @@ export function WorkProgressSection({
   const unmeasuredItemsCount = boqItems.filter(b => !b.measured_quantity || Number(b.measured_quantity) <= 0).length
 
   // Unbilled certified work: e-MB entries certified by department but not yet billed in any RA bill
-  const boqRateMap = new Map(boqItems.map(b => [b.id, Number(b.rate) || 0]))
-
   const unbilledCertifiedEntries = measurements.filter(
     m => m.status === 'CERTIFIED' && !m.billed_in_ra_bill_id
   )
@@ -104,7 +110,7 @@ export function WorkProgressSection({
             <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${physicalProgressPct}%` }} />
           </div>
           <span className="text-[10px] text-slate-400 mt-1 block truncate">
-            {formatINR(executedValue)} executed
+            {isLumpSumBilled ? `${formatINR(billedValue)} (Lump-Sum Billed)` : `${formatINR(executedValue)} executed`}
           </span>
         </Link>
 
