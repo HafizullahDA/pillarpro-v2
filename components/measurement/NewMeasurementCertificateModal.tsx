@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { DateInput } from '@/components/ui/DateInput'
 import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/client'
 import { formatINR } from '@/lib/format'
@@ -123,8 +124,15 @@ export function NewMeasurementCertificateModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Issue Official Measurement Certificate (e-MB)">
-      <form onSubmit={handleIssue} className="space-y-4 text-xs">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Issue Official Measurement Certificate (e-MB)"
+      maxWidth="lg"
+      bodyClassName="p-0 flex flex-col flex-1 min-h-0 overflow-hidden"
+    >
+      <form onSubmit={handleIssue} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div className="space-y-4 text-xs overflow-y-auto flex-1 p-4 sm:p-5 pr-3 sm:pr-4">
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-900">
           <div className="flex items-center justify-between">
             <span className="font-bold">Total Items to Certify:</span>
@@ -146,18 +154,16 @@ export function NewMeasurementCertificateModal({
             onChange={e => setCertNumber(e.target.value)}
             required
           />
-          <Input
+          <DateInput
             label="Period From"
-            type="date"
             value={periodFrom}
-            onChange={e => setPeriodFrom(e.target.value)}
+            onChange={setPeriodFrom}
             required
           />
-          <Input
+          <DateInput
             label="Period To"
-            type="date"
             value={periodTo}
-            onChange={e => setPeriodTo(e.target.value)}
+            onChange={setPeriodTo}
             required
           />
         </div>
@@ -192,7 +198,9 @@ export function NewMeasurementCertificateModal({
           />
         </div>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+        </div>
+
+        <div className="sticky bottom-0 bg-white border-t border-slate-200 p-4 px-5 flex justify-end gap-2 z-10 shrink-0 shadow-xs">
           <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

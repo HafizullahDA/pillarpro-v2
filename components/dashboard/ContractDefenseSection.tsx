@@ -13,6 +13,7 @@ import {
 } from './types'
 
 interface ContractDefenseProps {
+  sectionNumber?: number | string
   events: ContractEventSummary[]
   hindrances: HindranceSummary[]
   correspondence: CorrespondenceSummary[]
@@ -22,6 +23,7 @@ interface ContractDefenseProps {
 }
 
 export function ContractDefenseSection({
+  sectionNumber = 2,
   events,
   hindrances,
   correspondence,
@@ -80,7 +82,9 @@ export function ContractDefenseSection({
         <div>
           <div className="flex items-center gap-2">
             <span className="h-6 w-1.5 rounded-full bg-amber-500 inline-block" />
-            <h2 className="text-base font-bold text-slate-900">3. Contract Defense &amp; Claims Matrix</h2>
+            <h2 className="text-base font-bold text-slate-900">
+              {sectionNumber ? `${sectionNumber}. ` : ''}Contract Defense &amp; Claims Matrix
+            </h2>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
               Contemporaneous Records
             </span>

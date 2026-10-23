@@ -97,8 +97,15 @@ export function NewMeasurementBookModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Allot New Measurement Book (e-MB Register)">
-      <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Allot New Measurement Book (e-MB Register)"
+      maxWidth="lg"
+      bodyClassName="p-0 flex flex-col flex-1 min-h-0 overflow-hidden"
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div className="space-y-4 text-xs overflow-y-auto flex-1 p-4 sm:p-5 pr-3 sm:pr-4">
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-700">
           <p className="font-semibold text-slate-800">CPWD / Public Works MB Registration Rules</p>
           <p className="mt-1 text-slate-500">
@@ -177,7 +184,9 @@ export function NewMeasurementBookModal({
           />
         </div>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+        </div>
+
+        <div className="sticky bottom-0 bg-white border-t border-slate-200 p-4 px-5 flex justify-end gap-2 z-10 shrink-0 shadow-xs">
           <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

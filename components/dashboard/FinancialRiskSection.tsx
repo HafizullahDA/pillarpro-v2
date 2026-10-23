@@ -11,6 +11,7 @@ import {
 } from './types'
 
 interface FinancialRiskProps {
+  sectionNumber?: number | string
   bills: RawRABillItem[]
   supplierDues: number
   wagePayments: WagePaymentSummary[]
@@ -19,6 +20,7 @@ interface FinancialRiskProps {
 }
 
 export function FinancialRiskSection({
+  sectionNumber = 1,
   bills,
   supplierDues,
   wagePayments,
@@ -91,7 +93,9 @@ export function FinancialRiskSection({
         <div>
           <div className="flex items-center gap-2">
             <span className="h-6 w-1.5 rounded-full bg-red-500 inline-block" />
-            <h2 className="text-base font-bold text-slate-900">4. Financial Risk &amp; Liquidity Exposure</h2>
+            <h2 className="text-base font-bold text-slate-900">
+              {sectionNumber ? `${sectionNumber}. ` : ''}Financial Risk &amp; Liquidity Exposure
+            </h2>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
               Working Capital Health
             </span>

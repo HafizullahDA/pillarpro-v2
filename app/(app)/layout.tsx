@@ -76,7 +76,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 isPlatformAdmin={isSuperAdmin}
               />
               <div className="flex-1 flex flex-col min-w-0">
-                <main className="flex-1 min-w-0 overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+                <main className="flex-1 min-w-0 overflow-x-hidden pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] md:pb-24">
                   {children}
                 </main>
               </div>

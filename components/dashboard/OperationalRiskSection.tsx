@@ -12,6 +12,7 @@ import {
 } from './types'
 
 interface OperationalRiskProps {
+  sectionNumber?: number | string
   inventoryItems: InventoryItemSummary[]
   machineryAssets: MachineryAssetSummary[]
   measurements: MeasurementEntrySummary[]
@@ -21,6 +22,7 @@ interface OperationalRiskProps {
 }
 
 export function OperationalRiskSection({
+  sectionNumber = 3,
   inventoryItems,
   machineryAssets,
   measurements,
@@ -68,7 +70,9 @@ export function OperationalRiskSection({
         <div>
           <div className="flex items-center gap-2">
             <span className="h-6 w-1.5 rounded-full bg-orange-500 inline-block" />
-            <h2 className="text-base font-bold text-slate-900">5. Operational Risk &amp; Site Bottlenecks</h2>
+            <h2 className="text-base font-bold text-slate-900">
+              {sectionNumber ? `${sectionNumber}. ` : ''}Operational Risk &amp; Site Bottlenecks
+            </h2>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
               Site Execution Health
             </span>

@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { DateInput } from '@/components/ui/DateInput'
 import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/client'
 import { BOQItem } from '@/lib/types/boq'
@@ -192,9 +193,17 @@ export function NewMeasurementEntryModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Record Measurement Entry (e-MB Detail Sheet)">
-      <form onSubmit={handleSubmit} className="space-y-4 text-xs max-h-[80vh] overflow-y-auto pr-1">
-        {/* BOQ Item & e-MB Header */}
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Record Measurement Entry (e-MB Detail Sheet)"
+      maxWidth="2xl"
+      bodyClassName="p-0 flex flex-col flex-1 min-h-0 overflow-hidden"
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        {/* Scrollable Form Body */}
+        <div className="space-y-4 text-xs overflow-y-auto flex-1 p-4 sm:p-5 pr-3 sm:pr-4">
+          {/* BOQ Item & e-MB Header */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -326,11 +335,10 @@ export function NewMeasurementEntryModal({
             value={pageNumber}
             onChange={e => setPageNumber(e.target.value)}
           />
-          <Input
+          <DateInput
             label="Measurement Date *"
-            type="date"
             value={measurementDate}
-            onChange={e => setMeasurementDate(e.target.value)}
+            onChange={setMeasurementDate}
             required
           />
           <Input
@@ -487,8 +495,10 @@ export function NewMeasurementEntryModal({
             </select>
           </div>
         </div>
+        </div>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+        {/* Sticky Action Footer */}
+        <div className="sticky bottom-0 bg-white border-t border-slate-200 p-4 px-5 flex justify-end gap-2 z-10 shrink-0 shadow-xs">
           <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
             Cancel
           </Button>

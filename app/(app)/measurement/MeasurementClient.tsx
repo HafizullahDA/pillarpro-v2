@@ -231,7 +231,7 @@ export function MeasurementClient({
   }
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-28 md:pb-24">
       {/* Top Bar / Project Selector & Action Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
@@ -287,30 +287,38 @@ export function MeasurementClient({
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 text-xs font-semibold">
-        {[
-          { id: 'overview', label: 'Dashboard & Lifecycle' },
-          { id: 'books', label: `Measurement Books (${projectBooks.length})` },
-          { id: 'register', label: `Measurement Register (${projectEntries.length})` },
-          { id: 'progress', label: `BOQ Item Progress (${projectBOQ.length})` },
-          { id: 'abstract', label: 'Abstract of Measurements' },
-          { id: 'certificates', label: `Certificates (${projectCertificates.length})` },
-          { id: 'documents', label: `Evidence & Photos (${projectDocuments.length})` },
-          { id: 'history', label: `Audit Trail (${projectAdjustments.length})` },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as TabType)}
-            className={`px-3.5 py-2 rounded-xl whitespace-nowrap transition-all ${
-              activeTab === tab.id
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Navigation Tabs with Horizontal Scroll Indicator */}
+      <div className="relative group">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 text-xs font-semibold no-scrollbar">
+          {[
+            { id: 'overview', label: 'Dashboard & Lifecycle' },
+            { id: 'books', label: `Measurement Books (${projectBooks.length})` },
+            { id: 'register', label: `Measurement Register (${projectEntries.length})` },
+            { id: 'progress', label: `BOQ Item Progress (${projectBOQ.length})` },
+            { id: 'abstract', label: 'Abstract of Measurements' },
+            { id: 'certificates', label: `Certificates (${projectCertificates.length})` },
+            { id: 'documents', label: `Evidence & Photos (${projectDocuments.length})` },
+            { id: 'history', label: `Audit Trail (${projectAdjustments.length})` },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as TabType)}
+              className={`px-3.5 py-2 rounded-xl whitespace-nowrap transition-all ${
+                activeTab === tab.id
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {/* Visual scroll indicator: subtle right fade chevron for mobile devices */}
+        <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-10 flex items-center justify-end pr-1.5 bg-gradient-to-l from-slate-50 via-slate-50/70 to-transparent md:hidden">
+          <svg className="w-4 h-4 text-slate-500 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
       </div>
 
       {/* TAB 1: OVERVIEW & DASHBOARD */}

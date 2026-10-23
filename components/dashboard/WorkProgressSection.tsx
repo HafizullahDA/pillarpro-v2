@@ -6,6 +6,7 @@ import { formatINR } from '@/lib/format'
 import { BOQItemSummary, MeasurementEntrySummary } from './types'
 
 interface WorkProgressProps {
+  sectionNumber?: number | string
   boqItems: BOQItemSummary[]
   measurements: MeasurementEntrySummary[]
   currentContractValue: number
@@ -13,6 +14,7 @@ interface WorkProgressProps {
 }
 
 export function WorkProgressSection({
+  sectionNumber = 2,
   boqItems,
   measurements,
   currentContractValue,
@@ -59,7 +61,9 @@ export function WorkProgressSection({
         <div>
           <div className="flex items-center gap-2">
             <span className="h-6 w-1.5 rounded-full bg-indigo-600 inline-block" />
-            <h2 className="text-base font-bold text-slate-900">2. Work Progress &amp; BOQ Execution</h2>
+            <h2 className="text-base font-bold text-slate-900">
+              {sectionNumber ? `${sectionNumber}. ` : ''}Work Progress &amp; BOQ Execution
+            </h2>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
               e-MB &amp; Schedule A
             </span>

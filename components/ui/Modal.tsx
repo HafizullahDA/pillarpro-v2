@@ -9,6 +9,8 @@ interface ModalProps {
   children: React.ReactNode
   footer?: React.ReactNode
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+  bodyClassName?: string
+  cardClassName?: string
 }
 
 const maxWidthMap = {
@@ -26,6 +28,8 @@ export function Modal({
   children,
   footer,
   maxWidth = 'md',
+  bodyClassName,
+  cardClassName,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -50,7 +54,7 @@ export function Modal({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
@@ -61,13 +65,13 @@ export function Modal({
       {/* Modal Card */}
       <div
         ref={modalRef}
-        className={`relative w-full ${maxWidthMap[maxWidth]} bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transform transition-all z-10 flex flex-col max-h-[90vh]`}
+        className={`relative w-full ${maxWidthMap[maxWidth]} bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transform transition-all z-10 flex flex-col max-h-[90dvh] sm:max-h-[90vh] ${cardClassName ?? ''}`}
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
             <h3 className="text-base font-bold text-slate-900">{title}</h3>
             <button
               onClick={onClose}
@@ -82,11 +86,11 @@ export function Modal({
         )}
 
         {/* Body */}
-        <div className="p-5 overflow-y-auto">{children}</div>
+        <div className={`overflow-y-auto flex-1 min-h-0 ${bodyClassName ?? 'p-5'}`}>{children}</div>
 
         {/* Footer */}
         {footer && (
-          <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+          <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
             {footer}
           </div>
         )}

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { formatINR } from '@/lib/format'
+import { formatINR, formatDateDDMMYYYY } from '@/lib/format'
 import {
   SecurityDepositItem,
   ContractItem,
@@ -12,6 +12,7 @@ import {
 import { SendWhatsAppModal, WhatsAppAlertData } from '@/components/alerts/SendWhatsAppModal'
 
 interface DeadlinesClockProps {
+  sectionNumber?: number | string
   securityDeposits: SecurityDepositItem[]
   contracts: ContractItem[]
   correspondence: CorrespondenceSummary[]
@@ -31,6 +32,7 @@ interface DeadlineItem {
 }
 
 export function DeadlinesClockSection({
+  sectionNumber = 1,
   securityDeposits,
   contracts,
   correspondence,
@@ -192,7 +194,9 @@ export function DeadlinesClockSection({
         <div>
           <div className="flex items-center gap-2">
             <span className="h-6 w-1.5 rounded-full bg-rose-500 inline-block" />
-            <h2 className="text-base font-bold text-slate-900">6. Statutory &amp; Contractual Deadlines Clock</h2>
+            <h2 className="text-base font-bold text-slate-900">
+              {sectionNumber ? `${sectionNumber}. ` : ''}Statutory &amp; Contractual Deadlines Clock
+            </h2>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
               Contractual Timers
             </span>
@@ -315,7 +319,7 @@ export function DeadlinesClockSection({
                         </span>
                       )}
                       <span className="block text-[10px] text-slate-400 mt-1 font-mono">
-                        {item.date}
+                        {formatDateDDMMYYYY(item.date)}
                       </span>
                     </div>
                   </div>

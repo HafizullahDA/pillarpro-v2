@@ -6,6 +6,7 @@ import { formatINR } from '@/lib/format'
 import { ContractItem, VariationSummary, RawRABillItem, BOQItemSummary } from './types'
 
 interface ContractPositionProps {
+  sectionNumber?: number | string
   contracts: ContractItem[]
   variations: VariationSummary[]
   bills: RawRABillItem[]
@@ -13,6 +14,7 @@ interface ContractPositionProps {
 }
 
 export function ContractPositionSection({
+  sectionNumber = 1,
   contracts,
   variations,
   bills,
@@ -70,7 +72,9 @@ export function ContractPositionSection({
         <div>
           <div className="flex items-center gap-2">
             <span className="h-6 w-1.5 rounded-full bg-blue-600 inline-block" />
-            <h2 className="text-base font-bold text-slate-900">1. Contract Position</h2>
+            <h2 className="text-base font-bold text-slate-900">
+              {sectionNumber ? `${sectionNumber}. ` : ''}Contract Position
+            </h2>
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
               Statutory Realization
             </span>
