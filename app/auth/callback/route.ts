@@ -13,6 +13,11 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
+      // If this is a password recovery flow, immediately redirect to reset-password
+      if (next.startsWith('/reset-password')) {
+        return NextResponse.redirect(`${requestUrl.origin}${next}`)
+      }
+
       try {
         // Check if user already has an active organization and profile
         const { data: userProfile } = await supabase

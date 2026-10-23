@@ -61,12 +61,13 @@ export async function middleware(request: NextRequest) {
   // IMPORTANT: Do not add code between createServerClient and getUser()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const AUTH_ROUTES     = ['/sign-in', '/sign-up']
+  const AUTH_ROUTES     = ['/sign-in', '/sign-up', '/forgot-password']
+  const RESET_ROUTES    = ['/reset-password']
   const CALLBACK_ROUTES = ['/auth/callback']
   const PENDING_ROUTES  = ['/pending']
   const PUBLIC_PAGES    = ['/pricing', '/terms', '/privacy', '/robots.txt', '/sitemap.xml']
   const PWA_ROUTES      = ['/sw.js', '/manifest.json', '/offline', '/.well-known']
-  const PUBLIC_ROUTES   = [...AUTH_ROUTES, ...CALLBACK_ROUTES, ...PENDING_ROUTES, ...PUBLIC_PAGES, ...PWA_ROUTES]
+  const PUBLIC_ROUTES   = [...AUTH_ROUTES, ...RESET_ROUTES, ...CALLBACK_ROUTES, ...PENDING_ROUTES, ...PUBLIC_PAGES, ...PWA_ROUTES]
 
   // Public API routes with explicit justifications:
   // - /api/health: Public synthetic health check for uptime monitors (BetterUptime, Datadog)

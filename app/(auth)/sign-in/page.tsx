@@ -36,6 +36,7 @@ export default function SignInPage() {
   const [password, setPassword]         = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError]               = useState('')
+  const [successNotice, setSuccessNotice] = useState('')
   const [loading, setLoading]           = useState(false)
   const [cooldown, setCooldown]         = useState(0)
 
@@ -48,17 +49,21 @@ export default function SignInPage() {
   const [resendCooldown, setResendCooldown]         = useState(0)
   const [resendLoading, setResendLoading]           = useState(false)
 
-  // Read ?error= or ?email= from query parameters
+  // Read ?error= or ?email= or ?reset= from query parameters
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const errParam = params.get('error')
       const emailParam = params.get('email')
+      const resetParam = params.get('reset')
       if (errParam) {
         setError(decodeURIComponent(errParam))
       }
       if (emailParam) {
         setEmail(decodeURIComponent(emailParam))
+      }
+      if (resetParam === 'success') {
+        setSuccessNotice('Your password has been successfully reset. Please sign in with your new credentials.')
       }
     }
   }, [])
@@ -340,6 +345,16 @@ export default function SignInPage() {
             </p>
           </div>
 
+          {/* Success Banner (e.g. after password reset) */}
+          {successNotice && (
+            <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-800 flex items-start gap-2.5 shadow-2xs">
+              <svg className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="font-medium leading-relaxed">{successNotice}</span>
+            </div>
+          )}
+
           {/* Error Banner */}
           {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 p-3.5 text-xs text-red-700 flex items-start gap-2.5 shadow-2xs">
@@ -442,6 +457,12 @@ export default function SignInPage() {
                 <label htmlFor="password" className="block text-xs font-semibold text-slate-700">
                   Password <span className="text-blue-600">*</span>
                 </label>
+                <Link
+                  href={email ? `/forgot-password?email=${encodeURIComponent(email)}` : '/forgot-password'}
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors cursor-pointer"
+                >
+                  Forgot password?
+                </Link>
               </div>
               <div className="relative">
                 <input
