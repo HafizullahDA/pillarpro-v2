@@ -13,6 +13,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // 1. Verify caller organization from verified session
+    const { data: orgId } = await supabase.rpc('get_user_organization_id')
+    if (!orgId) {
+      return NextResponse.json(
+        { error: 'Forbidden: User is not associated with an active organization.' },
+        { status: 403 }
+      )
+    }
+
     const body = await req.json()
     const {
       supplierId,
@@ -24,7 +33,6 @@ export async function POST(req: NextRequest) {
       date,
       projectName,
       updatedBalance,
-      organizationId,
       projectId,
     } = body
 
@@ -35,17 +43,38 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // 2. Ownership verification: Verify supplier belongs to caller's organization
+    const { data: supplier, error: supplierError } = await supabase
+      .from('suppliers')
+      .select('id, name, phone, organization_id')
+      .eq('id', supplierId)
+      .eq('organization_id', orgId)
+      .maybeSingle()
+
+    if (supplierError || !supplier) {
+      return NextResponse.json(
+        { error: 'Forbidden: Supplier not found or does not belong to your organization.' },
+        { status: 403 }
+      )
+    }
+
+    const targetPhone =
+      recipientPhone ||
+      supplier.phone ||
+      process.env.WHATSAPP_ALERT_RECIPIENT_PHONE ||
+      ''
+
     const result = await sendVendorPaymentAdvice(supabase, {
       supplierId,
-      supplierName: supplierName || 'Supplier',
-      recipientPhone: recipientPhone || process.env.WHATSAPP_ALERT_RECIPIENT_PHONE || '',
+      supplierName: supplierName || supplier.name || 'Supplier',
+      recipientPhone: targetPhone,
       amount: Number(amount),
       paymentMode,
       reference,
       date,
       projectName,
       updatedBalance: updatedBalance != null ? Number(updatedBalance) : undefined,
-      organizationId,
+      organizationId: orgId, // Always bind to verified caller org, never from client body
       projectId,
     })
 

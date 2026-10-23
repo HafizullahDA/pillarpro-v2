@@ -17,6 +17,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { data: orgId } = await supabase.rpc('get_user_organization_id')
+    if (!orgId) {
+      return NextResponse.json({ error: 'Forbidden: Organization required' }, { status: 403 })
+    }
+
     const { logId } = await req.json()
     if (!logId) {
       return NextResponse.json({ error: 'logId is required' }, { status: 400 })
@@ -26,10 +31,11 @@ export async function POST(req: NextRequest) {
       .from('alert_dispatch_logs')
       .select('*')
       .eq('id', logId)
-      .single()
+      .eq('organization_id', orgId)
+      .maybeSingle()
 
     if (logError || !log) {
-      return NextResponse.json({ error: 'Alert log not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Alert log not found or unauthorized' }, { status: 404 })
     }
 
     if (!log.recipient_phone) {
