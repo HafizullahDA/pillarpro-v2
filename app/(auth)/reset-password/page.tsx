@@ -281,7 +281,7 @@ export default function ResetPasswordPage() {
               Create a new secure password
             </h2>
             <p className="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Choose a strong password to safeguard your contracting firm's projects, bank guarantees, and financial records.
+              Choose a strong password to safeguard your contracting firm&apos;s projects, bank guarantees, and financial records.
             </p>
           </div>
 
