@@ -57,11 +57,16 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
               </svg>
             </div>
             <div>
-              <h3 id="contact-modal-title" className="text-base font-bold text-slate-900">
-                Contact PillarPro
-              </h3>
-              <p className="text-xs text-slate-500">
-                Choose how you&apos;d like to get in touch with our team:
+              <div className="flex items-center gap-2">
+                <h3 id="contact-modal-title" className="text-base font-bold text-slate-900">
+                  Enterprise Sales &amp; Solutions
+                </h3>
+                <span className="text-[10px] font-mono tracking-wider uppercase font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">
+                  Priority
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Connect directly with our infrastructure engineering &amp; enterprise deployment team:
               </p>
             </div>
           </div>
