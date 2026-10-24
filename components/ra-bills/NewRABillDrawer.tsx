@@ -11,7 +11,7 @@ import { formatINR } from '@/lib/format'
 import { getTodayIST } from '@/lib/date'
 import { createRABillSchema } from '@/lib/validations/raBill'
 import { translateError } from '@/lib/errorTranslator'
-import { calculateCumulativeThisBill, calculateRABillNetPayable, calculateStatutoryDeductions, calculateDLPReleaseDate } from '@/lib/calculations/raBill'
+import { calculateCumulativeThisBill, calculateRABillNetPayable, calculateStatutoryDeductions, calculateDLPReleaseDate, calculatePWDStatutoryDeductions, PWDStatutoryDeductionsResult } from '@/lib/calculations/raBill'
 import { safeMul, safeSub, safeAdd } from '@/lib/calculations/financial'
 import { ProjectOption, RABillOption } from '@/app/(app)/ra-bills/RABillActions'
 
@@ -52,6 +52,17 @@ export interface EditRABillData {
   other_material_recovery?: number
   actual_completion_date?: string | null
   dlp_months?: number
+  retention_mode?: 'percent' | 'amount'
+  it_tds_percentage?: number
+  it_tds_amount?: number
+  gst_tds_percentage?: number
+  gst_tds_amount?: number
+  labour_cess_percentage?: number
+  labour_cess_amount?: number
+  royalty_recovery?: number
+  mobilization_advance_recovery?: number
+  withheld_amount?: number
+  deductions_breakdown?: any
   document_url?: string | null
   remarks?: string | null
   status?: string
@@ -96,7 +107,20 @@ export function NewRABillDrawer({
     Record<string, { currentQty: string; remarks: string }>
   >({})
 
-  const [contractorType, setContractorType] = useState<'individual_proprietor' | 'company_firm'>('company_firm')
+  // Statutory Deductions State
+  const [retentionMode, setRetentionMode] = useState<'percent' | 'amount'>('percent')
+  const [retentionCustomAmount, setRetentionCustomAmount] = useState('')
+  const [itTdsMode, setItTdsMode] = useState<'1_percent' | '2_percent' | 'custom_amount'>('2_percent')
+  const [itTdsCustomAmount, setItTdsCustomAmount] = useState('')
+  const [gstTdsMode, setGstTdsMode] = useState<'percent' | 'amount'>('percent')
+  const [gstTdsPercent, setGstTdsPercent] = useState('2.00')
+  const [gstTdsCustomAmount, setGstTdsCustomAmount] = useState('')
+  const [labourCessMode, setLabourCessMode] = useState<'percent' | 'amount'>('percent')
+  const [labourCessPercent, setLabourCessPercent] = useState('1.00')
+  const [labourCessCustomAmount, setLabourCessCustomAmount] = useState('')
+  const [royaltyRecovery, setRoyaltyRecovery] = useState('')
+  const [mobilizationAdvanceRecovery, setMobilizationAdvanceRecovery] = useState('')
+  const [withheldAmount, setWithheldAmount] = useState('')
 
   const [billForm, setBillForm] = useState({
     project_id: defaultProjectId || '',
@@ -236,6 +260,20 @@ export function NewRABillDrawer({
         dlp_months: editBill.dlp_months != null ? String(editBill.dlp_months) : '12',
         remarks: editBill.remarks || '',
       })
+      const bd = editBill.deductions_breakdown || {}
+      setRetentionMode(editBill.retention_mode || (bd.retention_mode === 'amount' ? 'amount' : 'percent'))
+      setRetentionCustomAmount(bd.retention_custom_amount != null && bd.retention_custom_amount > 0 ? String(bd.retention_custom_amount) : '')
+      setItTdsMode(bd.it_tds_mode || (editBill.it_tds_percentage === 1 ? '1_percent' : editBill.it_tds_amount ? 'custom_amount' : '2_percent'))
+      setItTdsCustomAmount(editBill.it_tds_amount != null && editBill.it_tds_amount > 0 ? String(editBill.it_tds_amount) : '')
+      setGstTdsMode(bd.gst_tds_mode || (editBill.gst_tds_amount ? 'amount' : 'percent'))
+      setGstTdsPercent(editBill.gst_tds_percentage != null ? String(editBill.gst_tds_percentage) : '2.00')
+      setGstTdsCustomAmount(editBill.gst_tds_amount != null && editBill.gst_tds_amount > 0 ? String(editBill.gst_tds_amount) : '')
+      setLabourCessMode(bd.labour_cess_mode || (editBill.labour_cess_amount ? 'amount' : 'percent'))
+      setLabourCessPercent(editBill.labour_cess_percentage != null ? String(editBill.labour_cess_percentage) : '1.00')
+      setLabourCessCustomAmount(editBill.labour_cess_amount != null && editBill.labour_cess_amount > 0 ? String(editBill.labour_cess_amount) : '')
+      setRoyaltyRecovery(editBill.royalty_recovery != null && editBill.royalty_recovery > 0 ? String(editBill.royalty_recovery) : '')
+      setMobilizationAdvanceRecovery(editBill.mobilization_advance_recovery != null && editBill.mobilization_advance_recovery > 0 ? String(editBill.mobilization_advance_recovery) : '')
+      setWithheldAmount(editBill.withheld_amount != null && editBill.withheld_amount > 0 ? String(editBill.withheld_amount) : '')
       const isItemWise = editBill.billing_entry_mode === 'item_wise'
       setEntryMode(isItemWise ? 'item_wise' : 'lump_sum')
       setSelectedFile(null)
@@ -283,6 +321,19 @@ export function NewRABillDrawer({
         dlp_months: '12',
         remarks: '',
       })
+      setRetentionMode('percent')
+      setRetentionCustomAmount('')
+      setItTdsMode('2_percent')
+      setItTdsCustomAmount('')
+      setGstTdsMode('percent')
+      setGstTdsPercent('2.00')
+      setGstTdsCustomAmount('')
+      setLabourCessMode('percent')
+      setLabourCessPercent('1.00')
+      setLabourCessCustomAmount('')
+      setRoyaltyRecovery('')
+      setMobilizationAdvanceRecovery('')
+      setWithheldAmount('')
       setEntryMode('lump_sum')
       setItemMeasurements({})
       setSelectedFile(null)
@@ -347,42 +398,49 @@ export function NewRABillDrawer({
   const totalMatRecoveries = safeAdd(cementRecNum, steelRecNum, otherMatRecNum)
   const unmeasuredAdvNum = parseFloat(billForm.advance_payments_unmeasured) || 0
 
-  // Pure financial math derivations (with CPWD GCC Clause 1A Bank Guarantee offset)
-  const standaloneGrossRetention = safeMul(certifiedNum, retentionPctNum / 100)
-  const cumulativeGrossRetention = safeMul(certifiedNum, retentionPctNum / 100)
-  const grossRetention = isCumulative ? cumulativeGrossRetention : standaloneGrossRetention
-
+  // Bank Guarantee offset per CPWD GCC Clause 1A
   const selectedBg = activeDeposits.find(d => d.id === selectedBgId) || (activeDeposits.length > 0 ? activeDeposits[0] : null)
   const availableBgAmount = applyBgOffset && selectedBg ? Number(selectedBg.amount) || 0 : 0
-  const bgOffsetAmount = Math.min(grossRetention, availableBgAmount)
-  const netRetentionWithheld = Math.max(0, safeSub(grossRetention, bgOffsetAmount))
-
-  const standaloneNetPayable = calculateRABillNetPayable({
-    workCertified: certifiedNum,
-    totalDeductions: safeAdd(netRetentionWithheld, totalMatRecoveries),
-  })
 
   // Cumulative calculation
   const cumulativeThisBillCertified = calculateCumulativeThisBill({
     currentCumulative: certifiedNum,
     previousCumulative: prevCertified,
   })
-  const cumulativeNetPassed = calculateRABillNetPayable({
-    workCertified: certifiedNum,
-    totalDeductions: safeAdd(netRetentionWithheld, totalMatRecoveries),
-  })
-  const cumulativeNetPayableThisBill = Math.max(0, safeSub(cumulativeNetPassed, prevReceived))
-
-  const liveRetentionAmount = netRetentionWithheld
-  const liveNetPayable = Math.max(0, safeAdd(isCumulative ? cumulativeNetPayableThisBill : standaloneNetPayable, unmeasuredAdvNum))
   const thisBillCertified = isCumulative ? cumulativeThisBillCertified : certifiedNum
 
-  // Estimated statutory treasury deductions (1% or 2% IT-TDS, 2% GST-TDS, 1% Labour Cess)
-  const estimatedTreasuryBase = isCumulative ? cumulativeNetPassed : certifiedNum
-  const estimatedTreasury = calculateStatutoryDeductions(estimatedTreasuryBase, {
-    contractorType,
-    retentionPercent: 0,
+  // Official CPWD & State PWD Form 26 Statutory Deductions Engine
+  const pwdDeductions = calculatePWDStatutoryDeductions({
+    workCertified: thisBillCertified,
+    unmeasuredAdvance: unmeasuredAdvNum,
+    retentionMode,
+    retentionPercent: retentionPctNum,
+    retentionCustomAmount: parseFloat(retentionCustomAmount) || 0,
+    bgOffsetAmount: availableBgAmount,
+    itTdsMode,
+    itTdsCustomAmount: parseFloat(itTdsCustomAmount) || 0,
+    gstTdsMode,
+    gstTdsPercent: parseFloat(gstTdsPercent) || 2.0,
+    gstTdsCustomAmount: parseFloat(gstTdsCustomAmount) || 0,
+    labourCessMode,
+    labourCessPercent: parseFloat(labourCessPercent) || 1.0,
+    labourCessCustomAmount: parseFloat(labourCessCustomAmount) || 0,
+    cementRecovery: cementRecNum,
+    steelRecovery: steelRecNum,
+    otherMaterialRecovery: otherMatRecNum,
+    royaltyRecovery: parseFloat(royaltyRecovery) || 0,
+    mobilizationAdvanceRecovery: parseFloat(mobilizationAdvanceRecovery) || 0,
+    withheldAmount: parseFloat(withheldAmount) || 0,
+    previousPaymentsAlreadyMade: isCumulative ? prevReceived : 0,
   })
+
+  const grossRetention = pwdDeductions.grossRetentionRequired
+  const bgOffsetAmount = pwdDeductions.bgOffsetApplied
+  const netRetentionWithheld = pwdDeductions.netRetentionWithheld
+  const liveRetentionAmount = netRetentionWithheld
+  const liveNetPayable = pwdDeductions.netPayableAmount
+  const grossWorkA = pwdDeductions.grossWorkCertified
+  const totalDeductionsB = pwdDeductions.totalAllDeductions
 
   const uploadDocument = async (file: File): Promise<string | null> => {
     try {
@@ -421,7 +479,18 @@ export function NewRABillDrawer({
       billing_mode: billForm.billing_mode,
       previous_bill_id: billForm.previous_bill_id,
       work_certified_amount: billForm.work_certified_amount,
-      retention_percentage: billForm.retention_percentage,
+      retention_percentage: retentionMode === 'percent' ? (billForm.retention_percentage || 5) : (certifiedNum > 0 ? Number(((pwdDeductions.grossRetentionRequired / certifiedNum) * 100).toFixed(2)) : 5),
+      retention_mode: retentionMode,
+      retention_amount: pwdDeductions.netRetentionWithheld,
+      it_tds_percentage: pwdDeductions.itTdsEffectivePercent,
+      it_tds_amount: pwdDeductions.itTdsAmount,
+      gst_tds_percentage: pwdDeductions.gstTdsEffectivePercent,
+      gst_tds_amount: pwdDeductions.gstTdsAmount,
+      labour_cess_percentage: pwdDeductions.labourCessEffectivePercent,
+      labour_cess_amount: pwdDeductions.labourCessAmount,
+      royalty_recovery: pwdDeductions.royaltyRecovery,
+      mobilization_advance_recovery: pwdDeductions.mobilizationAdvanceRecovery,
+      withheld_amount: pwdDeductions.withheldAmount,
       mb_number: billForm.mb_number,
       mb_page_start: billForm.mb_page_start ? parseInt(billForm.mb_page_start, 10) : null,
       mb_page_end: billForm.mb_page_end ? parseInt(billForm.mb_page_end, 10) : null,
@@ -459,6 +528,37 @@ export function NewRABillDrawer({
       }
 
       if (editBill) {
+        const deductionsBreakdown = {
+          retention_mode: retentionMode,
+          retention_percentage: retentionMode === 'percent' ? retentionPctNum : (certifiedNum > 0 ? Number(((pwdDeductions.grossRetentionRequired / certifiedNum) * 100).toFixed(2)) : 5),
+          retention_custom_amount: parseFloat(retentionCustomAmount) || 0,
+          gross_retention: pwdDeductions.grossRetentionRequired,
+          bg_offset_applied: pwdDeductions.bgOffsetApplied,
+          net_retention: pwdDeductions.netRetentionWithheld,
+          it_tds_mode: itTdsMode,
+          it_tds_percentage: pwdDeductions.itTdsEffectivePercent,
+          it_tds_amount: pwdDeductions.itTdsAmount,
+          gst_tds_mode: gstTdsMode,
+          gst_tds_percentage: pwdDeductions.gstTdsEffectivePercent,
+          gst_tds_amount: pwdDeductions.gstTdsAmount,
+          labour_cess_mode: labourCessMode,
+          labour_cess_percentage: pwdDeductions.labourCessEffectivePercent,
+          labour_cess_amount: pwdDeductions.labourCessAmount,
+          cement_recovery: cementRecNum,
+          steel_recovery: steelRecNum,
+          other_material_recovery: otherMatRecNum,
+          departmental_recoveries_total: pwdDeductions.departmentalRecoveries.total,
+          royalty_recovery: pwdDeductions.royaltyRecovery,
+          mobilization_advance_recovery: pwdDeductions.mobilizationAdvanceRecovery,
+          withheld_amount: pwdDeductions.withheldAmount,
+          total_statutory_taxes: pwdDeductions.totalStatutoryTaxes,
+          total_departmental_recoveries: pwdDeductions.departmentalRecoveries.total,
+          total_other_recoveries: pwdDeductions.totalOtherRecoveries,
+          total_all_deductions: pwdDeductions.totalAllDeductions,
+          gross_work_certified: pwdDeductions.grossWorkCertified,
+          net_payable: pwdDeductions.netPayableAmount,
+        }
+
         const updatePayload: Record<string, any> = {
           project_id: billForm.project_id,
           bill_number: billForm.bill_number.trim(),
@@ -470,14 +570,29 @@ export function NewRABillDrawer({
           previous_certified_amount: isCumulative ? prevCertified : 0,
           previous_received_amount: isCumulative ? prevReceived : 0,
           this_bill_work_certified: isCumulative ? thisBillCertified : certifiedNum,
-          net_payable_this_bill: liveNetPayable,
+          net_payable_this_bill: pwdDeductions.netPayableAmount,
           work_certified_amount: certifiedNum,
-          retention_percentage: retentionPctNum,
-          retention_amount: netRetentionWithheld,
-          bg_offset_amount: bgOffsetAmount,
-          bg_applied_id: bgOffsetAmount > 0 ? (selectedBg?.id || null) : null,
-          gross_retention_required: grossRetention,
-          net_retention_withheld: netRetentionWithheld,
+          retention_percentage: retentionMode === 'percent' ? retentionPctNum : (certifiedNum > 0 ? Number(((pwdDeductions.grossRetentionRequired / certifiedNum) * 100).toFixed(2)) : 5),
+          retention_amount: pwdDeductions.netRetentionWithheld,
+          bg_offset_amount: pwdDeductions.bgOffsetApplied,
+          bg_applied_id: pwdDeductions.bgOffsetApplied > 0 ? (selectedBg?.id || null) : null,
+          gross_retention_required: pwdDeductions.grossRetentionRequired,
+          net_retention_withheld: pwdDeductions.netRetentionWithheld,
+          tds_deducted: pwdDeductions.itTdsAmount,
+          gst_tds_deducted: pwdDeductions.gstTdsAmount,
+          labour_cess_deducted: pwdDeductions.labourCessAmount,
+          other_deductions: safeAdd(pwdDeductions.departmentalRecoveries.total, pwdDeductions.royaltyRecovery, pwdDeductions.mobilizationAdvanceRecovery, pwdDeductions.withheldAmount),
+          total_deductions: pwdDeductions.totalAllDeductions,
+          it_tds_percentage: pwdDeductions.itTdsEffectivePercent,
+          it_tds_amount: pwdDeductions.itTdsAmount,
+          gst_tds_percentage: pwdDeductions.gstTdsEffectivePercent,
+          gst_tds_amount: pwdDeductions.gstTdsAmount,
+          labour_cess_percentage: pwdDeductions.labourCessEffectivePercent,
+          labour_cess_amount: pwdDeductions.labourCessAmount,
+          royalty_recovery: pwdDeductions.royaltyRecovery,
+          mobilization_advance_recovery: pwdDeductions.mobilizationAdvanceRecovery,
+          withheld_amount: pwdDeductions.withheldAmount,
+          deductions_breakdown: deductionsBreakdown,
           remarks: billForm.remarks.trim() || null,
           billing_entry_mode: entryMode,
           // CPWA Code Citations & Recoveries
@@ -542,6 +657,28 @@ export function NewRABillDrawer({
           }
         }
 
+        // Synchronize itemized deductions to public.bill_deductions
+        try {
+          await supabase.from('bill_deductions').delete().eq('bill_id', editBill.id).is('payment_id', null)
+          const dedRows = [
+            { bill_id: editBill.id, ra_bill_id: editBill.id, deduction_label: `Security Deposit / Retention (${retentionMode === 'percent' ? retentionPctNum : 'Custom'}%)`, deduction_amount: pwdDeductions.netRetentionWithheld },
+            { bill_id: editBill.id, ra_bill_id: editBill.id, deduction_label: `Income Tax TDS u/s 194C (${pwdDeductions.itTdsEffectivePercent}%)`, deduction_amount: pwdDeductions.itTdsAmount },
+            { bill_id: editBill.id, ra_bill_id: editBill.id, deduction_label: `GST-TDS Section 51 (${pwdDeductions.gstTdsEffectivePercent}%)`, deduction_amount: pwdDeductions.gstTdsAmount },
+            { bill_id: editBill.id, ra_bill_id: editBill.id, deduction_label: `BOCW Labour Welfare Cess (${pwdDeductions.labourCessEffectivePercent}%)`, deduction_amount: pwdDeductions.labourCessAmount },
+            ...(pwdDeductions.departmentalRecoveries.cement > 0 ? [{ bill_id: editBill.id, ra_bill_id: editBill.id, deduction_label: 'Cement Recovery (Item 8a Form 35-A)', deduction_amount: pwdDeductions.departmentalRecoveries.cement }] : []),
+            ...(pwdDeductions.departmentalRecoveries.steel > 0 ? [{ bill_id: editBill.id, ra_bill_id: editBill.id, deduction_label: 'Steel Recovery (Item 8a Form 35-A)', deduction_amount: pwdDeductions.departmentalRecoveries.steel }] : []),
+            ...(pwdDeductions.departmentalRecoveries.other > 0 ? [{ bill_id: editBill.id, ra_bill_id: editBill.id, deduction_label: 'Other Material / Plant Recovery', deduction_amount: pwdDeductions.departmentalRecoveries.other }] : []),
+            ...(pwdDeductions.royaltyRecovery > 0 ? [{ bill_id: editBill.id, ra_bill_id: editBill.id, deduction_label: 'Royalty / Minor Mineral Recovery', deduction_amount: pwdDeductions.royaltyRecovery }] : []),
+            ...(pwdDeductions.mobilizationAdvanceRecovery > 0 ? [{ bill_id: editBill.id, ra_bill_id: editBill.id, deduction_label: 'Mobilization / Secured Advance Recovery', deduction_amount: pwdDeductions.mobilizationAdvanceRecovery }] : []),
+            ...(pwdDeductions.withheldAmount > 0 ? [{ bill_id: editBill.id, ra_bill_id: editBill.id, deduction_label: 'Temporary Withheld Amount (EOT / QC)', deduction_amount: pwdDeductions.withheldAmount }] : []),
+          ].filter(r => r.deduction_amount > 0)
+          if (dedRows.length > 0) {
+            await supabase.from('bill_deductions').insert(dedRows)
+          }
+        } catch (syncErr) {
+          console.warn('Could not sync bill_deductions:', syncErr)
+        }
+
         const savedBillNumber = billForm.bill_number.trim()
         setSaving(false)
         onClose()
@@ -549,6 +686,37 @@ export function NewRABillDrawer({
         if (onSuccess) onSuccess({ id: editBill.id, ...updatePayload })
         router.refresh()
         return
+      }
+
+      const insertDeductionsBreakdown = {
+        retention_mode: retentionMode,
+        retention_percentage: retentionMode === 'percent' ? retentionPctNum : (certifiedNum > 0 ? Number(((pwdDeductions.grossRetentionRequired / certifiedNum) * 100).toFixed(2)) : 5),
+        retention_custom_amount: parseFloat(retentionCustomAmount) || 0,
+        gross_retention: pwdDeductions.grossRetentionRequired,
+        bg_offset_applied: pwdDeductions.bgOffsetApplied,
+        net_retention: pwdDeductions.netRetentionWithheld,
+        it_tds_mode: itTdsMode,
+        it_tds_percentage: pwdDeductions.itTdsEffectivePercent,
+        it_tds_amount: pwdDeductions.itTdsAmount,
+        gst_tds_mode: gstTdsMode,
+        gst_tds_percentage: pwdDeductions.gstTdsEffectivePercent,
+        gst_tds_amount: pwdDeductions.gstTdsAmount,
+        labour_cess_mode: labourCessMode,
+        labour_cess_percentage: pwdDeductions.labourCessEffectivePercent,
+        labour_cess_amount: pwdDeductions.labourCessAmount,
+        cement_recovery: cementRecNum,
+        steel_recovery: steelRecNum,
+        other_material_recovery: otherMatRecNum,
+        departmental_recoveries_total: pwdDeductions.departmentalRecoveries.total,
+        royalty_recovery: pwdDeductions.royaltyRecovery,
+        mobilization_advance_recovery: pwdDeductions.mobilizationAdvanceRecovery,
+        withheld_amount: pwdDeductions.withheldAmount,
+        total_statutory_taxes: pwdDeductions.totalStatutoryTaxes,
+        total_departmental_recoveries: pwdDeductions.departmentalRecoveries.total,
+        total_other_recoveries: pwdDeductions.totalOtherRecoveries,
+        total_all_deductions: pwdDeductions.totalAllDeductions,
+        gross_work_certified: pwdDeductions.grossWorkCertified,
+        net_payable: pwdDeductions.netPayableAmount,
       }
 
       const { data: createdBill, error: err } = await supabase
@@ -564,14 +732,29 @@ export function NewRABillDrawer({
           previous_certified_amount: isCumulative ? prevCertified : 0,
           previous_received_amount: isCumulative ? prevReceived : 0,
           this_bill_work_certified: isCumulative ? thisBillCertified : certifiedNum,
-          net_payable_this_bill: liveNetPayable,
+          net_payable_this_bill: pwdDeductions.netPayableAmount,
           work_certified_amount: certifiedNum,
-          retention_percentage: retentionPctNum,
-          retention_amount: netRetentionWithheld,
-          bg_offset_amount: bgOffsetAmount,
-          bg_applied_id: bgOffsetAmount > 0 ? (selectedBg?.id || null) : null,
-          gross_retention_required: grossRetention,
-          net_retention_withheld: netRetentionWithheld,
+          retention_percentage: retentionMode === 'percent' ? retentionPctNum : (certifiedNum > 0 ? Number(((pwdDeductions.grossRetentionRequired / certifiedNum) * 100).toFixed(2)) : 5),
+          retention_amount: pwdDeductions.netRetentionWithheld,
+          bg_offset_amount: pwdDeductions.bgOffsetApplied,
+          bg_applied_id: pwdDeductions.bgOffsetApplied > 0 ? (selectedBg?.id || null) : null,
+          gross_retention_required: pwdDeductions.grossRetentionRequired,
+          net_retention_withheld: pwdDeductions.netRetentionWithheld,
+          tds_deducted: pwdDeductions.itTdsAmount,
+          gst_tds_deducted: pwdDeductions.gstTdsAmount,
+          labour_cess_deducted: pwdDeductions.labourCessAmount,
+          other_deductions: safeAdd(pwdDeductions.departmentalRecoveries.total, pwdDeductions.royaltyRecovery, pwdDeductions.mobilizationAdvanceRecovery, pwdDeductions.withheldAmount),
+          total_deductions: pwdDeductions.totalAllDeductions,
+          it_tds_percentage: pwdDeductions.itTdsEffectivePercent,
+          it_tds_amount: pwdDeductions.itTdsAmount,
+          gst_tds_percentage: pwdDeductions.gstTdsEffectivePercent,
+          gst_tds_amount: pwdDeductions.gstTdsAmount,
+          labour_cess_percentage: pwdDeductions.labourCessEffectivePercent,
+          labour_cess_amount: pwdDeductions.labourCessAmount,
+          royalty_recovery: pwdDeductions.royaltyRecovery,
+          mobilization_advance_recovery: pwdDeductions.mobilizationAdvanceRecovery,
+          withheld_amount: pwdDeductions.withheldAmount,
+          deductions_breakdown: insertDeductionsBreakdown,
           amount_received: 0,
           status: 'submitted',
           document_url: documentUrl,
@@ -627,6 +810,29 @@ export function NewRABillDrawer({
           if (itemsErr) {
             console.warn('Failed to insert e-MB ra_bill_items:', itemsErr.message)
           }
+        }
+      }
+
+      // Synchronize itemized deductions to public.bill_deductions
+      if (createdBill?.id) {
+        try {
+          const dedRows = [
+            { bill_id: createdBill.id, ra_bill_id: createdBill.id, deduction_label: `Security Deposit / Retention (${retentionMode === 'percent' ? retentionPctNum : 'Custom'}%)`, deduction_amount: pwdDeductions.netRetentionWithheld },
+            { bill_id: createdBill.id, ra_bill_id: createdBill.id, deduction_label: `Income Tax TDS u/s 194C (${pwdDeductions.itTdsEffectivePercent}%)`, deduction_amount: pwdDeductions.itTdsAmount },
+            { bill_id: createdBill.id, ra_bill_id: createdBill.id, deduction_label: `GST-TDS Section 51 (${pwdDeductions.gstTdsEffectivePercent}%)`, deduction_amount: pwdDeductions.gstTdsAmount },
+            { bill_id: createdBill.id, ra_bill_id: createdBill.id, deduction_label: `BOCW Labour Welfare Cess (${pwdDeductions.labourCessEffectivePercent}%)`, deduction_amount: pwdDeductions.labourCessAmount },
+            ...(pwdDeductions.departmentalRecoveries.cement > 0 ? [{ bill_id: createdBill.id, ra_bill_id: createdBill.id, deduction_label: 'Cement Recovery (Item 8a Form 35-A)', deduction_amount: pwdDeductions.departmentalRecoveries.cement }] : []),
+            ...(pwdDeductions.departmentalRecoveries.steel > 0 ? [{ bill_id: createdBill.id, ra_bill_id: createdBill.id, deduction_label: 'Steel Recovery (Item 8a Form 35-A)', deduction_amount: pwdDeductions.departmentalRecoveries.steel }] : []),
+            ...(pwdDeductions.departmentalRecoveries.other > 0 ? [{ bill_id: createdBill.id, ra_bill_id: createdBill.id, deduction_label: 'Other Material / Plant Recovery', deduction_amount: pwdDeductions.departmentalRecoveries.other }] : []),
+            ...(pwdDeductions.royaltyRecovery > 0 ? [{ bill_id: createdBill.id, ra_bill_id: createdBill.id, deduction_label: 'Royalty / Minor Mineral Recovery', deduction_amount: pwdDeductions.royaltyRecovery }] : []),
+            ...(pwdDeductions.mobilizationAdvanceRecovery > 0 ? [{ bill_id: createdBill.id, ra_bill_id: createdBill.id, deduction_label: 'Mobilization / Secured Advance Recovery', deduction_amount: pwdDeductions.mobilizationAdvanceRecovery }] : []),
+            ...(pwdDeductions.withheldAmount > 0 ? [{ bill_id: createdBill.id, ra_bill_id: createdBill.id, deduction_label: 'Temporary Withheld Amount (EOT / QC)', deduction_amount: pwdDeductions.withheldAmount }] : []),
+          ].filter(r => r.deduction_amount > 0)
+          if (dedRows.length > 0) {
+            await supabase.from('bill_deductions').insert(dedRows)
+          }
+        } catch (syncErr) {
+          console.warn('Could not sync bill_deductions:', syncErr)
         }
       }
 
@@ -1141,57 +1347,107 @@ export function NewRABillDrawer({
         </FieldWrapper>
 
         {/* Retention Percentage & Breakdown */}
-        <div className="space-y-2">
+        <div className="space-y-2.5 rounded-xl border border-slate-200 bg-slate-50/60 p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-1">
-            <label className="text-xs font-semibold text-slate-700">
-              Contractual Security Deposit / Retention (CPWA Item 5)
+            <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span>Security Deposit / Retention (CPWA Item 5)</span>
             </label>
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] text-slate-400">Presets:</span>
-              {[
-                { label: '0% (PBG)', val: '0' },
-                { label: '2.5% (CPWD)', val: '2.50' },
-                { label: '5% (PWD)', val: '5.00' },
-                { label: '10%', val: '10.00' },
-              ].map(p => (
-                <button
-                  key={p.val}
-                  type="button"
-                  onClick={() => setBillForm(f => ({ ...f, retention_percentage: p.val }))}
-                  className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
-                    billForm.retention_percentage === p.val
-                      ? 'bg-slate-900 text-white border-slate-900 font-bold'
-                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
+            <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setRetentionMode('percent')}
+                className={`text-[10px] px-2 py-0.5 rounded font-medium transition-colors ${
+                  retentionMode === 'percent'
+                    ? 'bg-slate-900 text-white font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                % Mode
+              </button>
+              <button
+                type="button"
+                onClick={() => setRetentionMode('amount')}
+                className={`text-[10px] px-2 py-0.5 rounded font-medium transition-colors ${
+                  retentionMode === 'amount'
+                    ? 'bg-slate-900 text-white font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                ₹ Flat Amount
+              </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <FieldWrapper label="Retention (%)" required hint="Adjustable per tender agreement">
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                value={billForm.retention_percentage}
-                onChange={e => setBillForm(f => ({ ...f, retention_percentage: e.target.value }))}
-                placeholder="5.00"
-              />
-            </FieldWrapper>
-
-            <FieldWrapper
-              label="Net Cash Withheld (₹)"
-              hint={bgOffsetAmount > 0 ? `Gross ₹${grossRetention.toLocaleString('en-IN')} - BG ₹${bgOffsetAmount.toLocaleString('en-IN')}` : 'Auto-computed or held till DLP'}
-            >
-              <div className="h-10 px-3 flex items-center rounded-lg bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-700">
-                {formatINR(liveRetentionAmount)}
+          {retentionMode === 'percent' ? (
+            <div>
+              <div className="flex items-center justify-end gap-1 mb-1.5">
+                <span className="text-[10px] text-slate-400">Presets:</span>
+                {[
+                  { label: '0% (PBG)', val: '0' },
+                  { label: '2.5% (CPWD)', val: '2.50' },
+                  { label: '5% (PWD)', val: '5.00' },
+                  { label: '10%', val: '10.00' },
+                ].map(p => (
+                  <button
+                    key={p.val}
+                    type="button"
+                    onClick={() => setBillForm(f => ({ ...f, retention_percentage: p.val }))}
+                    className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
+                      billForm.retention_percentage === p.val
+                        ? 'bg-slate-900 text-white border-slate-900 font-bold'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
               </div>
-            </FieldWrapper>
-          </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FieldWrapper label="Retention (%)" required hint="Contractual security deposit percentage">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={billForm.retention_percentage}
+                    onChange={e => setBillForm(f => ({ ...f, retention_percentage: e.target.value }))}
+                    placeholder="5.00"
+                  />
+                </FieldWrapper>
+
+                <FieldWrapper
+                  label="Net Cash Withheld (₹)"
+                  hint={bgOffsetAmount > 0 ? `Gross ₹${grossRetention.toLocaleString('en-IN')} - BG ₹${bgOffsetAmount.toLocaleString('en-IN')}` : 'Auto-computed from certified work'}
+                >
+                  <div className="h-10 px-3 flex items-center rounded-lg bg-white border border-slate-200 text-sm font-semibold text-slate-800">
+                    {formatINR(liveRetentionAmount)}
+                  </div>
+                </FieldWrapper>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FieldWrapper label="Custom Retention Withheld (₹)" required hint="Direct rupee amount withheld per contract">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={retentionCustomAmount}
+                  onChange={e => setRetentionCustomAmount(e.target.value)}
+                  placeholder="e.g. 50000"
+                />
+              </FieldWrapper>
+              <FieldWrapper label="Effective Retention Rate" hint="Computed against certified work">
+                <div className="h-10 px-3 flex items-center rounded-lg bg-white border border-slate-200 text-sm font-semibold text-slate-700">
+                  {certifiedNum > 0 ? ((parseFloat(retentionCustomAmount) || 0) / certifiedNum * 100).toFixed(2) : '0.00'}%
+                </div>
+              </FieldWrapper>
+            </div>
+          )}
 
           {/* CPWD GCC Clause 1A Bank Guarantee Offset Card */}
           {activeDeposits.length > 0 && (
@@ -1254,7 +1510,7 @@ export function NewRABillDrawer({
           )}
         </div>
 
-        {/* CPWA Code Recoveries & Unmeasured Advance (Form 26 Account III) */}
+        {/* CPWA Code Departmental Store Recoveries (Form 26 Item 2 & 8a) */}
         <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
@@ -1313,173 +1569,369 @@ export function NewRABillDrawer({
               />
             </FieldWrapper>
           </div>
+
+          {pwdDeductions.departmentalRecoveries.total > 0 && (
+            <div className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center justify-between">
+              <span className="font-medium">Total Departmental Recoveries (Form 35-A):</span>
+              <span className="font-bold text-amber-800 font-mono">-{formatINR(pwdDeductions.departmentalRecoveries.total)}</span>
+            </div>
+          )}
         </div>
 
-        {/* Cumulative Math Calculation Breakdown Card */}
-        {isCumulative ? (
-          <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 text-xs space-y-2">
-            <div className="font-semibold text-blue-900 flex items-center justify-between border-b border-blue-100 pb-1.5">
-              <span>Form 26 Cumulative Breakdown (Account III)</span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
-                CPWD Standard
-              </span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span>Item 1: Total Work to Date (MB Cumulative):</span>
-              <span className="font-semibold text-slate-800">{formatINR(certifiedNum)}</span>
-            </div>
-            {unmeasuredAdvNum > 0 && (
-              <div className="flex justify-between text-emerald-700">
-                <span>Item 2: Advance for Unmeasured Work:</span>
-                <span className="font-semibold">+ {formatINR(unmeasuredAdvNum)}</span>
+        {/* Full Indian Government PWD/CPWD Statutory Deductions (Form 26 Item 8b) */}
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 space-y-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-2 border-b border-indigo-100">
+            <span className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>Statutory Taxes & Other Recoveries (Form 26 Item 8b)</span>
+            </span>
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 self-start sm:self-auto">
+              CPWD / PWD Clause Standards
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {/* Income Tax TDS u/s 194C */}
+            <div className="p-3 bg-white rounded-lg border border-indigo-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-800">Income Tax TDS u/s 194C</span>
+                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 font-mono">
+                  -{formatINR(pwdDeductions.itTdsAmount)}
+                </span>
               </div>
-            )}
-            <div className="flex justify-between text-slate-600">
-              <span>Less Previous Certified Work:</span>
-              <span className="font-semibold text-slate-800">- {formatINR(prevCertified)}</span>
+              <div className="grid grid-cols-3 gap-1 p-0.5 bg-slate-100 rounded-lg text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => setItTdsMode('1_percent')}
+                  className={`py-1 px-1.5 rounded transition-colors text-center truncate ${
+                    itTdsMode === '1_percent' ? 'bg-indigo-700 text-white font-bold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  1% Prop / Ind
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setItTdsMode('2_percent')}
+                  className={`py-1 px-1.5 rounded transition-colors text-center truncate ${
+                    itTdsMode === '2_percent' ? 'bg-indigo-700 text-white font-bold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  2% Firm / Co
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setItTdsMode('custom_amount')}
+                  className={`py-1 px-1.5 rounded transition-colors text-center truncate ${
+                    itTdsMode === 'custom_amount' ? 'bg-indigo-700 text-white font-bold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Custom ₹
+                </button>
+              </div>
+              {itTdsMode === 'custom_amount' && (
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={itTdsCustomAmount}
+                  onChange={e => setItTdsCustomAmount(e.target.value)}
+                  placeholder="Custom TDS ₹"
+                  className="mt-1"
+                />
+              )}
             </div>
-            <div className="flex justify-between text-blue-800 font-semibold pt-1 border-t border-blue-100/60">
-              <span>Work Certified This Bill:</span>
-              <span>{formatINR(thisBillCertified)}</span>
+
+            {/* GST-TDS Section 51 */}
+            <div className="p-3 bg-white rounded-lg border border-indigo-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-800">GST-TDS (1% CGST + 1% SGST)</span>
+                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 font-mono">
+                  -{formatINR(pwdDeductions.gstTdsAmount)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1 p-0.5 bg-slate-100 rounded-lg text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => setGstTdsMode('percent')}
+                  className={`py-1 px-1.5 rounded transition-colors text-center truncate ${
+                    gstTdsMode === 'percent' ? 'bg-indigo-700 text-white font-bold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  2% Standard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGstTdsMode('amount')}
+                  className={`py-1 px-1.5 rounded transition-colors text-center truncate ${
+                    gstTdsMode === 'amount' ? 'bg-indigo-700 text-white font-bold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Custom ₹
+                </button>
+              </div>
+              {gstTdsMode === 'amount' ? (
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={gstTdsCustomAmount}
+                  onChange={e => setGstTdsCustomAmount(e.target.value)}
+                  placeholder="Custom GST-TDS ₹"
+                  className="mt-1"
+                />
+              ) : (
+                <div className="text-[10px] text-slate-500 flex justify-between pt-0.5">
+                  <span>CGST 1%: {formatINR(pwdDeductions.gstTdsAmount / 2)}</span>
+                  <span>SGST 1%: {formatINR(pwdDeductions.gstTdsAmount / 2)}</span>
+                </div>
+              )}
             </div>
-            <div className="flex justify-between text-slate-600">
-              <span>Item 5: Less Retention on Total Work ({retentionPctNum}%):</span>
-              <span className="font-semibold text-red-600">- {formatINR(liveRetentionAmount)}</span>
+
+            {/* BOCW Labour Welfare Cess */}
+            <div className="p-3 bg-white rounded-lg border border-indigo-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-800">BOCW Labour Cess (1%)</span>
+                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 font-mono">
+                  -{formatINR(pwdDeductions.labourCessAmount)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-1 p-0.5 bg-slate-100 rounded-lg text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => setLabourCessMode('percent')}
+                  className={`py-1 px-1.5 rounded transition-colors text-center truncate ${
+                    labourCessMode === 'percent' ? 'bg-indigo-700 text-white font-bold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  1% Act 1996
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLabourCessMode('amount')}
+                  className={`py-1 px-1.5 rounded transition-colors text-center truncate ${
+                    labourCessMode === 'amount' ? 'bg-indigo-700 text-white font-bold' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Custom ₹
+                </button>
+              </div>
+              {labourCessMode === 'amount' && (
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={labourCessCustomAmount}
+                  onChange={e => setLabourCessCustomAmount(e.target.value)}
+                  placeholder="Custom Labour Cess ₹"
+                  className="mt-1"
+                />
+              )}
             </div>
-            {cementRecNum > 0 && (
-              <div className="flex justify-between text-amber-700">
-                <span>Item 8(a): Less Cement Recovery (Form 35-A):</span>
-                <span className="font-semibold">- {formatINR(cementRecNum)}</span>
+
+            {/* Royalty / Minor Mineral Recovery */}
+            <div className="p-3 bg-white rounded-lg border border-indigo-100 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-800">Royalty / Mineral Recovery</span>
+                {parseFloat(royaltyRecovery) > 0 && (
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded font-mono">
+                    -{formatINR(parseFloat(royaltyRecovery) || 0)}
+                  </span>
+                )}
               </div>
-            )}
-            {steelRecNum > 0 && (
-              <div className="flex justify-between text-amber-700">
-                <span>Item 8(a): Less Steel Recovery (Form 35-A):</span>
-                <span className="font-semibold">- {formatINR(steelRecNum)}</span>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={royaltyRecovery}
+                onChange={e => setRoyaltyRecovery(e.target.value)}
+                placeholder="₹ Sand/stone/gravel royalty"
+              />
+              <span className="text-[10px] text-slate-400 block">Mining & geology minor mineral transit royalty</span>
+            </div>
+
+            {/* Mobilization Advance Recovery */}
+            <div className="p-3 bg-white rounded-lg border border-indigo-100 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-800">Mobilization Advance Recovery</span>
+                {parseFloat(mobilizationAdvanceRecovery) > 0 && (
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded font-mono">
+                    -{formatINR(parseFloat(mobilizationAdvanceRecovery) || 0)}
+                  </span>
+                )}
               </div>
-            )}
-            {otherMatRecNum > 0 && (
-              <div className="flex justify-between text-amber-700">
-                <span>Item 8(a): Less Other Material/Plant Recovery:</span>
-                <span className="font-semibold">- {formatINR(otherMatRecNum)}</span>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={mobilizationAdvanceRecovery}
+                onChange={e => setMobilizationAdvanceRecovery(e.target.value)}
+                placeholder="₹ Clause 10B recovery"
+              />
+              <span className="text-[10px] text-slate-400 block">Deduction towards initial mobilization advance</span>
+            </div>
+
+            {/* Temporary Departmental Withheld Amount */}
+            <div className="p-3 bg-white rounded-lg border border-indigo-100 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-800">Temporary Withheld (EOT / QC)</span>
+                {parseFloat(withheldAmount) > 0 && (
+                  <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded font-mono">
+                    -{formatINR(parseFloat(withheldAmount) || 0)}
+                  </span>
+                )}
               </div>
-            )}
-            {prevReceived > 0 && (
-              <div className="flex justify-between text-slate-600">
-                <span>Item 7: Less Prior Payments Received:</span>
-                <span className="font-semibold text-slate-800">- {formatINR(prevReceived)}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center text-sm font-bold text-slate-900 pt-1.5 border-t border-blue-200">
-              <span>Net Payable This Bill (Item 8c):</span>
-              <span className="text-blue-700">{formatINR(liveNetPayable)}</span>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={withheldAmount}
+                onChange={e => setWithheldAmount(e.target.value)}
+                placeholder="₹ Milestone or sanction hold"
+              />
+              <span className="text-[10px] text-slate-400 block">Hold for pending EOT approval or QC test report</span>
             </div>
           </div>
-        ) : (
-          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 text-xs space-y-2">
-            <div className="flex justify-between items-center font-semibold text-slate-800 border-b border-slate-200 pb-1.5">
+        </div>
+
+        {/* Dynamic Official Form 26 Deduction Breakdown (Account III) */}
+        <div className="rounded-xl border border-blue-200 bg-gradient-to-b from-blue-50/70 to-slate-50/90 p-4 text-xs space-y-2.5 shadow-sm">
+          <div className="flex items-center justify-between border-b border-blue-200/80 pb-2">
+            <span className="font-bold text-blue-950 flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-blue-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
               <span>Form 26 Deduction Breakdown (Account III)</span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
-                PWD Standard
-              </span>
+            </span>
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+              CPWD Form 26 Official
+            </span>
+          </div>
+
+          <div className="space-y-1.5 text-slate-700 pt-0.5">
+            {/* Item 1 */}
+            <div className="flex justify-between items-center py-0.5">
+              <span>Item 1: Gross Work Certified (A):</span>
+              <span className="font-mono font-bold text-slate-900">{formatINR(pwdDeductions.grossWorkCertified)}</span>
             </div>
-            <div className="flex justify-between text-slate-600">
-              <span>Item 1: Work Certified:</span>
-              <span className="font-semibold text-slate-800">{formatINR(certifiedNum)}</span>
-            </div>
+
+            {/* Unmeasured Advance */}
             {unmeasuredAdvNum > 0 && (
-              <div className="flex justify-between text-emerald-700">
-                <span>Item 2: Advance for Unmeasured Work:</span>
-                <span className="font-semibold">+ {formatINR(unmeasuredAdvNum)}</span>
+              <div className="flex justify-between items-center text-emerald-700">
+                <span>&nbsp;&nbsp;↳ Item 2: Advance for Unmeasured Work:</span>
+                <span className="font-mono font-semibold">+{formatINR(unmeasuredAdvNum)}</span>
               </div>
             )}
-            <div className="flex justify-between text-amber-700">
-              <span>Item 5: Less Retention Withheld ({retentionPctNum}%):</span>
-              <span className="font-semibold">- {formatINR(netRetentionWithheld)}</span>
+
+            {/* Cumulative previous work */}
+            {isCumulative && prevCertified > 0 && (
+              <div className="flex justify-between items-center text-slate-500">
+                <span>&nbsp;&nbsp;↳ Less Previous Certified Work:</span>
+                <span className="font-mono">-{formatINR(prevCertified)}</span>
+              </div>
+            )}
+            {isCumulative && (
+              <div className="flex justify-between items-center text-blue-900 font-semibold bg-blue-100/40 px-2 py-1 rounded">
+                <span>Current Bill Work Certified:</span>
+                <span className="font-mono">{formatINR(thisBillCertified)}</span>
+              </div>
+            )}
+
+            {/* Item 5: Retention */}
+            <div className="flex justify-between items-center text-amber-800">
+              <span className="flex items-center gap-1">
+                <span>Item 5: Less Retention / Security Deposit Withheld:</span>
+                {bgOffsetAmount > 0 && (
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1 rounded">
+                    BG Shielded {formatINR(bgOffsetAmount)}
+                  </span>
+                )}
+              </span>
+              <span className="font-mono font-semibold text-rose-700">-{formatINR(pwdDeductions.netRetentionWithheld)}</span>
             </div>
-            {bgOffsetAmount > 0 && (
-              <div className="flex justify-between text-emerald-700 text-[11px]">
-                <span>&nbsp;&nbsp;↳ BG Offset Applied (Cl 1A):</span>
-                <span className="font-medium">+ {formatINR(bgOffsetAmount)} (Shielded)</span>
+
+            {/* Item 8a: Departmental recoveries */}
+            {pwdDeductions.departmentalRecoveries.total > 0 && (
+              <div className="flex justify-between items-center text-amber-800">
+                <span>Item 8(a): Less Departmental Recoveries (Cement/Steel/Plant):</span>
+                <span className="font-mono font-semibold text-rose-700">-{formatINR(pwdDeductions.departmentalRecoveries.total)}</span>
               </div>
             )}
-            {cementRecNum > 0 && (
-              <div className="flex justify-between text-amber-700">
-                <span>Item 8(a): Less Cement Recovery:</span>
-                <span className="font-semibold">- {formatINR(cementRecNum)}</span>
+
+            {/* Item 8a: Mobilization Advance Recovery */}
+            {pwdDeductions.mobilizationAdvanceRecovery > 0 && (
+              <div className="flex justify-between items-center text-amber-800">
+                <span>Item 8(a): Less Mobilization Advance Recovery:</span>
+                <span className="font-mono font-semibold text-rose-700">-{formatINR(pwdDeductions.mobilizationAdvanceRecovery)}</span>
               </div>
             )}
-            {steelRecNum > 0 && (
-              <div className="flex justify-between text-amber-700">
-                <span>Item 8(a): Less Steel Recovery:</span>
-                <span className="font-semibold">- {formatINR(steelRecNum)}</span>
+
+            {/* Item 8b: IT TDS */}
+            <div className="flex justify-between items-center text-slate-600">
+              <span>Item 8(b): Less Income Tax TDS u/s 194C ({pwdDeductions.itTdsEffectivePercent}%):</span>
+              <span className="font-mono font-semibold text-rose-700">-{formatINR(pwdDeductions.itTdsAmount)}</span>
+            </div>
+
+            {/* Item 8b: GST TDS */}
+            <div className="flex justify-between items-center text-slate-600">
+              <span>Item 8(b): Less GST-TDS Section 51 ({pwdDeductions.gstTdsEffectivePercent}%):</span>
+              <span className="font-mono font-semibold text-rose-700">-{formatINR(pwdDeductions.gstTdsAmount)}</span>
+            </div>
+
+            {/* Item 8b: Labour Cess */}
+            <div className="flex justify-between items-center text-slate-600">
+              <span>Item 8(b): Less BOCW Labour Welfare Cess ({pwdDeductions.labourCessEffectivePercent}%):</span>
+              <span className="font-mono font-semibold text-rose-700">-{formatINR(pwdDeductions.labourCessAmount)}</span>
+            </div>
+
+            {/* Item 8b: Royalty */}
+            {pwdDeductions.royaltyRecovery > 0 && (
+              <div className="flex justify-between items-center text-slate-600">
+                <span>Item 8(b): Less Mineral Royalty Recovery:</span>
+                <span className="font-mono font-semibold text-rose-700">-{formatINR(pwdDeductions.royaltyRecovery)}</span>
               </div>
             )}
-            {otherMatRecNum > 0 && (
-              <div className="flex justify-between text-amber-700">
-                <span>Item 8(a): Less Other Material Recovery:</span>
-                <span className="font-semibold">- {formatINR(otherMatRecNum)}</span>
+
+            {/* Item 8b: Temporary Withheld */}
+            {pwdDeductions.withheldAmount > 0 && (
+              <div className="flex justify-between items-center text-rose-700">
+                <span>Item 8(b): Less Temporary Withheld (EOT / QC):</span>
+                <span className="font-mono font-semibold text-rose-700">-{formatINR(pwdDeductions.withheldAmount)}</span>
               </div>
             )}
-            <div className="flex justify-between items-center text-sm font-bold text-slate-900 pt-1 border-t border-slate-200">
-              <span>Net Payable (Passed for Payment):</span>
-              <span className="text-blue-700">{formatINR(liveNetPayable)}</span>
+
+            {/* Item 7: Prior payments in cumulative mode */}
+            {isCumulative && prevReceived > 0 && (
+              <div className="flex justify-between items-center text-slate-600">
+                <span>Item 7: Less Payments Already Made (Last Bill):</span>
+                <span className="font-mono font-semibold text-rose-700">-{formatINR(prevReceived)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Subtotal Deductions (B) */}
+          <div className="flex justify-between items-center p-2 rounded-lg bg-rose-50/80 border border-rose-200 text-rose-900 font-semibold">
+            <span>Total Statutory & Departmental Deductions (B):</span>
+            <span className="font-mono font-bold text-rose-700 text-sm">-{formatINR(pwdDeductions.totalAllDeductions)}</span>
+          </div>
+
+          {/* Net Payable (Passed for Payment) (A - B) */}
+          <div className="flex justify-between items-center p-3 rounded-xl bg-blue-600 text-white shadow-sm mt-1">
+            <div>
+              <span className="block font-bold text-sm tracking-tight">Net Payable (Passed for Payment / Cheque)</span>
+              <span className="text-[11px] text-blue-100 font-sans">Formula: Gross (A) - Total Deductions (B)</span>
+            </div>
+            <div className="text-right">
+              <span className="font-mono font-black text-xl text-white block tracking-tight">
+                {formatINR(pwdDeductions.netPayableAmount)}
+              </span>
+              <span className="text-[10px] uppercase font-bold text-blue-200 tracking-wider">
+                PFMS / RTGS Treasury Release
+              </span>
             </div>
           </div>
-        )}
-
-        {/* Estimated Treasury Inflow Card with Entity Selection */}
-        {certifiedNum > 0 && (
-          <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3.5 text-xs space-y-2.5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-              <span className="flex items-center gap-1.5 font-bold text-emerald-900">
-                <svg className="w-4 h-4 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-                </svg>
-                <span>Estimated Treasury Realization</span>
-              </span>
-              {/* Entity Selector */}
-              <div className="inline-flex rounded-lg bg-white border border-emerald-200 p-0.5 text-[10px]">
-                <button
-                  type="button"
-                  onClick={() => setContractorType('individual_proprietor')}
-                  className={`px-2 py-0.5 rounded transition-colors ${
-                    contractorType === 'individual_proprietor'
-                      ? 'bg-emerald-700 text-white font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Proprietor (1% TDS)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setContractorType('company_firm')}
-                  className={`px-2 py-0.5 rounded transition-colors ${
-                    contractorType === 'company_firm'
-                      ? 'bg-emerald-700 text-white font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Firm / Co (2% TDS)
-                </button>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-emerald-800/80 leading-relaxed">
-              Statutory audit estimate: {contractorType === 'individual_proprietor' ? '1%' : '2%'} IT TDS ({formatINR(estimatedTreasury.itTds)}) + 2% GST-TDS ({formatINR(estimatedTreasury.gstTds)}) + 1% Labour Cess ({formatINR(estimatedTreasury.labourCess)}).
-              <span className="block text-[10px] text-emerald-600 mt-0.5">
-                Note: Exact deductions and departmental recoveries (Royalty, Testing) can be manually modified when logging the payment voucher.
-              </span>
-            </p>
-
-            <div className="flex justify-between items-center pt-1.5 border-t border-emerald-200/60 font-semibold text-emerald-900">
-              <span>Estimated Net Bank Credit:</span>
-              <span className="text-sm font-bold text-emerald-700 tabular-nums">
-                {formatINR(Math.max(0, liveNetPayable - estimatedTreasury.totalDeductions))}
-              </span>
-            </div>
-          </div>
-        )}
+        </div>
 
         {/* Attachment Upload */}
         <div>

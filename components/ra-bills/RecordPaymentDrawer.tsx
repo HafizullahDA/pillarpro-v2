@@ -70,13 +70,40 @@ export function RecordPaymentDrawer({
         const remaining = Math.max(0, netPayable - (Number(bObj.amount_received) || 0))
         initialGross = remaining > 0 ? String(remaining) : ''
       }
-      setAdditionalDeductions([])
+      const billTds = bObj ? (Number(bObj.it_tds_amount || bObj.tds_deducted) || 0) : 0
+      const billGstTds = bObj ? (Number(bObj.gst_tds_amount || bObj.gst_tds_deducted) || 0) : 0
+      const billCess = bObj ? (Number(bObj.labour_cess_amount || bObj.labour_cess_deducted) || 0) : 0
+
+      const initialAddl = []
+      if (bObj && Number(bObj.royalty_recovery) > 0) {
+        initialAddl.push({
+          id: 'royalty_' + bObj.id,
+          label: 'Mineral Royalty Recovery',
+          amount: String(bObj.royalty_recovery),
+        })
+      }
+      if (bObj && Number(bObj.mobilization_advance_recovery) > 0) {
+        initialAddl.push({
+          id: 'mob_adv_' + bObj.id,
+          label: 'Mobilization Advance Recovery',
+          amount: String(bObj.mobilization_advance_recovery),
+        })
+      }
+      if (bObj && Number(bObj.withheld_amount) > 0) {
+        initialAddl.push({
+          id: 'withheld_' + bObj.id,
+          label: 'Temporary Withheld (EOT / QC)',
+          amount: String(bObj.withheld_amount),
+        })
+      }
+
+      setAdditionalDeductions(initialAddl)
       setPayForm({
         bill_id: bId,
         gross_amount: initialGross,
-        tds_amount: '',
-        gst_tds_amount: '',
-        labour_cess_amount: '',
+        tds_amount: billTds > 0 ? String(billTds) : '',
+        gst_tds_amount: billGstTds > 0 ? String(billGstTds) : '',
+        labour_cess_amount: billCess > 0 ? String(billCess) : '',
         other_deductions: '',
         date_received: getTodayIST(),
         reference: '',

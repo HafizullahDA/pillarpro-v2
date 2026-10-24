@@ -18,6 +18,17 @@ export const createRABillSchema = z.object({
     .min(0, 'Retention percentage cannot be negative.')
     .max(25, 'Retention percentage typically does not exceed 25%.')
     .default(5.0),
+  retention_mode: z.enum(['percent', 'amount']).optional().default('percent'),
+  retention_amount: z.coerce.number().min(0).optional().default(0),
+  it_tds_percentage: z.coerce.number().min(0).max(100).optional().default(2.0),
+  it_tds_amount: z.coerce.number().min(0).optional().default(0),
+  gst_tds_percentage: z.coerce.number().min(0).max(100).optional().default(2.0),
+  gst_tds_amount: z.coerce.number().min(0).optional().default(0),
+  labour_cess_percentage: z.coerce.number().min(0).max(100).optional().default(1.0),
+  labour_cess_amount: z.coerce.number().min(0).optional().default(0),
+  royalty_recovery: z.coerce.number().min(0).optional().default(0),
+  mobilization_advance_recovery: z.coerce.number().min(0).optional().default(0),
+  withheld_amount: z.coerce.number().min(0).optional().default(0),
   // CPWA Code Form 23 & 26 Citation & Recovery Fields
   mb_number: z.string().trim().max(100).optional().or(z.literal('')),
   mb_page_start: z.coerce.number().int().min(1).optional().nullable(),
@@ -91,4 +102,3 @@ export const securityDepositSchema = z.object({
 })
 
 export type SecurityDepositInput = z.infer<typeof securityDepositSchema>
-

@@ -393,4 +393,189 @@ export function calculateMobilizationAdvanceRecovery(
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// CPWD & STATE PWD STATUTORY DEDUCTIONS BREAKDOWN ENGINE (FORM 26 ACCOUNT III)
+// ════════════════════════════════════════════════════════════════════════
+
+export interface PWDStatutoryDeductionsInput {
+  workCertified: number
+  unmeasuredAdvance?: number
+  // Security Deposit / Retention Money (Item 5)
+  retentionMode?: 'percent' | 'amount'
+  retentionPercent?: number
+  retentionCustomAmount?: number
+  bgOffsetAmount?: number
+  // Income Tax TDS u/s 194C (Item 8b)
+  itTdsMode?: '1_percent' | '2_percent' | 'custom_amount' | 'custom_percent'
+  itTdsPercent?: number
+  itTdsCustomAmount?: number
+  // GST-TDS Section 51 (Item 8b)
+  gstTdsMode?: 'percent' | 'amount'
+  gstTdsPercent?: number
+  gstTdsCustomAmount?: number
+  // BOCW Labour Welfare Cess (Item 8b)
+  labourCessMode?: 'percent' | 'amount'
+  labourCessPercent?: number
+  labourCessCustomAmount?: number
+  // Departmental Recoveries (Item 8a, Form 35-A)
+  cementRecovery?: number
+  steelRecovery?: number
+  otherMaterialRecovery?: number
+  // Royalty / Minor Mineral Recovery (Item 8b)
+  royaltyRecovery?: number
+  // Mobilization / Secured Advance Recovery (Item 8a)
+  mobilizationAdvanceRecovery?: number
+  // Temporary Withheld Amount (Item 8b - EOT / QC milestone)
+  withheldAmount?: number
+  // Cumulative mode previous payments already made
+  previousPaymentsAlreadyMade?: number
+}
+
+export interface PWDStatutoryDeductionsResult {
+  grossWorkCertified: number // Gross Work (A)
+  grossRetentionRequired: number
+  bgOffsetApplied: number
+  netRetentionWithheld: number
+  itTdsAmount: number
+  itTdsEffectivePercent: number
+  gstTdsAmount: number
+  gstTdsEffectivePercent: number
+  labourCessAmount: number
+  labourCessEffectivePercent: number
+  departmentalRecoveries: {
+    cement: number
+    steel: number
+    other: number
+    total: number
+  }
+  royaltyRecovery: number
+  mobilizationAdvanceRecovery: number
+  withheldAmount: number
+  totalStatutoryTaxes: number
+  totalDepartmentalRecoveries: number
+  totalOtherRecoveries: number
+  totalAllDeductions: number // Total Statutory & Departmental Deductions (B)
+  netPayableAmount: number // Net Payable (A - B)
+}
+
+/**
+ * Computes official CPWD & State PWD statutory deductions on an RA bill.
+ * Supports toggling between % and ₹, Clause 1A Bank Guarantee offset,
+ * Section 194C 1% vs 2% TDS, 2% GST-TDS, 1% BOCW Cess, Departmental recoveries,
+ * Mineral Royalty, Mobilization Advance recovery, and Temporary Withheld amounts.
+ */
+export function calculatePWDStatutoryDeductions(
+  params: PWDStatutoryDeductionsInput
+): PWDStatutoryDeductionsResult {
+  const workVal = Math.max(0, roundToTwo(params.workCertified))
+  const unmeasuredAdv = Math.max(0, roundToTwo(params.unmeasuredAdvance ?? 0))
+  const grossWork = safeAdd(workVal, unmeasuredAdv)
+
+  // 1. Security Deposit / Retention Money (Item 5)
+  let grossRetention = 0
+  if (params.retentionMode === 'amount') {
+    grossRetention = Math.max(0, roundToTwo(params.retentionCustomAmount ?? 0))
+  } else {
+    const retPct = params.retentionPercent ?? 5.0
+    grossRetention = safeMul(workVal, retPct / 100)
+  }
+
+  // CPWD GCC Clause 1A Bank Guarantee offset
+  const bgAvailable = Math.max(0, roundToTwo(params.bgOffsetAmount ?? 0))
+  const bgOffset = Math.min(grossRetention, bgAvailable)
+  const netRetention = Math.max(0, safeSub(grossRetention, bgOffset))
+
+  // 2. Income Tax TDS u/s 194C (Item 8b)
+  let itTds = 0
+  let itTdsEffPct = 2.0
+  if (params.itTdsMode === 'custom_amount') {
+    itTds = Math.max(0, roundToTwo(params.itTdsCustomAmount ?? 0))
+    itTdsEffPct = workVal > 0 ? roundToTwo((itTds / workVal) * 100) : 0
+  } else if (params.itTdsMode === '1_percent') {
+    itTds = safeMul(workVal, 0.01)
+    itTdsEffPct = 1.0
+  } else if (params.itTdsMode === 'custom_percent') {
+    const pct = params.itTdsPercent ?? 2.0
+    itTds = safeMul(workVal, pct / 100)
+    itTdsEffPct = pct
+  } else {
+    // Default 2% (Company / Firm)
+    itTds = safeMul(workVal, 0.02)
+    itTdsEffPct = 2.0
+  }
+
+  // 3. GST-TDS Section 51 (Item 8b)
+  let gstTds = 0
+  let gstTdsEffPct = 2.0
+  if (params.gstTdsMode === 'amount') {
+    gstTds = Math.max(0, roundToTwo(params.gstTdsCustomAmount ?? 0))
+    gstTdsEffPct = workVal > 0 ? roundToTwo((gstTds / workVal) * 100) : 0
+  } else {
+    const pct = params.gstTdsPercent ?? 2.0
+    gstTds = safeMul(workVal, pct / 100)
+    gstTdsEffPct = pct
+  }
+
+  // 4. BOCW Labour Welfare Cess (Item 8b)
+  let labourCess = 0
+  let cessEffPct = 1.0
+  if (params.labourCessMode === 'amount') {
+    labourCess = Math.max(0, roundToTwo(params.labourCessCustomAmount ?? 0))
+    cessEffPct = workVal > 0 ? roundToTwo((labourCess / workVal) * 100) : 0
+  } else {
+    const pct = params.labourCessPercent ?? 1.0
+    labourCess = safeMul(workVal, pct / 100)
+    cessEffPct = pct
+  }
+
+  // 5. Departmental Material Recoveries (Item 8a Form 35-A)
+  const cement = Math.max(0, roundToTwo(params.cementRecovery ?? 0))
+  const steel = Math.max(0, roundToTwo(params.steelRecovery ?? 0))
+  const otherMat = Math.max(0, roundToTwo(params.otherMaterialRecovery ?? 0))
+  const deptTotal = safeAdd(cement, steel, otherMat)
+
+  // 6. Mineral Royalty & Mobilization Advance (Item 8b / 8a)
+  const royalty = Math.max(0, roundToTwo(params.royaltyRecovery ?? 0))
+  const mobAdv = Math.max(0, roundToTwo(params.mobilizationAdvanceRecovery ?? 0))
+
+  // 7. Temporary Departmental Withheld (Item 8b)
+  const withheld = Math.max(0, roundToTwo(params.withheldAmount ?? 0))
+
+  // Totals
+  const totalTaxes = safeAdd(itTds, gstTds, labourCess)
+  const totalOther = safeAdd(royalty, mobAdv, withheld)
+  const totalDeductions = safeAdd(netRetention, totalTaxes, deptTotal, totalOther)
+
+  const prevPaid = Math.max(0, roundToTwo(params.previousPaymentsAlreadyMade ?? 0))
+  const netPayable = Math.max(0, safeSub(grossWork, safeAdd(totalDeductions, prevPaid)))
+
+  return {
+    grossWorkCertified: grossWork,
+    grossRetentionRequired: grossRetention,
+    bgOffsetApplied: bgOffset,
+    netRetentionWithheld: netRetention,
+    itTdsAmount: itTds,
+    itTdsEffectivePercent: itTdsEffPct,
+    gstTdsAmount: gstTds,
+    gstTdsEffectivePercent: gstTdsEffPct,
+    labourCessAmount: labourCess,
+    labourCessEffectivePercent: cessEffPct,
+    departmentalRecoveries: {
+      cement,
+      steel,
+      other: otherMat,
+      total: deptTotal,
+    },
+    royaltyRecovery: royalty,
+    mobilizationAdvanceRecovery: mobAdv,
+    withheldAmount: withheld,
+    totalStatutoryTaxes: totalTaxes,
+    totalDepartmentalRecoveries: deptTotal,
+    totalOtherRecoveries: totalOther,
+    totalAllDeductions: totalDeductions,
+    netPayableAmount: netPayable,
+  }
+}
+
+
 

@@ -8,6 +8,7 @@ import {
   calculateCPWAMemorandum,
   calculateDLPReleaseDate,
   calculateMobilizationAdvanceRecovery,
+  calculatePWDStatutoryDeductions,
 } from '../raBill'
 
 describe('RA Bill Statutory Deductions & Net Payable Calculations', () => {
@@ -256,6 +257,96 @@ describe('RA Bill Statutory Deductions & Net Payable Calculations', () => {
       expect(result.isRecoveryApplicable).toBe(true)
       expect(result.recoveryAmount).toBe(150000) // 15% of 10L = 1.5L
       expect(result.unrecoveredAdvanceBalance).toBe(650000) // 8L - 1.5L = 6.5L
+    })
+  })
+
+  describe('calculatePWDStatutoryDeductions (Full PWD / CPWD Form 26 Account III)', () => {
+    it('computes full standard deductions: 5% SD, 2% IT TDS, 2% GST TDS, 1% Cess, Dept Recoveries', () => {
+      const result = calculatePWDStatutoryDeductions({
+        workCertified: 1000000, // ₹10,00,000
+        retentionMode: 'percent',
+        retentionPercent: 5,
+        itTdsMode: '2_percent',
+        gstTdsMode: 'percent',
+        gstTdsPercent: 2,
+        labourCessMode: 'percent',
+        labourCessPercent: 1,
+        cementRecovery: 25000,
+        steelRecovery: 35000,
+        otherMaterialRecovery: 10000,
+        royaltyRecovery: 8000,
+        mobilizationAdvanceRecovery: 50000,
+        withheldAmount: 15000,
+      })
+
+      // Gross Work (A)
+      expect(result.grossWorkCertified).toBe(1000000)
+
+      // Deductions:
+      // SD (5%) = 50,000
+      expect(result.netRetentionWithheld).toBe(50000)
+      // IT TDS (2%) = 20,000
+      expect(result.itTdsAmount).toBe(20000)
+      // GST-TDS (2%) = 20,000
+      expect(result.gstTdsAmount).toBe(20000)
+      // Labour Cess (1%) = 10,000
+      expect(result.labourCessAmount).toBe(10000)
+      // Departmental Recoveries = 25k + 35k + 10k = 70,000
+      expect(result.departmentalRecoveries.total).toBe(70000)
+      // Royalty = 8,000
+      expect(result.royaltyRecovery).toBe(8000)
+      // Mobilization Advance = 50,000
+      expect(result.mobilizationAdvanceRecovery).toBe(50000)
+      // Withheld = 15,000
+      expect(result.withheldAmount).toBe(15000)
+
+      // Total Statutory & Departmental Deductions (B)
+      // 50k (SD) + 20k (IT) + 20k (GST) + 10k (Cess) + 70k (Dept) + 8k (Royalty) + 50k (Mob) + 15k (Withheld) = 2,43,000
+      expect(result.totalAllDeductions).toBe(243000)
+
+      // Net Payable (A - B) = 10,00,000 - 2,43,000 = 7,57,000
+      expect(result.netPayableAmount).toBe(757000)
+    })
+
+    it('handles 1% Individual/Proprietor IT TDS and custom direct ₹ amounts for deductions', () => {
+      const result = calculatePWDStatutoryDeductions({
+        workCertified: 500000, // ₹5,00,000
+        retentionMode: 'amount',
+        retentionCustomAmount: 20000, // custom ₹20k retention
+        itTdsMode: '1_percent', // 1% = 5,000
+        gstTdsMode: 'amount',
+        gstTdsCustomAmount: 10000,
+        labourCessMode: 'amount',
+        labourCessCustomAmount: 5000,
+        royaltyRecovery: 4000,
+      })
+
+      expect(result.grossWorkCertified).toBe(500000)
+      expect(result.netRetentionWithheld).toBe(20000)
+      expect(result.itTdsAmount).toBe(5000)
+      expect(result.gstTdsAmount).toBe(10000)
+      expect(result.labourCessAmount).toBe(5000)
+      expect(result.royaltyRecovery).toBe(4000)
+      expect(result.totalAllDeductions).toBe(44000)
+      expect(result.netPayableAmount).toBe(456000)
+    })
+
+    it('applies Clause 1A Bank Guarantee offset against cash retention correctly', () => {
+      const result = calculatePWDStatutoryDeductions({
+        workCertified: 2000000, // ₹20,00,000
+        retentionMode: 'percent',
+        retentionPercent: 5, // 5% = 1,00,000
+        bgOffsetAmount: 80000, // ₹80,000 BG submitted
+        itTdsMode: '2_percent', // 40,000
+        gstTdsPercent: 2, // 40,000
+        labourCessPercent: 1, // 20,000
+      })
+
+      expect(result.grossRetentionRequired).toBe(100000)
+      expect(result.bgOffsetApplied).toBe(80000)
+      expect(result.netRetentionWithheld).toBe(20000) // Only 20k cash withheld!
+      expect(result.totalAllDeductions).toBe(120000) // 20k + 40k + 40k + 20k
+      expect(result.netPayableAmount).toBe(1880000)
     })
   })
 })

@@ -86,6 +86,16 @@ export type RABillRow = {
   other_material_recovery?: number
   actual_completion_date?: string | null
   dlp_months?: number
+  it_tds_percentage?: number
+  it_tds_amount?: number
+  gst_tds_percentage?: number
+  gst_tds_amount?: number
+  labour_cess_percentage?: number
+  labour_cess_amount?: number
+  royalty_recovery?: number
+  mobilization_advance_recovery?: number
+  withheld_amount?: number
+  deductions_breakdown?: any
   status: 'submitted' | 'partially_paid' | 'fully_paid' | 'cancelled' | 'rejected'
   document_url: string | null
   remarks: string | null

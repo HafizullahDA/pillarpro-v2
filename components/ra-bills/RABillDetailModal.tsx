@@ -183,38 +183,70 @@ export function RABillDetailModal({
 
             {/* Itemized Deductions & Statutory Recoveries */}
             <div className="border border-slate-200 rounded-xl overflow-hidden">
-              <div className="bg-slate-100 px-3 py-2 text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                Statutory &amp; Contractual Recoveries Schedule
+              <div className="bg-slate-100 px-3 py-2 text-[10px] font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                <span>Statutory &amp; Contractual Recoveries Schedule (CPWD Form 26 Account III)</span>
+                <span className="text-slate-500 font-normal">Passed Cheque: {formatINR(bill.net_payable_this_bill || bill.net_payable_amount)}</span>
               </div>
-              <div className="p-3 bg-white space-y-2 text-xs">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="p-3 bg-white space-y-3 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div className="p-2 bg-slate-50 rounded border border-slate-100">
                     <span className="text-[10px] text-slate-400 block font-sans">Retention ({bill.retention_percentage || 5}%)</span>
                     <span className="font-mono font-bold text-slate-800">{formatINR(bill.retention_amount)}</span>
+                    {Number(bill.bg_offset_amount) > 0 && (
+                      <span className="text-[9px] text-emerald-700 block mt-0.5">BG Shielded: {formatINR(bill.bg_offset_amount)}</span>
+                    )}
                   </div>
                   <div className="p-2 bg-slate-50 rounded border border-slate-100">
-                    <span className="text-[10px] text-slate-400 block font-sans">Income Tax TDS (2%)</span>
-                    <span className="font-mono font-bold text-slate-800">{formatINR(bill.tds_deducted || 0)}</span>
+                    <span className="text-[10px] text-slate-400 block font-sans">Income Tax TDS u/s 194C</span>
+                    <span className="font-mono font-bold text-slate-800">{formatINR(bill.it_tds_amount || bill.tds_deducted || 0)}</span>
                   </div>
                   <div className="p-2 bg-slate-50 rounded border border-slate-100">
-                    <span className="text-[10px] text-slate-400 block font-sans">GST TDS (2%)</span>
-                    <span className="font-mono font-bold text-slate-800">{formatINR(bill.gst_tds_deducted || 0)}</span>
+                    <span className="text-[10px] text-slate-400 block font-sans">GST-TDS Section 51</span>
+                    <span className="font-mono font-bold text-slate-800">{formatINR(bill.gst_tds_amount || bill.gst_tds_deducted || 0)}</span>
                   </div>
                   <div className="p-2 bg-slate-50 rounded border border-slate-100">
                     <span className="text-[10px] text-slate-400 block font-sans">Labour Welfare Cess (1%)</span>
-                    <span className="font-mono font-bold text-slate-800">{formatINR(bill.labour_cess_deducted || 0)}</span>
+                    <span className="font-mono font-bold text-slate-800">{formatINR(bill.labour_cess_amount || bill.labour_cess_deducted || 0)}</span>
                   </div>
                   <div className="p-2 bg-slate-50 rounded border border-slate-100">
-                    <span className="text-[10px] text-slate-400 block font-sans">Material Recovery (Cement/Steel)</span>
+                    <span className="text-[10px] text-slate-400 block font-sans">Departmental Materials</span>
                     <span className="font-mono font-bold text-slate-800">
                       {formatINR((bill.cement_recovery || 0) + (bill.steel_recovery || 0) + (bill.other_material_recovery || 0))}
                     </span>
                   </div>
-                  <div className="p-2 bg-slate-50 rounded border border-slate-100">
-                    <span className="text-[10px] text-slate-400 block font-sans">Other Recoveries</span>
-                    <span className="font-mono font-bold text-slate-800">{formatINR(bill.other_deductions || 0)}</span>
-                  </div>
+                  {Number(bill.royalty_recovery) > 0 && (
+                    <div className="p-2 bg-slate-50 rounded border border-slate-100">
+                      <span className="text-[10px] text-slate-400 block font-sans">Mineral Royalty</span>
+                      <span className="font-mono font-bold text-slate-800">{formatINR(bill.royalty_recovery)}</span>
+                    </div>
+                  )}
+                  {Number(bill.mobilization_advance_recovery) > 0 && (
+                    <div className="p-2 bg-slate-50 rounded border border-slate-100">
+                      <span className="text-[10px] text-slate-400 block font-sans">Mobilization Advance</span>
+                      <span className="font-mono font-bold text-slate-800">{formatINR(bill.mobilization_advance_recovery)}</span>
+                    </div>
+                  )}
+                  {Number(bill.withheld_amount) > 0 && (
+                    <div className="p-2 bg-rose-50/60 rounded border border-rose-200">
+                      <span className="text-[10px] text-rose-500 block font-sans">Temporary Withheld (EOT/QC)</span>
+                      <span className="font-mono font-bold text-rose-800">{formatINR(bill.withheld_amount)}</span>
+                    </div>
+                  )}
                 </div>
+
+                {bill.bill_deductions && bill.bill_deductions.length > 0 && (
+                  <div className="pt-2 border-t border-slate-100">
+                    <span className="text-[11px] font-semibold text-slate-700 block mb-1">Audit Itemized Withholdings Ledger:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {bill.bill_deductions.map((d, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-[10px] border border-slate-200 font-mono">
+                          <span>{d.deduction_label}:</span>
+                          <span className="font-bold text-rose-700">-{formatINR(d.deduction_amount)}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

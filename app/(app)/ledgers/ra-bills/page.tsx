@@ -92,6 +92,16 @@ export default async function RABillsLedgerPage() {
         other_material_recovery,
         actual_completion_date,
         dlp_months,
+        it_tds_percentage,
+        it_tds_amount,
+        gst_tds_percentage,
+        gst_tds_amount,
+        labour_cess_percentage,
+        labour_cess_amount,
+        royalty_recovery,
+        mobilization_advance_recovery,
+        withheld_amount,
+        deductions_breakdown,
         document_url,
         remarks,
         projects (name, agency_name)
@@ -119,7 +129,7 @@ export default async function RABillsLedgerPage() {
       .order('expiry_date', { ascending: true }),
     supabase
       .from('bill_deductions')
-      .select('id, ra_bill_id, deduction_label, deduction_amount'),
+      .select('id, bill_id, ra_bill_id, deduction_label, deduction_amount'),
     supabase
       .from('boq_items')
       .select('*')
@@ -155,7 +165,7 @@ export default async function RABillsLedgerPage() {
   // Attach itemized deductions to corresponding bills
   const billsWithDeductions = filteredBills.map(b => ({
     ...b,
-    bill_deductions: (deductions ?? []).filter(d => d.ra_bill_id === b.id),
+    bill_deductions: (deductions ?? []).filter(d => (d.ra_bill_id || d.bill_id) === b.id),
   }))
 
   const boqItems: BOQItem[] = Array.isArray(boqData)
