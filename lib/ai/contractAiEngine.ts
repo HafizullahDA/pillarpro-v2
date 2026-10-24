@@ -256,16 +256,17 @@ export async function runContractAiQuery(
     parts: [{ text: userQuery }],
   })
 
-  const primaryModel = process.env.GEMINI_PRIMARY_MODEL || 'gemini-2.0-flash'
-  const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || 'gemini-1.5-flash'
+  const primaryModel = process.env.GEMINI_PRIMARY_MODEL || 'gemini-3.6-flash'
+  const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite'
   const modelsToTry = Array.from(
     new Set([
       primaryModel,
       fallbackModel,
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash-lite',
-      'gemini-1.5-pro',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-flash-lite-latest',
+      'gemini-3.7-flash',
+      'gemini-3.8-flash',
     ])
   ).filter(Boolean)
   let rawText = ''

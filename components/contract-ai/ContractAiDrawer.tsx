@@ -695,7 +695,7 @@ export function ContractAiDrawer({
                         <div className="mb-2 flex items-center justify-between pb-2 border-b border-slate-100">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold uppercase tracking-wider bg-slate-900 text-white font-mono">
-                              {m.modelUsed || 'Gemini 2.0'}
+                              {m.modelUsed || 'Gemini 3.6 Flash'}
                             </span>
                             {m.groundingStatus === 'VERIFIED' && (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300">

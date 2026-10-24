@@ -147,8 +147,8 @@ Do NOT wrap the output in markdown fences or backticks. Return raw valid JSON on
       ]
     }
 
-    const primaryModel = process.env.GEMINI_PRIMARY_MODEL || 'gemini-2.5-flash'
-    const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash'
+    const primaryModel = process.env.GEMINI_PRIMARY_MODEL || 'gemini-3.6-flash'
+    const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite'
 
     let response: any
     try {
