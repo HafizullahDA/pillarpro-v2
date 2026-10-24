@@ -912,7 +912,7 @@ export function PricingClient() {
                 <tr>
                   <td className="py-3 px-6 font-medium">Staff & Site Munshi Onboarding Assistance</td>
                   <td className="py-3 px-4 text-center text-slate-400">Self-serve Guides</td>
-                  <td className="py-3 px-4 text-center text-slate-700 bg-emerald-50/20 border-x border-emerald-100">Video Walkthrough</td>
+                  <td className="py-3 px-4 text-center text-slate-700 bg-emerald-50/20 border-x border-emerald-100">Guided Tutorials</td>
                   <td className="py-3 px-4 text-center font-bold text-slate-900">1-on-1 Remote / Site Call</td>
                 </tr>
               </tbody>

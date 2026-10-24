@@ -5,16 +5,10 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { Logo } from '@/components/ui/Logo'
 
-const WalkthroughModal = dynamic(
-  () => import('./WalkthroughModal').then((mod) => mod.WalkthroughModal),
-  { ssr: false }
-)
 const ContactModal = dynamic(
   () => import('./ContactModal').then((mod) => mod.ContactModal),
   { ssr: false }
 )
-
-const WALKTHROUGH_VIDEO_URL: string = ''
 
 interface LandingPageProps {
   isLoggedIn?: boolean
@@ -136,7 +130,6 @@ export function LandingPage({
   userName,
   orgName,
 }: LandingPageProps) {
-  const [walkthroughOpen, setWalkthroughOpen] = useState(false)
   const [contactModalOpen, setContactModalOpen] = useState(false)
   const [previewTimeRange, setPreviewTimeRange] = useState<'month' | 'quarter' | 'all'>('month')
   const [activeOutputTab, setActiveOutputTab] = useState<'form26' | 'emb' | 'tally'>('form26')
@@ -300,16 +293,15 @@ export function LandingPage({
                 >
                   Start 7-Day Free Trial
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => setWalkthroughOpen(true)}
+                <a
+                  href="#sample-outputs"
                   className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 shadow-2xs transition-all w-full sm:w-auto cursor-pointer"
                 >
-                  <svg className="w-4 h-4 text-slate-700 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
+                  <svg className="w-4 h-4 text-slate-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span>Watch 3-Min Walkthrough</span>
-                </button>
+                  <span>Inspect Sample Outputs</span>
+                </a>
               </div>
 
               {/* 3-Column Trust Metrics Bar */}
@@ -1633,7 +1625,7 @@ export function LandingPage({
                 onClick={() => setContactModalOpen(true)}
                 className="inline-flex items-center justify-center px-5 sm:px-6 py-3 rounded-lg text-sm font-semibold text-slate-200 bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-all w-full sm:w-auto cursor-pointer"
               >
-                Schedule Guided Walkthrough
+                Schedule 1-on-1 Demo
               </button>
             </div>
 
@@ -1894,16 +1886,7 @@ export function LandingPage({
         </div>
       </footer>
 
-      {/* ── 9. WALKTHROUGH MODAL ───────────────────────────────── */}
-      {walkthroughOpen && (
-        <WalkthroughModal
-          isOpen={walkthroughOpen}
-          onClose={() => setWalkthroughOpen(false)}
-          videoUrl={WALKTHROUGH_VIDEO_URL}
-        />
-      )}
-
-      {/* ── 10. CONTACT MODAL ─────────────────────────────────── */}
+      {/* ── 9. CONTACT MODAL ─────────────────────────────────── */}
       {contactModalOpen && (
         <ContactModal
           isOpen={contactModalOpen}

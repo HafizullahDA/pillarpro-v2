@@ -97,102 +97,211 @@ Attendance and Expense entry (including receipt photo capture) must queue locall
 
 ---
 
-# SECTION B — As-Built System Specification & Architecture Enhancements
+# SECTION B — As-Built System Specification & Production Architecture
 
-This section records the live, production-grade architecture of PillarPro v2 as built, noting design evolutions, schema enhancements, and government tendering features implemented beyond the initial Section A blueprint.
-
----
-
-## 1. Major Architectural Evolutions from Section A
-
-### A. Vendor & Supplier Consolidation (Migration 013)
-- **Problem**: Section A specified a `Vendors` module for purchases, while later iterations introduced `Suppliers`. Maintaining two separate accounts created duplicate entries, divided balances, and confusion.
-- **Solution**: 
-  - Retired the `Vendors` sidebar menu item and consolidated all vendor data into **Supplier Accounts** (`public.suppliers` and `public.supplier_transactions`).
-  - Added material-level attributes (`quantity`, `rate`, and `unit` e.g. bags, tonnes, cum, kg, nos) to `public.supplier_transactions`.
-  - Added automated triggers (`trg_ledger_supplier_transaction` and `trg_ledger_delete_supplier_transaction`) syncing supplier transactions directly to the master `public.ledger`.
-  - Redirected mobile Floating Action Button (FAB) shortcuts to `/suppliers`.
-  - Preserved historical `vendors`, `vendor_purchases`, and `vendor_payments` tables as immutable backups.
-
-### B. Owner-Restricted Deletion Controls (Migrations 012 & 015)
-- **Expenses Deletion (Migration 012)**: 
-  - Restricts `DELETE` on `public.expenses` strictly to the `owner` role via Postgres RLS.
-  - Automated trigger `trg_ledger_delete_expense` reverses associated polymorphic ledger entries upon deletion.
-- **Supplier Deletion (Migration 015)**:
-  - Split RLS policies so that `DELETE` on `public.suppliers` is strictly restricted to `get_user_role() = 'owner'`.
-  - Cascades foreign key constraints on `supplier_transactions` so deleting a supplier purges associated transactions and triggers central ledger cleanups.
-  - Provides a `SECURITY DEFINER` RPC `delete_supplier(UUID)` with strict role verification.
-
-### C. Government RA Bill Engine Evolution (Migrations 008, 009, 010, 014, 016)
-Section A described a basic "Receivables" table. The live system incorporates a full **Running Account (RA) Bills & Guarantee Management Engine** (`/ra-bills`):
-1. **Dual Billing Modes (Migration 014)**:
-   - **Standalone Mode**: Independent certified bills.
-   - **Cumulative Mode (CPWD Form 26 / Standard MB Format)**: Tracks contract-to-date work certified from the Measurement Book. Automatically detects and references previous bills for that project, calculating incremental net-new work and Net Payable This Bill:
-     $$\text{Net Payable This Bill} = (\text{Cumulative Net Certified To Date}) - (\text{Previous Cumulative Received To Date})$$
-2. **Statutory Deductions & Treasury Payments Ledger (Migration 010)**:
-   - Tranche-level ledger (`public.ra_bill_payments`) recording releases against bills.
-   - Standard statutory withholding fields: TDS (IT u/s 194C), GST-TDS (Sec 51), and BOCW Labour Welfare Cess (1%).
-   - Stored generated columns for `total_deductions` and `net_bank_amount`.
-   - Real-time roll-up trigger `trg_sync_ra_bill_from_payments` updating `public.ra_bills`.
-3. **Flexible Additional Deductions Engine (Migration 016)**:
-   - Accommodates differing departmental withholding practices (NHPC, PMGSY, CPWD, Railways, PWD).
-   - Introduces `public.bill_deductions` with `deduction_label` and `deduction_amount`.
-   - Record Payment drawer features quick-add suggestion chips:
-     `+ Royalty`, `+ GST on Royalty`, `+ TCS on Royalty`, `+ DMFT (Mineral Fund)`, `+ Withheld against Time Extension`, `+ Water / Electricity Charges`, `+ Testing & Quality Charges`.
-   - Sums additional deductions into the Net Bank Cash calculation without affecting Gross Released or Outstanding balances.
-4. **Security Deposits & Bank Guarantees (Migration 008)**:
-   - Tracks Performance Bank Guarantees (PBG), Security Deposits (SD), Earnest Money Deposits (EMD), and Fixed Deposit Receipts (FDR).
-   - Monitors issue dates, claim expiry dates, issuing banks, document attachments, and active alert statuses.
-
-### D. AI Receipt Scanner Integration
-- Endpoint `/api/scan-receipt` implemented using **Google Gemini Flash** multimodal model (`@google/genai`).
-- Extracts vendor name, GSTIN, invoice date, total amount, and itemized line items from field photos.
-- Directly links captured images to Supabase Storage and pre-fills expense entry drawers.
-
-### E. Accounting Period Locking & Month Close (Migration 003, 007)
-- Dedicated `/admin/periods` interface allowing Owners to close accounting months project-wise.
-- Database trigger `guard_period_supplier_tx()` blocks non-Owner writes or deletions on closed periods.
-
-### F. User Management & Onboarding (`/admin/users`)
-- New users self-registering via Supabase Auth enter a `pending` status.
-- Owners review pending registrations, activate accounts, designate roles (`owner`, `managing_partner`, `site_supervisor`), and assign project scopes via `project_members`.
+This section records the live, production-grade architecture of PillarPro v2 as built, documenting the complete evolution from the initial Section A blueprint into a comprehensive, multi-tenant Civil Infrastructure Operating System adhering to CPWD Works Manual 2024, State PWD accounts codes, IS 1200 measurement standards, and Indian government treasury protocols.
 
 ---
 
-## 2. Complete Database Migration Registry
+## 1. Major Architectural Evolutions & Four Pillars Engine
 
-| Migration | File Name | Key Schema Additions |
+### A. Multi-Tenant Organizational Workspaces (Migrations 019, 020, 024, 025, 068)
+- **Problem**: Section A assumed a single-firm deployment. Modern civil EPC contractors frequently manage multiple corporate entities, joint ventures (JVs), and package-specific SPVs.
+- **Solution**:
+  - Introduced `public.organizations` with unique invite codes (e.g. `APEX26`), custom billing configurations, and subscription tiers (`starter`, `growth`, `enterprise`).
+  - Scoped all operational, financial, and contractual tables (`projects`, `contracts`, `boq_items`, `measurement_books`, `ra_bills`, `suppliers`, `workers`, `ledger`) by `organization_id`.
+  - Automated self-serve contractor firm creation via `public.onboard_contractor(org_name, admin_name)`.
+  - Migration 068 & 078 enforce strict tenant-isolation Row Level Security (RLS) policies preventing cross-tenant leakage.
+
+### B. 10-Tier Construction RBAC Hierarchy & Fail-Closed Security (Migrations 017, 062, 075, 078)
+- **Role Hierarchy**:
+  1. `owner`: Full executive and administrative control, month closures, contract amendments, organizational settings, and deletion authorization.
+  2. `admin`: Organizational administration, user management, and platform configurations.
+  3. `project_manager`: Full operational and physical management across assigned or all project packages.
+  4. `billing_engineer`: Preparation of RA bills, CPWA Form 26 abstracts, measurement reconciliation, and certificate submission.
+  5. `site_engineer`: Mobile field measurements (L×B×D), chainage logging, Level Book readings, and GPS photo evidence.
+  6. `site_supervisor`: Daily worker muster rolls, attendance tracking, and machinery diesel logs.
+  7. `store_manager`: Cement, rebar, fuel, and materials inventory, gate passes, and wastage logging.
+  8. `data_entry`: Operational data logging with restricted modification permissions.
+  9. `viewer`: Strictly read-only access for auditors, external consultants, and client observers.
+- **Fail-Closed Security Guarantee (Migration 078)**:
+  - Hardened `public.get_user_role()`: If a user has no active role assigned in `public.roles`, it only resolves to `owner` if the user is explicitly recorded as the `created_by` / `owner_id` of the organization. Otherwise, it **fails closed to `'viewer'`** (read-only).
+  - Multi-tenant role resolution is strictly scoped by `organization_id`, preventing role leakage across firms.
+  - Comprehensive unit test verification in `lib/calculations/__tests__/rbac_and_audit.test.ts`.
+
+---
+
+### C. Pillar 01 — Contract & Sanctioned BOQ Master Engine (Migrations 037, 051, 052)
+- **Contract Agreement Vault (`public.contracts`)**:
+  - Stores Agreement No., Award Value, Time for Completion, Defect Liability Period (DLP), Mobilization Advance terms, and Security Deposit percentages.
+  - Clause 10CA & 10CC price escalation indices tracking (cement, steel, bitumen, labour, fuel).
+- **BOQ Master (`public.boq_items`, `public.boq_revisions`)**:
+  - Full support for Schedule of Rates (SOR) items, non-scheduled (NS) items, item rate ceilings, and sub-package breakdown.
+  - **Unbalanced Bid Protection**: Automated algorithmic scanner detecting front-loaded rates, zero-rate items, and quantity variation risks.
+  - Real-time tracking of tendered vs executed quantities with threshold warnings when approaching statutory variation ceilings (+/- 10% or +/- 25%).
+
+---
+
+### D. Pillar 02 — Digital e-MB, Chainage Measurements, TMT BBS & Level Books (Migrations 053, 054, 063, 076, 078)
+- **Electronic Measurement Book (`public.measurement_books`, `public.measurement_entries`)**:
+  - Replaces physical Measurement Books with an immutable digital e-MB conforming to IS 1200 Standard Method of Measurement.
+  - Dynamic L×B×D calculation sheets with multi-row arithmetic and positive/negative deduction entries (e.g., deducting recesses, openings, and voids).
+- **TMT Bar Bending Schedule (BBS) Engine (Migration 076)**:
+  - Integrated rebar detailing for standard diameters (8mm, 10mm, 12mm, 16mm, 20mm, 25mm, 28mm, 32mm).
+  - Automatically calculates cutting length, number of bars, total linear meters, and unit weight ($d^2 / 162$) with automatic Metric Ton (MT) conversion.
+- **Level Book Integration**:
+  - Benchmark Reduced Levels (RL), Back Sight (BS), Intermediate Sight (IS), Fore Sight (FS), Height of Instrument (HI), and collimation error verification.
+- **Automated Variation Detection**:
+  - Prevents Junior Engineer (JE) arithmetic rejections by auto-checking that executed quantities remain within permissible tender deviations.
+- **Cryptographic Immutability Lock (Migration 062, 078)**:
+  - Transitioning an e-MB entry to `status = 'CERTIFIED'` requires non-empty `page_number` and `entry_number`.
+  - Once an entry is linked to `billed_in_ra_bill_id`, database triggers block any updates to `nos`, `length`, `breadth`, `depth`, `calculated_quantity`, `boq_item_id`, and `status`, and **completely block `DELETE` operations** on billed rows.
+
+---
+
+### E. Pillar 03 — Running Account (RA) Bills & Form 26 Statutory Engine (Migrations 008, 010, 014, 016, 038, 077)
+- **Dual Billing Modes**:
+  - **Standalone Mode**: Independent certified interim invoices.
+  - **Cumulative Mode (CPWD Form 26)**: Contract-to-date work certified from e-MB sheets with auto-detection of prior certified bills, calculating incremental work executed since last bill.
+- **Statutory Deductions & Recoveries Breakdown (Migration 077)**:
+  1. *Security Deposit / Retention Money*: 5% or 10% deducted from gross bill value.
+  2. *Income Tax TDS*: Section 194C (1% for individuals/HUF, 2% for companies/partnerships).
+  3. *GST-TDS*: 2% total (1% CGST + 1% SGST) deducted under Section 51 of CGST Act.
+  4. *BOCW Labour Welfare Cess*: 1% statutory deduction under Building and Other Construction Workers Act 1996.
+  5. *Mobilization Advance Principal Recovery*: Percentage-based deduction per CPWD Form 35-A / Agreement Clause 10B.
+  6. *Mining Royalty Deductions*: Minor minerals extraction charges (sand, stone, aggregates) based on departmental mining challans.
+  7. *Departmental Penalties & Withhelds*: Liquidated damages, interim time-extension penalties, testing charges, electricity/water recoveries (`public.bill_deductions`).
+- **Tally Prime & ERP Double-Entry Journal Export**:
+  - 1-click XML and CSV double-entry journal vouchers formatted for direct import into **Tally Prime 4.x**, **Tally ERP 9**, **Busy**, and **SAP B1**.
+  - Accurately balances Gross Client Receivable (Dr) against statutory liability ledgers and net revenue accrual (Cr).
+
+---
+
+### F. Pillar 04 — Site Operations, Fleet Diesel & ContractIQ AI Legal Defense (Migrations 030, 031, 033, 040, 055, 056, 057, 058, 059, 060, 061)
+- **Daily Progress Reports (DPR - Migration 031)**:
+  - Logs weather conditions, labor gang headcounts, executed activities, and site photographs.
+- **Machinery & Diesel Logs (Migration 030)**:
+  - Heavy equipment logs (Excavators, Graders, Rollers, Dumpers, Pavers), hour-meter readings, and fuel consumption analytics.
+- **Store Inventory & Materials Khata (Migration 033, 034)**:
+  - Stock register for cement bags, structural steel, aggregates, and fuel. Automatic wastage threshold alerts.
+- **Hindrance Register & Automated Extension of Time (EOT) Claim Engine (Migrations 040, 055, 059)**:
+  - Systematic logging of client-caused project hindrances (delayed site handover, drawing delays, utility shifting, forest clearance, unseasonal rains, delayed running payments).
+  - Distinguishes concurrent from non-concurrent delays to defeat Liquidated Damages (LD) claims.
+  - Auto-compiles formal CPWD Form 14 Extension of Time (EOT) claim packages.
+- **ContractIQ AI Legal & Clause Defense Engine (Migrations 058, 061)**:
+  - Powered by **Google Gemini Flash** via `@google/genai`.
+  - Analyzes contract clauses against site events in English and Hindi, issuing timely statutory notice drafts (e.g. CPWD Clause 5, Clause 7, Clause 10CC, Clause 12).
+  - Assembles evidence binders for Dispute Resolution Boards (DRB) and arbitration proceedings.
+
+---
+
+### G. Automated WhatsApp Cloud API & Alert Dispatch Engine (Migrations 071, 072, 073, 074)
+- Automated event scanners and cron dispatchers (`/api/cron/daily-alerts`, `/api/cron/evening-alerts`):
+  1. *Morning Operational Briefing*: Pending measurements, day work targets, machinery mobilization.
+  2. *Evening Labor & Muster Alert*: Site worker attendance count and daily labor wage accrual.
+  3. *Bank Guarantee Expiry Warnings*: Multi-stage alerts at 30, 15, and 7 days prior to PBG/FDR maturity.
+  4. *RA Bill Payment Escalation*: Alerts MDs when running account bills remain uncertified beyond standard statutory windows (CPWD Clause 7).
+
+---
+
+## 2. Complete Database Migration Registry (001 – 078)
+
+| Migration | File Name | Core Architectural Scope |
 | :--- | :--- | :--- |
-| **001** | `001_initial_schema.sql` | Core schema: `projects`, `project_members`, `workers`, `attendance`, `expenses`, `vendors`, `vendor_purchases`, `vendor_payments`, `client_bills`, `client_payments`, `partners`, `partner_transactions`, `ledger`. |
-| **002** | `002_rls_policies.sql` | Database-level Row Level Security policies across all primary tables. |
-| **003** | `003_phase2_additions.sql` | `accounting_periods` table, period-closure check functions, and soft-delete helpers. |
-| **004** | `004_fix_user_profiles_roles_rls.sql` | `user_profiles`, role synchronization triggers, and `get_user_role()` RPC. |
-| **005** | `005_grant_authenticated_table_permissions.sql` | Explicit SQL grants on tables and sequences for the Supabase `authenticated` role. |
-| **006** | `006_add_email_to_user_profiles.sql` | Added `email` column to `user_profiles` to support Admin user directory. |
-| **007** | `007_supplier_account_schema.sql` | `suppliers`, `supplier_transactions`, dynamic `supplier_summary` view, and period guard triggers. |
-| **008** | `008_ra_bill_tracker_schema.sql` | `ra_bills`, `security_deposits`, retention percentage, and measurement sheet storage attachments. |
-| **009** | `009_fix_ra_bill_outstanding_formula.sql` | Stored generated columns for `net_payable_amount` and `outstanding_balance` on `ra_bills`. |
-| **010** | `010_statutory_deductions_and_payments_ledger.sql` | `ra_bill_payments` ledger table, statutory deductions roll-up trigger, and `net_bank_received` tracking. |
-| **011** | `011_project_archive_soft_delete.sql` | Added `archived` boolean flag, archive RPC functions, and filtered directory queries. |
-| **012** | `012_owner_expense_delete_and_ledger_sync.sql` | Restricted expense deletion to Owner in RLS; added `trg_ledger_delete_expense` cleanup trigger. |
-| **013** | `013_migrate_vendors_to_suppliers.sql` | Migrated Vendors into Suppliers; added quantity/rate/unit; added automated ledger sync triggers. |
-| **014** | `014_ra_bill_cumulative_mode.sql` | CPWD Form 26 Cumulative Billing Mode, previous bill detection, and incremental certified amounts. |
-| **015** | `015_owner_supplier_delete.sql` | Owner-restricted supplier deletion with cascading FK constraint on transactions and `delete_supplier` RPC. |
-| **016** | `016_bill_deductions.sql` | Flexible `bill_deductions` line-items table (Royalty, GST on Royalty, TCS, DMFT, withholds). |
+| **001** | `001_initial_schema.sql` | Core schema: `projects`, `workers`, `attendance`, `expenses`, `ledger`, `partners`. |
+| **002** | `002_rls_policies.sql` | Base Row Level Security policies across primary tables. |
+| **003** | `003_phase2_additions.sql` | `accounting_periods` table and month-closure check functions. |
+| **004** | `004_fix_user_profiles_roles_rls.sql` | `user_profiles`, role synchronization triggers, and `get_user_role()`. |
+| **005** | `005_grant_authenticated_table_permissions.sql` | Table and sequence grants for Supabase `authenticated` role. |
+| **006** | `006_add_email_to_user_profiles.sql` | Added `email` column to `user_profiles` for user admin management. |
+| **007** | `007_supplier_account_schema.sql` | `suppliers`, `supplier_transactions`, and dynamic `supplier_summary` view. |
+| **008** | `008_ra_bill_tracker_schema.sql` | `ra_bills`, `security_deposits`, and retention percentage tracking. |
+| **009** | `009_fix_ra_bill_outstanding_formula.sql` | Generated column formulas for net payable and outstanding balances. |
+| **010** | `010_statutory_deductions_and_payments_ledger.sql` | `ra_bill_payments` ledger table with statutory deduction roll-up triggers. |
+| **011** | `011_project_archive_soft_delete.sql` | Soft deletion and project archive status flags. |
+| **012** | `012_owner_expense_delete_and_ledger_sync.sql` | Owner-restricted expense deletion with automated ledger rollback triggers. |
+| **013** | `013_migrate_vendors_to_suppliers.sql` | Consolidated Vendors into Suppliers; added quantity/rate/unit fields. |
+| **014** | `014_ra_bill_cumulative_mode.sql` | CPWD Form 26 Cumulative Billing Mode with prior certified bill detection. |
+| **015** | `015_owner_supplier_delete.sql` | Owner-restricted supplier deletion with cascading transaction integrity. |
+| **016** | `016_bill_deductions.sql` | Departmental `bill_deductions` items (Royalty, GST on Royalty, TCS, DMFT). |
+| **017** | `017_expand_user_roles.sql` | Expanded user role enum to support modern civil construction hierarchy. |
+| **018** | `018_attendance_and_workers_rls.sql` | Hardened RLS policies for worker directories and daily muster rolls. |
+| **019** | `019_organizations_schema.sql` | Multi-tenant organizational workspaces (`organizations` table and scoping). |
+| **020** | `020_demo_organization_and_rls_isolation.sql` | Tenant-scoped RLS policies isolating firm data. |
+| **021** | `021_partner_capital_and_project_shares.sql` | Partner capital infusions, drawings, and project profit-sharing shares. |
+| **022** | `022_wage_tracking_ledger.sql` | Worker wage disbursements, advance registers, and payment history. |
+| **023** | `023_remove_demo_organization.sql` | Cleaned up initial static demo tenants. |
+| **024** | `024_self_serve_onboarding.sql` | Automated self-serve contractor organization creation (`onboard_contractor`). |
+| **025** | `025_team_management_and_org_scoping.sql` | Firm invite codes, team invitations, and role-based staff onboarding. |
+| **026** | `026_workers_organization_id_default.sql` | Enforced default `organization_id` assignment on worker creations. |
+| **027** | `027_delete_worker.sql` | Safe worker deletion function with cascading attendance checks. |
+| **028** | `028_suppliers_organization_id_default.sql` | Enforced default `organization_id` on supplier creation. |
+| **029** | `029_remove_team_member.sql` | Secure team member offboarding RPC with role-revocation checks. |
+| **030** | `030_machinery_and_diesel.sql` | Heavy plant & machinery registers, equipment logs, and diesel fuel tracking. |
+| **031** | `031_daily_progress_reports.sql` | DPR master tables, weather tracking, gang counts, and site photo evidence. |
+| **032** | `032_fix_security_definer_view.sql` | Fixed postgres view security invoker attributes across summary projections. |
+| **033** | `033_store_inventory.sql` | Store inventory, stock receipts, material issuances, and warehouse balances. |
+| **034** | `034_org_branding_and_inventory_wastage.sql` | Custom firm logos, letterhead branding, and material wastage logging. |
+| **035** | `035_projects_organization_id_default.sql` | Automated tenant assignment on project creation. |
+| **036** | `036_add_carriage_to_supplier_transactions.sql` | Added freight, carriage, and handling charges to supplier bills. |
+| **037** | `037_boq_and_work_done_tracking.sql` | Initial BOQ line item structure and physical progress measurement tracking. |
+| **038** | `038_cpwa_ra_bill_enhancements.sql` | Full CPWA Form 26 print layouts and statutory deduction headers. |
+| **039** | `039_fix_onboarding_and_auto_activate.sql` | Auto-activation pipeline for primary contractor account owners. |
+| **040** | `040_hindrance_register_and_eot_engine.sql` | Hindrance register schema, delay days computation, and EOT request tracking. |
+| **041** | `041_subscription_lifecycle_and_entitlements.sql` | Subscription tier enforcement, project limits, and feature flags. |
+| **042** | `042_attendance_overtime.sql` | Overtime hours tracking and proportional wage calculation. |
+| **043** | `043_fix_receivables_bills_rls.sql` | Fixed RLS edge cases in receivables and billing views. |
+| **044** | `044_partners_organization_id_default_and_rls.sql` | Scoped partner equity ledgers to active organization. |
+| **045** | `045_org_profile_include_subscription_fields.sql` | Extended organization profiles with active subscription metadata. |
+| **046** | `046_rich_sample_highway_project.sql` | Seed generator for demonstration highway EPC packages. |
+| **047** | `047_visitor_telemetry_and_platform_admins.sql` | Landing page telemetry tracking and platform admin directories. |
+| **048** | `048_fix_hindrances_and_eot_rls.sql` | Fixed RLS policy grants on hindrance register entries. |
+| **049** | `049_fix_join_organization_role_cast.sql` | Fixed enum casting when joining organizations with user profiles. |
+| **050** | `050_additional_security_deposit_enum.sql` | Added Performance Guarantee (PG) and Additional Security Deposit (ASD) enums. |
+| **051** | `051_contract_master_schema.sql` | Comprehensive `contracts` master table with tender values and DLP dates. |
+| **052** | `052_boq_master_and_revisions_schema.sql` | Sanctioned BOQ items, SOR codes, and formal revision audit history. |
+| **053** | `053_measurement_module_schema.sql` | `measurement_books`, `measurement_entries`, and IS 1200 measurement items. |
+| **054** | `054_measurement_ra_bill_integration.sql` | Linkage bridging certified e-MB measurement entries into RA bills. |
+| **055** | `055_contract_events_and_hindrance_register.sql` | Contractual milestone events, hindrances, and concurrent delay classification. |
+| **056** | `056_evidence_vault_and_completeness.sql` | Geo-tagged site evidence vault and documentary completeness scoring. |
+| **057** | `057_correspondence_and_notice_tracking.sql` | Formal contractual letters, delay notices, and statutory time-bar tracking. |
+| **058** | `058_contract_clause_management.sql` | Contract clause library (CPWD, FIDIC, MORTH, State PWD GCC/SCC). |
+| **059** | `059_extension_of_time_module.sql` | Formal Extension of Time (EOT) claim package generator per CPWD Form 14. |
+| **060** | `060_contract_variations_module.sql` | Clause 12 variation sanction tracking for extra, substituted, and deviated items. |
+| **061** | `061_contract_claims_module.sql` | Formal dispute claims, price escalation claims, and arbitration binders. |
+| **062** | `062_rbac_and_immutable_audit_trail.sql` | Construction RBAC permissions matrix and cryptographic measurement locks. |
+| **063** | `063_measurement_rls_and_integrity_locks.sql` | Database triggers enforcing immutability on certified and billed e-MBs. |
+| **064** | `064_fix_sample_project_seeding_and_security_deposit_rls.sql` | Hardened sample data seeders and security deposit policies. |
+| **065** | `065_exclusive_visitor_telemetry_and_stay_duration.sql` | Advanced visitor engagement analytics and duration telemetry. |
+| **066** | `066_fix_auth_user_cascades_and_deletion.sql` | Clean cascading deletion when terminating test or decommissioned users. |
+| **067** | `067_fix_sample_project_seeding_and_onboarding.sql` | Enhanced automated onboarding pipeline with complete highway BOQ seeds. |
+| **068** | `068_fix_tenant_isolation_and_rls_leakage.sql` | Strict tenant-scoping patch across all enterprise RPCs and background views. |
+| **069** | `069_fix_financial_accuracy_and_gap_closures.sql` | Arithmetic precision fixes for retention calculations and cumulative offsets. |
+| **070** | `070_record_level_activity_audit_logs.sql` | Enterprise `activity_audit_logs` tracking user IP, agents, and entity state diffs. |
+| **071** | `071_alert_dispatch_logs_and_preferences.sql` | WhatsApp and system alert logging, retry queue, and delivery receipts. |
+| **072** | `072_phase2_cashflow_and_vendor_alerts.sql` | Background cash flow scanners and vendor payment due dispatchers. |
+| **073** | `073_phase3_operations_and_fleet_alerts.sql` | Automated dispatch for machinery diesel usage and daily site muster rolls. |
+| **074** | `074_phase4_alert_preferences_and_control_center.sql` | Contractor Alert Control Center with configurable opt-in channels and frequency. |
+| **075** | `075_comprehensive_security_hardening.sql` | Security definer review, search_path enforcement, and injection guards. |
+| **076** | `076_measurement_multiline_and_steel_bbs.sql` | Multi-line measurement formulas and TMT Bar Bending Schedule ($d^2/162$) schema. |
+| **077** | `077_statutory_deductions_full_pwd_breakdown.sql` | Complete breakdown of CPWD statutory deductions (SD, IT-TDS, GST-TDS, Cess, Royalty). |
+| **078** | `078_harden_rbac_and_fail_closed_security.sql` | **Fail-closed security**: `get_user_role()` fails to `viewer`; e-MB certification locks; billed row deletion blockers. |
 
 ---
 
-## 3. Roadmap: Upcoming Senior Government Contractor Modules
+## 3. Statutory & Engineering Compliance Standards
 
-1. **Hindrance Register & Automated EOT Claim Engine (Clause 5 / Form 14)**:
-   - Comprehensive log of client-caused project hindrances (site handover delay, drawing delay, utility shifting, monsoon/weather, delayed running payments).
-   - Delay categorization (overlapping vs. concurrent) to protect against Liquidated Damages (LD) and milestone penalties.
-   - Auto-generation of formal CPWD Extension of Time (EOT) claim packages.
-2. **Retention Money & Defect Liability Period (DLP) Pipeline**:
-   - Tracking 5% cash retention deductions across projects.
-   - Project completion handover and DLP milestone countdowns (12, 24, or 36 months).
-   - Automated notifications for Bank Guarantee / FDR maturity and release applications.
-3. **BOQ Deviations & Extra Items Register (Clause 12 Variation Sanctions)**:
-   - Tracking deviations beyond standard permissible limits (+/- 25% or 30%).
-   - Approval tracking for non-BOQ extra items, substituted items, and revised rate analyses prior to billing.
-
+1. **CPWD Works Manual 2024**:
+   - Clause 5: Extension of Time and Hindrance Recording.
+   - Clause 7: Interim Running Account Payments & Certification Timelines.
+   - Clause 8A / 8B: Completion Plans & Final Measurement Submission.
+   - Clause 10CA & 10CC: Material, Bitumen, Steel & Labour Price Escalation.
+   - Clause 12: Permissible Limits of Deviations, Extra Items & Market Rate Sanctions.
+2. **IS 1200 / SP 27**:
+   - Standard Method of Measurement of Building and Civil Engineering Works.
+   - Measurement item deduction rules (voids, recesses, overlap exclusions).
+3. **MORTH 5th Revision & IRC Guidelines**:
+   - Earthwork, subgrade, granular sub-base (GSB), wet mix macadam (WMM), dense bituminous macadam (DBM), and bituminous concrete (BC) tolerances.
+4. **CAG & Central Treasury Guidelines**:
+   - Form CPWA-26 and CPWA-24 Running Account Bill Vouchers.
+   - Reconciled deduction registers for IT u/s 194C, GST-TDS, and State BOCW Welfare Cess.
