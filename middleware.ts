@@ -17,6 +17,36 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  // ── Intercept Auth Redirects Landing on Root ──────────────────
+  if (pathname === '/') {
+    const searchParams = request.nextUrl.searchParams
+    const error = searchParams.get('error')
+    const errorCode = searchParams.get('error_code')
+    const errorDesc = searchParams.get('error_description')
+    const code = searchParams.get('code')
+
+    // Case 1: Supabase redirected an auth error (e.g. otp_expired) to root
+    if (error || errorCode) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/forgot-password'
+      url.search = ''
+      url.searchParams.set(
+        'error',
+        errorCode === 'otp_expired'
+          ? 'Your password reset link has expired because a newer link was requested or time limit reached. Please request a fresh reset link below.'
+          : errorDesc || 'Unable to verify email link. Please request a fresh recovery link.'
+      )
+      return NextResponse.redirect(url)
+    }
+
+    // Case 2: Supabase redirected a PKCE auth/recovery code to root
+    if (code) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/reset-password'
+      return NextResponse.redirect(url)
+    }
+  }
+
   // ── 1. Cron API Route Authentication Guard ───────────────────
   // Strictly enforce Bearer CRON_SECRET before proceeding to cron routes
   if (pathname.startsWith('/api/cron')) {

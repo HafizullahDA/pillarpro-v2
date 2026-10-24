@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { Logo } from '@/components/ui/Logo'
@@ -75,6 +75,35 @@ export function LandingPage({
   const [walkthroughOpen, setWalkthroughOpen] = useState(false)
   const [contactModalOpen, setContactModalOpen] = useState(false)
   const [previewTimeRange, setPreviewTimeRange] = useState<'month' | 'quarter' | 'all'>('month')
+
+  // Intercept any Supabase auth recovery tokens or errors that land on root
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const hash = window.location.hash
+    const search = window.location.search
+
+    // 1. Password Recovery Tokens (implicit flow hash #access_token=...&type=recovery or search code)
+    if (hash.includes('type=recovery') || hash.includes('access_token=') || search.includes('code=')) {
+      window.location.replace(`/reset-password${search}${hash}`)
+      return
+    }
+
+    // 2. Auth Errors (e.g. otp_expired / access_denied in hash or query)
+    if (hash.includes('error=') || search.includes('error=')) {
+      const hashParams = new URLSearchParams(hash.replace(/^#/, ''))
+      const searchParams = new URLSearchParams(search.replace(/^\?/, ''))
+      const errorCode = hashParams.get('error_code') || searchParams.get('error_code')
+      const errorDesc = hashParams.get('error_description') || searchParams.get('error_description')
+
+      const message = errorCode === 'otp_expired'
+        ? 'Your password reset link has expired because a newer link was requested or the time limit was reached. Please request a fresh reset link below.'
+        : errorDesc || 'The password reset link was invalid or expired. Please request a new recovery link.'
+
+      window.location.replace(`/forgot-password?error=${encodeURIComponent(message.replace(/\+/g, ' '))}`)
+      return
+    }
+  }, [])
 
   const currentMock = MOCKUP_DATA[previewTimeRange]
 

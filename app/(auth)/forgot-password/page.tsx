@@ -14,13 +14,27 @@ export default function ForgotPasswordPage() {
   const [success, setSuccess]           = useState(false)
   const [cooldown, setCooldown]         = useState(0)
 
-  // Pre-fill email from query string if available
+  // Pre-fill email or error from query string or hash
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const emailParam = params.get('email')
+      const errorParam = params.get('error')
       if (emailParam) {
         setEmail(decodeURIComponent(emailParam))
+      }
+      if (errorParam) {
+        setError(decodeURIComponent(errorParam.replace(/\+/g, ' ')))
+      }
+
+      // Check hash for error parameters
+      const hash = window.location.hash
+      if (hash.includes('error=')) {
+        const hashParams = new URLSearchParams(hash.replace(/^#/, ''))
+        const desc = hashParams.get('error_description') || hashParams.get('error')
+        if (desc) {
+          setError(decodeURIComponent(desc.replace(/\+/g, ' ')))
+        }
       }
     }
   }, [])
