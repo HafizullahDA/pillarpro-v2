@@ -1,18 +1,22 @@
-import { CalculationMode, MeasurementAbstractItem, MeasurementEntry } from '../types/measurement'
+import { CalculationMode, MeasurementAbstractItem, MeasurementEntry, MeasurementSubRow } from '../types/measurement'
 import { BOQItem } from '../types/boq'
 
 export interface MeasurementQuantityParams {
   calculationMode: CalculationMode
   numberOfUnits?: number | null
+  barsPerMember?: number | null
   length?: number | null
   breadth?: number | null
   depthHeight?: number | null
   manualQuantity?: number | null
   rebarDiameterMm?: number | null
+  unitWeightKgPerM?: number | null
+  boqUnit?: string | null
 }
 
 export function calculateMeasurementQuantity(params: MeasurementQuantityParams): number {
   const nos = Number(params.numberOfUnits) > 0 ? Number(params.numberOfUnits) : 1
+  const bars = Number(params.barsPerMember) > 0 ? Number(params.barsPerMember) : 1
   const l = Number(params.length) || 0
   const b = Number(params.breadth) || 0
   const d = Number(params.depthHeight) || 0
@@ -37,6 +41,26 @@ export function calculateMeasurementQuantity(params: MeasurementQuantityParams):
       result = nos * l
       break
 
+    case 'steel_bbs': {
+      const unitWeight = Number(params.unitWeightKgPerM) > 0
+        ? Number(params.unitWeightKgPerM)
+        : (params.rebarDiameterMm && params.rebarDiameterMm > 0
+            ? Math.pow(params.rebarDiameterMm, 2) / 162.28
+            : 1)
+      const totalWeightKg = nos * bars * l * unitWeight
+
+      // Convert based on BOQ Item unit (Metric Tonne / Quintal / Kg)
+      const u = (params.boqUnit || '').trim().toLowerCase()
+      if (u === 'mt' || u === 'tonne' || u === 'ton' || u === 'metric tonne' || u === 'metric ton') {
+        result = totalWeightKg / 1000
+      } else if (u === 'qtl' || u === 'quintal' || u === 'qtls') {
+        result = totalWeightKg / 100
+      } else {
+        result = totalWeightKg
+      }
+      break
+    }
+
     case 'weight':
       if (params.rebarDiameterMm && params.rebarDiameterMm > 0) {
         const unitWeightPerMeter = Math.pow(params.rebarDiameterMm, 2) / 162.28
@@ -59,6 +83,57 @@ export function calculateMeasurementQuantity(params: MeasurementQuantityParams):
   }
 
   return Number(result.toFixed(3))
+}
+
+export function calculateRowQuantity(
+  row: MeasurementSubRow,
+  calculationMode: CalculationMode,
+  boqUnit?: string | null,
+): number {
+  return calculateMeasurementQuantity({
+    calculationMode,
+    numberOfUnits: row.nos,
+    barsPerMember: row.barsPerMember,
+    length: row.length,
+    breadth: row.breadth,
+    depthHeight: row.depthHeight,
+    manualQuantity: row.manualQuantity,
+    rebarDiameterMm: row.barDiameterMm,
+    unitWeightKgPerM: row.unitWeightKgPerM,
+    boqUnit,
+  })
+}
+
+export function calculateNetMeasurementQuantity(
+  rows: MeasurementSubRow[],
+  calculationMode: CalculationMode,
+  boqUnit?: string | null,
+): {
+  totalAdd: number
+  totalDeduct: number
+  netQuantity: number
+} {
+  let totalAdd = 0
+  let totalDeduct = 0
+
+  for (const r of rows) {
+    const qty = calculateRowQuantity(r, calculationMode, boqUnit)
+    if (r.mode === 'deduct') {
+      totalDeduct += qty
+    } else {
+      totalAdd += qty
+    }
+  }
+
+  const roundedAdd = Number(totalAdd.toFixed(3))
+  const roundedDeduct = Number(totalDeduct.toFixed(3))
+  const netQuantity = Number(Math.max(0, roundedAdd - roundedDeduct).toFixed(3))
+
+  return {
+    totalAdd: roundedAdd,
+    totalDeduct: roundedDeduct,
+    netQuantity,
+  }
 }
 
 export function validateQuantityAgainstBOQ(params: {

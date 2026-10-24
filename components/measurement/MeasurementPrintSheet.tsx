@@ -1,5 +1,6 @@
 'use client'
 
+import { Fragment } from 'react'
 import { formatINR, formatDate } from '@/lib/format'
 import { Button } from '@/components/ui/Button'
 import {
@@ -153,24 +154,64 @@ export function MeasurementPrintSheet({
                   </tr>
                 </thead>
                 <tbody>
-                  {entries.map(entry => (
-                    <tr key={entry.id}>
-                      <td className="border border-slate-800 p-1.5 text-center font-mono font-semibold">{entry.entry_number}</td>
-                      <td className="border border-slate-800 p-1.5 text-center">{formatDate(entry.measurement_date)}</td>
-                      <td className="border border-slate-800 p-1.5">
-                        <span className="font-bold">{entry.boq_items?.item_number}: </span>
-                        <span>{entry.description}</span>
-                      </td>
-                      <td className="border border-slate-800 p-1.5">{entry.location || '—'}</td>
-                      <td className="border border-slate-800 p-1.5 text-center font-mono">{entry.number_of_units || 1}</td>
-                      <td className="border border-slate-800 p-1.5 text-right font-mono">{entry.length || '—'}</td>
-                      <td className="border border-slate-800 p-1.5 text-right font-mono">{entry.breadth || '—'}</td>
-                      <td className="border border-slate-800 p-1.5 text-right font-mono">{entry.depth_height || '—'}</td>
-                      <td className="border border-slate-800 p-1.5 text-right font-mono font-bold">{entry.calculated_quantity}</td>
-                      <td className="border border-slate-800 p-1.5 text-center">{entry.unit}</td>
-                      <td className="border border-slate-800 p-1.5 text-center font-semibold text-[10px]">{entry.status}</td>
-                    </tr>
-                  ))}
+                  {entries.map(entry => {
+                    const subRows = Array.isArray(entry.measurement_rows) ? entry.measurement_rows : null
+                    if (subRows && subRows.length > 1) {
+                      return (
+                        <Fragment key={entry.id}>
+                          <tr className="bg-slate-100/80 font-semibold">
+                            <td className="border border-slate-800 p-1.5 text-center font-mono">{entry.entry_number}</td>
+                            <td className="border border-slate-800 p-1.5 text-center">{formatDate(entry.measurement_date)}</td>
+                            <td colSpan={6} className="border border-slate-800 p-1.5">
+                              <span className="font-bold">{entry.boq_items?.item_number}: </span>
+                              <span>{entry.description}</span>
+                            </td>
+                            <td className="border border-slate-800 p-1.5 text-right font-mono font-bold">{entry.calculated_quantity}</td>
+                            <td className="border border-slate-800 p-1.5 text-center">{entry.unit}</td>
+                            <td className="border border-slate-800 p-1.5 text-center font-semibold text-[10px]">{entry.status}</td>
+                          </tr>
+                          {subRows.map((row, rIdx) => (
+                            <tr key={`${entry.id}-${row.id || rIdx}`} className={row.mode === 'deduct' ? 'bg-rose-50/70 text-rose-900' : ''}>
+                              <td className="border border-slate-800 p-1 text-center text-[10px] text-slate-500">{rIdx + 1}</td>
+                              <td className="border border-slate-800 p-1 text-center text-[10px]">{row.mode === 'deduct' ? 'Deduct' : 'Add'}</td>
+                              <td className="border border-slate-800 p-1 pl-4 text-[10px]">
+                                {row.particulars || '—'}
+                              </td>
+                              <td className="border border-slate-800 p-1 text-[10px]">{entry.location || '—'}</td>
+                              <td className="border border-slate-800 p-1 text-center font-mono text-[10px]">{row.nos ?? 1}</td>
+                              <td className="border border-slate-800 p-1 text-right font-mono text-[10px]">{row.length ?? '—'}</td>
+                              <td className="border border-slate-800 p-1 text-right font-mono text-[10px]">{row.breadth ?? '—'}</td>
+                              <td className="border border-slate-800 p-1 text-right font-mono text-[10px]">{row.depthHeight ?? '—'}</td>
+                              <td className="border border-slate-800 p-1 text-right font-mono text-[10px] font-semibold">
+                                {row.mode === 'deduct' ? '-' : '+'}{Number(row.quantity || 0).toFixed(3)}
+                              </td>
+                              <td className="border border-slate-800 p-1 text-center text-[10px]">{entry.unit}</td>
+                              <td className="border border-slate-800 p-1 text-center text-[10px] text-slate-400">—</td>
+                            </tr>
+                          ))}
+                        </Fragment>
+                      )
+                    }
+
+                    return (
+                      <tr key={entry.id}>
+                        <td className="border border-slate-800 p-1.5 text-center font-mono font-semibold">{entry.entry_number}</td>
+                        <td className="border border-slate-800 p-1.5 text-center">{formatDate(entry.measurement_date)}</td>
+                        <td className="border border-slate-800 p-1.5">
+                          <span className="font-bold">{entry.boq_items?.item_number}: </span>
+                          <span>{entry.description}</span>
+                        </td>
+                        <td className="border border-slate-800 p-1.5">{entry.location || '—'}</td>
+                        <td className="border border-slate-800 p-1.5 text-center font-mono">{entry.number_of_units || 1}</td>
+                        <td className="border border-slate-800 p-1.5 text-right font-mono">{entry.length || '—'}</td>
+                        <td className="border border-slate-800 p-1.5 text-right font-mono">{entry.breadth || '—'}</td>
+                        <td className="border border-slate-800 p-1.5 text-right font-mono">{entry.depth_height || '—'}</td>
+                        <td className="border border-slate-800 p-1.5 text-right font-mono font-bold">{entry.calculated_quantity}</td>
+                        <td className="border border-slate-800 p-1.5 text-center">{entry.unit}</td>
+                        <td className="border border-slate-800 p-1.5 text-center font-semibold text-[10px]">{entry.status}</td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

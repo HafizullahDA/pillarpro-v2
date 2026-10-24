@@ -102,7 +102,7 @@ export function MeasurementDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
+      <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
           <div>
@@ -164,35 +164,130 @@ export function MeasurementDetailModal({
           </div>
 
           {/* Dimensions & Quantity Math */}
-          <div className="border border-slate-200 rounded-xl overflow-hidden font-mono">
-            <div className="bg-slate-100 px-3 py-2 text-[10px] font-bold text-slate-700 uppercase tracking-wider font-sans">
-              Dimension Calculation (Calculation Mode: {entry.calculation_mode.toUpperCase()})
+          {Array.isArray(entry.measurement_rows) && entry.measurement_rows.length > 0 ? (
+            <div className="border border-slate-200 rounded-xl overflow-hidden font-mono bg-white">
+              <div className="bg-slate-100 px-3 py-2 text-[10px] font-bold text-slate-700 uppercase tracking-wider font-sans flex items-center justify-between">
+                <span>Multi-Row Measurement Register (Mode: {entry.calculation_mode.toUpperCase()})</span>
+                <span className="text-slate-500 font-normal">{entry.measurement_rows.length} Sub-Row{entry.measurement_rows.length > 1 ? 's' : ''}</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-600 border-b border-slate-200 text-[10px] uppercase font-sans">
+                      <th className="p-2 w-14 text-center">Mode</th>
+                      <th className="p-2 min-w-[150px]">Particulars / Location</th>
+                      <th className="p-2 w-14 text-center">Nos</th>
+                      {entry.calculation_mode === 'steel_bbs' ? (
+                        <>
+                          <th className="p-2 w-14 text-center">Bars</th>
+                          <th className="p-2 w-16 text-right">L (m)</th>
+                          <th className="p-2 w-16 text-center">Dia</th>
+                          <th className="p-2 w-20 text-right">Unit Wt</th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="p-2 w-16 text-right">L (m)</th>
+                          {['l_b_d', 'l_b', 'num_l_b_h'].includes(entry.calculation_mode) && (
+                            <th className="p-2 w-16 text-right">B (m)</th>
+                          )}
+                          {['l_b_d', 'l_h', 'num_l_b_h'].includes(entry.calculation_mode) && (
+                            <th className="p-2 w-16 text-right">D/H (m)</th>
+                          )}
+                        </>
+                      )}
+                      <th className="p-2 w-24 text-right">Quantity</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {entry.measurement_rows.map((row, idx) => {
+                      const isDeduct = row.mode === 'deduct'
+                      return (
+                        <tr
+                          key={row.id || idx}
+                          className={isDeduct ? 'bg-rose-50/70 text-rose-900' : 'hover:bg-slate-50/60'}
+                        >
+                          <td className="p-2 text-center">
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                isDeduct
+                                  ? 'bg-rose-200 text-rose-900 border border-rose-300'
+                                  : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              }`}
+                            >
+                              {isDeduct ? '- Deduct' : '+ Add'}
+                            </span>
+                          </td>
+                          <td className="p-2 font-sans">
+                            {row.particulars || `Row #${idx + 1}`}
+                          </td>
+                          <td className="p-2 text-center">{row.nos ?? 1}</td>
+                          {entry.calculation_mode === 'steel_bbs' ? (
+                            <>
+                              <td className="p-2 text-center">{row.barsPerMember ?? 1}</td>
+                              <td className="p-2 text-right">{row.length ?? '—'}</td>
+                              <td className="p-2 text-center">{row.barDiameterMm ? `${row.barDiameterMm}mm` : '—'}</td>
+                              <td className="p-2 text-right">{row.unitWeightKgPerM ?? '—'}</td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="p-2 text-right">{row.length ?? '—'}</td>
+                              {['l_b_d', 'l_b', 'num_l_b_h'].includes(entry.calculation_mode) && (
+                                <td className="p-2 text-right">{row.breadth ?? '—'}</td>
+                              )}
+                              {['l_b_d', 'l_h', 'num_l_b_h'].includes(entry.calculation_mode) && (
+                                <td className="p-2 text-right">{row.depthHeight ?? '—'}</td>
+                              )}
+                            </>
+                          )}
+                          <td className="p-2 text-right font-bold">
+                            <span className={isDeduct ? 'text-rose-700' : 'text-slate-800'}>
+                              {isDeduct ? '-' : '+'} {Number(row.quantity || 0).toFixed(3)}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="p-3 bg-teal-50 border-t border-teal-100 flex items-center justify-between text-teal-950 font-sans">
+                <span className="font-bold text-xs">Net Calculated Quantity:</span>
+                <span className="font-bold text-sm font-mono">
+                  {entry.calculated_quantity} {entry.unit}
+                </span>
+              </div>
             </div>
-            <div className="grid grid-cols-4 p-3 bg-white text-center border-b border-slate-100">
-              <div>
-                <span className="text-[10px] text-slate-400 block font-sans">Units / No</span>
-                <span className="font-bold text-slate-800">{entry.number_of_units}</span>
+          ) : (
+            <div className="border border-slate-200 rounded-xl overflow-hidden font-mono">
+              <div className="bg-slate-100 px-3 py-2 text-[10px] font-bold text-slate-700 uppercase tracking-wider font-sans">
+                Dimension Calculation (Calculation Mode: {entry.calculation_mode.toUpperCase()})
               </div>
-              <div>
-                <span className="text-[10px] text-slate-400 block font-sans">Length (L)</span>
-                <span className="font-bold text-slate-800">{entry.length || '—'}</span>
+              <div className="grid grid-cols-4 p-3 bg-white text-center border-b border-slate-100">
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-sans">Units / No</span>
+                  <span className="font-bold text-slate-800">{entry.number_of_units}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-sans">Length (L)</span>
+                  <span className="font-bold text-slate-800">{entry.length || '—'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-sans">Breadth (B)</span>
+                  <span className="font-bold text-slate-800">{entry.breadth || '—'}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-sans">Depth/Height (D)</span>
+                  <span className="font-bold text-slate-800">{entry.depth_height || '—'}</span>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] text-slate-400 block font-sans">Breadth (B)</span>
-                <span className="font-bold text-slate-800">{entry.breadth || '—'}</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 block font-sans">Depth/Height (D)</span>
-                <span className="font-bold text-slate-800">{entry.depth_height || '—'}</span>
+              <div className="p-3 bg-teal-50 flex items-center justify-between text-teal-950">
+                <span className="font-sans font-bold text-xs">Calculated Quantity:</span>
+                <span className="font-bold text-sm">
+                  {entry.calculated_quantity} {entry.unit}
+                </span>
               </div>
             </div>
-            <div className="p-3 bg-teal-50 flex items-center justify-between text-teal-950">
-              <span className="font-sans font-bold text-xs">Calculated Quantity:</span>
-              <span className="font-bold text-sm">
-                {entry.calculated_quantity} {entry.unit}
-              </span>
-            </div>
-          </div>
+          )}
 
           {/* Cumulative & BOQ Balance */}
           <div className="grid grid-cols-3 gap-2 font-mono text-center">

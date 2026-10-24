@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import {
   calculateMeasurementQuantity,
+  calculateRowQuantity,
+  calculateNetMeasurementQuantity,
   validateQuantityAgainstBOQ,
   buildAbstractOfMeasurements,
   formatChainage,
 } from '../measurement'
 import { BOQItem } from '../../types/boq'
-import { MeasurementEntry } from '../../types/measurement'
+import { MeasurementEntry, MeasurementSubRow } from '../../types/measurement'
 
 describe('PillarPro e-MB Measurement Calculations', () => {
   it('calculates 3D volume (L x B x D) correctly', () => {
@@ -47,6 +49,120 @@ describe('PillarPro e-MB Measurement Calculations', () => {
       rebarDiameterMm: 16,
     })
     expect(qty).toBeCloseTo(189.302, 1)
+  })
+
+  it('calculates Steel Reinforcement BBS (Nos × Bars × L × D²/162.2) in Kg', () => {
+    const qty = calculateMeasurementQuantity({
+      calculationMode: 'steel_bbs',
+      numberOfUnits: 2,
+      barsPerMember: 4,
+      length: 6.5,
+      rebarDiameterMm: 20,
+      boqUnit: 'Kg',
+    })
+    // 2 * 4 * 6.5 * (400 / 162.28) = 52 * 2.464875 = 128.1735 kg
+    expect(qty).toBeCloseTo(128.174, 2)
+  })
+
+  it('auto-converts Steel BBS quantity to Metric Tonnes (MT) when BOQ unit is MT', () => {
+    const qty = calculateMeasurementQuantity({
+      calculationMode: 'steel_bbs',
+      numberOfUnits: 10,
+      barsPerMember: 8,
+      length: 12,
+      rebarDiameterMm: 25,
+      boqUnit: 'MT',
+    })
+    // Total weight in Kg = 10 * 8 * 12 * (625 / 162.28) = 960 * 3.851367 = 3697.31 kg
+    // In MT = 3.697 MT
+    expect(qty).toBeCloseTo(3.697, 2)
+  })
+
+  it('auto-converts Steel BBS quantity to Quintals when BOQ unit is Qtl', () => {
+    const qty = calculateMeasurementQuantity({
+      calculationMode: 'steel_bbs',
+      numberOfUnits: 10,
+      barsPerMember: 8,
+      length: 12,
+      rebarDiameterMm: 25,
+      boqUnit: 'Qtl',
+    })
+    // In Quintal = 3697.31 / 100 = 36.973 Qtl
+    expect(qty).toBeCloseTo(36.973, 2)
+  })
+
+  it('calculates multi-row measurement net quantity with additions and deductions correctly', () => {
+    const subRows: MeasurementSubRow[] = [
+      {
+        id: 'r1',
+        particulars: 'Wall Plaster - Room 1',
+        mode: 'add',
+        nos: 1,
+        length: 10,
+        breadth: 3,
+        quantity: 30,
+      },
+      {
+        id: 'r2',
+        particulars: 'Wall Plaster - Room 2',
+        mode: 'add',
+        nos: 1,
+        length: 8,
+        breadth: 3,
+        quantity: 24,
+      },
+      {
+        id: 'r3',
+        particulars: 'Deduction for Door D1',
+        mode: 'deduct',
+        nos: 1,
+        length: 1.2,
+        breadth: 2.1,
+        quantity: 2.52,
+      },
+      {
+        id: 'r4',
+        particulars: 'Deduction for Windows W1',
+        mode: 'deduct',
+        nos: 2,
+        length: 1.5,
+        breadth: 1.2,
+        quantity: 3.6,
+      },
+    ]
+
+    const result = calculateNetMeasurementQuantity(subRows, 'l_b', 'sqm')
+    expect(result.totalAdd).toBe(54)
+    expect(result.totalDeduct).toBe(6.12)
+    expect(result.netQuantity).toBe(47.88)
+  })
+
+  it('clamps net quantity to zero if total deductions exceed additions', () => {
+    const subRows: MeasurementSubRow[] = [
+      {
+        id: 'r1',
+        particulars: 'Small Opening',
+        mode: 'add',
+        nos: 1,
+        length: 2,
+        breadth: 2,
+        quantity: 4,
+      },
+      {
+        id: 'r2',
+        particulars: 'Large Deduction Void',
+        mode: 'deduct',
+        nos: 1,
+        length: 5,
+        breadth: 5,
+        quantity: 25,
+      },
+    ]
+
+    const result = calculateNetMeasurementQuantity(subRows, 'l_b', 'sqm')
+    expect(result.totalAdd).toBe(4)
+    expect(result.totalDeduct).toBe(25)
+    expect(result.netQuantity).toBe(0)
   })
 
   it('calculates count / nos items correctly', () => {

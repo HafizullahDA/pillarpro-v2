@@ -13,8 +13,34 @@ export type CalculationMode =
   | 'num_l_b_h'
   | 'running_length'
   | 'weight'
+  | 'steel_bbs'
   | 'count'
   | 'manual'
+
+export interface MeasurementSubRow {
+  id: string
+  particulars: string
+  mode: 'add' | 'deduct'
+  nos?: number | null
+  barsPerMember?: number | null
+  barDiameterMm?: number | null
+  unitWeightKgPerM?: number | null
+  length?: number | null
+  breadth?: number | null
+  depthHeight?: number | null
+  manualQuantity?: number | null
+  quantity: number
+}
+
+export const STANDARD_REBAR_DIAMETERS = [
+  { diameter: 8, unitWeightKgPerM: 0.395, label: '8 mm (0.395 kg/m)' },
+  { diameter: 10, unitWeightKgPerM: 0.617, label: '10 mm (0.617 kg/m)' },
+  { diameter: 12, unitWeightKgPerM: 0.888, label: '12 mm (0.888 kg/m)' },
+  { diameter: 16, unitWeightKgPerM: 1.578, label: '16 mm (1.578 kg/m)' },
+  { diameter: 20, unitWeightKgPerM: 2.466, label: '20 mm (2.466 kg/m)' },
+  { diameter: 25, unitWeightKgPerM: 3.853, label: '25 mm (3.853 kg/m)' },
+  { diameter: 32, unitWeightKgPerM: 6.313, label: '32 mm (6.313 kg/m)' },
+] as const
 
 export type DeviationOrderType = 'deviation' | 'variation' | 'extra_item' | 'none'
 
@@ -76,6 +102,7 @@ export interface MeasurementEntry {
   breadth: number
   depth_height: number
   calculated_quantity: number
+  measurement_rows?: MeasurementSubRow[] | null
   unit: string
   previous_quantity: number
   current_quantity: number
@@ -212,6 +239,12 @@ export const CALCULATION_MODES: {
     label: 'Running Length (Nos × L)',
     formula: 'Nos × Length',
     description: 'Pipes, kerb stones, expansion joints, railings, wiring conduits',
+  },
+  {
+    value: 'steel_bbs',
+    label: 'Steel Reinforcement (Nos × Bars × Length × Unit Weight D²/162.2)',
+    formula: 'Nos × Bars × L × (D²/162.2)',
+    description: 'Bar bending schedule, TMT reinforcement rebars (8mm–32mm), stirrups, tie bars',
   },
   {
     value: 'weight',
