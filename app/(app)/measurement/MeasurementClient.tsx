@@ -23,6 +23,7 @@ import {
   formatChainage,
 } from '@/lib/calculations/measurement'
 import { canCertifyMeasurement } from '@/lib/permissions'
+import { exportEMBExcelCSV } from '@/lib/export/embAndTally'
 import { NewMeasurementEntryModal } from '@/components/measurement/NewMeasurementEntryModal'
 import { MeasurementAdjustmentModal } from '@/components/measurement/MeasurementAdjustmentModal'
 import { NewMeasurementBookModal } from '@/components/measurement/NewMeasurementBookModal'
@@ -98,6 +99,7 @@ export function MeasurementClient({
   const [adjustingEntry, setAdjustingEntry] = useState<MeasurementEntry | null>(null)
   const [printMode, setPrintMode] = useState<'register' | 'abstract' | null>(null)
   const [inspectingEntry, setInspectingEntry] = useState<MeasurementEntry | null>(null)
+  const [exportMenuOpen, setExportMenuOpen] = useState(false)
 
   // Filtered context
   const currentProject = useMemo(() => {
@@ -284,6 +286,102 @@ export function MeasurementClient({
           >
             + Record Measurement
           </Button>
+
+          {/* Export e-MB (Excel / Print PDF) Action Button / Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setExportMenuOpen(prev => !prev)}
+              className="inline-flex items-center gap-1.5 h-9 px-3 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all cursor-pointer"
+              title="Export e-MB (Excel / Print PDF) for Department Audit"
+            >
+              <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export e-MB (Excel / Print PDF)
+              <svg className="w-3.5 h-3.5 ml-0.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {exportMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-20"
+                  onClick={() => setExportMenuOpen(false)}
+                />
+                <div className="absolute right-0 mt-1.5 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-30 text-xs">
+                  <div className="px-3 py-1.5 border-b border-slate-100 font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                    Department e-MB Export Formats
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExportMenuOpen(false);
+                      if (!currentProject) return;
+                      exportEMBExcelCSV({
+                        project: currentProject,
+                        entries: projectEntries,
+                        books: projectBooks,
+                        boqItems: projectBOQ,
+                        abstractItems,
+                      });
+                      toast.showToast('e-MB Register & Abstract downloaded as Excel CSV.', 'success');
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-emerald-50 text-slate-800 hover:text-emerald-900 flex items-center gap-2.5 transition-colors font-medium"
+                  >
+                    <span className="p-1.5 bg-emerald-100 text-emerald-700 rounded-lg">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </span>
+                    <div>
+                      <div className="font-semibold text-slate-900">Export e-MB (Excel / CSV)</div>
+                      <div className="text-[10px] text-slate-500">Detail &amp; Abstract with 4-tier signatures</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExportMenuOpen(false);
+                      setPrintMode('register');
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-blue-50 text-slate-800 hover:text-blue-900 flex items-center gap-2.5 transition-colors font-medium"
+                  >
+                    <span className="p-1.5 bg-blue-100 text-blue-700 rounded-lg">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                      </svg>
+                    </span>
+                    <div>
+                      <div className="font-semibold text-slate-900">Print Detailed e-MB (PDF)</div>
+                      <div className="text-[10px] text-slate-500">Print-ready register with JE/AE/EE sign-off</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExportMenuOpen(false);
+                      setPrintMode('abstract');
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-indigo-50 text-slate-800 hover:text-indigo-900 flex items-center gap-2.5 transition-colors font-medium"
+                  >
+                    <span className="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </span>
+                    <div>
+                      <div className="font-semibold text-slate-900">Print Abstract Sheet (PDF)</div>
+                      <div className="text-[10px] text-slate-500">CPWD Form 26 quantity ledger</div>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -604,8 +702,29 @@ export function MeasurementClient({
             </div>
 
             <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  if (!currentProject) return;
+                  exportEMBExcelCSV({
+                    project: currentProject,
+                    entries: projectEntries,
+                    books: projectBooks,
+                    boqItems: projectBOQ,
+                    abstractItems,
+                  });
+                  toast.showToast('e-MB Register downloaded as Excel CSV.', 'success');
+                }}
+                className="text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
+              >
+                <svg className="w-3.5 h-3.5 mr-1 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export Excel (CSV)
+              </Button>
               <Button size="sm" variant="secondary" onClick={() => setPrintMode('register')}>
-                Print Register
+                Print Register (PDF)
               </Button>
               <Button size="sm" variant="primary" onClick={() => setEntryModalOpen(true)}>
                 + New Entry
@@ -842,8 +961,29 @@ export function MeasurementClient({
               <Button size="sm" variant="secondary" onClick={() => setCertModalOpen(true)}>
                 + Issue Measurement Certificate
               </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  if (!currentProject) return;
+                  exportEMBExcelCSV({
+                    project: currentProject,
+                    entries: projectEntries,
+                    books: projectBooks,
+                    boqItems: projectBOQ,
+                    abstractItems,
+                  });
+                  toast.showToast('Abstract & e-MB Register downloaded as Excel CSV.', 'success');
+                }}
+                className="text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
+              >
+                <svg className="w-3.5 h-3.5 mr-1 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export Excel (CSV)
+              </Button>
               <Button size="sm" variant="secondary" onClick={() => setPrintMode('abstract')}>
-                Print / Export Abstract
+                Print Abstract (PDF)
               </Button>
             </div>
           </div>

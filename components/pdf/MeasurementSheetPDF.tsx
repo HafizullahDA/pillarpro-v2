@@ -6,6 +6,12 @@ import { OrganizationProfile } from '@/lib/organization'
 import { RABillRow } from '@/app/(app)/ra-bills/RABillsClient'
 import { RABillItem } from '@/lib/types/boq'
 import { calculateDLPReleaseDate, calculateCPWAMemorandum } from '@/lib/calculations/raBill'
+import {
+  exportForm26AbstractCSV,
+  exportRABillTallyVoucherCSV,
+  exportRABillTallyVoucherXML,
+  formatIndianDate,
+} from '@/lib/export/embAndTally'
 
 interface MeasurementSheetPDFProps {
   bill: RABillRow
@@ -20,11 +26,7 @@ export function MeasurementSheetPDF({
   organization,
   onViewSupportingMeasurements,
 }: MeasurementSheetPDFProps) {
-  const generatedAt = new Date().toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+  const generatedAt = formatIndianDate(new Date().toISOString())
 
   const isFinal = bill.bill_type === 'final'
   const isFirstAndFinal = bill.bill_type === 'first_and_final'
@@ -52,7 +54,6 @@ export function MeasurementSheetPDF({
 
   const workCertifiedMeasured = Number(bill.cumulative_certified_amount) || Number(bill.work_certified_amount) || 0
   const unmeasuredAdvance = Number(bill.advance_payments_unmeasured) || 0
-  const prevCertified = Number(bill.previous_certified_amount) || 0
   const prevReceived = Number(bill.previous_received_amount) || Number(bill.amount_received) || 0
   const retentionAmt = Number(bill.retention_amount) || 0
   const cementRec = Number(bill.cement_recovery) || 0
@@ -60,11 +61,21 @@ export function MeasurementSheetPDF({
   const otherMatRec = Number(bill.other_material_recovery) || 0
   const totalDepartmentalRecoveries = cementRec + steelRec + otherMatRec
 
-  const itTds = Number(bill.tds_deducted) || 0
-  const gstTds = Number(bill.gst_tds_deducted) || 0
-  const labourCess = Number(bill.labour_cess_deducted) || 0
+  // Full Statutory Deductions
+  const itTds = Number(bill.it_tds_amount || bill.tds_deducted) || 0
+  const gstTds = Number(bill.gst_tds_amount || bill.gst_tds_deducted) || 0
+  const labourCess = Number(bill.labour_cess_amount || bill.labour_cess_deducted) || 0
+  const royalty = Number(bill.royalty_recovery) || 0
+  const mobAdv = Number(bill.mobilization_advance_recovery) || 0
+  const withheld = Number(bill.withheld_amount) || 0
   const otherTaxes = Number(bill.other_deductions) || 0
-  const totalTaxes = itTds + gstTds + labourCess + otherTaxes
+
+  const customDeds = bill.bill_deductions || []
+  const customDedsTotal = customDeds.reduce((acc, d) => acc + (Number(d.deduction_amount) || 0), 0)
+
+  const totalStatutoryTaxes = itTds + gstTds + labourCess
+  const totalOtherRecoveries = royalty + mobAdv + withheld + otherTaxes + customDedsTotal
+  const totalAllDeductions = retentionAmt + totalDepartmentalRecoveries + totalStatutoryTaxes + totalOtherRecoveries
 
   // Account III Memorandum computation
   const memorandum = calculateCPWAMemorandum({
@@ -80,7 +91,9 @@ export function MeasurementSheetPDF({
 
   const netPayable = bill.net_payable_this_bill != null
     ? Number(bill.net_payable_this_bill)
-    : (bill.net_payable_amount != null ? Number(bill.net_payable_amount) : memorandum.item8c_netPayableNow)
+    : (bill.net_payable_amount != null
+        ? Number(bill.net_payable_amount)
+        : Math.max(0, workCertifiedMeasured - totalAllDeductions - (isCumulative ? prevReceived : 0)))
 
   return (
     <div
@@ -90,11 +103,66 @@ export function MeasurementSheetPDF({
           : 'bg-white border-slate-200 print:bg-white'
       }`}
     >
+      {/* Action Toolbar (Hidden when printing) */}
+      <div className="mb-4 pb-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 print:hidden">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            Department Exports:
+          </span>
+          <span className="text-[11px] text-slate-500">CPWA Form 26 Abstract &amp; Tally Vouchers</span>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => exportForm26AbstractCSV(bill as any, items, organization?.name)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 transition-colors shadow-xs"
+            title="Download Form 26 Abstract CSV for Excel & PWD Audits"
+          >
+            <svg className="w-3.5 h-3.5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export Form 26 (CSV)
+          </button>
+          <button
+            type="button"
+            onClick={() => exportRABillTallyVoucherCSV(bill as any, organization?.name)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 transition-colors shadow-xs"
+            title="Export for Tally Prime (Double-Entry Ledger CSV)"
+          >
+            <svg className="w-3.5 h-3.5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export for Tally (CSV)
+          </button>
+          <button
+            type="button"
+            onClick={() => exportRABillTallyVoucherXML(bill as any, organization?.name)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300 transition-colors shadow-xs"
+            title="Export for Tally Prime (Direct XML Import)"
+          >
+            <svg className="w-3.5 h-3.5 text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            Export for Tally (XML)
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white transition-colors shadow-xs"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Print / Save PDF
+          </button>
+        </div>
+      </div>
+
       {/* Historic Yellow Paper Watermark / Header Ribbon for Final Bill */}
       {isFinal && (
         <div className="mb-4 -mx-6 -mt-6 bg-amber-400 text-amber-950 font-bold px-6 py-2 flex items-center justify-between text-xs tracking-wider uppercase border-b border-amber-500">
           <span className="flex items-center gap-2">
-            CPWA CODE COMPLIANT FINAL BILL — PRINTED ON YELLOW PAPER (PARAS 10.2.14 & 10.2.20)
+            CPWA CODE COMPLIANT FINAL BILL — PRINTED ON YELLOW PAPER (PARAS 10.2.14 &amp; 10.2.20)
           </span>
           <span className="font-mono bg-amber-500/80 px-2 py-0.5 rounded text-[11px]">
             FORM CPWA 27-B
@@ -131,7 +199,7 @@ export function MeasurementSheetPDF({
                   {formCode}
                 </span>
                 <h2 className="text-xs font-bold text-slate-700 tracking-wider uppercase">
-                  {formTitle} — Measurement Sheet & Memorandum of Payments
+                  {formTitle} — Measurement Sheet &amp; Memorandum of Payments
                 </h2>
               </div>
             </div>
@@ -158,7 +226,7 @@ export function MeasurementSheetPDF({
             <p className="font-bold text-slate-900 mt-0.5">{bill.projects?.agency_name || 'Public Works'}</p>
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500">Bill Number & Type</span>
+            <span className="text-[10px] uppercase font-bold text-slate-500">Bill Number &amp; Type</span>
             <p className="font-mono font-bold text-slate-900 mt-0.5">
               {bill.bill_number} <span className="font-sans font-normal text-slate-500 text-[11px]">({bill.bill_type || 'running'})</span>
             </p>
@@ -169,7 +237,7 @@ export function MeasurementSheetPDF({
           </div>
         </div>
 
-        {/* Measurement Book (MB) Reference Citations (CPWA Form 23 / 26 Audit Citation) */}
+        {/* Measurement Book (MB) Reference Citations */}
         <div className="mt-3 pt-3 border-t border-dashed border-slate-300 bg-slate-50/80 -mx-6 px-6 py-2 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           <div>
             <span className="text-[10px] uppercase font-bold text-blue-900 flex items-center gap-1">
@@ -205,7 +273,7 @@ export function MeasurementSheetPDF({
           </div>
         </div>
 
-        {/* Final Bill DLP & Completion Milestone Details */}
+        {/* Final Bill DLP Details */}
         {isFinal && (
           <div className="mt-3 pt-2.5 border-t border-amber-300 bg-amber-100/60 -mx-6 px-6 py-2.5 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-amber-950">
             <div>
@@ -232,7 +300,7 @@ export function MeasurementSheetPDF({
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-xs font-black tracking-wider uppercase text-slate-800">
-            Account I — Items of Work Executed (Schedule of Rates & Quantities)
+            Account I — Items of Work Executed (Schedule of Rates &amp; Quantities)
           </h3>
           <span className="text-[10px] font-semibold text-slate-500">
             CPWA Form 26 (Page 1)
@@ -329,7 +397,7 @@ export function MeasurementSheetPDF({
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* Account II: Certificates of Measurement (CPWA Form 23 & 26) */}
+      {/* Account II: Certificates of Measurement */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="mb-6 p-4 bg-slate-50 border border-slate-300 rounded-lg text-xs space-y-2">
         <h3 className="font-black text-slate-800 uppercase text-[10px] tracking-wider">
@@ -339,21 +407,21 @@ export function MeasurementSheetPDF({
           <p>
             <strong>1. Certificate of Execution:</strong> Certified that the whole of the work mentioned in this bill was done under my supervision and that the quantities entered in Measurement Book No.{' '}
             <strong className="font-mono text-slate-900">{bill.mb_number || 'e-MB'}</strong> at pages{' '}
-            <strong className="font-mono text-slate-900">{bill.mb_page_start ? `${bill.mb_page_start} to ${bill.mb_page_end || bill.mb_page_start}` : 'recorded electronically'}</strong> have been correctly recorded and checked.
+            <strong className="font-mono text-slate-900">{bill.mb_page_start ? `${bill.mb_page_start} to ${bill.mb_page_end || bill.mb_page_start}` : 'recorded electronically'}</strong> have been correctly recorded and test-checked.
           </p>
           <p>
-            <strong>2. Certificate of Specification:</strong> Certified that the materials and workmanship conform to the approved CPWD/PWD specifications and drawings, and that the rates billed are in strict accordance with the awarded agreement.
+            <strong>2. Certificate of Specification:</strong> Certified that the materials and workmanship conform to approved CPWD/PWD specifications and contract drawings, and rates billed are strictly per awarded contract agreement.
           </p>
           {isFinal && (
             <p className="text-amber-900 font-medium bg-amber-100/70 p-2 rounded border border-amber-200">
-              <strong>3. Final Bill Certificate:</strong> Certified that no further claims or bills remain outstanding against the executing department for this contract, and that all departmental stores (cement, steel, bitumen) have been fully accounted for or credited.
+              <strong>3. Final Settlement Certificate:</strong> Certified that no further claims or bills remain outstanding against the executing department for this contract, and that all departmental stores have been fully recovered.
             </p>
           )}
         </div>
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* Account III: Memorandum of Payments (CPWA Form 26 Official Audit Format) */}
+      {/* Account III: Memorandum of Payments (CPWA Form 26 Official Audit) */}
       {/* ───────────────────────────────────────────────────────────── */}
       <div className="mb-6 border border-slate-300 rounded-lg overflow-hidden">
         <div className="bg-slate-900 text-white px-3 py-2 flex items-center justify-between">
@@ -361,7 +429,7 @@ export function MeasurementSheetPDF({
             Account III — Memorandum of Payments (CPWA Form 26 / 27-B)
           </h3>
           <span className="font-mono text-[10px] text-slate-300">
-            (1 + 2 + 3) - 5 - 7 - 8(a) - 8(b) = 8(c)
+            (1 + 2) - 5 - 7 - 8(a) - 8(b) = 8(c)
           </span>
         </div>
 
@@ -371,7 +439,7 @@ export function MeasurementSheetPDF({
             <tr className="bg-white">
               <td className="p-2 font-mono font-bold text-slate-700 w-16">Item 1</td>
               <td className="p-2 text-slate-800">
-                Total value of work actually measured up to date (as per Account I)
+                Total value of work actually measured up to date (as per Account I, Entry A)
               </td>
               <td className="p-2 text-right font-mono font-semibold text-slate-900 w-36">
                 {formatINR(workCertifiedMeasured)}
@@ -394,7 +462,7 @@ export function MeasurementSheetPDF({
             {/* Total (1 + 2) */}
             <tr className="bg-slate-100 font-semibold text-slate-900">
               <td className="p-2 font-mono font-bold">Total</td>
-              <td className="p-2">Total Gross Work Value Passed to Date (Items 1 + 2)</td>
+              <td className="p-2">Total Gross Work Value Passed to Date (Items 1 + 2) [A]</td>
               <td className="p-2 text-right font-mono font-bold">
                 {formatINR(workCertifiedMeasured + unmeasuredAdvance)}
               </td>
@@ -404,7 +472,12 @@ export function MeasurementSheetPDF({
             <tr className="bg-white">
               <td className="p-2 font-mono font-bold text-red-600">Item 5</td>
               <td className="p-2 text-slate-800">
-                Deduct: Amount withheld as Security Deposit / Retention ({bill.retention_percentage}%)
+                Deduct: Amount withheld as Security Deposit / Retention ({bill.retention_percentage || 5}%)
+                {bill.bg_offset_amount && Number(bill.bg_offset_amount) > 0 && (
+                  <span className="block text-[10px] text-emerald-700 font-medium">
+                    (Offset with Bank Guarantee under CPWD GCC Clause 1A: {formatINR(Number(bill.bg_offset_amount))})
+                  </span>
+                )}
                 {isFinal && (
                   <span className="block text-[10px] text-slate-500">
                     Held until Defect Liability Period ({bill.dlp_months || 12}M) expiry: {dlpReleaseDate ? formatDate(dlpReleaseDate) : 'DLP release'}
@@ -436,9 +509,9 @@ export function MeasurementSheetPDF({
                 <td className="p-2 text-slate-800">
                   Deduct: Departmental Store Recoveries creditable to this work (CPWA Form 35-A):
                   <div className="mt-1 space-y-0.5 text-[11px] text-slate-600">
-                    {cementRec > 0 && <div>· Cement Recovery: {formatINR(cementRec)}</div>}
-                    {steelRec > 0 && <div>· Steel Recovery: {formatINR(steelRec)}</div>}
-                    {otherMatRec > 0 && <div>· Other Material / Equipment: {formatINR(otherMatRec)}</div>}
+                    {cementRec > 0 && <div>· Cement Recovery (Store Issue): {formatINR(cementRec)}</div>}
+                    {steelRec > 0 && <div>· Steel Recovery (Store Issue): {formatINR(steelRec)}</div>}
+                    {otherMatRec > 0 && <div>· Other Material / Plant &amp; Equipment: {formatINR(otherMatRec)}</div>}
                   </div>
                 </td>
                 <td className="p-2 text-right font-mono font-semibold text-amber-800 align-top">
@@ -447,32 +520,79 @@ export function MeasurementSheetPDF({
               </tr>
             )}
 
-            {/* Item 8(b): Statutory Deductions */}
-            {totalTaxes > 0 && (
-              <tr className="bg-slate-50/60">
+            {/* Item 8(b): Statutory Deductions & Recoveries */}
+            {(totalStatutoryTaxes > 0 || totalOtherRecoveries > 0) && (
+              <tr className="bg-slate-50/70">
                 <td className="p-2 font-mono font-bold text-slate-700">Item 8(b)</td>
                 <td className="p-2 text-slate-800">
-                  Deduct: Statutory Audit & Treasury Tax Recoveries:
-                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-slate-600">
-                    {itTds > 0 && <span>· IT-TDS (Sec 194C): {formatINR(itTds)}</span>}
-                    {gstTds > 0 && <span>· GST-TDS (Sec 51): {formatINR(gstTds)}</span>}
-                    {labourCess > 0 && <span>· Labour Cess (1%): {formatINR(labourCess)}</span>}
-                    {otherTaxes > 0 && <span>· Royalty/Testing: {formatINR(otherTaxes)}</span>}
+                  Deduct: Statutory Audit &amp; Departmental Tax Recoveries:
+                  <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-600">
+                    {itTds > 0 && (
+                      <div>
+                        · IT-TDS u/s 194C ({bill.it_tds_percentage || 2}%): <strong className="text-slate-900">{formatINR(itTds)}</strong>
+                      </div>
+                    )}
+                    {gstTds > 0 && (
+                      <div>
+                        · GST-TDS u/s 51 ({bill.gst_tds_percentage || 2}%): <strong className="text-slate-900">{formatINR(gstTds)}</strong>
+                      </div>
+                    )}
+                    {labourCess > 0 && (
+                      <div>
+                        · BOCW Labour Cess ({bill.labour_cess_percentage || 1}%): <strong className="text-slate-900">{formatINR(labourCess)}</strong>
+                      </div>
+                    )}
+                    {royalty > 0 && (
+                      <div>
+                        · Royalty / Mineral Recovery: <strong className="text-slate-900">{formatINR(royalty)}</strong>
+                      </div>
+                    )}
+                    {mobAdv > 0 && (
+                      <div>
+                        · Mobilization Advance Recovery: <strong className="text-slate-900">{formatINR(mobAdv)}</strong>
+                      </div>
+                    )}
+                    {withheld > 0 && (
+                      <div>
+                        · Temporary Withheld Amount: <strong className="text-slate-900">{formatINR(withheld)}</strong>
+                      </div>
+                    )}
+                    {customDeds.map((d, i) => (
+                      <div key={i}>
+                        · {d.deduction_label}: <strong className="text-slate-900">{formatINR(Number(d.deduction_amount) || 0)}</strong>
+                      </div>
+                    ))}
                   </div>
                 </td>
                 <td className="p-2 text-right font-mono font-semibold text-red-600 align-top">
-                  (-) {formatINR(totalTaxes)}
+                  (-) {formatINR(totalStatutoryTaxes + totalOtherRecoveries)}
                 </td>
               </tr>
             )}
 
-            {/* Item 8(c): Net Amount Payable */}
-            <tr className="bg-blue-50/80 font-bold text-slate-900 border-t-2 border-slate-300">
-              <td className="p-2.5 font-mono text-blue-900">Item 8(c)</td>
-              <td className="p-2.5 text-blue-950">
-                Net Passed for Payment (Payable by Cheque / PFMS / Treasury RTGS)
+            {/* Total Deductions Summary Row */}
+            <tr className="bg-rose-50/50 font-semibold text-slate-800 border-t border-slate-200">
+              <td className="p-2 font-mono font-bold text-rose-800">Total [B]</td>
+              <td className="p-2 text-slate-900">
+                Total Statutory &amp; Departmental Deductions (Items 5 + 8a + 8b)
               </td>
-              <td className="p-2.5 text-right font-mono text-sm text-blue-800 font-black">
+              <td className="p-2 text-right font-mono font-bold text-rose-800">
+                (-) {formatINR(totalAllDeductions)}
+              </td>
+            </tr>
+
+            {/* Item 8(c): Net Amount Payable */}
+            <tr className="bg-blue-50/90 font-bold text-slate-900 border-t-2 border-slate-400">
+              <td className="p-2.5 font-mono text-blue-900 text-sm">Item 8(c)</td>
+              <td className="p-2.5 text-blue-950">
+                <div>
+                  <span className="text-sm font-black">Net Passed for Payment [A - B]</span>
+                  <span className="block text-[11px] font-normal text-blue-900">
+                    Passed for Cheque / PFMS / Treasury RTGS Disbursement
+                  </span>
+                </div>
+              </td>
+              <td className="p-2.5 text-right font-mono text-base text-blue-950 font-black">
                 {formatINR(netPayable)}
               </td>
             </tr>
@@ -480,14 +600,14 @@ export function MeasurementSheetPDF({
         </table>
       </div>
 
-      {/* Signature Verification Block (Standard CPWD/PWD Format) */}
-      <div className="border-t-2 border-slate-900 pt-6 mt-8 grid grid-cols-3 gap-6 text-center text-xs">
+      {/* Signature Verification Block (Official 4-Tier CPWD/PWD Format) */}
+      <div className="border-t-2 border-slate-900 pt-6 mt-8 grid grid-cols-4 gap-4 text-center text-xs">
         <div>
           <div className="h-12 border-b border-dashed border-slate-400 mb-2 flex items-end justify-center pb-1">
             <span className="text-[10px] text-slate-400 italic">Signature of Contractor</span>
           </div>
           <p className="font-bold text-slate-900">Contractor / Firm Signatory</p>
-          <p className="text-[10px] text-slate-500">{organization?.name || 'Contractor'}</p>
+          <p className="text-[10px] text-slate-500">{organization?.name || 'Authorized Agency'}</p>
         </div>
 
         <div>
@@ -496,18 +616,26 @@ export function MeasurementSheetPDF({
               {bill.measuring_officer_name || 'Signature of JE'}
             </span>
           </div>
-          <p className="font-bold text-slate-900">Junior Engineer / Measuring Officer</p>
+          <p className="font-bold text-slate-900">Junior Engineer (JE)</p>
           <p className="text-[10px] text-slate-500">
-            {bill.measuring_officer_name ? `${bill.measuring_officer_name} (${bill.measuring_officer_designation || 'JE'})` : 'e-MB Officer'}
+            {bill.measuring_officer_name ? `${bill.measuring_officer_name} (${bill.measuring_officer_designation || 'JE'})` : 'Measuring Officer'}
           </p>
         </div>
 
         <div>
           <div className="h-12 border-b border-dashed border-slate-400 mb-2 flex items-end justify-center pb-1">
-            <span className="text-[10px] text-slate-400 italic">Signature of AE / EE</span>
+            <span className="text-[10px] text-slate-400 italic">Signature of AE</span>
           </div>
-          <p className="font-bold text-slate-900">Assistant / Executive Engineer</p>
-          <p className="text-[10px] text-slate-500">Passed for Payment under Rule CPWA</p>
+          <p className="font-bold text-slate-900">Assistant Engineer (AE)</p>
+          <p className="text-[10px] text-slate-500">50% Value Test-Checked</p>
+        </div>
+
+        <div>
+          <div className="h-12 border-b border-dashed border-slate-400 mb-2 flex items-end justify-center pb-1">
+            <span className="text-[10px] text-slate-400 italic">Signature of EE / DDO</span>
+          </div>
+          <p className="font-bold text-slate-900">Executive Engineer (EE)</p>
+          <p className="text-[10px] text-slate-500">Certified &amp; Passed for Payment</p>
         </div>
       </div>
     </div>

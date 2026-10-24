@@ -4,7 +4,7 @@
  * Google Sheets, and Tally without character or column formatting issues.
  */
 
-import { roundToTwo } from '../calculations/financial'
+import { roundToTwo, safeAdd, safeSub } from '../calculations/financial'
 
 export type CsvCellValue = string | number | boolean | null | undefined
 
@@ -540,3 +540,6 @@ export function exportContractorLedgerCSV(
   const csv = buildCsvString(headers, rows)
   triggerCsvDownload(csv, filename)
 }
+
+// Re-export Department e-MB and Tally Prime engines
+export * from './embAndTally'

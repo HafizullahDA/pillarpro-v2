@@ -8,6 +8,11 @@ import { formatINR, formatDate } from '@/lib/format'
 import { RABillRow } from '@/app/(app)/ra-bills/RABillsClient'
 import { RelatedRecordsPanel, RelatedRecordItem } from '@/components/common/RelatedRecordsPanel'
 import { RecordActivityTimeline } from '@/components/audit/RecordActivityTimeline'
+import {
+  exportRABillTallyVoucherCSV,
+  exportRABillTallyVoucherXML,
+  exportForm26AbstractCSV,
+} from '@/lib/export/embAndTally'
 
 interface RABillDetailModalProps {
   bill: RABillRow | null
@@ -105,19 +110,38 @@ export function RABillDetailModal({
                 className="text-xs"
                 onClick={() => onPrintCertificate(bill)}
               >
-                ?? Certificate
+                Certificate (PDF)
               </Button>
             )}
             {onPrintEMB && (
               <Button
                 size="sm"
                 variant="secondary"
-                className="text-xs"
+                className="text-xs bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100"
                 onClick={() => onPrintEMB(bill)}
+                title="Download / Print CPWA Form 26 Abstract"
               >
-                ?? e-MB Sheet
+                Form 26 Abstract
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="secondary"
+              className="text-xs bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100"
+              onClick={() => exportRABillTallyVoucherCSV(bill as any)}
+              title="Export double-entry accounting voucher for Tally Prime"
+            >
+              Export Tally (CSV)
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="text-xs bg-indigo-50 text-indigo-900 border-indigo-300 hover:bg-indigo-100"
+              onClick={() => exportRABillTallyVoucherXML(bill as any)}
+              title="Export XML voucher for direct import into Tally Prime"
+            >
+              Export Tally (XML)
+            </Button>
           </div>
         </div>
 

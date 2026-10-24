@@ -23,15 +23,18 @@ export function RABillCertificatePDF({ bill, organization }: RABillCertificatePD
     : Number(bill.work_certified_amount)
 
   const retention = Number(bill.retention_amount) || 0
-  const tds = Number(bill.tds_deducted) || 0
-  const gstTds = Number(bill.gst_tds_deducted) || 0
-  const labourCess = Number(bill.labour_cess_deducted) || 0
+  const tds = Number(bill.it_tds_amount || bill.tds_deducted) || 0
+  const gstTds = Number(bill.gst_tds_amount || bill.gst_tds_deducted) || 0
+  const labourCess = Number(bill.labour_cess_amount || bill.labour_cess_deducted) || 0
+  const royalty = Number(bill.royalty_recovery) || 0
+  const mobAdv = Number(bill.mobilization_advance_recovery) || 0
+  const withheld = Number(bill.withheld_amount) || 0
   const otherDeductions = Number(bill.other_deductions) || 0
   const cementRec = Number(bill.cement_recovery) || 0
   const steelRec = Number(bill.steel_recovery) || 0
   const otherMatRec = Number(bill.other_material_recovery) || 0
   const totalMatRecoveries = cementRec + steelRec + otherMatRec
-  const totalDeductions = Number(bill.total_deductions) || (retention + tds + gstTds + labourCess + otherDeductions + totalMatRecoveries)
+  const totalDeductions = Number(bill.total_deductions) || (retention + tds + gstTds + labourCess + royalty + mobAdv + withheld + otherDeductions + totalMatRecoveries)
 
   const netPassed = bill.net_payable_this_bill != null
     ? Number(bill.net_payable_this_bill)
@@ -240,6 +243,27 @@ export function RABillCertificatePDF({ bill, organization }: RABillCertificatePD
                 <td className="py-2 px-3">Other Material / Machinery Recovery</td>
                 <td className="py-2 px-3 text-center text-slate-500 font-mono">Work Credit</td>
                 <td className="py-2 px-3 text-right tabular-nums font-medium text-amber-800">{formatINR(otherMatRec)}</td>
+              </tr>
+            )}
+            {royalty > 0 && (
+              <tr>
+                <td className="py-2 px-3">Royalty Recovery (Mining & Mineral Resources)</td>
+                <td className="py-2 px-3 text-center text-slate-500 font-mono">Statutory</td>
+                <td className="py-2 px-3 text-right tabular-nums font-medium text-amber-800">{formatINR(royalty)}</td>
+              </tr>
+            )}
+            {mobAdv > 0 && (
+              <tr>
+                <td className="py-2 px-3">Mobilization Advance Recovery (CPWD Clause 10B)</td>
+                <td className="py-2 px-3 text-center text-slate-500 font-mono">Advance Adj.</td>
+                <td className="py-2 px-3 text-right tabular-nums font-medium text-amber-800">{formatINR(mobAdv)}</td>
+              </tr>
+            )}
+            {withheld > 0 && (
+              <tr>
+                <td className="py-2 px-3">Departmental Withheld Amount (Milestone / EOT Hold)</td>
+                <td className="py-2 px-3 text-center text-slate-500 font-mono">Withheld</td>
+                <td className="py-2 px-3 text-right tabular-nums font-medium text-amber-800">{formatINR(withheld)}</td>
               </tr>
             )}
             {bill.bill_deductions && bill.bill_deductions.map((d, i) => (

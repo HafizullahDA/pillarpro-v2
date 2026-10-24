@@ -17,6 +17,11 @@ import { MeasurementSheetPDF } from '@/components/pdf/MeasurementSheetPDF'
 import { getClientOrganization, OrganizationProfile, DEFAULT_ORGANIZATION } from '@/lib/organization'
 import { generateRABillWhatsAppText, openWhatsApp } from '@/lib/whatsapp'
 import { exportRABillsRegister } from '@/lib/export/csv'
+import {
+  exportRABillTallyVoucherCSV,
+  exportRABillTallyVoucherXML,
+  exportForm26AbstractCSV,
+} from '@/lib/export/embAndTally'
 import { saveOfflineSnapshot } from '@/lib/offline/db'
 import { useToast } from '@/components/ui/Toast'
 import { RABillItem, BOQItem } from '@/lib/types/boq'
@@ -184,7 +189,19 @@ export function RABillsClient({
   const [certBill, setCertBill] = useState<RABillRow | null>(null)
   const [embModal, setEmbModal] = useState<{ bill: RABillRow; items: RABillItem[] } | null>(null)
   const [loadingEmbId, setLoadingEmbId] = useState<string | null>(null)
+  const [tallyMenuBillId, setTallyMenuBillId] = useState<string | null>(null)
   const [org, setOrg] = useState<OrganizationProfile>(DEFAULT_ORGANIZATION)
+
+  const handleExportTally = (bill: RABillRow, format: 'csv' | 'xml') => {
+    setTallyMenuBillId(null)
+    if (format === 'csv') {
+      exportRABillTallyVoucherCSV(bill as any, org?.name)
+      toast.success(`Tally double-entry CSV exported for Bill ${bill.bill_number}.`)
+    } else {
+      exportRABillTallyVoucherXML(bill as any, org?.name)
+      toast.success(`Tally XML voucher exported for Bill ${bill.bill_number}.`)
+    }
+  }
 
   const handleOpenEmbSheet = async (bill: RABillRow) => {
     setLoadingEmbId(bill.id)
@@ -976,14 +993,57 @@ export function RABillsClient({
                           type="button"
                           onClick={() => handleOpenEmbSheet(b)}
                           disabled={loadingEmbId === b.id}
-                          className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 font-semibold"
-                          title="View / Print CPWD Form 26 Measurement Sheet"
+                          className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 font-semibold"
+                          title="Download Form 26 Abstract (CPWA Account I, II, III)"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                          <svg className="w-3.5 h-3.5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
-                          {loadingEmbId === b.id ? '...' : 'e-MB'}
+                          {loadingEmbId === b.id ? '...' : 'Form 26'}
                         </button>
+
+                        <div className="relative inline-block">
+                          <button
+                            type="button"
+                            onClick={() => setTallyMenuBillId(tallyMenuBillId === b.id ? null : b.id)}
+                            className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 font-semibold cursor-pointer"
+                            title="Export for Tally (CSV/XML)"
+                          >
+                            <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Tally
+                            <svg className="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          {tallyMenuBillId === b.id && (
+                            <>
+                              <div className="fixed inset-0 z-30" onClick={() => setTallyMenuBillId(null)} />
+                              <div className="absolute left-0 mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-40 text-xs">
+                                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                                  Tally Prime Format
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleExportTally(b, 'csv')}
+                                  className="w-full text-left px-3 py-1.5 hover:bg-emerald-50 text-slate-800 hover:text-emerald-900 flex items-center justify-between font-medium cursor-pointer"
+                                >
+                                  <span>Excel / CSV</span>
+                                  <span className="font-mono text-emerald-600 text-[10px] font-bold">.csv</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleExportTally(b, 'xml')}
+                                  className="w-full text-left px-3 py-1.5 hover:bg-blue-50 text-slate-800 hover:text-blue-900 flex items-center justify-between font-medium cursor-pointer"
+                                >
+                                  <span>Tally XML</span>
+                                  <span className="font-mono text-blue-600 text-[10px] font-bold">.xml</span>
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
@@ -1239,14 +1299,57 @@ export function RABillsClient({
                             type="button"
                             onClick={() => handleOpenEmbSheet(b)}
                             disabled={loadingEmbId === b.id}
-                            title="View / Print CPWD Form 26 Measurement Sheet (e-MB)"
-                            className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors font-semibold"
+                            title="Download Form 26 Abstract (Account I, II, III)"
+                            className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors font-semibold cursor-pointer"
                           >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                            <svg className="w-3.5 h-3.5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            {loadingEmbId === b.id ? '...' : 'e-MB'}
+                            {loadingEmbId === b.id ? '...' : 'Form 26'}
                           </button>
+
+                          <div className="relative inline-block text-left">
+                            <button
+                              type="button"
+                              onClick={() => setTallyMenuBillId(tallyMenuBillId === b.id ? null : b.id)}
+                              title="Export for Tally (CSV/XML)"
+                              className="inline-flex items-center gap-1 text-xs py-1 px-2 rounded-lg text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 transition-colors font-semibold cursor-pointer"
+                            >
+                              <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Tally
+                              <svg className="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {tallyMenuBillId === b.id && (
+                              <>
+                                <div className="fixed inset-0 z-30" onClick={() => setTallyMenuBillId(null)} />
+                                <div className="absolute right-0 mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-40 text-xs text-left">
+                                  <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                                    Tally Prime Format
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleExportTally(b, 'csv')}
+                                    className="w-full text-left px-3 py-1.5 hover:bg-emerald-50 text-slate-800 hover:text-emerald-900 flex items-center justify-between font-medium cursor-pointer"
+                                  >
+                                    <span>Excel / CSV</span>
+                                    <span className="font-mono text-emerald-600 text-[10px] font-bold">.csv</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleExportTally(b, 'xml')}
+                                    className="w-full text-left px-3 py-1.5 hover:bg-blue-50 text-slate-800 hover:text-blue-900 flex items-center justify-between font-medium cursor-pointer"
+                                  >
+                                    <span>Tally XML</span>
+                                    <span className="font-mono text-blue-600 text-[10px] font-bold">.xml</span>
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
                           <button
                             type="button"
                             onClick={() => openWhatsApp(generateRABillWhatsAppText(b, org))}

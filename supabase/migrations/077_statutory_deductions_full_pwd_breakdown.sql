@@ -55,3 +55,4 @@ COMMENT ON COLUMN public.ra_bills.royalty_recovery IS 'Mining/Geology Dept royal
 COMMENT ON COLUMN public.ra_bills.mobilization_advance_recovery IS 'CPWD GCC Clause 10B / Form 26 Item 8(a) Mobilization Advance recovery';
 COMMENT ON COLUMN public.ra_bills.withheld_amount IS 'Temporary departmental withholding for EOT sanction or QC punch list milestones';
 COMMENT ON COLUMN public.ra_bills.deductions_breakdown IS 'Comprehensive JSON snapshot of all statutory, departmental, and contractual deductions';
+
