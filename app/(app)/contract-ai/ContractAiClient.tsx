@@ -33,6 +33,8 @@ interface Message {
   content: string
   groundingStatus?: 'VERIFIED' | 'DATA_MISSING' | 'INTERPRETED'
   modelUsed?: string
+  isError?: boolean
+  lastQuery?: string
 }
 
 interface ContractAiClientProps {
@@ -74,6 +76,55 @@ const QUICK_PROMPTS = [
     icon: '📊',
   },
 ]
+
+
+function cleanClientErrorMessage(errorText: string): string {
+  if (!errorText) {
+    return 'The ContractIQ service is temporarily unavailable. Please click Retry below in a few moments.'
+  }
+
+  try {
+    const jsonMatch = errorText.match(/\{[\s\S]*"error"[\s\S]*\}/)
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0])
+      const msg = parsed?.error?.message || parsed?.message
+      if (typeof msg === 'string') {
+        const msgLower = msg.toLowerCase()
+        if (
+          msgLower.includes('high demand') ||
+          msgLower.includes('unavailable') ||
+          parsed?.error?.status === 'UNAVAILABLE' ||
+          parsed?.error?.code === 503
+        ) {
+          return 'The AI engine is temporarily experiencing high server demand. We automatically retried backup models. Please click Retry below in a few moments.'
+        }
+        if (msgLower.includes('quota') || parsed?.error?.code === 429) {
+          return 'AI query rate limit temporarily reached. Please wait a moment and click Retry.'
+        }
+        if (msg.trim().length > 0) return msg.trim()
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  const lower = errorText.toLowerCase()
+  if (lower.includes('503') || lower.includes('high demand') || lower.includes('unavailable')) {
+    return 'The AI engine is temporarily experiencing high server demand. We automatically retried backup models. Please click Retry below in a few moments.'
+  }
+  if (lower.includes('429') || lower.includes('quota') || lower.includes('rate limit')) {
+    return 'AI query rate limit temporarily reached. Please wait a moment and click Retry.'
+  }
+  if (lower.includes('aborterror') || lower.includes('timeout') || lower.includes('aborted')) {
+    return 'ContractIQ request timed out while inspecting large ERP records. Please click Retry below.'
+  }
+
+  const stripped = errorText.replace(/\{[\s\S]*?\}|\[[\s\S]*?\]/g, '').trim()
+  return (
+    stripped ||
+    'The ContractIQ service is temporarily busy. Please click Retry below in a few moments.'
+  )
+}
 
 export function ContractAiClient({
   projects,
@@ -129,10 +180,12 @@ export function ContractAiClient({
         body: JSON.stringify({
           projectId: selectedProjectId,
           query: text,
-          conversationHistory: messages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          conversationHistory: messages
+            .filter((m) => !m.isError)
+            .map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
         }),
       })
 
@@ -146,17 +199,19 @@ export function ContractAiClient({
       }
 
       if (!res.ok) {
-        const errorText =
+        const rawErr =
           data?.code === 'FEATURE_GATED'
             ? (data?.error || 'ContractIQ is an exclusive feature of Growth Contractor and Enterprise Infra plans.')
-            : (data?.error || `Error ${res.status}: Failed to process contract query. Please try again.`)
+            : (data?.error || `Error ${res.status}: Failed to process contract query.`)
 
-        setErrorMsg(errorText)
+        const cleanMsg = cleanClientErrorMessage(rawErr)
         setMessages((prev) => [
           ...prev,
           {
             role: 'model',
-            content: `⚠️ **Unable to complete analysis**\n\n${errorText}`,
+            content: cleanMsg,
+            isError: true,
+            lastQuery: text,
           },
         ])
         return
@@ -164,12 +219,13 @@ export function ContractAiClient({
 
       if (!data?.answer) {
         const fallbackText = data?.error || 'No response received from ContractIQ. Please try again.'
-        setErrorMsg(fallbackText)
         setMessages((prev) => [
           ...prev,
           {
             role: 'model',
-            content: `⚠️ **No response generated**\n\n${fallbackText}`,
+            content: cleanClientErrorMessage(fallbackText),
+            isError: true,
+            lastQuery: text,
           },
         ])
         return
@@ -188,15 +244,16 @@ export function ContractAiClient({
       clearTimeout(timeoutId)
       const isTimeout = err?.name === 'AbortError' || err?.message?.includes('aborted')
       const message = isTimeout
-        ? 'ContractIQ request timed out after 20 seconds. The server might be inspecting large ERP records or experiencing network latency. Please retry.'
+        ? 'ContractIQ request timed out after 20 seconds. The server might be inspecting large ERP records or experiencing network latency.'
         : (err?.message || 'Network error occurred while contacting ContractIQ.')
 
-      setErrorMsg(message)
       setMessages((prev) => [
         ...prev,
         {
           role: 'model',
-          content: `⚠️ **Error**\n\n${message}`,
+          content: cleanClientErrorMessage(message),
+          isError: true,
+          lastQuery: text,
         },
       ])
     } finally {
@@ -490,6 +547,42 @@ export function ContractAiClient({
                   >
                     {m.role === 'user' ? (
                       <p className="whitespace-pre-wrap">{m.content}</p>
+                    ) : m.isError ? (
+                      <div className="p-3.5 rounded-xl bg-rose-50/90 border border-rose-200 text-rose-900">
+                        <div className="flex items-start gap-2.5">
+                          <div className="p-1 rounded-lg bg-rose-100 text-rose-600 shrink-0 mt-0.5">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-rose-900 text-xs sm:text-sm mb-1">
+                              Analysis Temporarily Interrupted
+                            </div>
+                            <p className="text-rose-800 leading-relaxed text-xs">
+                              {m.content}
+                            </p>
+                            {m.lastQuery && (
+                              <div className="mt-3 pt-2.5 border-t border-rose-200/80 flex items-center gap-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSend(m.lastQuery)}
+                                  disabled={loading}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                  </svg>
+                                  Retry Analysis
+                                </button>
+                                <span className="text-[11px] text-rose-700 font-medium">
+                                  Automatically retries with secondary model
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       <div>
                         {/* Header Tag */}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { verifyGrounding, buildSystemPrompt } from '../../ai/contractAiEngine'
+import { verifyGrounding, buildSystemPrompt, cleanAiErrorMessage } from '../../ai/contractAiEngine'
 
 describe('PillarPro Contract AI: 4-Layer Zero-Hallucination Shield', () => {
   describe('Layer 4: verifyGrounding Guard', () => {

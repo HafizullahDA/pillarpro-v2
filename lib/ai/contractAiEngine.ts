@@ -147,6 +147,76 @@ export function verifyGrounding(
 }
 
 /**
+ * Safely sanitizes AI engine and provider errors into clear, actionable enterprise messages.
+ * Prevents raw provider JSON dumps (e.g. {"error":{"code":503,...}}) from leaking to the UI.
+ */
+export function cleanAiErrorMessage(error: any): string {
+  if (!error) {
+    return 'The ContractIQ service is temporarily unavailable. Please retry in a few moments.'
+  }
+
+  const rawMessage =
+    typeof error === 'string'
+      ? error
+      : error?.message || error?.error?.message || error?.toString() || ''
+
+  // 1. Attempt to extract nested JSON message if rawMessage contains an error object string
+  try {
+    const jsonMatch = rawMessage.match(/\{[\s\S]*"error"[\s\S]*\}/)
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0])
+      const inner = parsed?.error?.message || parsed?.message
+      if (typeof inner === 'string') {
+        const innerLower = inner.toLowerCase()
+        if (
+          innerLower.includes('high demand') ||
+          innerLower.includes('unavailable') ||
+          parsed?.error?.status === 'UNAVAILABLE' ||
+          parsed?.error?.code === 503
+        ) {
+          return 'The AI engine is temporarily experiencing high server demand. We automatically retried backup models. Please click Retry below in a few moments.'
+        }
+        if (innerLower.includes('quota') || parsed?.error?.code === 429) {
+          return 'AI query rate limit temporarily reached. Please wait a moment and click Retry.'
+        }
+        if (inner.trim().length > 0) {
+          return inner.trim()
+        }
+      }
+    }
+  } catch {
+    // Ignore JSON parsing exceptions
+  }
+
+  // 2. Pattern matching for standard high demand, quota, or unavailable codes
+  const lower = rawMessage.toLowerCase()
+  if (
+    lower.includes('503') ||
+    lower.includes('high demand') ||
+    lower.includes('unavailable') ||
+    lower.includes('overloaded')
+  ) {
+    return 'The AI engine is temporarily experiencing high server demand. We automatically retried backup models. Please click Retry below in a few moments.'
+  }
+  if (lower.includes('429') || lower.includes('quota') || lower.includes('resource_exhausted')) {
+    return 'AI query rate limit temporarily reached. Please wait a few moments and click Retry.'
+  }
+  if (lower.includes('aborterror') || lower.includes('timed out') || lower.includes('aborted')) {
+    return 'Analysis timed out while inspecting large ERP records. Please click Retry.'
+  }
+  if (lower.includes('api key') || lower.includes('unauthenticated')) {
+    return 'AI service configuration issue. Please contact your workspace administrator.'
+  }
+
+  // 3. Fallback sanitized string without raw braces or code dumps
+  const stripped = rawMessage.replace(/\{[\s\S]*?\}|\[[\s\S]*?\]/g, '').trim()
+  return (
+    stripped ||
+    'The ContractIQ service is temporarily busy. Please click Retry below in a few moments.'
+  )
+}
+
+/**
  * Invokes Gemini model to answer contract queries with strict grounding.
  */
 export async function runContractAiQuery(
@@ -186,14 +256,24 @@ export async function runContractAiQuery(
     parts: [{ text: userQuery }],
   })
 
-  const primaryModel = process.env.GEMINI_PRIMARY_MODEL || 'gemini-2.5-flash'
-  const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash'
-  const modelsToTry = [primaryModel, fallbackModel, 'gemini-2.0-flash-lite', 'gemini-flash-latest']
+  const primaryModel = process.env.GEMINI_PRIMARY_MODEL || 'gemini-2.0-flash'
+  const fallbackModel = process.env.GEMINI_FALLBACK_MODEL || 'gemini-1.5-flash'
+  const modelsToTry = Array.from(
+    new Set([
+      primaryModel,
+      fallbackModel,
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-2.0-flash-lite',
+      'gemini-1.5-pro',
+    ])
+  ).filter(Boolean)
   let rawText = ''
   let selectedModel = primaryModel
   let lastError: any = null
 
-  for (const model of modelsToTry) {
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const model = modelsToTry[i]
     try {
       selectedModel = model
       const result = await ai.models.generateContent({
@@ -210,14 +290,16 @@ export async function runContractAiQuery(
     } catch (err: any) {
       lastError = err
       console.warn(`[ContractAI] Model ${model} failed, attempting next model fallback:`, err?.message || err)
+      // Jitter delay between model fallbacks on 503 or 429
+      if (i < modelsToTry.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 600))
+      }
     }
   }
 
   if (!rawText) {
-    throw new AppError(
-      `PillarPro ContractIQ service is temporarily unavailable: ${lastError?.message || 'Empty response'}`,
-      503
-    )
+    const friendlyError = cleanAiErrorMessage(lastError)
+    throw new AppError(friendlyError, 503)
   }
 
   // Layer 4 Verification: Ensure response has the statutory disclaimer and check UUID references
