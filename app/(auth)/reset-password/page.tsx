@@ -32,9 +32,9 @@ export default function ResetPasswordPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [hasSession, setHasSession]               = useState<boolean | null>(null)
-  const [email, setEmail]                         = useState('')
-  const [otpCode, setOtpCode]                     = useState('')
+  const [verifying, setVerifying]                 = useState(true)
+  const [hasSession, setHasSession]               = useState(false)
+  const [userEmail, setUserEmail]                 = useState('')
   const [password, setPassword]                   = useState('')
   const [confirmPassword, setConfirmPassword]     = useState('')
   const [showPassword, setShowPassword]           = useState(false)
@@ -44,31 +44,74 @@ export default function ResetPasswordPage() {
   const [success, setSuccess]                     = useState(false)
   const [countdown, setCountdown]                 = useState(5)
 
-  // Parse URL query params and check for active auth/recovery session
+  // Fallback OTP option (only if someone explicitly needs it)
+  const [showManualOtp, setShowManualOtp]         = useState(false)
+  const [otpCode, setOtpCode]                     = useState('')
+
+  // Verify and exchange any recovery tokens/sessions on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      const emailParam = params.get('email')
-      const codeParam = params.get('code')
-      if (emailParam) setEmail(decodeURIComponent(emailParam))
-      if (codeParam) setOtpCode(decodeURIComponent(codeParam))
+    let mounted = true
+
+    const initializeAuth = async () => {
+      try {
+        // 1. Check if user already has an active session (e.g. already logged in)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user && mounted) {
+          setHasSession(true)
+          if (user.email) setUserEmail(user.email)
+          setVerifying(false)
+          return
+        }
+
+        // 2. Check for PKCE exchange code in URL
+        if (typeof window !== 'undefined') {
+          const params = new URLSearchParams(window.location.search)
+          const code = params.get('code')
+          const emailParam = params.get('email')
+          if (emailParam && mounted) setUserEmail(decodeURIComponent(emailParam))
+
+          if (code) {
+            const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+            if (!exchangeError && data.session && mounted) {
+              setHasSession(true)
+              if (data.user?.email) setUserEmail(data.user.email)
+              setVerifying(false)
+              return
+            }
+          }
+        }
+
+        // 3. Check for existing session or parsed recovery hash
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session && mounted) {
+          setHasSession(true)
+          if (session.user?.email) setUserEmail(session.user.email)
+          setVerifying(false)
+          return
+        }
+
+        if (mounted) {
+          setVerifying(false)
+        }
+      } catch (err) {
+        console.warn('Session verification notice:', err)
+        if (mounted) setVerifying(false)
+      }
     }
 
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setHasSession(Boolean(session))
-    }
+    initializeAuth()
 
-    checkSession()
-
-    // Listen for auth state change (e.g. if Supabase handles recovery hash in URL)
+    // Listen for auth state change (e.g. Supabase parses #access_token=... hash)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' || Boolean(session)) {
+      if ((event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || Boolean(session)) && mounted) {
         setHasSession(true)
+        if (session?.user?.email) setUserEmail(session.user.email)
+        setVerifying(false)
       }
     })
 
     return () => {
+      mounted = false
       subscription.unsubscribe()
     }
   }, [supabase])
@@ -150,10 +193,10 @@ export default function ResetPasswordPage() {
     setLoading(true)
 
     try {
-      // Flow 1: Manual OTP verification if user does not have an active session yet
-      if (!hasSession && otpCode.trim() && email.trim()) {
+      // Optional manual OTP verification if arriving with manual OTP code
+      if (!hasSession && showManualOtp && otpCode.trim() && userEmail.trim()) {
         const { error: otpError } = await supabase.auth.verifyOtp({
-          email: email.trim().toLowerCase(),
+          email: userEmail.trim().toLowerCase(),
           token: otpCode.trim(),
           type: 'recovery',
         })
@@ -163,7 +206,7 @@ export default function ResetPasswordPage() {
         }
       }
 
-      // Flow 2: Update the password with Supabase Auth
+      // Update the password with Supabase Auth
       const { error: updateError } = await supabase.auth.updateUser({
         password,
       })
@@ -177,7 +220,7 @@ export default function ResetPasswordPage() {
       console.error('Password reset update error:', err)
       setError(
         err?.message ||
-        'Unable to update password. Your recovery link or code may have expired. Please request a new link.'
+        'Unable to update password. Your recovery link may have expired. Please request a new link.'
       )
     } finally {
       setLoading(false)
@@ -216,7 +259,7 @@ export default function ResetPasswordPage() {
                 </p>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed pl-5">
-                Protect sensitive tender estimates, sub-contractor balances, and CPWA measurement sheets with strict entropy.
+                Protect sensitive tender estimates, subcontractor balances, and CPWA measurement sheets with strict entropy.
               </p>
             </div>
 
@@ -285,6 +328,18 @@ export default function ResetPasswordPage() {
             </p>
           </div>
 
+          {/* User Email Indicator (when logged in or verified from link) */}
+          {userEmail && (
+            <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 flex items-center justify-between">
+              <div className="flex items-center gap-2 truncate">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-slate-600 truncate">Account:</span>
+                <span className="font-semibold font-mono text-slate-900 truncate">{userEmail}</span>
+              </div>
+              <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide shrink-0">Verified</span>
+            </div>
+          )}
+
           {/* Error Banner */}
           {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 p-3.5 text-xs text-red-700 flex items-start gap-2.5 shadow-2xs">
@@ -330,18 +385,65 @@ export default function ResetPasswordPage() {
                 </button>
               </div>
             </div>
+          ) : verifying ? (
+            /* Verifying Recovery Link Loader */
+            <div className="p-8 text-center space-y-3 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs font-medium text-slate-700">Verifying secure recovery link…</p>
+            </div>
+          ) : !hasSession && !showManualOtp ? (
+            /* Unauthenticated Arrival (No Link Clicked) Guidance */
+            <div className="p-6 rounded-xl border border-slate-200 bg-slate-50 text-center space-y-4 shadow-2xs">
+              <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900">Open Email to Reset Password</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Please open the email sent to your registered address and click the <strong>&quot;Reset password&quot;</strong> button. The link securely logs you in directly.
+                </p>
+              </div>
+
+              <div className="pt-2 flex flex-col gap-2">
+                <Link
+                  href="/forgot-password"
+                  className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                >
+                  Request New Password Reset Link →
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => setShowManualOtp(true)}
+                  className="text-[11px] text-slate-500 hover:text-slate-800 underline transition-colors pt-1"
+                >
+                  Have an OTP code? Enter code manually
+                </button>
+              </div>
+            </div>
           ) : (
             /* New Password Form */
             <form onSubmit={handleSubmit} className="space-y-4">
               
-              {/* Optional Manual OTP / Email fields when arriving without session */}
-              {hasSession === false && (
+              {/* Optional Manual OTP (Only shown if user explicitly clicked 'Enter code manually') */}
+              {!hasSession && showManualOtp && (
                 <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                    <svg className="w-3.5 h-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span>Recovery Code Verification</span>
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-3.5 h-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span>Manual Recovery Code</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowManualOtp(false)}
+                      className="text-[10px] text-slate-400 hover:text-slate-600"
+                    >
+                      Hide
+                    </button>
                   </div>
 
                   <div>
@@ -351,8 +453,8 @@ export default function ResetPasswordPage() {
                     <input
                       type="email"
                       required
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
+                      value={userEmail}
+                      onChange={e => setUserEmail(e.target.value)}
                       placeholder="you@contractorfirm.com"
                       className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:border-blue-600 focus:outline-none"
                     />
@@ -449,13 +551,9 @@ export default function ResetPasswordPage() {
                     Passwords do not match
                   </p>
                 )}
-                {confirmPassword && password === confirmPassword && (
-                  <p className="mt-1 text-[11px] text-emerald-600 font-medium">
-                    ✓ Passwords match
-                  </p>
-                )}
               </div>
 
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading || password.length < 8 || password !== confirmPassword}
@@ -467,10 +565,10 @@ export default function ResetPasswordPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                     </svg>
-                    <span>Updating Workspace Credentials…</span>
+                    <span>Updating Password…</span>
                   </>
                 ) : (
-                  <span>Update Password &amp; Sign In</span>
+                  <span>Update Password &amp; Authenticate</span>
                 )}
               </button>
             </form>
@@ -490,9 +588,9 @@ export default function ResetPasswordPage() {
 
             <Link
               href="/forgot-password"
-              className="font-medium text-slate-500 hover:text-slate-800"
+              className="font-medium text-blue-600 hover:text-blue-700 hover:underline text-[11px]"
             >
-              Need a new link?
+              Request another link
             </Link>
           </div>
 
@@ -502,4 +600,3 @@ export default function ResetPasswordPage() {
     </div>
   )
 }
-

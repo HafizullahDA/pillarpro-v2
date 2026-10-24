@@ -161,7 +161,7 @@ export async function middleware(request: NextRequest) {
   // ── 5. Active user: redirect away from auth/pending routes ──
   if ([...AUTH_ROUTES, ...PENDING_ROUTES].some(r => pathname.startsWith(r))) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = pathname === '/forgot-password' ? '/reset-password' : '/dashboard'
     return NextResponse.redirect(url)
   }
 

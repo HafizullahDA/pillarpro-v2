@@ -56,6 +56,16 @@ export function UserProfileModal({
   })
   const [savingOrg, setSavingOrg] = useState(false)
 
+  // Security & Password states
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [savingPassword, setSavingPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState('')
+
   const isOwner = userRole === 'owner' || userRole === 'managing_partner' || userRole === 'partner'
 
   useEffect(() => {
@@ -150,6 +160,42 @@ export function UserProfileModal({
       }
     }
     reader.readAsDataURL(file)
+  }
+
+  const handleUpdatePassword = async () => {
+    setPasswordError('')
+    setPasswordSuccess('')
+
+    if (newPassword.length < 8) {
+      setPasswordError('Password must contain at least 8 characters.')
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match.')
+      return
+    }
+
+    setSavingPassword(true)
+    try {
+      const { error: updateErr } = await supabase.auth.updateUser({
+        password: newPassword,
+      })
+
+      if (updateErr) throw updateErr
+
+      setPasswordSuccess('Password successfully updated!')
+      setNewPassword('')
+      setConfirmPassword('')
+      setTimeout(() => {
+        setPasswordSuccess('')
+        setChangingPassword(false)
+      }, 2500)
+    } catch (err: any) {
+      setPasswordError(err?.message || 'Failed to update password.')
+    } finally {
+      setSavingPassword(false)
+    }
   }
 
   const handleSignOut = async () => {
@@ -362,6 +408,119 @@ export function UserProfileModal({
             <Button size="sm" loading={saving} onClick={handleSaveName}>{t('common.save', 'Save')}</Button>
           </div>
         </FieldWrapper>
+
+        {/* Security & Password Change */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-3 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <svg className="w-5 h-5 text-slate-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <div>
+                <p className="text-xs font-bold text-slate-900">Security &amp; Password</p>
+                <p className="text-[11px] text-slate-500">Update your contractor workspace password</p>
+              </div>
+            </div>
+            {!changingPassword && (
+              <button
+                type="button"
+                onClick={() => setChangingPassword(true)}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                Change Password
+              </button>
+            )}
+          </div>
+
+          {changingPassword && (
+            <div className="space-y-3 pt-2 border-t border-slate-200/80">
+              {passwordError && (
+                <div className="rounded-lg bg-red-50 p-2.5 text-xs text-red-700 border border-red-200">
+                  {passwordError}
+                </div>
+              )}
+              {passwordSuccess && (
+                <div className="rounded-lg bg-emerald-50 p-2.5 text-xs text-emerald-800 border border-emerald-200 font-medium">
+                  {passwordSuccess}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                  New Password (min. 8 characters)
+                </label>
+                <div className="relative">
+                  <Input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="pr-14"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(v => !v)}
+                    className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600 text-xs font-semibold"
+                  >
+                    {showNewPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                  Confirm New Password
+                </label>
+                <div className="relative">
+                  <Input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat new password"
+                    className="pr-14"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(v => !v)}
+                    className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600 text-xs font-semibold"
+                  >
+                    {showConfirmPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                {confirmPassword && newPassword !== confirmPassword && (
+                  <p className="mt-1 text-[11px] text-red-600 font-medium">
+                    Passwords do not match
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setChangingPassword(false)
+                    setNewPassword('')
+                    setConfirmPassword('')
+                    setPasswordError('')
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  loading={savingPassword}
+                  onClick={handleUpdatePassword}
+                  disabled={newPassword.length < 8 || newPassword !== confirmPassword}
+                  className="flex-1"
+                >
+                  Save New Password
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* PWA App Install Button (When not running in standalone mode) */}
         {!isStandalone && (

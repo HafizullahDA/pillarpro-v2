@@ -15,7 +15,11 @@ export async function GET(request: Request) {
     if (!error && data.user) {
       // If this is a password recovery flow, immediately redirect to reset-password
       if (next.startsWith('/reset-password')) {
-        return NextResponse.redirect(`${requestUrl.origin}${next}`)
+        const redirectUrl = new URL(`${requestUrl.origin}${next}`)
+        if (code && !redirectUrl.searchParams.has('code')) {
+          redirectUrl.searchParams.set('code', code)
+        }
+        return NextResponse.redirect(redirectUrl.toString())
       }
 
       try {
@@ -62,6 +66,11 @@ export async function GET(request: Request) {
 
       return NextResponse.redirect(`${requestUrl.origin}${next}`)
     }
+  }
+
+  // If this is password recovery and no server code was passed, forward to reset-password to preserve client hash
+  if (next.startsWith('/reset-password')) {
+    return NextResponse.redirect(`${requestUrl.origin}${next}`)
   }
 
   // If code exchange failed or expired, redirect to sign-in with clear feedback

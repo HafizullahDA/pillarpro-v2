@@ -221,17 +221,31 @@ export default function ForgotPasswordPage() {
                   </p>
                   <p className="text-emerald-800 leading-relaxed">
                     We’ve dispatched secure recovery instructions to{' '}
-                    <strong className="text-emerald-950 font-semibold">{email.trim()}</strong>. Please check your inbox and spam folder.
+                    <strong className="text-emerald-950 font-semibold">{email.trim()}</strong>.
                   </p>
                 </div>
               </div>
 
               <div className="pt-3 border-t border-emerald-200/80 space-y-2.5">
-                <p className="text-[11px] text-emerald-800">
-                  Did not receive the email? Make sure the email address matches your registered firm account, or resend below.
-                </p>
+                <div className="rounded-lg bg-white/80 p-2.5 border border-emerald-200 text-[11px] text-slate-700 space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-semibold text-emerald-900">
+                    <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>How to complete password reset:</span>
+                  </div>
+                  <p className="text-slate-600 leading-relaxed pl-5">
+                    1. Check your email for a message from <strong>PillarPro</strong>.
+                  </p>
+                  <p className="text-slate-600 leading-relaxed pl-5">
+                    2. Click the <strong>&quot;Reset password&quot;</strong> button inside that email.
+                  </p>
+                  <p className="text-slate-500 text-[10px] pl-5 italic">
+                    Note: No manual code is required. The email link verifies your identity directly.
+                  </p>
+                </div>
 
-                <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center justify-between gap-3 pt-1">
                   <button
                     type="button"
                     onClick={handleResetRequest}
@@ -248,10 +262,10 @@ export default function ForgotPasswordPage() {
                   </button>
 
                   <Link
-                    href={`/reset-password?email=${encodeURIComponent(email.trim())}`}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 hover:text-emerald-950 hover:underline"
+                    href="/sign-in"
+                    className="text-xs font-semibold text-emerald-900 hover:underline"
                   >
-                    Have a 6-digit code? Enter code →
+                    Back to Sign In →
                   </Link>
                 </div>
               </div>
@@ -302,8 +316,8 @@ export default function ForgotPasswordPage() {
             </form>
           )}
 
-          {/* Quick Manual Code Link & Back to Sign In */}
-          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          {/* Back to Sign In */}
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3 text-xs">
             <Link
               href="/sign-in"
               className="inline-flex items-center gap-1.5 font-semibold text-slate-600 hover:text-slate-900 transition-colors"
@@ -314,12 +328,7 @@ export default function ForgotPasswordPage() {
               <span>Back to Sign In</span>
             </Link>
 
-            <Link
-              href={`/reset-password${email ? `?email=${encodeURIComponent(email)}` : ''}`}
-              className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
-            >
-              Have a recovery token or code?
-            </Link>
+            <span className="text-slate-400 text-[11px]">Enterprise Account Shield</span>
           </div>
 
         </div>
