@@ -130,6 +130,14 @@ export function normalizeRole(role: string | null | undefined): CanonicalRole | 
   return null
 }
 
+/**
+ * Resolves any user role with fail-closed security.
+ * If the role is null, undefined, or unrecognized, it safely resolves to 'viewer' (read-only) and NEVER 'owner'.
+ */
+export function resolveSafeRole(role: string | null | undefined): CanonicalRole {
+  return normalizeRole(role) ?? 'viewer'
+}
+
 export type AppModule =
   | 'projects'
   | 'contracts'

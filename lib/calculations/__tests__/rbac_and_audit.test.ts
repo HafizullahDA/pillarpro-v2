@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   can,
   normalizeRole,
+  resolveSafeRole,
   formatRoleLabel,
   ROLES_CONFIG,
   canCertifyMeasurement,
@@ -183,6 +184,71 @@ describe('Role-Based Access Control (RBAC) System', () => {
         expect(can('viewer', mod, 'view')).toBe(true)
         mutationActions.forEach(action => {
           expect(can('viewer', mod, action)).toBe(false)
+        })
+      })
+    })
+
+    describe('Fail-Closed RBAC & Privilege Escalation Defenses', () => {
+      it('safely resolves unknown, unassigned, or null roles to viewer and NEVER owner', () => {
+        expect(resolveSafeRole(null)).toBe('viewer')
+        expect(resolveSafeRole(undefined)).toBe('viewer')
+        expect(resolveSafeRole('')).toBe('viewer')
+        expect(resolveSafeRole('unknown_attacker_role')).toBe('viewer')
+        expect(resolveSafeRole('invalid_role')).toBe('viewer')
+        expect(resolveSafeRole('hacker_admin')).toBe('viewer')
+
+        // Explicitly assert it NEVER escalates to owner
+        expect(resolveSafeRole(null)).not.toBe('owner')
+        expect(resolveSafeRole(undefined)).not.toBe('owner')
+        expect(resolveSafeRole('unknown')).not.toBe('owner')
+
+        // Valid roles still resolve properly
+        expect(resolveSafeRole('owner')).toBe('owner')
+        expect(resolveSafeRole('partner')).toBe('partner')
+        expect(resolveSafeRole('project_manager')).toBe('project_manager')
+      })
+
+      it('strictly forbids high-stakes operations across site_engineer, site_supervisor, store_manager, data_entry, and viewer', () => {
+        const restrictedRoles: CanonicalRole[] = [
+          'site_engineer',
+          'site_supervisor',
+          'store_manager',
+          'data_entry',
+          'viewer',
+        ]
+
+        restrictedRoles.forEach(role => {
+          // 1. Cannot certify e-MB measurements
+          expect(canCertifyMeasurement(role)).toBe(false)
+
+          // 2. Cannot submit government RA bills
+          expect(canSubmitRABill(role)).toBe(false)
+
+          // 3. Cannot record treasury / bank payments
+          expect(canRecordPayment(role)).toBe(false)
+
+          // 4. Cannot amend contracts or completion dates
+          expect(canAmendContract(role)).toBe(false)
+        })
+      })
+
+      it('confirms unknown/null roles fail closed and have zero permission for any action', () => {
+        const testRoles = [null, undefined, '', 'unknown', 'hacker']
+        const highStakesHelpers = [
+          canCertifyMeasurement,
+          canSubmitRABill,
+          canRecordPayment,
+          canAmendContract,
+        ]
+
+        testRoles.forEach(badRole => {
+          highStakesHelpers.forEach(fn => {
+            expect(fn(badRole)).toBe(false)
+          })
+          expect(can(badRole, 'measurement', 'certify')).toBe(false)
+          expect(can(badRole, 'ra_bills', 'submit')).toBe(false)
+          expect(can(badRole, 'payments', 'create')).toBe(false)
+          expect(can(badRole, 'contracts', 'edit')).toBe(false)
         })
       })
     })
